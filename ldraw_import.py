@@ -15,7 +15,7 @@ def traverse_node(node, parent_matrix=matrices.rotation, indent=0, arr=None, joi
     node.traversed += 1
 
     string = f"{'-' * indent}{node.filename}"
-    string += f", traversed: {node.file.traversed}"
+    string += f", traversed: {node.traversed}"
     print(string)
 
     if arr is not None:
@@ -79,13 +79,6 @@ def traverse_node(node, parent_matrix=matrices.rotation, indent=0, arr=None, joi
             bpy.context.scene.collection.objects.link(join_list[0])
             if join_list[0].name not in mesh_data_cache:
                 mesh_data_cache[node.filename] = join_list[0].data
-
-            # this is done here after the merge
-            # linking the material to the object before merge appears to make the material linked to data
-            for mat_slot in join_list[0].material_slots:
-                mat = mat_slot.material
-                mat_slot.link = 'OBJECT'
-                mat_slot.material = mat
 
 
 def do_import(filepath, ldraw_path, resolution):
