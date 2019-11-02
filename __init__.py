@@ -1,0 +1,149 @@
+bl_info = {
+    "name": "Export LDraw",
+    "author": "cuddlyogre",
+    "version": (0, 1),
+    "blender": (2, 80, 0),
+    "location": "File > Export > LDraw (.mpd/.ldr/.l3b/.dat)",
+    "description": "Exports LDraw Models",
+    "warning": "",
+    "wiki_url": "",
+    "category": "Import-Export",
+}
+
+if "bpy" in locals():
+    import importlib
+
+    importlib.reload(face_info)
+    importlib.reload(filesystem)
+    importlib.reload(ldraw_export)
+    importlib.reload(ldraw_file)
+    importlib.reload(ldraw_geometry)
+    importlib.reload(ldraw_import)
+    importlib.reload(matrices)
+else:
+    from . import face_info
+    from . import filesystem
+    from . import ldraw_export
+    from . import ldraw_file
+    from . import ldraw_geometry
+    from . import ldraw_import
+    from . import matrices
+
+import bpy
+from bpy_extras.io_utils import ImportHelper, ExportHelper
+
+
+class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
+    bl_idname = "import.ldraw"
+    bl_label = "Import LDraw"
+    bl_options = {'PRESET'}
+    filename_ext = ""
+
+    filter_glob: bpy.props.StringProperty(
+        default="*.mpd;*.ldr;*.l3b;*.dat",
+        options={'HIDDEN'},
+    )
+
+    ldraw_path: bpy.props.StringProperty(
+        name="",
+        description="Full filepath to the LDraw Parts Library (download from http://www.ldraw.org)",
+        default="d:\\ldraw"
+    )
+
+    resolution: bpy.props.EnumProperty(
+        name="Resolution of part primitives",
+        description="Resolution of part primitives, ie. how much geometry they have",
+        default="Standard",
+        items=(
+            ("Standard", "Standard primitives", "Import using standard resolution primitives."),
+            ("High", "High resolution primitives", "Import using high resolution primitives."),
+            ("Low", "Low resolution primitives", "Import using low resolution primitives.")
+        )
+    )
+
+    def execute(self, context):
+        ldraw_import.do_import(bpy.path.abspath(self.filepath), self.ldraw_path, self.resolution)
+        return {'FINISHED'}
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        box = layout.box()
+        box.label(text="LDraw filepath:", icon='FILEBROWSER')
+        box.prop(self, "ldraw_path")
+        box.prop(self, "resolution", expand=True)
+
+
+class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
+    bl_idname = "export.ldraw"
+    bl_label = "Export LDraw"
+    bl_options = {'PRESET'}
+    filename_ext = ""
+
+    filter_glob: bpy.props.StringProperty(
+        default="*.mpd;*.ldr;*.l3b;*.dat",
+        options={'HIDDEN'},
+    )
+
+    selection_only: bpy.props.BoolProperty(
+        name="Selection Only",
+        description="Export selected objects only",
+        default=False
+    )
+    recalculate_normals: bpy.props.BoolProperty(
+        name="Recalculate Normals",
+        description="Recalculate Normals",
+        default=True
+    )
+    triangulate: bpy.props.BoolProperty(
+        name="Triangulate Mesh",
+        description="Triangulate the entire mesh",
+        default=True
+    )
+    ngon_handling: bpy.props.EnumProperty(
+        name="Ngon Handling",
+        description="What to do with ngons",
+        items=[
+            ("skip", "Skip", "Don't export ngons at all"),
+            ("triangulate", "Triangulate", "Triangulate ngons"),
+        ],
+        default="triangulate",
+    )
+
+    def execute(self, context):
+        ldraw_export.triangulate = self.triangulate
+        ldraw_export.selection_only = self.selection_only
+        ldraw_export.recalculate_normals = self.recalculate_normals
+        ldraw_export.ngon_handling = self.ngon_handling
+
+        ldraw_export.do_export(bpy.path.abspath(self.filepath))
+
+        return {'FINISHED'}
+
+
+def build_import_menu(self, context):
+    self.layout.operator(IMPORT_OT_do_ldraw_import.bl_idname, text="Basic LDraw (.mpd/.ldr/.l3b/.dat)")
+
+
+def build_export_menu(self, context):
+    self.layout.operator(EXPORT_OT_do_ldraw_export.bl_idname, text="LDraw (.mpd/.ldr/.l3b/.dat)")
+
+
+def register():
+    bpy.utils.register_class(IMPORT_OT_do_ldraw_import)
+    bpy.types.TOPBAR_MT_file_import.append(build_import_menu)
+
+    bpy.utils.register_class(EXPORT_OT_do_ldraw_export)
+    bpy.types.TOPBAR_MT_file_export.append(build_export_menu)
+
+
+def unregister():
+    bpy.utils.unregister_class(IMPORT_OT_do_ldraw_import)
+    bpy.types.TOPBAR_MT_file_import.remove(build_import_menu)
+
+    bpy.utils.unregister_class(EXPORT_OT_do_ldraw_export)
+    bpy.types.TOPBAR_MT_file_export.remove(build_export_menu)
+
+
+if __name__ == "__main__":
+    register()
