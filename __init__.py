@@ -19,6 +19,8 @@ if "bpy" in locals():
     importlib.reload(ldraw_file)
     importlib.reload(ldraw_geometry)
     importlib.reload(ldraw_import)
+    importlib.reload(ldraw_colors)
+    importlib.reload(blender_materials)
     importlib.reload(matrices)
 else:
     from . import face_info
@@ -27,6 +29,8 @@ else:
     from . import ldraw_file
     from . import ldraw_geometry
     from . import ldraw_import
+    from . import ldraw_colors
+    from . import blender_materials
     from . import matrices
 
 import bpy

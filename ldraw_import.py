@@ -2,9 +2,11 @@ import os
 import bpy
 import pathlib
 
-from . import ldraw_file
 from . import filesystem
 from . import matrices
+from .ldraw_file import LDrawNode
+from .ldraw_colors import LDrawColors
+from .blender_materials import BlenderMaterials
 
 mesh_data_cache = {}
 reuse_mesh_data = not True
@@ -54,10 +56,7 @@ def traverse_node(node, parent_matrix=matrices.rotation, indent=0, arr=None, joi
             else:
                 color_code = face_info.color_code
 
-            if color_code in bpy.data.materials:
-                material = bpy.data.materials[color_code]
-            else:
-                material = bpy.data.materials.new(color_code)
+            material = BlenderMaterials.get_material(color_code)
 
             if obj.data.materials.get(material.name) is None:
                 obj.data.materials.append(material)
@@ -80,13 +79,25 @@ def traverse_node(node, parent_matrix=matrices.rotation, indent=0, arr=None, joi
             if join_list[0].name not in mesh_data_cache:
                 mesh_data_cache[node.filename] = join_list[0].data
 
+    # this is done here after the merge
+    # linking the material to the object before merge appears to make the material linked to data
+    # for mat_slot in join_list[0].material_slots:
+    #     mat = mat_slot.material
+    #     mat_slot.link = 'OBJECT'
+    #     mat_slot.material = mat
+
 
 def do_import(filepath, ldraw_path, resolution):
-    ldraw_file.cache.clear()
     filesystem.search_paths.clear()
-    filesystem.append_search_paths(ldraw_path, resolution)
+    LDrawNode.cache.clear()
+    LDrawColors.colors.clear()
+    BlenderMaterials.material_list.clear()
 
-    root_node = ldraw_file.LDrawNode(filepath)
+    filesystem.append_search_paths(ldraw_path, resolution)
+    LDrawColors.read_color_table(ldraw_path)
+    BlenderMaterials.create_blender_node_groups()
+
+    root_node = LDrawNode(filepath)
     root_node.load()
 
     arr = []

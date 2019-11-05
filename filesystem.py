@@ -118,7 +118,7 @@ def check_encoding(filepath):
 
 
 def read_file(filepath):
-    # print(filepath)
+    print(filepath)
     lines = []
     if os.path.exists(filepath):
         file_encoding = check_encoding(filepath)

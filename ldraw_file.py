@@ -7,10 +7,10 @@ from . import matrices
 
 from .ldraw_geometry import LDrawGeometry
 
-cache = {}
-
 
 class LDrawNode:
+    cache = {}
+
     def __init__(self, filename, color_code="16", matrix=matrices.identity, bfc_cull=True, bfc_inverted=False):
         # print(color_code)
         self.filename = filename
@@ -22,11 +22,11 @@ class LDrawNode:
         self.traversed = 0
 
     def load(self):
-        if self.filename in cache:
-            self.file = cache[self.filename]
+        if self.filename in LDrawNode.cache:
+            self.file = LDrawNode.cache[self.filename]
         else:
             self.file = LDrawFile(self.filename)
-            cache[self.filename] = self.file
+            LDrawNode.cache[self.filename] = self.file
 
         for child in self.file.child_nodes:
             child.load()
