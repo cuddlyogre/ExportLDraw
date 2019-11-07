@@ -13,7 +13,7 @@ reuse_mesh_data = not True
 
 
 # rotation matrix is default because the only node that would receive that matrix is the root node
-def traverse_node(node, parent_matrix=matrices.rotation, indent=0, arr=None, join_list=None, parent_color_code="16"):
+def traverse_node(node, parent_matrix=matrices.rotation, indent=0, arr=None, join_list=None, parent_color_code="16", top=False):
     node.traversed += 1
 
     string = f"{'-' * indent}{node.filename}"
@@ -25,9 +25,10 @@ def traverse_node(node, parent_matrix=matrices.rotation, indent=0, arr=None, joi
 
     matrix = parent_matrix @ node.matrix
 
-    if node.file.is_part:
+    if node.file.is_part and join_list is None:
         parent_color_code = node.color_code
         join_list = []
+        top = True
 
     if node.filename in mesh_data_cache and reuse_mesh_data:
         obj = bpy.data.objects.new(node.filename, mesh_data_cache[node.filename])
@@ -68,7 +69,7 @@ def traverse_node(node, parent_matrix=matrices.rotation, indent=0, arr=None, joi
         for child_node in node.file.child_nodes:
             traverse_node(child_node, matrix, indent + 1, arr, join_list, parent_color_code=parent_color_code)
 
-        if node.file.is_part:
+        if node.file.is_part and top:
             # https://blender.stackexchange.com/a/133021
             c = {}
             c["object"] = c["active_object"] = join_list[0]
