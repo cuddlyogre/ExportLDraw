@@ -91,8 +91,7 @@ class LDrawFile:
                     filename = " ".join(params[14:])
                     can_cull_child_node = (bfc_certified or self.is_part) and bfc_local_cull and det != 0
 
-                    ldraw_node = LDrawNode(filename, color_code=color_code, matrix=matrix, bfc_cull=can_cull_child_node,
-                                           bfc_inverted=bfc_invert_next)
+                    ldraw_node = LDrawNode(filename, color_code=color_code, matrix=matrix, bfc_cull=can_cull_child_node, bfc_inverted=bfc_invert_next)
 
                     self.child_nodes.append(ldraw_node)
                 elif params[0] == "2":
