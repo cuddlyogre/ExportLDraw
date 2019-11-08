@@ -93,6 +93,7 @@ def do_import(filepath, ldraw_path, resolution):
     LDrawNode.cache.clear()
     LDrawColors.colors.clear()
     BlenderMaterials.material_list.clear()
+    mesh_data_cache.clear()
 
     filesystem.append_search_paths(ldraw_path, resolution)
     LDrawColors.read_color_table(ldraw_path)
