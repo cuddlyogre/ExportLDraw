@@ -1,35 +1,87 @@
 import os
 
+import bpy
 import mathutils
 
 from . import filesystem
 from . import matrices
 
 from .ldraw_geometry import LDrawGeometry
+from .blender_materials import BlenderMaterials
 
 
 class LDrawNode:
     cache = {}
+    join_lists = []
 
     def __init__(self, filename, color_code="16", matrix=matrices.identity, bfc_cull=True, bfc_inverted=False):
-        # print(color_code)
         self.filename = filename
         self.file = None
         self.color_code = color_code
         self.matrix = matrix
         self.bfc_cull = bfc_cull
         self.bfc_inverted = bfc_inverted
-        self.traversed = 0
+        self.top = False
 
-    def load(self):
+    def load(self, parent_matrix=matrices.rotation, join_list=None, parent_color_code="16", arr=None, indent=0, geometry=None):
+        string = f"{'-' * indent}{self.filename}"
+        print(string)
+
+        if arr is not None:
+            arr.append(string)
+
         if self.filename in LDrawNode.cache:
             self.file = LDrawNode.cache[self.filename]
         else:
             self.file = LDrawFile(self.filename)
             LDrawNode.cache[self.filename] = self.file
 
+        matrix = parent_matrix @ self.matrix
+
+        if self.file.is_part and join_list is None:
+            parent_color_code = self.color_code
+            join_list = []
+            self.top = True
+
+        points = [p.to_tuple() for p in self.file.geometry.verts]
+        faces = self.file.geometry.faces
+        mesh = bpy.data.meshes.new(self.filename)
+        mesh.from_pydata(points, [], faces)
+        mesh.validate()
+        mesh.update()
+        obj = bpy.data.objects.new(self.filename, mesh)
+        if self.file.is_part:
+            obj.matrix_world = matrix
+        else:
+            obj.data.transform(matrix)
+
+        for i, f in enumerate(obj.data.polygons):
+            face_info = self.file.geometry.face_info[i]
+
+            if face_info.color_code == "16":
+                color_code = parent_color_code
+            else:
+                color_code = face_info.color_code
+
+            material = BlenderMaterials.get_material(color_code)
+
+            if obj.data.materials.get(material.name) is None:
+                obj.data.materials.append(material)
+            f.material_index = obj.data.materials.find(material.name)
+
+        if join_list is not None:
+            join_list.append(obj)
+
         for child in self.file.child_nodes:
-            child.load()
+            child.load(parent_matrix=matrix, join_list=join_list, parent_color_code=parent_color_code, indent=indent + 1, arr=arr, geometry=geometry)
+
+        if self.file.is_part and self.top:
+            # https://blender.stackexchange.com/a/133021
+            c = {}
+            c["object"] = c["active_object"] = join_list[0]
+            c["selected_objects"] = c["selected_editable_objects"] = join_list
+            bpy.ops.object.join(c)
+            bpy.context.scene.collection.objects.link(c["active_object"])
 
 
 class LDrawFile:

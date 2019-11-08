@@ -578,13 +578,6 @@ class BlenderMaterials:
     def __get_color_data(cls, color_code):
         """Get the color data associated with the color name"""
 
-        print('__is_int')
-        print(color_code)
-        print(cls.__is_int(color_code))
-        print('=====================')
-        print(len(LDrawColors.colors))
-        print('=====================')
-
         # Try the LDraw defined colors
         if cls.__is_int(color_code):
             color_int = int(color_code)
