@@ -7,12 +7,13 @@ from . import filesystem
 from . import matrices
 
 from .ldraw_geometry import LDrawGeometry
+from .face_info import FaceInfo
 from .blender_materials import BlenderMaterials
 
 
 class LDrawNode:
     cache = {}
-    join_lists = []
+    mesh_cache = {}
 
     def __init__(self, filename, color_code="16", matrix=matrices.identity, bfc_cull=True, bfc_inverted=False):
         self.filename = filename
@@ -23,13 +24,7 @@ class LDrawNode:
         self.bfc_inverted = bfc_inverted
         self.top = False
 
-    def load(self, parent_matrix=matrices.rotation, join_list=None, parent_color_code="16", arr=None, indent=0, geometry=None):
-        string = f"{'-' * indent}{self.filename}"
-        print(string)
-
-        if arr is not None:
-            arr.append(string)
-
+    def load(self, parent_matrix=matrices.rotation, parent_color_code="16", arr=None, indent=0, geometry=None):
         if self.filename in LDrawNode.cache:
             self.file = LDrawNode.cache[self.filename]
         else:
@@ -38,50 +33,60 @@ class LDrawNode:
 
         matrix = parent_matrix @ self.matrix
 
-        if self.file.is_part and join_list is None:
-            parent_color_code = self.color_code
-            join_list = []
+        if self.file.is_part and geometry is None:
+            geometry = LDrawGeometry()
             self.top = True
 
-        points = [p.to_tuple() for p in self.file.geometry.verts]
-        faces = self.file.geometry.faces
-        mesh = bpy.data.meshes.new(self.filename)
-        mesh.from_pydata(points, [], faces)
-        mesh.validate()
-        mesh.update()
-        obj = bpy.data.objects.new(self.filename, mesh)
+        if self.color_code != "16":
+            parent_color_code = self.color_code
+
         if self.file.is_part:
-            obj.matrix_world = matrix
-        else:
-            obj.data.transform(matrix)
+            string = ""
+            string += f"{'-' * indent}{self.filename} {self.color_code}"
+            print(string)
 
-        for i, f in enumerate(obj.data.polygons):
-            face_info = self.file.geometry.face_info[i]
+        if geometry is not None:
+            geometry.verts.extend([matrix @ e for e in self.file.geometry.verts])
+            geometry.edges.extend([matrix @ e for e in self.file.geometry.edges])
+            geometry.faces.extend(self.file.geometry.faces)
 
-            if face_info.color_code == "16":
-                color_code = parent_color_code
-            else:
-                color_code = face_info.color_code
+            new_face_info = []
+            for face_info in self.file.geometry.face_info:
+                copy = FaceInfo(color_code=parent_color_code, cull=face_info.cull, ccw=face_info.ccw)
+                if face_info.color_code != "16":
+                    copy.color_code = face_info.color_code
+                new_face_info.append(copy)
 
-            material = BlenderMaterials.get_material(color_code)
-
-            if obj.data.materials.get(material.name) is None:
-                obj.data.materials.append(material)
-            f.material_index = obj.data.materials.find(material.name)
-
-        if join_list is not None:
-            join_list.append(obj)
+            geometry.face_info.extend(new_face_info)
 
         for child in self.file.child_nodes:
-            child.load(parent_matrix=matrix, join_list=join_list, parent_color_code=parent_color_code, indent=indent + 1, arr=arr, geometry=geometry)
+            child.load(parent_matrix=matrix, parent_color_code=parent_color_code, indent=indent + 1, arr=arr, geometry=geometry)
 
-        if self.file.is_part and self.top:
-            # https://blender.stackexchange.com/a/133021
-            c = {}
-            c["object"] = c["active_object"] = join_list[0]
-            c["selected_objects"] = c["selected_editable_objects"] = join_list
-            bpy.ops.object.join(c)
-            bpy.context.scene.collection.objects.link(c["active_object"])
+        if self.top:
+            new_faces = []
+            face_index = 0
+            for f in geometry.faces:
+                new_face = []
+                for _ in f:
+                    new_face.append(face_index)
+                    face_index += 1
+                new_faces.append(new_face)
+
+            points = [p.to_tuple() for p in geometry.verts]
+            faces = new_faces
+            mesh = bpy.data.meshes.new(self.filename)
+            mesh.from_pydata(points, [], faces)
+            mesh.validate()
+            mesh.update()
+            obj = bpy.data.objects.new(self.filename, mesh)
+            bpy.context.scene.collection.objects.link(obj)
+
+            for i, f in enumerate(obj.data.polygons):
+                face_info = geometry.face_info[i]
+                material = BlenderMaterials.get_material(face_info.color_code)
+                if obj.data.materials.get(material.name) is None:
+                    obj.data.materials.append(material)
+                f.material_index = obj.data.materials.find(material.name)
 
 
 class LDrawFile:
@@ -112,7 +117,7 @@ class LDrawFile:
             if params[0] == "0":
                 if params[1] == "!LDRAW_ORG":
                     part_type = params[2].lower()
-                    self.is_part = part_type in ['part', 'unofficial_part', 'unofficial_shortcut', 'shorcut']
+                    self.is_part = part_type in ['part', 'unofficial_part', 'unofficial_shortcut', 'shorcut', 'primitive', 'subpart']
                 elif params[1] == "BFC":
                     if params[2] == "NOCERTIFY":
                         bfc_certified = False
@@ -148,7 +153,7 @@ class LDrawFile:
                     self.child_nodes.append(ldraw_node)
                 elif params[0] == "2":
                     self.geometry.parse_edge(params)
-                elif params[0] == "3" or params[0] == "4":
+                elif params[0] in ["3", "4"]:
                     bfc_cull = bfc_certified and bfc_local_cull
                     self.geometry.parse_face(params, bfc_cull, bfc_winding_ccw)
 
