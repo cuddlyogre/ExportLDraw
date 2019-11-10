@@ -12,7 +12,7 @@ reuse_mesh_data = True
 
 def do_import(filepath, ldraw_path, resolution):
     filesystem.search_paths.clear()
-    LDrawNode.cache.clear()
+    LDrawNode.node_cache.clear()
     LDrawNode.mesh_cache.clear()
     LDrawColors.colors.clear()
     BlenderMaterials.material_list.clear()

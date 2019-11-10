@@ -4,7 +4,7 @@ from .face_info import FaceInfo
 
 class LDrawGeometry:
     def __init__(self):
-        self.verts = []
+        self.vertices = []
         self.edges = []
         self.edge_indices = []
         self.faces = []
@@ -17,31 +17,31 @@ class LDrawGeometry:
         if color_code != "24":
             return
 
-        verts = []
+        vertices = []
         for i in range(vert_count):
-            vert = mathutils.Vector((float(params[i * 3 + 2]), float(params[i * 3 + 3]), float(params[i * 3 + 4])))
-            verts.append(vert)
+            vertex = mathutils.Vector((float(params[i * 3 + 2]), float(params[i * 3 + 3]), float(params[i * 3 + 4])))
+            vertices.append(vertex)
 
-        self.edges.extend(verts)
+        self.edges.extend(vertices)
 
     def parse_face(self, params, bfc_cull, bfc_winding_ccw):
         vert_count = int(params[0])
         color_code = params[1]
 
-        verts = []
+        vertices = []
         for i in range(vert_count):
-            vert = mathutils.Vector((float(params[i * 3 + 2]), float(params[i * 3 + 3]), float(params[i * 3 + 4])))
-            verts.append(vert)
+            vertex = mathutils.Vector((float(params[i * 3 + 2]), float(params[i * 3 + 3]), float(params[i * 3 + 4])))
+            vertices.append(vertex)
 
         # https://wiki.ldraw.org/wiki/LDraw_Files_Requirements#Complex_quadrilaterals
         if vert_count == 4:
-            vA = (verts[1] - verts[0]).cross(verts[2] - verts[0])
-            vB = (verts[2] - verts[1]).cross(verts[3] - verts[1])
+            vA = (vertices[1] - vertices[0]).cross(vertices[2] - vertices[0])
+            vB = (vertices[2] - vertices[1]).cross(vertices[3] - vertices[1])
             if vA.dot(vB) < 0:
-                verts[2], verts[3] = verts[3], verts[2]
+                vertices[2], vertices[3] = vertices[3], vertices[2]
 
-        all_vert_count = len(self.verts)
+        all_vert_count = len(self.vertices)
         new_face = list(range(all_vert_count, all_vert_count + vert_count))
-        self.verts.extend(verts)
+        self.vertices.extend(vertices)
         self.faces.append(new_face)
         self.face_info.append(FaceInfo(color_code, bfc_cull, bfc_winding_ccw))

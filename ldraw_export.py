@@ -26,14 +26,21 @@ def unlink_from_scene(obj):
         bpy.context.scene.collection.objects.unlink(obj)
 
 
-def do_bpy_ops(obj):
-    link_to_scene(obj)
-    select_object(obj)
-    handle_ngons(obj)
-    apply_transforms(obj)
-    apply_modifiers(obj)
-    deselect_object(obj)
-    unlink_from_scene(obj)
+def fix_rotation(obj):
+    from math import radians
+    from mathutils import Matrix
+    obj.matrix_world = obj.matrix_world @ Matrix.Rotation(radians(90), 4, 'X')
+    bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
+
+
+def apply_transforms(obj):
+    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+
+
+def apply_modifiers(obj):
+    for m in obj.modifiers:
+        if m.show_viewport:
+            bpy.ops.object.modifier_apply(modifier=m.name)
 
 
 def handle_ngons(obj):
@@ -41,23 +48,21 @@ def handle_ngons(obj):
         return
 
     bpy.ops.object.mode_set(mode='EDIT')
+    bpy.ops.mesh.select_all(action='DESELECT')
     bpy.ops.mesh.select_face_by_sides(number=4, type='GREATER')
     bpy.ops.mesh.quads_convert_to_tris(quad_method='BEAUTY', ngon_method='BEAUTY')
     bpy.ops.object.mode_set(mode='OBJECT')
 
 
-def apply_transforms(obj):
-    from math import radians
-    from mathutils import Matrix
-    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
-    obj.matrix_world = obj.matrix_world @ Matrix.Rotation(radians(90), 4, 'X')
-    bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
-
-
-def apply_modifiers(obj):
-    for m in obj.modifiers:
-        if m.show_viewport:
-            bpy.ops.object.modifier_apply(modifier=m.name)
+def do_bpy_ops(obj):
+    link_to_scene(obj)
+    select_object(obj)
+    handle_ngons(obj)
+    fix_rotation(obj)
+    apply_transforms(obj)
+    apply_modifiers(obj)
+    deselect_object(obj)
+    unlink_from_scene(obj)
 
 
 # https://stackoverflow.com/a/2440786
