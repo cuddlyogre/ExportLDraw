@@ -276,10 +276,10 @@ class LDrawFile:
                     ldraw_node = LDrawNode(filename, color_code=color_code, matrix=matrix, bfc_cull=can_cull_child_node, bfc_inverted=bfc_invert_next)
 
                     self.child_nodes.append(ldraw_node)
-                elif params[0] == "2":
+                elif params[0] in ["2"]:
                     render_edges = False
                     self.geometry.parse_edge(params, as_face=render_edges)
-                elif params[0] in ["2", "3", "4"]:
+                elif params[0] in ["3", "4"]:
                     bfc_cull = bfc_certified and bfc_local_cull
                     self.geometry.parse_face(params, bfc_cull, bfc_winding_ccw)
 
