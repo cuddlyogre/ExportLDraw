@@ -9,6 +9,7 @@ from . import matrices
 from .ldraw_geometry import LDrawGeometry
 from .face_info import FaceInfo
 from .blender_materials import BlenderMaterials
+from .special_bricks import SpecialBricks
 
 
 class LDrawNode:
@@ -24,15 +25,19 @@ class LDrawNode:
         self.bfc_inverted = bfc_inverted
         self.top = False
 
-    def load(self, parent_matrix=matrices.identity, parent_color_code="16", arr=None, indent=0, geometry=None):
+    def load(self, parent_matrix=matrices.identity, parent_color_code="16", arr=None, indent=0, geometry=None, is_stud=False):
         if self.filename in LDrawNode.node_cache:
             self.file = LDrawNode.node_cache[self.filename]
         else:
             self.file = LDrawFile(self.filename)
             LDrawNode.node_cache[self.filename] = self.file
 
+        if self.file.is_stud:
+            is_stud = True
+
         # ['part', 'unofficial_part', 'unofficial_shortcut', 'shortcut', 'primitive', 'subpart']
-        if self.file.part_type in ['part', 'unofficial_part', 'shortcut', 'unofficial_shortcut'] and geometry is None:
+        is_part = self.file.part_type in ['part', 'unofficial_part', 'shortcut', 'unofficial_shortcut']
+        if is_part and geometry is None:
             geometry = LDrawGeometry()
             self.top = True
 
@@ -51,7 +56,7 @@ class LDrawNode:
 
             new_face_info = []
             for face_info in self.file.geometry.face_info:
-                copy = FaceInfo(color_code=parent_color_code, cull=face_info.cull, ccw=face_info.ccw)
+                copy = FaceInfo(color_code=parent_color_code, cull=face_info.cull, ccw=face_info.ccw, grain_slope_allowed=not self.file.is_stud)
                 if face_info.color_code != "16":
                     copy.color_code = face_info.color_code
                 new_face_info.append(copy)
@@ -59,36 +64,36 @@ class LDrawNode:
             geometry.face_info.extend(new_face_info)
 
         for child in self.file.child_nodes:
-            child.load(parent_matrix=matrix, parent_color_code=parent_color_code, indent=indent + 1, arr=arr, geometry=geometry)
+            child.load(parent_matrix=matrix, parent_color_code=parent_color_code, indent=indent + 1, arr=arr, geometry=geometry, is_stud=is_stud)
 
         if self.top:
-            if self.filename in LDrawNode.mesh_cache:
-                mesh_data = LDrawNode.mesh_cache[self.filename]
-            else:
-                vertices = [v.to_tuple() for v in geometry.vertices]
+            vertices = [v.to_tuple() for v in geometry.vertices]
+            edges = [v.to_tuple() for v in geometry.edges]
 
-                faces = []
-                face_index = 0
-                for f in geometry.faces:
-                    new_face = []
-                    for _ in f:
-                        new_face.append(face_index)
-                        face_index += 1
-                    faces.append(new_face)
+            faces = []
+            face_index = 0
+            for f in geometry.faces:
+                new_face = []
+                for _ in f:
+                    new_face.append(face_index)
+                    face_index += 1
+                faces.append(new_face)
 
-                mesh_data = {"vertices": vertices, "faces": faces}
-                LDrawNode.mesh_cache[self.filename] = mesh_data
-
-            mesh = bpy.data.meshes.new(self.filename)
-            mesh.from_pydata(mesh_data["vertices"], [], mesh_data["faces"])
+            mesh = bpy.data.meshes.new(self.file.name)
+            mesh.from_pydata(vertices, [], faces)
             mesh.validate()
             mesh.update()
 
-            obj = bpy.data.objects.new(self.filename, mesh)
+            obj = bpy.data.objects.new(self.file.name, mesh)
 
             for i, f in enumerate(obj.data.polygons):
                 face_info = geometry.face_info[i]
-                material = BlenderMaterials.get_material(face_info.color_code)
+
+                is_slope_material = False
+                if face_info.grain_slope_allowed:
+                    is_slope_material = SpecialBricks.is_slope_face(self.file.name, f)
+
+                material = BlenderMaterials.get_material(face_info.color_code, is_slope_material=is_slope_material)
                 if obj.data.materials.get(material.name) is None:
                     obj.data.materials.append(material)
                 f.material_index = obj.data.materials.find(material.name)
@@ -100,6 +105,8 @@ class LDrawNode:
 class LDrawFile:
     def __init__(self, filepath):
         self.filepath = filesystem.locate(filepath)
+        self.name = ""
+        self.is_stud = False
         self.child_nodes = []
         self.geometry = LDrawGeometry()
         self.part_type = None
@@ -112,6 +119,10 @@ class LDrawFile:
         bfc_local_cull = False
         bfc_invert_next = False
 
+        if self.filepath is None:
+            return
+
+        # print(self.filepath)
         lines = filesystem.read_file(self.filepath)
         for line in lines:
             params = line.strip().split()
@@ -141,6 +152,10 @@ class LDrawFile:
                         bfc_local_cull = False
                     elif "INVERTNEXT" in params:
                         bfc_invert_next = True
+                elif params[1].lower() == "name:":
+                    self.name = params[2]
+                    self.is_stud = self.name in ["stud.dat", "stud2.dat"]
+                    print(self.name)
             else:
                 if params[0] == "1":
                     color_code = params[1]
@@ -153,14 +168,26 @@ class LDrawFile:
                         bfc_invert_next = not bfc_invert_next
 
                     filename = " ".join(params[14:])
+
+                    render_logo = False
+                    if render_logo:
+                        if filename in ["stud.dat", "stud2.dat"]:
+                            parts = filename.split(".")
+                            name = parts[0]
+                            ext = parts[1]
+                            new_filename = f"{name}-logo.{ext}"
+                            if filesystem.locate(new_filename):
+                                filename = new_filename
+
                     can_cull_child_node = (bfc_certified or self.part_type in ['part', 'unofficial_part']) and bfc_local_cull and det != 0
 
                     ldraw_node = LDrawNode(filename, color_code=color_code, matrix=matrix, bfc_cull=can_cull_child_node, bfc_inverted=bfc_invert_next)
 
                     self.child_nodes.append(ldraw_node)
                 elif params[0] == "2":
-                    self.geometry.parse_edge(params)
-                elif params[0] in ["3", "4"]:
+                    render_edges = False
+                    self.geometry.parse_edge(params, as_face=render_edges)
+                elif params[0] in ["2", "3", "4"]:
                     bfc_cull = bfc_certified and bfc_local_cull
                     self.geometry.parse_face(params, bfc_cull, bfc_winding_ccw)
 

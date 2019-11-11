@@ -22,6 +22,7 @@ if "bpy" in locals():
     importlib.reload(ldraw_colors)
     importlib.reload(blender_materials)
     importlib.reload(matrices)
+    importlib.reload(special_bricks)
 else:
     from . import face_info
     from . import filesystem
@@ -32,6 +33,7 @@ else:
     from . import ldraw_colors
     from . import blender_materials
     from . import matrices
+    from . import special_bricks
 
 import bpy
 from bpy_extras.io_utils import ImportHelper, ExportHelper
