@@ -118,6 +118,47 @@ class LDrawNode:
             bm.clear()
             bm.free()
 
+            do_gaps = True
+            if do_gaps:
+                # Distance between gaps is controlled by Options.gapWidth
+                # Gap height is set smaller than gapWidth since empirically, stacked bricks tend
+                # to be pressed more tightly together
+                gap_width = 0.15
+                gap_height = gap_width
+                obj_scale = obj.scale
+                dimensions = obj.dimensions
+
+                # Checks whether the object isn't flat in a certain direction
+                # to avoid division by zero.
+                # Else, the scale factor is set proportional to the inverse of
+                # the dimension so that the mesh shrinks a fixed distance
+                # (determined by the gap_width and the scale of the object)
+                # in every direction, creating a uniform gap.
+                scale_fac = mathutils.Vector((1.0, 1.0, 1.0))
+                if dimensions.x != 0:
+                    scale_fac.x = 1 - gap_width * abs(obj_scale.x) / dimensions.x
+                if dimensions.y != 0:
+                    scale_fac.y = 1 - gap_height * abs(obj_scale.y) / dimensions.y
+                if dimensions.z != 0:
+                    scale_fac.z = 1 - gap_width * abs(obj_scale.z) / dimensions.z
+
+                # A safety net: Don't distort the part too much (e.g. -ve scale would not look good)
+                if scale_fac.x < 0.95:
+                    scale_fac.x = 0.95
+                if scale_fac.y < 0.95:
+                    scale_fac.y = 0.95
+                if scale_fac.z < 0.95:
+                    scale_fac.z = 0.95
+
+                # Scale all vertices in the mesh
+                gaps_scale_matrix = mathutils.Matrix((
+                    (scale_fac.x, 0.0, 0.0, 0.0),
+                    (0.0, scale_fac.y, 0.0, 0.0),
+                    (0.0, 0.0, scale_fac.z, 0.0),
+                    (0.0, 0.0, 0.0, 1.0)
+                ))
+                obj.data.transform(gaps_scale_matrix)
+
             obj.matrix_world = matrices.rotation @ self.matrix
             bpy.context.scene.collection.objects.link(obj)
 
