@@ -2,6 +2,7 @@ import os
 
 import bpy
 import mathutils
+import bmesh
 
 from . import filesystem
 from . import matrices
@@ -97,6 +98,25 @@ class LDrawNode:
                 if obj.data.materials.get(material.name) is None:
                     obj.data.materials.append(material)
                 f.material_index = obj.data.materials.find(material.name)
+
+            bm = bmesh.new()
+            bm.from_mesh(obj.data)
+            bm.faces.ensure_lookup_table()
+            bm.verts.ensure_lookup_table()
+            bm.edges.ensure_lookup_table()
+
+            remove_doubles = True
+            if remove_doubles:
+                weld_distance = 0.0005
+                bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=weld_distance)
+
+            recalculate_normals = True
+            if recalculate_normals:
+                bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+
+            bm.to_mesh(obj.data)
+            bm.clear()
+            bm.free()
 
             obj.matrix_world = matrices.rotation @ self.matrix
             bpy.context.scene.collection.objects.link(obj)
