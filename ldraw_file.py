@@ -3,6 +3,7 @@ import os
 import bpy
 import mathutils
 import bmesh
+import math
 
 from . import filesystem
 from . import matrices
@@ -159,8 +160,37 @@ class LDrawNode:
                 ))
                 obj.data.transform(gaps_scale_matrix)
 
-            obj.matrix_world = matrices.rotation @ self.matrix
+            # TODO: add obj to list and add at the end
             bpy.context.scene.collection.objects.link(obj)
+
+            obj.select_set(state=True)
+            bpy.context.view_layer.objects.active = obj
+            bpy.ops.object.shade_smooth()
+            obj.select_set(state=False)
+            bpy.context.view_layer.objects.active = None
+
+            # bpy.context.scene.collection.objects.unlink(obj)
+
+            # Add Bevel modifier to each instance
+            add_bevel_modifier = False
+            bevel_width = 0.5
+            import_scale = 1.0
+            if add_bevel_modifier:
+                bevel_modifier = obj.modifiers.new("Bevel", type='BEVEL')
+                bevel_modifier.width = bevel_width * import_scale
+                bevel_modifier.segments = 4
+                bevel_modifier.profile = 0.5
+                bevel_modifier.limit_method = 'WEIGHT'
+                bevel_modifier.use_clamp_overlap = True
+
+            edge_split = True
+            # Add edge split modifier to each instance
+            if edge_split:
+                edge_modifier = obj.modifiers.new("Edge Split", type='EDGE_SPLIT')
+                edge_modifier.use_edge_sharp = True
+                edge_modifier.split_angle = math.radians(30.0)
+
+            obj.matrix_world = matrices.rotation @ self.matrix
 
 
 class LDrawFile:
@@ -232,11 +262,12 @@ class LDrawFile:
 
                     render_logo = False
                     if render_logo:
+                        used_logo = "logo3"
                         if filename in ["stud.dat", "stud2.dat"]:
                             parts = filename.split(".")
                             name = parts[0]
                             ext = parts[1]
-                            new_filename = f"{name}-logo.{ext}"
+                            new_filename = f"{name}-{used_logo}.{ext}"
                             if filesystem.locate(new_filename):
                                 filename = new_filename
 
