@@ -12,6 +12,10 @@ reuse_mesh_data = True
 
 
 def do_import(filepath, ldraw_path, resolution):
+    bpy.context.scene.eevee.use_ssr = True
+    bpy.context.scene.eevee.use_ssr_refraction = True
+    bpy.context.scene.eevee.use_taa_reprojection = True
+    
     filesystem.search_paths.clear()
     LDrawNode.node_cache.clear()
     LDrawNode.mesh_cache.clear()

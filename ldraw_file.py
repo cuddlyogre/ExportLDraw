@@ -52,8 +52,10 @@ class LDrawNode:
             matrix = parent_matrix @ self.matrix
 
         if geometry is not None:
-            geometry.vertices.extend([matrix @ e for e in self.file.geometry.vertices])
             geometry.edges.extend([matrix @ e for e in self.file.geometry.edges])
+            geometry.edge_faces.extend(self.file.geometry.edge_faces)
+
+            geometry.vertices.extend([matrix @ e for e in self.file.geometry.vertices])
             geometry.faces.extend(self.file.geometry.faces)
 
             new_face_info = []
@@ -69,128 +71,203 @@ class LDrawNode:
             child.load(parent_matrix=matrix, parent_color_code=parent_color_code, indent=indent + 1, arr=arr, geometry=geometry, is_stud=is_stud)
 
         if self.top:
-            vertices = [v.to_tuple() for v in geometry.vertices]
-            edges = [v.to_tuple() for v in geometry.edges]
+            obj = self.create_object(geometry)
 
-            faces = []
-            face_index = 0
-            for f in geometry.faces:
-                new_face = []
-                for _ in f:
-                    new_face.append(face_index)
-                    face_index += 1
-                faces.append(new_face)
-
-            mesh = bpy.data.meshes.new(self.file.name)
-            mesh.from_pydata(vertices, [], faces)
-            mesh.validate()
-            mesh.update()
-
-            obj = bpy.data.objects.new(self.file.name, mesh)
-
-            for i, f in enumerate(obj.data.polygons):
-                face_info = geometry.face_info[i]
-
-                is_slope_material = False
-                if face_info.grain_slope_allowed:
-                    is_slope_material = SpecialBricks.is_slope_face(self.file.name, f)
-
-                material = BlenderMaterials.get_material(face_info.color_code, is_slope_material=is_slope_material)
-                if obj.data.materials.get(material.name) is None:
-                    obj.data.materials.append(material)
-                f.material_index = obj.data.materials.find(material.name)
-
-            bm = bmesh.new()
-            bm.from_mesh(obj.data)
-            bm.faces.ensure_lookup_table()
-            bm.verts.ensure_lookup_table()
-            bm.edges.ensure_lookup_table()
-
-            remove_doubles = True
-            if remove_doubles:
-                weld_distance = 0.0005
-                bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=weld_distance)
-
-            recalculate_normals = True
-            if recalculate_normals:
-                bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
-
-            bm.to_mesh(obj.data)
-            bm.clear()
-            bm.free()
-
-            do_gaps = True
-            if do_gaps:
-                # Distance between gaps is controlled by Options.gapWidth
-                # Gap height is set smaller than gapWidth since empirically, stacked bricks tend
-                # to be pressed more tightly together
-                gap_width = 0.15
-                gap_height = gap_width
-                obj_scale = obj.scale
-                dimensions = obj.dimensions
-
-                # Checks whether the object isn't flat in a certain direction
-                # to avoid division by zero.
-                # Else, the scale factor is set proportional to the inverse of
-                # the dimension so that the mesh shrinks a fixed distance
-                # (determined by the gap_width and the scale of the object)
-                # in every direction, creating a uniform gap.
-                scale_fac = mathutils.Vector((1.0, 1.0, 1.0))
-                if dimensions.x != 0:
-                    scale_fac.x = 1 - gap_width * abs(obj_scale.x) / dimensions.x
-                if dimensions.y != 0:
-                    scale_fac.y = 1 - gap_height * abs(obj_scale.y) / dimensions.y
-                if dimensions.z != 0:
-                    scale_fac.z = 1 - gap_width * abs(obj_scale.z) / dimensions.z
-
-                # A safety net: Don't distort the part too much (e.g. -ve scale would not look good)
-                if scale_fac.x < 0.95:
-                    scale_fac.x = 0.95
-                if scale_fac.y < 0.95:
-                    scale_fac.y = 0.95
-                if scale_fac.z < 0.95:
-                    scale_fac.z = 0.95
-
-                # Scale all vertices in the mesh
-                gaps_scale_matrix = mathutils.Matrix((
-                    (scale_fac.x, 0.0, 0.0, 0.0),
-                    (0.0, scale_fac.y, 0.0, 0.0),
-                    (0.0, 0.0, scale_fac.z, 0.0),
-                    (0.0, 0.0, 0.0, 1.0)
-                ))
-                obj.data.transform(gaps_scale_matrix)
-
-            # TODO: add obj to list and add at the end
-            bpy.context.scene.collection.objects.link(obj)
-
-            obj.select_set(state=True)
-            bpy.context.view_layer.objects.active = obj
-            bpy.ops.object.shade_smooth()
-            obj.select_set(state=False)
-            bpy.context.view_layer.objects.active = None
-
-            # bpy.context.scene.collection.objects.unlink(obj)
-
-            # Add Bevel modifier to each instance
-            add_bevel_modifier = False
-            bevel_width = 0.5
-            import_scale = 1.0
-            if add_bevel_modifier:
-                bevel_modifier = obj.modifiers.new("Bevel", type='BEVEL')
-                bevel_modifier.width = bevel_width * import_scale
-                bevel_modifier.segments = 4
-                bevel_modifier.profile = 0.5
-                bevel_modifier.limit_method = 'WEIGHT'
-                bevel_modifier.use_clamp_overlap = True
-
-            edge_split = True
-            # Add edge split modifier to each instance
-            if edge_split:
-                edge_modifier = obj.modifiers.new("Edge Split", type='EDGE_SPLIT')
-                edge_modifier.use_edge_sharp = True
-                edge_modifier.split_angle = math.radians(30.0)
+            self.apply_materials(obj, geometry)
+            self.bmesh_ops(obj)
+            # self.make_gaps(obj)
+            self.shade_smooth(obj)
+            self.bevel(obj)
+            self.edge_split(obj)
+            self.edge_gp(obj, geometry)
 
             obj.matrix_world = matrices.rotation @ self.matrix
+
+    def create_object(self, geometry):
+        vertices = [v.to_tuple() for v in geometry.vertices]
+        faces = []
+        face_index = 0
+        for f in geometry.faces:
+            new_face = []
+            for _ in f:
+                new_face.append(face_index)
+                face_index += 1
+            faces.append(new_face)
+        mesh = bpy.data.meshes.new(self.file.name)
+        mesh.from_pydata(vertices, [], faces)
+        mesh.validate()
+        mesh.update()
+        obj = bpy.data.objects.new(self.file.name, mesh)
+        return obj
+
+    def apply_materials(self, obj, geometry):
+        for i, f in enumerate(obj.data.polygons):
+            face_info = geometry.face_info[i]
+
+            is_slope_material = False
+            if face_info.grain_slope_allowed:
+                is_slope_material = SpecialBricks.is_slope_face(self.file.name, f)
+
+            material = BlenderMaterials.get_material(face_info.color_code, is_slope_material=is_slope_material)
+            if obj.data.materials.get(material.name) is None:
+                obj.data.materials.append(material)
+            f.material_index = obj.data.materials.find(material.name)
+
+    def bmesh_ops(self, obj):
+        bm = bmesh.new()
+        bm.from_mesh(obj.data)
+        bm.faces.ensure_lookup_table()
+        bm.verts.ensure_lookup_table()
+        bm.edges.ensure_lookup_table()
+        remove_doubles = True
+        if remove_doubles:
+            weld_distance = 0.0005
+            bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=weld_distance)
+        recalculate_normals = True
+        if recalculate_normals:
+            bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+        bm.to_mesh(obj.data)
+        bm.clear()
+        bm.free()
+
+    def make_gaps(self, obj):
+        do_gaps = True
+        if do_gaps:
+            # Distance between gaps is controlled by Options.gapWidth
+            # Gap height is set smaller than gapWidth since empirically, stacked bricks tend
+            # to be pressed more tightly together
+            gap_width = 0.15
+            gap_height = gap_width
+            obj_scale = obj.scale
+            dimensions = obj.dimensions
+
+            # Checks whether the object isn't flat in a certain direction
+            # to avoid division by zero.
+            # Else, the scale factor is set proportional to the inverse of
+            # the dimension so that the mesh shrinks a fixed distance
+            # (determined by the gap_width and the scale of the object)
+            # in every direction, creating a uniform gap.
+            scale_fac = mathutils.Vector((1.0, 1.0, 1.0))
+            if dimensions.x != 0:
+                scale_fac.x = 1 - gap_width * abs(obj_scale.x) / dimensions.x
+            if dimensions.y != 0:
+                scale_fac.y = 1 - gap_height * abs(obj_scale.y) / dimensions.y
+            if dimensions.z != 0:
+                scale_fac.z = 1 - gap_width * abs(obj_scale.z) / dimensions.z
+
+            # A safety net: Don't distort the part too much (e.g. -ve scale would not look good)
+            if scale_fac.x < 0.95:
+                scale_fac.x = 0.95
+            if scale_fac.y < 0.95:
+                scale_fac.y = 0.95
+            if scale_fac.z < 0.95:
+                scale_fac.z = 0.95
+
+            # Scale all vertices in the mesh
+            gaps_scale_matrix = mathutils.Matrix((
+                (scale_fac.x, 0.0, 0.0, 0.0),
+                (0.0, scale_fac.y, 0.0, 0.0),
+                (0.0, 0.0, scale_fac.z, 0.0),
+                (0.0, 0.0, 0.0, 1.0)
+            ))
+            obj.data.transform(gaps_scale_matrix)
+
+    def shade_smooth(self, obj):
+        # TODO: add obj to list and add at the end
+        collection = self.get_collection('Parts')
+        collection.objects.link(obj)
+        bpy.ops.object.select_all(action='DESELECT')
+        # bpy.ops.mesh.select_all(action='DESELECT')
+        obj.select_set(state=True)
+        bpy.context.view_layer.objects.active = obj
+        bpy.ops.object.shade_smooth()
+        obj.select_set(state=False)
+        bpy.context.view_layer.objects.active = None
+        # collection.objects.unlink(obj)
+
+    def bevel(self, obj):
+        # Add Bevel modifier to each instance
+        add_bevel_modifier = False
+        bevel_width = 0.5
+        import_scale = 1.0
+        if add_bevel_modifier:
+            bevel_modifier = obj.modifiers.new("Bevel", type='BEVEL')
+            bevel_modifier.width = bevel_width * import_scale
+            bevel_modifier.segments = 4
+            bevel_modifier.profile = 0.5
+            bevel_modifier.limit_method = 'WEIGHT'
+            bevel_modifier.use_clamp_overlap = True
+
+    def edge_split(self, obj):
+        edge_split = True
+        # Add edge split modifier to each instance
+        if edge_split:
+            edge_modifier = obj.modifiers.new("Edge Split", type='EDGE_SPLIT')
+            edge_modifier.use_edge_sharp = True
+            edge_modifier.split_angle = math.radians(30.0)
+
+    def edge_gp(self, obj, geometry):
+        vertices = [v.to_tuple() for v in geometry.edges]
+        faces = []
+        face_index = 0
+        for f in geometry.edge_faces:
+            new_face = []
+            for _ in f:
+                new_face.append(face_index)
+                face_index += 1
+            faces.append(new_face)
+
+        edge_mesh = bpy.data.meshes.new(f"{self.file.name}_e")
+        edge_mesh.from_pydata(vertices, [], faces)
+        edge_mesh.validate()
+        edge_mesh.update()
+
+        gpo = bpy.data.objects.new('gpo', bpy.data.grease_pencils.new('gp'))
+        gpd = gpo.data
+        gpd.pixel_factor = 5.0
+        gpd.stroke_depth_order = '3D'
+
+        material = self.get_material('black')
+        # https://developer.blender.org/T67102
+        bpy.data.materials.create_gpencil_data(material)
+        gpd.materials.append(material)
+        gpo.active_material = material
+
+        gpl = gpd.layers.new('gpl')
+        gpf = gpl.frames.new(1)
+        gpl.active_frame = gpf
+
+        for e in edge_mesh.edges:
+            gps = gpf.strokes.new()
+            gps.material_index = 0
+            gps.line_width = 10.0
+            for v in e.vertices:
+                i = len(gps.points)
+                gps.points.add(1)
+                gpp = gps.points[i]
+                gpp.co = edge_mesh.vertices[v].co
+
+        gpo.parent = obj
+
+        self.get_collection('Edges').objects.link(gpo)
+
+        bpy.data.meshes.remove(edge_mesh)
+
+    def get_collection(self, name):
+        if name not in bpy.context.scene.collection.children:
+            collection = bpy.data.collections.new(name)
+            # Add collection to scene
+            bpy.context.scene.collection.children.link(collection)
+        else:
+            collection = bpy.context.scene.collection.children[name]
+        return collection
+
+    def get_material(self, name):
+        if name not in bpy.data.materials:
+            material = bpy.data.materials.new(name)
+        else:
+            material = bpy.data.materials[name]
+        return material
 
 
 class LDrawFile:
@@ -260,9 +337,9 @@ class LDrawFile:
 
                     filename = " ".join(params[14:])
 
-                    render_logo = False
+                    render_logo = True
                     if render_logo:
-                        used_logo = "logo3"
+                        used_logo = "logo2"
                         if filename in ["stud.dat", "stud2.dat"]:
                             parts = filename.split(".")
                             name = parts[0]
@@ -277,8 +354,7 @@ class LDrawFile:
 
                     self.child_nodes.append(ldraw_node)
                 elif params[0] in ["2"]:
-                    render_edges = False
-                    self.geometry.parse_edge(params, as_face=render_edges)
+                    self.geometry.parse_edge(params)
                 elif params[0] in ["3", "4"]:
                     bfc_cull = bfc_certified and bfc_local_cull
                     self.geometry.parse_face(params, bfc_cull, bfc_winding_ccw)

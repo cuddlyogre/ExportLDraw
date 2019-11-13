@@ -4,31 +4,28 @@ from .face_info import FaceInfo
 
 class LDrawGeometry:
     def __init__(self):
-        self.vertices = []
         self.edges = []
-        self.edge_indices = []
+        self.edge_faces = []
+        self.edge_face_info = []
+
+        self.vertices = []
         self.faces = []
         self.face_info = []
 
-    def parse_edge(self, params, as_face=False):
+    def parse_edge(self, params):
         vert_count = int(params[0])
         color_code = params[1]
-
-        if color_code != "24":
-            return
 
         vertices = []
         for i in range(vert_count):
             vertex = mathutils.Vector((float(params[i * 3 + 2]), float(params[i * 3 + 3]), float(params[i * 3 + 4])))
             vertices.append(vertex)
 
+        all_vert_count = len(self.edges)
+        new_face = list(range(all_vert_count, all_vert_count + vert_count))
         self.edges.extend(vertices)
-
-        if as_face:
-            all_vert_count = len(self.vertices)
-            new_face = list(range(all_vert_count, all_vert_count + vert_count))
-            self.vertices.extend(vertices)
-            self.faces.append(new_face)
+        self.edge_faces.append(new_face)
+        self.edge_face_info.append(FaceInfo(color_code))
 
     def parse_face(self, params, bfc_cull, bfc_winding_ccw):
         vert_count = int(params[0])
