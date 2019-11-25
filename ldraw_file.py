@@ -74,8 +74,8 @@ class LDrawNode:
             obj = self.create_object(geometry)
 
             self.apply_materials(obj, geometry)
-            self.bmesh_ops(obj)
-            # self.make_gaps(obj)
+            self.bmesh_ops(obj.data)
+            self.make_gaps(obj)
             self.shade_smooth(obj)
             self.bevel(obj)
             self.edge_split(obj)
@@ -113,9 +113,10 @@ class LDrawNode:
                 obj.data.materials.append(material)
             f.material_index = obj.data.materials.find(material.name)
 
-    def bmesh_ops(self, obj):
+    @staticmethod
+    def bmesh_ops(mesh):
         bm = bmesh.new()
-        bm.from_mesh(obj.data)
+        bm.from_mesh(mesh)
         bm.faces.ensure_lookup_table()
         bm.verts.ensure_lookup_table()
         bm.edges.ensure_lookup_table()
@@ -126,12 +127,13 @@ class LDrawNode:
         recalculate_normals = True
         if recalculate_normals:
             bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
-        bm.to_mesh(obj.data)
+        bm.to_mesh(mesh)
         bm.clear()
         bm.free()
 
-    def make_gaps(self, obj):
-        do_gaps = True
+    @staticmethod
+    def make_gaps(obj):
+        do_gaps = False
         if do_gaps:
             # Distance between gaps is controlled by Options.gapWidth
             # Gap height is set smaller than gapWidth since empirically, stacked bricks tend
@@ -185,7 +187,8 @@ class LDrawNode:
         bpy.context.view_layer.objects.active = None
         # collection.objects.unlink(obj)
 
-    def bevel(self, obj):
+    @staticmethod
+    def bevel(obj):
         # Add Bevel modifier to each instance
         add_bevel_modifier = False
         bevel_width = 0.5
@@ -198,7 +201,8 @@ class LDrawNode:
             bevel_modifier.limit_method = 'WEIGHT'
             bevel_modifier.use_clamp_overlap = True
 
-    def edge_split(self, obj):
+    @staticmethod
+    def edge_split(obj):
         edge_split = True
         # Add edge split modifier to each instance
         if edge_split:
@@ -206,7 +210,7 @@ class LDrawNode:
             edge_modifier.use_edge_sharp = True
             edge_modifier.split_angle = math.radians(30.0)
 
-    def edge_gp(self, obj, geometry):
+    def create_edge_mesh(self, geometry, link=False):
         vertices = [v.to_tuple() for v in geometry.edges]
         faces = []
         face_index = 0
@@ -221,7 +225,17 @@ class LDrawNode:
         edge_mesh.from_pydata(vertices, [], faces)
         edge_mesh.validate()
         edge_mesh.update()
+        self.bmesh_ops(edge_mesh)
 
+        if link:
+            edge_obj = bpy.data.objects.new(f"{self.file.name}_e", edge_mesh)
+            edge_obj.matrix_world = matrices.rotation @ self.matrix
+            bpy.context.scene.collection.objects.link(edge_obj)
+
+        return edge_mesh
+
+    def edge_gp(self, obj, geometry):
+        edge_mesh = self.create_edge_mesh(geometry, link=True)
         gpo = bpy.data.objects.new('gpo', bpy.data.grease_pencils.new('gp'))
         gpd = gpo.data
         gpd.pixel_factor = 5.0
@@ -253,7 +267,8 @@ class LDrawNode:
 
         bpy.data.meshes.remove(edge_mesh)
 
-    def get_collection(self, name):
+    @staticmethod
+    def get_collection(name):
         if name not in bpy.context.scene.collection.children:
             collection = bpy.data.collections.new(name)
             # Add collection to scene
@@ -262,7 +277,8 @@ class LDrawNode:
             collection = bpy.context.scene.collection.children[name]
         return collection
 
-    def get_material(self, name):
+    @staticmethod
+    def get_material(name):
         if name not in bpy.data.materials:
             material = bpy.data.materials.new(name)
         else:

@@ -1,5 +1,7 @@
 import bpy
 
+from .ldraw_colors import LDrawColors
+
 triangulate = None
 recalculate_normals = None
 selection_only = None
@@ -66,7 +68,8 @@ def do_bpy_ops(obj):
 
 
 # https://stackoverflow.com/a/2440786
-def fix_round(number, places=4):
+# https://www.ldraw.org/article/512.html#precision
+def fix_round(number, places=3):
     x = round(number, places)
     value = ('%f' % x).rstrip('0').rstrip('.')
 
@@ -129,7 +132,7 @@ def export_polygons(obj, lines):
     mesh = obj.data.copy()
     new_obj.data = mesh
 
-    print(new_obj)
+    # print(new_obj)
     do_bpy_ops(new_obj)
 
     for p in mesh.polygons:
@@ -155,7 +158,7 @@ def export_polygons(obj, lines):
             for vv in mesh.vertices[v].co:
                 line.extend([fix_round(vv)])
 
-        lines.extend([" ".join(line)])
+        lines.append(line)
 
     # export edges
     for e in mesh.edges:
@@ -165,7 +168,7 @@ def export_polygons(obj, lines):
                 for vv in mesh.vertices[v].co:
                     line.extend([fix_round(vv)])
 
-            lines.extend([" ".join(line)])
+            lines.append(line)
 
     bpy.data.objects.remove(new_obj)
     bpy.data.meshes.remove(mesh)
@@ -175,7 +178,19 @@ def export_polygons(obj, lines):
 
 def write_file(lines, filepath):
     with open(filepath, 'w') as file:
-        file.write("\n".join(lines))
+        current_color_code = None
+        for line in lines:
+            if len(line) > 2:
+                new_color_code = int(line[1])
+                if new_color_code != current_color_code:
+                    current_color_code = new_color_code
+                    name = LDrawColors.colors[current_color_code]['name']
+                    file.write("\n")
+                    file.write(" ".join(["0 //", name]))
+                    file.write("\n")
+
+            file.write(" ".join(line))
+            file.write("\n")
 
 
 # objects in "Scene Collection > subfiles" will be output as line type 1
@@ -183,7 +198,10 @@ def write_file(lines, filepath):
 # objects in "Scene Collection > polygons" will be output as line type 3 or 4, depending on their vertex count
 # if ngons are triangulated, they will be line type 3, otherwise they won't be exported at all
 # conditional lines, line type 5, aren't handled
-def do_export(filepath):
+def do_export(filepath, ldraw_path):
+    LDrawColors.colors = {}  # required or else colors is seen as {}
+    LDrawColors.read_color_table(ldraw_path)
+
     all_objects = bpy.context.scene.objects
     selected = bpy.context.selected_objects
     active = bpy.context.view_layer.objects.active
@@ -202,13 +220,19 @@ def do_export(filepath):
     header_text_name = "header"
     if header_text_name in bpy.data.texts:
         for line in bpy.data.texts[header_text_name].lines:
-            lines.extend([line.body])
+            lines.append([line.body])
 
+    part_lines = []
     for obj in objects:
-        print(obj.name)
+        # print(obj.name)
         if export_subfiles(obj, lines):
             continue
-        export_polygons(obj, lines)
+        export_polygons(obj, part_lines)
+
+    # print(part_lines)
+
+    part_lines = sorted(part_lines, key=lambda pl: (int(pl[1]), int(pl[0])))
+    lines.extend(part_lines)
 
     write_file(lines, filepath)
 

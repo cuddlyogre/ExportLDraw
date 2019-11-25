@@ -91,10 +91,16 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
         options={'HIDDEN'},
     )
 
+    ldraw_path: bpy.props.StringProperty(
+        name="",
+        description="Full filepath to the LDraw Parts Library (download from http://www.ldraw.org)",
+        default="d:\\ldraw"
+    )
+
     selection_only: bpy.props.BoolProperty(
         name="Selection Only",
         description="Export selected objects only",
-        default=False
+        default=True
     )
     recalculate_normals: bpy.props.BoolProperty(
         name="Recalculate Normals",
@@ -104,7 +110,7 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
     triangulate: bpy.props.BoolProperty(
         name="Triangulate Mesh",
         description="Triangulate the entire mesh",
-        default=True
+        default=False
     )
     ngon_handling: bpy.props.EnumProperty(
         name="Ngon Handling",
@@ -122,7 +128,7 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
         ldraw_export.recalculate_normals = self.recalculate_normals
         ldraw_export.ngon_handling = self.ngon_handling
 
-        ldraw_export.do_export(bpy.path.abspath(self.filepath))
+        ldraw_export.do_export(bpy.path.abspath(self.filepath), self.ldraw_path)
 
         return {'FINISHED'}
 

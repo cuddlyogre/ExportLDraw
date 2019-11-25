@@ -1,6 +1,4 @@
-import os
 import bpy
-import pathlib
 
 from . import filesystem
 from .ldraw_file import LDrawNode
@@ -15,17 +13,19 @@ def do_import(filepath, ldraw_path, resolution):
     bpy.context.scene.eevee.use_ssr = True
     bpy.context.scene.eevee.use_ssr_refraction = True
     bpy.context.scene.eevee.use_taa_reprojection = True
-    
+
     filesystem.search_paths.clear()
+    filesystem.append_search_paths(ldraw_path, resolution)
+
+    LDrawColors.read_color_table(ldraw_path)
+
     LDrawNode.node_cache.clear()
     LDrawNode.mesh_cache.clear()
-    LDrawColors.colors.clear()
-    BlenderMaterials.material_list.clear()
-    SpecialBricks.slope_angles.clear()
 
-    filesystem.append_search_paths(ldraw_path, resolution)
-    LDrawColors.read_color_table(ldraw_path)
+    BlenderMaterials.material_list.clear()
     BlenderMaterials.create_blender_node_groups()
+
+    SpecialBricks.slope_angles.clear()
     SpecialBricks.build_slope_angles()
 
     root_node = LDrawNode(filepath)
