@@ -81,10 +81,18 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
     )
 
     def execute(self, context):
+        import time
+        start = time.monotonic()
+
         ldraw_file.LDrawFile.display_logo = self.display_logo
         ldraw_file.LDrawFile.chosen_logo = self.chosen_logo
 
         ldraw_import.do_import(bpy.path.abspath(self.filepath), self.ldraw_path, self.resolution)
+
+        end = time.monotonic()
+        elapsed = (end - start)
+        print(elapsed)
+
         return {'FINISHED'}
 
     def draw(self, context):
@@ -120,16 +128,19 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
         description="Export selected objects only",
         default=True
     )
+
     recalculate_normals: bpy.props.BoolProperty(
         name="Recalculate Normals",
         description="Recalculate Normals",
         default=True
     )
+
     triangulate: bpy.props.BoolProperty(
         name="Triangulate Mesh",
         description="Triangulate the entire mesh",
         default=False
     )
+
     ngon_handling: bpy.props.EnumProperty(
         name="Ngon Handling",
         description="What to do with ngons",
