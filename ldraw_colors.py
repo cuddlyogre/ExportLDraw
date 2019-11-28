@@ -34,11 +34,12 @@ class LDrawColors:
                     name = line_split[2]
                     code = int(line_split[4])
                     linear_rgba = LDrawColors.hex_digits_to_linear_rgba(line_split[6][1:], 1.0)
-
+                    # edge = LDrawColors.hex_digits_to_linear_rgba(line_split[8][1:], 1.0) # if color_code == 24, color_code = edge_color_code
                     color = {
                         "name": name,
                         "color": linear_rgba[0:3],
                         "alpha": linear_rgba[3],
+                        # "edge": linear_rgba[0:3],
                         "luminance": 0.0,
                         "material": "BASIC"
                     }

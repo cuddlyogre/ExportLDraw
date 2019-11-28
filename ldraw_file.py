@@ -242,9 +242,12 @@ class LDrawFile:
                     (x, y, z, a, b, c, d, e, f, g, h, i) = map(float, params[2:14])
                     matrix = mathutils.Matrix(((a, b, c, x), (d, e, f, y), (g, h, i, z), (0, 0, 0, 1)))
 
+                    # https://www.ldraw.org/article/415.html
                     det = matrix.determinant()
                     if det < 0:
                         bfc_invert_next = not bfc_invert_next
+
+                    can_cull_child_node = (bfc_certified or self.part_type in ['part', 'unofficial_part']) and bfc_local_cull and det != 0
 
                     filename = " ".join(params[14:])
 
@@ -256,8 +259,6 @@ class LDrawFile:
                             new_filename = f"{name}-{LDrawFile.chosen_logo}.{ext}"
                             if filesystem.locate(new_filename):
                                 filename = new_filename
-
-                    can_cull_child_node = (bfc_certified or self.part_type in ['part', 'unofficial_part']) and bfc_local_cull and det != 0
 
                     ldraw_node = LDrawNode(filename, color_code=color_code, matrix=matrix, bfc_cull=can_cull_child_node, bfc_inverted=bfc_invert_next)
 
