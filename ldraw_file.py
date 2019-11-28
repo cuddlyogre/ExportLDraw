@@ -40,7 +40,6 @@ class LDrawNode:
         # ['part', 'unofficial_part', 'unofficial_shortcut', 'shortcut', 'primitive', 'subpart']
         is_part = self.file.part_type in ['part', 'unofficial_part', 'shortcut', 'unofficial_shortcut']
         if is_part and geometry is None:
-            geometry = LDrawGeometry()
             self.top = True
 
         if self.color_code != "16":
@@ -287,6 +286,9 @@ class LDrawNode:
 
 
 class LDrawFile:
+    display_logo = False
+    chosen_logo = None
+
     def __init__(self, filepath):
         self.filepath = filesystem.locate(filepath)
         self.name = ""
@@ -353,14 +355,12 @@ class LDrawFile:
 
                     filename = " ".join(params[14:])
 
-                    render_logo = True
-                    if render_logo:
-                        used_logo = "logo2"
-                        if filename in ["stud.dat", "stud2.dat"]:
+                    if LDrawFile.display_logo:
+                        if filename in SpecialBricks.studs:
                             parts = filename.split(".")
                             name = parts[0]
                             ext = parts[1]
-                            new_filename = f"{name}-{used_logo}.{ext}"
+                            new_filename = f"{name}-{LDrawFile.chosen_logo}.{ext}"
                             if filesystem.locate(new_filename):
                                 filename = new_filename
 

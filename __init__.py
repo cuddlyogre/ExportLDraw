@@ -67,7 +67,23 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         )
     )
 
+    display_logo: bpy.props.BoolProperty(
+        name="Display logo",
+        description="Display logo on studs",
+        default=False
+    )
+
+    chosen_logo: bpy.props.EnumProperty(
+        name="Logo to use on studs",
+        description="Use this logo on studs",
+        default=special_bricks.SpecialBricks.logos[2],
+        items=((l, l, l) for l in special_bricks.SpecialBricks.logos[2:])
+    )
+
     def execute(self, context):
+        ldraw_file.LDrawFile.display_logo = self.display_logo
+        ldraw_file.LDrawFile.chosen_logo = self.chosen_logo
+
         ldraw_import.do_import(bpy.path.abspath(self.filepath), self.ldraw_path, self.resolution)
         return {'FINISHED'}
 
@@ -77,6 +93,8 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         box = layout.box()
         box.label(text="LDraw filepath:", icon='FILEBROWSER')
         box.prop(self, "ldraw_path")
+        box.prop(self, "display_logo")
+        box.prop(self, "chosen_logo")
         box.prop(self, "resolution", expand=True)
 
 
