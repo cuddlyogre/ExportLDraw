@@ -16,7 +16,8 @@ from .special_bricks import SpecialBricks
 
 class LDrawNode:
     node_cache = {}
-    mesh_cache = {}
+    face_info_cache = {}
+    geometry_cache = {}
 
     def __init__(self, filename, color_code="16", matrix=matrices.identity, bfc_cull=True, bfc_inverted=False):
         self.filename = filename
@@ -28,61 +29,82 @@ class LDrawNode:
         self.top = False
 
     def load(self, parent_matrix=matrices.identity, parent_color_code="16", arr=None, indent=0, geometry=None, is_stud=False):
-        if self.filename in LDrawNode.node_cache:
-            self.file = LDrawNode.node_cache[self.filename]
-        else:
-            self.file = LDrawFile(self.filename)
-            LDrawNode.node_cache[self.filename] = self.file
+        if self.filename not in LDrawNode.node_cache:
+            LDrawNode.node_cache[self.filename] = LDrawFile(self.filename)
+        self.file = LDrawNode.node_cache[self.filename]
 
         if self.file.is_stud:
             is_stud = True
+
+        if self.color_code != "16":
+            parent_color_code = self.color_code
+        key = f"{parent_color_code}_{self.file.name}"
 
         # ['part', 'unofficial_part', 'unofficial_shortcut', 'shortcut', 'primitive', 'subpart']
         is_part = self.file.part_type in ['part', 'unofficial_part', 'shortcut', 'unofficial_shortcut']
         if is_part and geometry is None:
             self.top = True
 
-        if self.color_code != "16":
-            parent_color_code = self.color_code
+            if key in LDrawNode.geometry_cache:
+                geometry = LDrawNode.geometry_cache[key]
+            else:
+                geometry = LDrawGeometry()
 
-        if self.top:
             matrix = parent_matrix
         else:
             matrix = parent_matrix @ self.matrix
 
-        if geometry is not None:
-            geometry.edges.extend([matrix @ e for e in self.file.geometry.edges])
-            geometry.edge_faces.extend(self.file.geometry.edge_faces)
+        if key not in LDrawNode.geometry_cache:
+            if geometry is not None:
+                geometry.edges.extend([matrix @ e for e in self.file.geometry.edges])
+                geometry.edge_faces.extend(self.file.geometry.edge_faces)
 
-            geometry.vertices.extend([matrix @ e for e in self.file.geometry.vertices])
-            geometry.faces.extend(self.file.geometry.faces)
+                geometry.vertices.extend([matrix @ e for e in self.file.geometry.vertices])
+                geometry.faces.extend(self.file.geometry.faces)
 
-            new_face_info = []
-            for face_info in self.file.geometry.face_info:
-                copy = FaceInfo(color_code=parent_color_code, cull=face_info.cull, ccw=face_info.ccw, grain_slope_allowed=not self.file.is_stud)
-                if face_info.color_code != "16":
-                    copy.color_code = face_info.color_code
-                new_face_info.append(copy)
+                if key not in LDrawNode.face_info_cache:
+                    new_face_info = []
+                    for face_info in self.file.geometry.face_info:
+                        copy = FaceInfo(color_code=parent_color_code, cull=face_info.cull, ccw=face_info.ccw, grain_slope_allowed=not self.file.is_stud)
+                        if face_info.color_code != "16":
+                            copy.color_code = face_info.color_code
+                        new_face_info.append(copy)
+                    LDrawNode.face_info_cache[key] = new_face_info
 
-            geometry.face_info.extend(new_face_info)
+                new_face_info = LDrawNode.face_info_cache[key]
+                geometry.face_info.extend(new_face_info)
 
-        for child in self.file.child_nodes:
-            child.load(parent_matrix=matrix, parent_color_code=parent_color_code, indent=indent + 1, arr=arr, geometry=geometry, is_stud=is_stud)
+            for child in self.file.child_nodes:
+                child.load(parent_matrix=matrix, parent_color_code=parent_color_code, indent=indent + 1, arr=arr, geometry=geometry, is_stud=is_stud)
 
         if self.top:
-            obj = self.create_object(geometry)
+            LDrawNode.geometry_cache[key] = geometry
 
-            self.apply_materials(obj, geometry)
-            self.bmesh_ops(obj.data)
-            self.make_gaps(obj)
-            self.shade_smooth(obj)
-            self.bevel(obj)
-            self.edge_split(obj)
-            self.edge_gp(obj, geometry)
+            if key not in bpy.data.meshes:
+                mesh = self.create_mesh(key, geometry)
+                self.apply_materials(mesh, geometry)
+                self.bmesh_ops(mesh)
+                self.make_gaps(mesh)
 
+            mesh = bpy.data.meshes[key]
+
+            obj = bpy.data.objects.new(key, mesh)
             obj.matrix_world = matrices.rotation @ self.matrix
 
-    def create_object(self, geometry):
+            self.edge_split(obj)
+            self.bpy_ops(obj)
+
+            # self.edge_gp(obj, geometry)
+            # self.make_gaps(obj)
+            # self.bevel(obj)
+
+            name = 'Parts'
+            if name not in bpy.data.collections:
+                bpy.data.collections.new(name)
+            collection = bpy.data.collections[name]
+            collection.objects.link(obj)
+
+    def create_mesh(self, key, geometry):
         vertices = [v.to_tuple() for v in geometry.vertices]
         faces = []
         face_index = 0
@@ -92,15 +114,14 @@ class LDrawNode:
                 new_face.append(face_index)
                 face_index += 1
             faces.append(new_face)
-        mesh = bpy.data.meshes.new(self.file.name)
+        mesh = bpy.data.meshes.new(key)
         mesh.from_pydata(vertices, [], faces)
         mesh.validate()
         mesh.update()
-        obj = bpy.data.objects.new(self.file.name, mesh)
-        return obj
+        return mesh
 
-    def apply_materials(self, obj, geometry):
-        for i, f in enumerate(obj.data.polygons):
+    def apply_materials(self, mesh, geometry):
+        for i, f in enumerate(mesh.polygons):
             face_info = geometry.face_info[i]
 
             is_slope_material = False
@@ -108,12 +129,11 @@ class LDrawNode:
                 is_slope_material = SpecialBricks.is_slope_face(self.file.name, f)
 
             material = BlenderMaterials.get_material(face_info.color_code, is_slope_material=is_slope_material)
-            if obj.data.materials.get(material.name) is None:
-                obj.data.materials.append(material)
-            f.material_index = obj.data.materials.find(material.name)
+            if material.name not in mesh.materials:
+                mesh.materials.append(material)
+            f.material_index = mesh.materials.find(material.name)
 
-    @staticmethod
-    def bmesh_ops(mesh):
+    def bmesh_ops(self, mesh):
         bm = bmesh.new()
         bm.from_mesh(mesh)
         bm.faces.ensure_lookup_table()
@@ -130,84 +150,48 @@ class LDrawNode:
         bm.clear()
         bm.free()
 
-    @staticmethod
-    def make_gaps(obj):
-        do_gaps = False
-        if do_gaps:
-            # Distance between gaps is controlled by Options.gapWidth
-            # Gap height is set smaller than gapWidth since empirically, stacked bricks tend
-            # to be pressed more tightly together
-            gap_width = 0.15
-            gap_height = gap_width
-            obj_scale = obj.scale
-            dimensions = obj.dimensions
+    def make_gaps(self, mesh):
+        scale = 0.997
+        gaps_scale_matrix = mathutils.Matrix((
+            (scale, 0.0, 0.0, 0.0),
+            (0.0, scale, 0.0, 0.0),
+            (0.0, 0.0, scale, 0.0),
+            (0.0, 0.0, 0.0, 1.0)
+        ))
+        mesh.transform(gaps_scale_matrix)
 
-            # Checks whether the object isn't flat in a certain direction
-            # to avoid division by zero.
-            # Else, the scale factor is set proportional to the inverse of
-            # the dimension so that the mesh shrinks a fixed distance
-            # (determined by the gap_width and the scale of the object)
-            # in every direction, creating a uniform gap.
-            scale_fac = mathutils.Vector((1.0, 1.0, 1.0))
-            if dimensions.x != 0:
-                scale_fac.x = 1 - gap_width * abs(obj_scale.x) / dimensions.x
-            if dimensions.y != 0:
-                scale_fac.y = 1 - gap_height * abs(obj_scale.y) / dimensions.y
-            if dimensions.z != 0:
-                scale_fac.z = 1 - gap_width * abs(obj_scale.z) / dimensions.z
-
-            # A safety net: Don't distort the part too much (e.g. -ve scale would not look good)
-            if scale_fac.x < 0.95:
-                scale_fac.x = 0.95
-            if scale_fac.y < 0.95:
-                scale_fac.y = 0.95
-            if scale_fac.z < 0.95:
-                scale_fac.z = 0.95
-
-            # Scale all vertices in the mesh
-            gaps_scale_matrix = mathutils.Matrix((
-                (scale_fac.x, 0.0, 0.0, 0.0),
-                (0.0, scale_fac.y, 0.0, 0.0),
-                (0.0, 0.0, scale_fac.z, 0.0),
-                (0.0, 0.0, 0.0, 1.0)
-            ))
-            obj.data.transform(gaps_scale_matrix)
-
-    def shade_smooth(self, obj):
+    def bpy_ops(self, obj):
         # TODO: add obj to list and add at the end
-        collection = self.get_collection('Parts')
+        collection = bpy.context.scene.collection
         collection.objects.link(obj)
+
         bpy.ops.object.select_all(action='DESELECT')
-        # bpy.ops.mesh.select_all(action='DESELECT')
         obj.select_set(state=True)
         bpy.context.view_layer.objects.active = obj
         bpy.ops.object.shade_smooth()
         obj.select_set(state=False)
         bpy.context.view_layer.objects.active = None
-        # collection.objects.unlink(obj)
 
+        collection.objects.unlink(obj)
+
+    # Add Bevel modifier to each instance
     @staticmethod
     def bevel(obj):
-        # Add Bevel modifier to each instance
-        add_bevel_modifier = False
         bevel_width = 0.5
         import_scale = 1.0
-        if add_bevel_modifier:
-            bevel_modifier = obj.modifiers.new("Bevel", type='BEVEL')
-            bevel_modifier.width = bevel_width * import_scale
-            bevel_modifier.segments = 4
-            bevel_modifier.profile = 0.5
-            bevel_modifier.limit_method = 'WEIGHT'
-            bevel_modifier.use_clamp_overlap = True
+        bevel_modifier = obj.modifiers.new("Bevel", type='BEVEL')
+        bevel_modifier.width = bevel_width * import_scale
+        bevel_modifier.segments = 4
+        bevel_modifier.profile = 0.5
+        bevel_modifier.limit_method = 'WEIGHT'
+        bevel_modifier.use_clamp_overlap = True
 
+    # Add edge split modifier to each instance
     @staticmethod
     def edge_split(obj):
-        edge_split = True
-        # Add edge split modifier to each instance
-        if edge_split:
-            edge_modifier = obj.modifiers.new("Edge Split", type='EDGE_SPLIT')
-            edge_modifier.use_edge_sharp = True
-            edge_modifier.split_angle = math.radians(30.0)
+        edge_modifier = obj.modifiers.new("Edge Split", type='EDGE_SPLIT')
+        edge_modifier.use_edge_sharp = True
+        edge_modifier.split_angle = math.radians(30.0)
 
     def create_edge_mesh(self, geometry, link=False):
         vertices = [v.to_tuple() for v in geometry.edges]
@@ -235,6 +219,8 @@ class LDrawNode:
 
     def edge_gp(self, obj, geometry):
         edge_mesh = self.create_edge_mesh(geometry, link=True)
+
+        return
         gpo = bpy.data.objects.new('gpo', bpy.data.grease_pencils.new('gp'))
         gpd = gpo.data
         gpd.pixel_factor = 5.0
@@ -270,7 +256,6 @@ class LDrawNode:
     def get_collection(name):
         if name not in bpy.context.scene.collection.children:
             collection = bpy.data.collections.new(name)
-            # Add collection to scene
             bpy.context.scene.collection.children.link(collection)
         else:
             collection = bpy.context.scene.collection.children[name]

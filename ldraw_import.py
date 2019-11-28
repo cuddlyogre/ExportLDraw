@@ -20,7 +20,8 @@ def do_import(filepath, ldraw_path, resolution):
     LDrawColors.read_color_table(ldraw_path)
 
     LDrawNode.node_cache.clear()
-    LDrawNode.mesh_cache.clear()
+    LDrawNode.face_info_cache.clear()
+    LDrawNode.geometry_cache.clear()
 
     BlenderMaterials.material_list.clear()
     BlenderMaterials.create_blender_node_groups()
@@ -30,6 +31,11 @@ def do_import(filepath, ldraw_path, resolution):
 
     root_node = LDrawNode(filepath)
     root_node.load()
+
+    name = 'Parts'
+    if name in bpy.data.collections:
+        collection = bpy.data.collections[name]
+        bpy.context.scene.collection.children.link(collection)
 
     # write_tree = True
     # if write_tree:
