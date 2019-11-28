@@ -411,7 +411,7 @@ class BlenderMaterials:
     def __node_voronoi(nodes, scale, x, y, coloring='CELLS'):
         node = nodes.new('ShaderNodeTexVoronoi')
         node.location = x, y
-        node.coloring = coloring
+        # node.coloring = coloring
         node.inputs['Scale'].default_value = scale
         return node
 
@@ -779,7 +779,7 @@ class BlenderMaterials:
 
             # link nodes together
             group.links.new(node_texture_coordinate.outputs['Object'], node_voronoi.inputs['Vector'])
-            group.links.new(node_voronoi.outputs['Fac'], node_bump.inputs['Height'])
+            group.links.new(node_voronoi.outputs['Distance'], node_bump.inputs['Height'])
             group.links.new(node_input.outputs['Strength'], node_bump.inputs['Strength'])
             group.links.new(node_input.outputs['Normal'], node_bump.inputs['Normal'])
             group.links.new(node_bump.outputs['Normal'], node_output.inputs['Normal'])
