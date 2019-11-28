@@ -57,13 +57,13 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
     )
 
     resolution: bpy.props.EnumProperty(
-        name="Resolution of part primitives",
+        name="Part resolution",
         description="Resolution of part primitives, ie. how much geometry they have",
         default="Standard",
         items=(
+            ("Low", "Low resolution primitives", "Import using low resolution primitives."),
             ("Standard", "Standard primitives", "Import using standard resolution primitives."),
             ("High", "High resolution primitives", "Import using high resolution primitives."),
-            ("Low", "Low resolution primitives", "Import using low resolution primitives.")
         )
     )
 
@@ -74,7 +74,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
     )
 
     chosen_logo: bpy.props.EnumProperty(
-        name="Logo to use on studs",
+        name="Chosen logo",
         description="Use this logo on studs",
         default=special_bricks.SpecialBricks.logos[2],
         items=((l, l, l) for l in special_bricks.SpecialBricks.logos[2:])
@@ -84,10 +84,11 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         import time
         start = time.monotonic()
 
+        filesystem.resolution = self.resolution
         ldraw_file.LDrawFile.display_logo = self.display_logo
         ldraw_file.LDrawFile.chosen_logo = self.chosen_logo
 
-        ldraw_import.do_import(bpy.path.abspath(self.filepath), self.ldraw_path, self.resolution)
+        ldraw_import.do_import(bpy.path.abspath(self.filepath), self.ldraw_path)
 
         end = time.monotonic()
         elapsed = (end - start)

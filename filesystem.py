@@ -1,6 +1,7 @@
 import os
 
 search_paths = []
+resolution = None
 
 
 def append_search_path(path):
@@ -8,7 +9,7 @@ def append_search_path(path):
         search_paths.append(path)
 
 
-def append_search_paths(base_path, resolution="Standard"):
+def append_search_paths(base_path):
     append_search_path(os.path.join(base_path, "models"))
 
     append_search_path(os.path.join(base_path, "unofficial", "parts"))

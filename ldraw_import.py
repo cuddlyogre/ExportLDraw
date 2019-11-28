@@ -9,24 +9,25 @@ from .special_bricks import SpecialBricks
 reuse_mesh_data = True
 
 
-def do_import(filepath, ldraw_path, resolution):
+def do_import(filepath, ldraw_path):
     bpy.context.scene.eevee.use_ssr = True
     bpy.context.scene.eevee.use_ssr_refraction = True
     bpy.context.scene.eevee.use_taa_reprojection = True
 
-    filesystem.search_paths.clear()
-    filesystem.append_search_paths(ldraw_path, resolution)
+    filesystem.search_paths = []
+    filesystem.append_search_paths(ldraw_path)
 
+    LDrawColors.colors = {}
     LDrawColors.read_color_table(ldraw_path)
 
-    LDrawNode.node_cache.clear()
-    LDrawNode.face_info_cache.clear()
-    LDrawNode.geometry_cache.clear()
+    LDrawNode.node_cache = {}
+    LDrawNode.face_info_cache = {}
+    LDrawNode.geometry_cache = {}
 
-    BlenderMaterials.material_list.clear()
+    BlenderMaterials.material_list = {}
     BlenderMaterials.create_blender_node_groups()
 
-    SpecialBricks.slope_angles.clear()
+    SpecialBricks.slope_angles = {}
     SpecialBricks.build_slope_angles()
 
     root_node = LDrawNode(filepath)
