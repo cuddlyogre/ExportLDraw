@@ -94,10 +94,6 @@ class LDrawNode:
             self.edge_split(obj)
             self.bpy_ops(obj)
 
-            # self.edge_gp(obj, geometry)
-            # self.make_gaps(obj)
-            # self.bevel(obj)
-
             name = 'Parts'
             if name not in bpy.data.collections:
                 bpy.data.collections.new(name)
@@ -174,100 +170,12 @@ class LDrawNode:
 
         collection.objects.unlink(obj)
 
-    # Add Bevel modifier to each instance
-    @staticmethod
-    def bevel(obj):
-        bevel_width = 0.5
-        import_scale = 1.0
-        bevel_modifier = obj.modifiers.new("Bevel", type='BEVEL')
-        bevel_modifier.width = bevel_width * import_scale
-        bevel_modifier.segments = 4
-        bevel_modifier.profile = 0.5
-        bevel_modifier.limit_method = 'WEIGHT'
-        bevel_modifier.use_clamp_overlap = True
-
     # Add edge split modifier to each instance
     @staticmethod
     def edge_split(obj):
         edge_modifier = obj.modifiers.new("Edge Split", type='EDGE_SPLIT')
         edge_modifier.use_edge_sharp = True
         edge_modifier.split_angle = math.radians(30.0)
-
-    def create_edge_mesh(self, geometry, link=False):
-        vertices = [v.to_tuple() for v in geometry.edges]
-        faces = []
-        face_index = 0
-        for f in geometry.edge_faces:
-            new_face = []
-            for _ in f:
-                new_face.append(face_index)
-                face_index += 1
-            faces.append(new_face)
-
-        edge_mesh = bpy.data.meshes.new(f"{self.file.name}_e")
-        edge_mesh.from_pydata(vertices, [], faces)
-        edge_mesh.validate()
-        edge_mesh.update()
-        self.bmesh_ops(edge_mesh)
-
-        if link:
-            edge_obj = bpy.data.objects.new(f"{self.file.name}_e", edge_mesh)
-            edge_obj.matrix_world = matrices.rotation @ self.matrix
-            bpy.context.scene.collection.objects.link(edge_obj)
-
-        return edge_mesh
-
-    def edge_gp(self, obj, geometry):
-        edge_mesh = self.create_edge_mesh(geometry, link=True)
-
-        return
-        gpo = bpy.data.objects.new('gpo', bpy.data.grease_pencils.new('gp'))
-        gpd = gpo.data
-        gpd.pixel_factor = 5.0
-        gpd.stroke_depth_order = '3D'
-
-        material = self.get_material('black')
-        # https://developer.blender.org/T67102
-        bpy.data.materials.create_gpencil_data(material)
-        gpd.materials.append(material)
-        gpo.active_material = material
-
-        gpl = gpd.layers.new('gpl')
-        gpf = gpl.frames.new(1)
-        gpl.active_frame = gpf
-
-        for e in edge_mesh.edges:
-            gps = gpf.strokes.new()
-            gps.material_index = 0
-            gps.line_width = 10.0
-            for v in e.vertices:
-                i = len(gps.points)
-                gps.points.add(1)
-                gpp = gps.points[i]
-                gpp.co = edge_mesh.vertices[v].co
-
-        gpo.parent = obj
-
-        self.get_collection('Edges').objects.link(gpo)
-
-        bpy.data.meshes.remove(edge_mesh)
-
-    @staticmethod
-    def get_collection(name):
-        if name not in bpy.context.scene.collection.children:
-            collection = bpy.data.collections.new(name)
-            bpy.context.scene.collection.children.link(collection)
-        else:
-            collection = bpy.context.scene.collection.children[name]
-        return collection
-
-    @staticmethod
-    def get_material(name):
-        if name not in bpy.data.materials:
-            material = bpy.data.materials.new(name)
-        else:
-            material = bpy.data.materials[name]
-        return material
 
 
 class LDrawFile:
