@@ -210,6 +210,9 @@ class LDrawNode:
         bpy.data.meshes.remove(mesh)
 
     def apply_materials(self, mesh, geometry):
+        # bpy.context.object.active_material.use_backface_culling = True
+        # bpy.context.object.active_material.use_screen_refraction = True
+
         for i, f in enumerate(mesh.polygons):
             face_info = geometry.face_info[i]
 
