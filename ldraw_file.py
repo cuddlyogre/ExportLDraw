@@ -100,6 +100,10 @@ class LDrawNode:
             collection = bpy.data.collections[name]
             collection.objects.link(obj)
 
+            color_data = BlenderMaterials.get_color_data(parent_color_code)
+            if color_data is not None:
+                print(color_data['edge_color'])
+
     def create_mesh(self, key, geometry):
         vertices = [v.to_tuple() for v in geometry.vertices]
         faces = []
