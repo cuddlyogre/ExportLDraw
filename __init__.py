@@ -77,7 +77,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         name="Chosen logo",
         description="Use this logo on studs",
         default=special_bricks.SpecialBricks.logos[2],
-        items=((l, l, l) for l in special_bricks.SpecialBricks.logos[2:])
+        items=((l, l, l) for l in special_bricks.SpecialBricks.logos)
     )
 
     make_gaps: bpy.props.BoolProperty(
