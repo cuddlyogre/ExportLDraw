@@ -34,12 +34,12 @@ class LDrawColors:
                     name = line_split[2]
                     code = int(line_split[4])
                     linear_rgba = LDrawColors.hex_digits_to_linear_rgba(line_split[6][1:], 1.0)
-                    # edge = LDrawColors.hex_digits_to_linear_rgba(line_split[8][1:], 1.0) # if color_code == 24, color_code = edge_color_code
+                    lineaer_rgba_edge = LDrawColors.hex_digits_to_linear_rgba(line_split[8][1:], 1.0)  # if color_code == 24, color_code = edge_color_code
                     color = {
                         "name": name,
                         "color": linear_rgba[0:3],
                         "alpha": linear_rgba[3],
-                        # "edge": linear_rgba[0:3],
+                        "edge_color": lineaer_rgba_edge[0:3],
                         "luminance": 0.0,
                         "material": "BASIC"
                     }
@@ -79,6 +79,7 @@ class LDrawColors:
         # Color Space Management: Convert these sRGB color values to Blender's linear RGB color space
         for key in LDrawColors.colors:
             LDrawColors.colors[key]["color"] = LDrawColors.srgb_to_linear_rgb(LDrawColors.colors[key]["color"])
+            LDrawColors.colors[key]["edge_color"] = LDrawColors.srgb_to_linear_rgb(LDrawColors.colors[key]["edge_color"])
 
     @staticmethod
     def __clamp(value):
