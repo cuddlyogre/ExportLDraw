@@ -40,7 +40,7 @@ class BlenderMaterials:
 
     @classmethod
     def get_material(cls, color_code, is_slope_material=False):
-        pure_color_name = color_code
+        pure_color_code = color_code
         if is_slope_material:
             color_code = color_code + "_s"
 
@@ -56,7 +56,7 @@ class BlenderMaterials:
             blender_name = "Material_{0}".format(color_code)
 
         # Create new material
-        col = cls.__get_color_data(pure_color_name)
+        col = cls.get_color_data(pure_color_code)
         material = cls.__create_node_based_material(blender_name, col, is_slope_material)
 
         # Add material to cache
@@ -575,7 +575,7 @@ class BlenderMaterials:
             return False
 
     @classmethod
-    def __get_color_data(cls, color_code):
+    def get_color_data(cls, color_code):
         """Get the color data associated with the color name"""
 
         # Try the LDraw defined colors
