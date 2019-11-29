@@ -33,10 +33,10 @@ def do_import(filepath, ldraw_path):
     root_node = LDrawNode(filepath)
     root_node.load()
 
-    name = 'Parts'
-    if name in bpy.data.collections:
-        collection = bpy.data.collections[name]
-        bpy.context.scene.collection.children.link(collection)
+    for name in ['Parts', 'Edges']:
+        if name in bpy.data.collections:
+            collection = bpy.data.collections[name]
+            bpy.context.scene.collection.children.link(collection)
 
     # write_tree = True
     # if write_tree:

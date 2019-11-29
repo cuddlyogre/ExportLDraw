@@ -18,6 +18,7 @@ class LDrawNode:
     node_cache = {}
     face_info_cache = {}
     geometry_cache = {}
+    parse_edges = False
     make_gaps = True
     gap_scale = 0.997
 
@@ -30,13 +31,17 @@ class LDrawNode:
         self.bfc_inverted = bfc_inverted
         self.top = False
 
-    def load(self, parent_matrix=matrices.identity, parent_color_code="16", arr=None, indent=0, geometry=None, is_stud=False):
+    def load(self, parent_matrix=matrices.identity, parent_color_code="16", arr=None, indent=0, geometry=None, is_stud=False, is_edge_logo=False):
         if self.filename not in LDrawNode.node_cache:
             LDrawNode.node_cache[self.filename] = LDrawFile(self.filename)
         self.file = LDrawNode.node_cache[self.filename]
 
-        if self.file.is_stud:
+        if self.file.name in ["stud.dat", "stud2.dat"]:
             is_stud = True
+
+        # ["logo.dat", "logo2.dat", "logo3.dat", "logo4.dat", "logo5.dat"]
+        if self.file.name in ["logo.dat", "logo2.dat"]:
+            is_edge_logo = True
 
         if self.color_code != "16":
             parent_color_code = self.color_code
@@ -58,8 +63,9 @@ class LDrawNode:
 
         if key not in LDrawNode.geometry_cache:
             if geometry is not None:
-                geometry.edges.extend([matrix @ e for e in self.file.geometry.edges])
-                geometry.edge_faces.extend(self.file.geometry.edge_faces)
+                if LDrawNode.parse_edges or (LDrawFile.display_logo and is_edge_logo):
+                    geometry.edges.extend([matrix @ e for e in self.file.geometry.edges])
+                    geometry.edge_faces.extend(self.file.geometry.edge_faces)
 
                 geometry.vertices.extend([matrix @ e for e in self.file.geometry.vertices])
                 geometry.faces.extend(self.file.geometry.faces)
@@ -67,7 +73,10 @@ class LDrawNode:
                 if key not in LDrawNode.face_info_cache:
                     new_face_info = []
                     for face_info in self.file.geometry.face_info:
-                        copy = FaceInfo(color_code=parent_color_code, cull=face_info.cull, ccw=face_info.ccw, grain_slope_allowed=not self.file.is_stud)
+                        copy = FaceInfo(color_code=parent_color_code,
+                                        cull=face_info.cull,
+                                        ccw=face_info.ccw,
+                                        grain_slope_allowed=not is_stud)
                         if face_info.color_code != "16":
                             copy.color_code = face_info.color_code
                         new_face_info.append(copy)
@@ -90,18 +99,22 @@ class LDrawNode:
                     self.do_gaps(mesh)
 
             mesh = bpy.data.meshes[key]
-
             obj = bpy.data.objects.new(key, mesh)
             obj.matrix_world = matrices.rotation @ self.matrix
-
             self.edge_split(obj)
             self.bpy_ops(obj)
+            self.get_collection('Parts').objects.link(obj)
 
-            name = 'Parts'
-            if name not in bpy.data.collections:
-                bpy.data.collections.new(name)
-            collection = bpy.data.collections[name]
-            collection.objects.link(obj)
+            edge_key = f"{self.file.name}"
+            if edge_key not in bpy.data.meshes:
+                self.create_edge_mesh(edge_key, geometry)
+
+            if edge_key in bpy.data.meshes:
+                edge_mesh = bpy.data.meshes[edge_key]
+                edge_obj = bpy.data.objects.new(edge_key, edge_mesh)
+                # edge_obj.matrix_world = matrices.rotation @ self.matrix
+                edge_obj.parent = obj
+                self.get_collection('Edges').objects.link(edge_obj)
 
             color_data = BlenderMaterials.get_color_data(parent_color_code)
             if color_data is not None:
@@ -111,17 +124,84 @@ class LDrawNode:
         vertices = [v.to_tuple() for v in geometry.vertices]
         faces = []
         face_index = 0
+
         for f in geometry.faces:
             new_face = []
             for _ in f:
                 new_face.append(face_index)
                 face_index += 1
             faces.append(new_face)
+
         mesh = bpy.data.meshes.new(key)
         mesh.from_pydata(vertices, [], faces)
         mesh.validate()
         mesh.update()
+
         return mesh
+
+    def create_edge_mesh(self, key, geometry):
+        if len(geometry.edges) < 1:
+            return None
+
+        vertices = [v.to_tuple() for v in geometry.edges]
+        faces = []
+        face_index = 0
+
+        for f in geometry.edge_faces:
+            new_face = []
+            for _ in f:
+                new_face.append(face_index)
+                face_index += 1
+            faces.append(new_face)
+
+        mesh = bpy.data.meshes.new(key)
+        mesh.from_pydata(vertices, [], faces)
+        mesh.validate()
+        mesh.update()
+
+        return mesh
+
+    @staticmethod
+    def get_collection(name):
+        if name not in bpy.data.collections:
+            bpy.data.collections.new(name)
+        return bpy.data.collections[name]
+
+    def edge_gp(self, mesh, parent_obj):
+        key = self.file.name
+        edge_obj = bpy.data.objects.new(f"e_{key}", mesh)
+        edge_obj.matrix_world = matrices.rotation @ self.matrix
+        bpy.context.scene.collection.objects.link(edge_obj)
+
+        gpd = bpy.data.grease_pencils.new('gp')
+        gpd.pixel_factor = 5.0
+        gpd.stroke_depth_order = '3D'
+
+        material = self.get_material('black')
+        # https://developer.blender.org/T67102
+        bpy.data.materials.create_gpencil_data(material)
+        gpd.materials.append(material)
+
+        gpl = gpd.layers.new('gpl')
+        gpf = gpl.frames.new(1)
+        gpl.active_frame = gpf
+
+        for e in mesh.edges:
+            gps = gpf.strokes.new()
+            gps.material_index = 0
+            gps.line_width = 10.0
+            for v in e.vertices:
+                i = len(gps.points)
+                gps.points.add(1)
+                gpp = gps.points[i]
+                gpp.co = mesh.vertices[v].co
+
+        gpo = bpy.data.objects.new('gpo', gpd)
+        gpo.active_material = material
+        gpo.parent = parent_obj
+        self.get_collection('Edges').objects.link(gpo)
+
+        bpy.data.meshes.remove(mesh)
 
     def apply_materials(self, mesh, geometry):
         for i, f in enumerate(mesh.polygons):
@@ -192,7 +272,6 @@ class LDrawFile:
     def __init__(self, filepath):
         self.filepath = filesystem.locate(filepath)
         self.name = ""
-        self.is_stud = False
         self.child_nodes = []
         self.geometry = LDrawGeometry()
         self.part_type = None
@@ -240,7 +319,6 @@ class LDrawFile:
                         bfc_invert_next = True
                 elif params[1].lower() == "name:":
                     self.name = params[2]
-                    self.is_stud = self.name in ["stud.dat", "stud2.dat"]
                     print(self.name)
             else:
                 if params[0] == "1":

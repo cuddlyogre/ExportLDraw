@@ -80,6 +80,12 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         items=((l, l, l) for l in special_bricks.SpecialBricks.logos)
     )
 
+    parse_edges: bpy.props.BoolProperty(
+        name="Import edges",
+        description="Import edge lines",
+        default=False
+    )
+
     make_gaps: bpy.props.BoolProperty(
         name="Make gaps",
         description="Puts small gaps between parts",
@@ -102,6 +108,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         filesystem.resolution = self.resolution
         ldraw_file.LDrawFile.display_logo = self.display_logo
         ldraw_file.LDrawFile.chosen_logo = self.chosen_logo
+        ldraw_file.LDrawNode.parse_edges = self.parse_edges
         ldraw_file.LDrawNode.make_gaps = self.make_gaps
         ldraw_file.LDrawNode.gap_scale = self.gap_scale
 
@@ -121,6 +128,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         box.prop(self, "ldraw_path")
         box.prop(self, "display_logo")
         box.prop(self, "chosen_logo")
+        box.prop(self, "parse_edges")
         box.prop(self, "make_gaps")
         box.prop(self, "gap_scale")
         box.prop(self, "resolution", expand=True)
