@@ -125,10 +125,10 @@ def read_file(filepath):
         file_encoding = check_encoding(filepath)
         try:
             with open(filepath, 'rt', encoding=file_encoding) as file:
-                lines = file.readlines()
+                lines = file.read().strip().splitlines()
         except:
             with open(filepath, 'rt', encoding="latin_1") as file:
-                lines = file.readlines()
+                lines = file.read().strip().splitlines()
     return lines
 
 
