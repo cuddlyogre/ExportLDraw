@@ -80,6 +80,21 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         items=((l, l, l) for l in special_bricks.SpecialBricks.logos[2:])
     )
 
+    make_gaps: bpy.props.BoolProperty(
+        name="Make gaps",
+        description="Puts small gaps between parts",
+        default=True
+    )
+
+    gap_scale: bpy.props.FloatProperty(
+        name="Gap scale",
+        description="Scale parts by this value to make gaps",
+        default=0.997,
+        precision=3,
+        min=0.0,
+        max=1.0,
+    )
+
     def execute(self, context):
         import time
         start = time.monotonic()
@@ -87,6 +102,8 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         filesystem.resolution = self.resolution
         ldraw_file.LDrawFile.display_logo = self.display_logo
         ldraw_file.LDrawFile.chosen_logo = self.chosen_logo
+        ldraw_file.LDrawNode.make_gaps = self.make_gaps
+        ldraw_file.LDrawNode.gap_scale = self.gap_scale
 
         ldraw_import.do_import(bpy.path.abspath(self.filepath), self.ldraw_path)
 
@@ -104,6 +121,8 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         box.prop(self, "ldraw_path")
         box.prop(self, "display_logo")
         box.prop(self, "chosen_logo")
+        box.prop(self, "make_gaps")
+        box.prop(self, "gap_scale")
         box.prop(self, "resolution", expand=True)
 
 

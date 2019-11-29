@@ -18,6 +18,8 @@ class LDrawNode:
     node_cache = {}
     face_info_cache = {}
     geometry_cache = {}
+    make_gaps = True
+    gap_scale = 0.997
 
     def __init__(self, filename, color_code="16", matrix=matrices.identity, bfc_cull=True, bfc_inverted=False):
         self.filename = filename
@@ -84,7 +86,8 @@ class LDrawNode:
                 mesh = self.create_mesh(key, geometry)
                 self.apply_materials(mesh, geometry)
                 self.bmesh_ops(mesh)
-                self.make_gaps(mesh)
+                if LDrawNode.make_gaps:
+                    self.do_gaps(mesh)
 
             mesh = bpy.data.meshes[key]
 
@@ -150,8 +153,8 @@ class LDrawNode:
         bm.clear()
         bm.free()
 
-    def make_gaps(self, mesh):
-        scale = 0.997
+    def do_gaps(self, mesh):
+        scale = LDrawNode.gap_scale
         gaps_scale_matrix = mathutils.Matrix((
             (scale, 0.0, 0.0, 0.0),
             (0.0, scale, 0.0, 0.0),
