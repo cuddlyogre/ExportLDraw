@@ -584,12 +584,16 @@ class BlenderMaterials:
             if color_int in LDrawColors.colors:
                 return LDrawColors.colors[color_int]
 
+        return None
+
         # Handle direct colors
         # Direct colors are documented here: http://www.hassings.dk/l3/l3p.html
-        linear_rgba = LDrawColors.hex_string_to_linear_rgba(color_code)
+        linear_rgba = cls.hex_string_to_linear_rgba(color_code)
+
         if linear_rgba is None:
             print("WARNING: Could not decode {0} to a color".format(color_code))
             return None
+
         return {
             "name": color_code,
             "color": linear_rgba[0:3],
