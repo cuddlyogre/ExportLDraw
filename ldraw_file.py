@@ -1,9 +1,6 @@
-import os
-
 import bpy
 import mathutils
 import bmesh
-import math
 
 from . import filesystem
 from . import matrices
@@ -15,7 +12,7 @@ from .special_bricks import SpecialBricks
 
 
 class LDrawNode:
-    node_cache = {}
+    file_cache = {}
     face_info_cache = {}
     geometry_cache = {}
     parse_edges = False
@@ -31,10 +28,12 @@ class LDrawNode:
         self.bfc_inverted = bfc_inverted
         self.top = False
 
-    def load(self, parent_matrix=matrices.identity, parent_color_code="16", arr=None, indent=0, geometry=None, is_stud=False, is_edge_logo=False):
-        if self.filename not in LDrawNode.node_cache:
-            LDrawNode.node_cache[self.filename] = LDrawFile(self.filename)
-        self.file = LDrawNode.node_cache[self.filename]
+    def load(self, parent_matrix=matrices.identity, parent_color_code="16", arr=None, geometry=None, is_stud=False, is_edge_logo=False):
+        if self.filename not in LDrawNode.file_cache:
+            ldraw_file = LDrawFile(self.filename)
+            ldraw_file.parse_file()
+            LDrawNode.file_cache[self.filename] = ldraw_file
+        self.file = LDrawNode.file_cache[self.filename]
 
         if self.file.name in ["stud.dat", "stud2.dat"]:
             is_stud = True
@@ -51,13 +50,13 @@ class LDrawNode:
         is_part = self.file.part_type in ['part', 'unofficial_part', 'shortcut', 'unofficial_shortcut']
         if is_part and geometry is None:
             self.top = True
-
+            print(key)
             if key in LDrawNode.geometry_cache:
                 geometry = LDrawNode.geometry_cache[key]
             else:
                 geometry = LDrawGeometry()
 
-            matrix = parent_matrix
+            matrix = matrices.identity
         else:
             matrix = parent_matrix @ self.matrix
 
@@ -88,7 +87,6 @@ class LDrawNode:
             for child in self.file.child_nodes:
                 child.load(parent_matrix=matrix,
                            parent_color_code=parent_color_code,
-                           indent=indent + 1,
                            arr=arr,
                            geometry=geometry,
                            is_stud=is_stud,
@@ -99,6 +97,7 @@ class LDrawNode:
 
             if key not in bpy.data.meshes:
                 mesh = self.create_mesh(key, geometry)
+                mesh.use_auto_smooth = True
                 self.apply_materials(mesh, geometry)
                 self.bmesh_ops(mesh)
                 if LDrawNode.make_gaps:
@@ -106,7 +105,7 @@ class LDrawNode:
 
             mesh = bpy.data.meshes[key]
             obj = bpy.data.objects.new(key, mesh)
-            obj.matrix_world = matrices.rotation @ self.matrix
+            obj.matrix_world = matrices.rotation @ parent_matrix @ self.matrix
             self.get_collection('Parts').objects.link(obj)
 
             edge_key = f"{self.file.name}"
@@ -122,7 +121,8 @@ class LDrawNode:
 
             color_data = BlenderMaterials.get_color_data(parent_color_code)
             if color_data is not None:
-                print(color_data['edge_color'])
+                pass
+                # print(color_data['edge_color'])
 
     def create_mesh(self, key, geometry):
         vertices = [v.to_tuple() for v in geometry.vertices]
@@ -265,13 +265,12 @@ class LDrawFile:
     chosen_logo = None
 
     def __init__(self, filepath):
-        self.filepath = filesystem.locate(filepath)
+        self.filepath = filepath
         self.name = ""
         self.child_nodes = []
         self.geometry = LDrawGeometry()
         self.part_type = None
-        filesystem.append_search_paths(os.path.dirname(filepath))
-        self.parse_file()
+        self.lines = None
 
     def parse_file(self):
         bfc_certified = False
@@ -279,12 +278,13 @@ class LDrawFile:
         bfc_local_cull = False
         bfc_invert_next = False
 
-        if self.filepath is None:
-            return
+        if self.lines is None:
+            filepath = filesystem.locate(self.filepath)
+            if filepath is None:
+                return
+            self.lines = filesystem.read_file(filepath)
 
-        # print(self.filepath)
-        lines = filesystem.read_file(self.filepath)
-        for line in lines:
+        for line in self.lines:
             params = line.strip().split()
 
             if len(params) == 0:
@@ -314,7 +314,7 @@ class LDrawFile:
                         bfc_invert_next = True
                 elif params[1].lower() == "name:":
                     self.name = params[2]
-                    print(self.name)
+                    # print(self.name)
             else:
                 if params[0] == "1":
                     color_code = params[1]
@@ -340,6 +340,7 @@ class LDrawFile:
                             if filesystem.locate(new_filename):
                                 filename = new_filename
 
+                    # print(f"{filename} children")
                     ldraw_node = LDrawNode(filename, color_code=color_code, matrix=matrix, bfc_cull=can_cull_child_node, bfc_inverted=bfc_invert_next)
 
                     self.child_nodes.append(ldraw_node)
