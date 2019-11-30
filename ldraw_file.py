@@ -107,8 +107,6 @@ class LDrawNode:
             mesh = bpy.data.meshes[key]
             obj = bpy.data.objects.new(key, mesh)
             obj.matrix_world = matrices.rotation @ self.matrix
-            self.edge_split(obj)
-            self.bpy_ops(obj)
             self.get_collection('Parts').objects.link(obj)
 
             edge_key = f"{self.file.name}"
@@ -209,6 +207,14 @@ class LDrawNode:
 
         bpy.data.meshes.remove(mesh)
 
+    # https://blender.stackexchange.com/a/91687
+    # for f in bm.faces:
+    #     f.smooth = True
+    # mesh = context.object.data
+    # for f in mesh.polygons:
+    #     f.use_smooth = True
+    # values = [True] * len(mesh.polygons)
+    # mesh.polygons.foreach_set("use_smooth", values)
     def apply_materials(self, mesh, geometry):
         # bpy.context.object.active_material.use_backface_culling = True
         # bpy.context.object.active_material.use_screen_refraction = True
@@ -224,6 +230,7 @@ class LDrawNode:
             if material.name not in mesh.materials:
                 mesh.materials.append(material)
             f.material_index = mesh.materials.find(material.name)
+            f.use_smooth = True
 
     def bmesh_ops(self, mesh):
         bm = bmesh.new()
@@ -251,27 +258,6 @@ class LDrawNode:
             (0.0, 0.0, 0.0, 1.0)
         ))
         mesh.transform(gaps_scale_matrix)
-
-    def bpy_ops(self, obj):
-        # TODO: add obj to list and add at the end
-        collection = bpy.context.scene.collection
-        collection.objects.link(obj)
-
-        bpy.ops.object.select_all(action='DESELECT')
-        obj.select_set(state=True)
-        bpy.context.view_layer.objects.active = obj
-        bpy.ops.object.shade_smooth()
-        obj.select_set(state=False)
-        bpy.context.view_layer.objects.active = None
-
-        collection.objects.unlink(obj)
-
-    # Add edge split modifier to each instance
-    @staticmethod
-    def edge_split(obj):
-        edge_modifier = obj.modifiers.new("Edge Split", type='EDGE_SPLIT')
-        edge_modifier.use_edge_sharp = True
-        edge_modifier.split_angle = math.radians(30.0)
 
 
 class LDrawFile:
