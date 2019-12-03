@@ -21,10 +21,8 @@ class LDrawGeometry:
             vertex = mathutils.Vector((float(params[i * 3 + 2]), float(params[i * 3 + 3]), float(params[i * 3 + 4])))
             vertices.append(vertex)
 
-        all_vert_count = len(self.edges)
-        new_face = list(range(all_vert_count, all_vert_count + vert_count))
         self.edge_vertices.extend(vertices)
-        self.edge_faces.append(new_face)
+        self.edge_faces.append(vert_count)
         self.edge_face_info.append(FaceInfo(color_code))
 
     def parse_face(self, params, bfc_cull, bfc_winding_ccw):
@@ -43,8 +41,6 @@ class LDrawGeometry:
             if vA.dot(vB) < 0:
                 vertices[2], vertices[3] = vertices[3], vertices[2]
 
-        all_vert_count = len(self.vertices)
-        new_face = list(range(all_vert_count, all_vert_count + vert_count))
         self.vertices.extend(vertices)
-        self.faces.append(new_face)
+        self.faces.append(vert_count)
         self.face_info.append(FaceInfo(color_code, bfc_cull, bfc_winding_ccw))

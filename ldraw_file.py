@@ -131,7 +131,7 @@ class LDrawNode:
 
         for f in geometry.faces:
             new_face = []
-            for _ in f:
+            for _ in range(f):
                 new_face.append(face_index)
                 face_index += 1
             faces.append(new_face)
@@ -153,7 +153,7 @@ class LDrawNode:
 
         for f in geometry.edge_faces:
             new_face = []
-            for _ in f:
+            for _ in range(f):
                 new_face.append(face_index)
                 face_index += 1
             faces.append(new_face)
