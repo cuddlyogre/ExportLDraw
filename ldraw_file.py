@@ -279,6 +279,7 @@ class LDrawFile:
         bfc_invert_next = False
 
         if self.lines is None:
+            # if missing, use a,b,c etc parts if available
             filepath = filesystem.locate(self.filepath)
             if filepath is None:
                 return
