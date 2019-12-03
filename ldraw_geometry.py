@@ -4,7 +4,7 @@ from .face_info import FaceInfo
 
 class LDrawGeometry:
     def __init__(self):
-        self.edges = []
+        self.edge_vertices = []
         self.edge_faces = []
         self.edge_face_info = []
 
@@ -23,7 +23,7 @@ class LDrawGeometry:
 
         all_vert_count = len(self.edges)
         new_face = list(range(all_vert_count, all_vert_count + vert_count))
-        self.edges.extend(vertices)
+        self.edge_vertices.extend(vertices)
         self.edge_faces.append(new_face)
         self.edge_face_info.append(FaceInfo(color_code))
 

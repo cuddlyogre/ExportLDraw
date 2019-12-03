@@ -63,7 +63,7 @@ class LDrawNode:
         if key not in LDrawNode.geometry_cache:
             if geometry is not None:
                 if LDrawNode.parse_edges or (LDrawFile.display_logo and is_edge_logo):
-                    geometry.edges.extend([matrix @ e for e in self.file.geometry.edges])
+                    geometry.edge_vertices.extend([matrix @ e for e in self.file.geometry.edge_vertices])
                     geometry.edge_faces.extend(self.file.geometry.edge_faces)
 
                 geometry.vertices.extend([matrix @ e for e in self.file.geometry.vertices])
@@ -144,10 +144,10 @@ class LDrawNode:
         return mesh
 
     def create_edge_mesh(self, key, geometry):
-        if len(geometry.edges) < 1:
+        if len(geometry.edge_vertices) < 1:
             return None
 
-        vertices = [v.to_tuple() for v in geometry.edges]
+        vertices = [v.to_tuple() for v in geometry.edge_vertices]
         faces = []
         face_index = 0
 
