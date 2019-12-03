@@ -408,10 +408,9 @@ class BlenderMaterials:
         return node
 
     @staticmethod
-    def __node_voronoi(nodes, scale, x, y, coloring='CELLS'):
+    def __node_voronoi(nodes, scale, x, y):
         node = nodes.new('ShaderNodeTexVoronoi')
         node.location = x, y
-        # node.coloring = coloring
         node.inputs['Scale'].default_value = scale
         return node
 
@@ -777,7 +776,7 @@ class BlenderMaterials:
             # create nodes
             node_texture_coordinate = cls.__node_tex_coord(group.nodes, -300, 240)
             import_scale = 1.0
-            node_voronoi = cls.__node_voronoi(group.nodes, 6.2 / import_scale, -100, 155, 'INTENSITY')
+            node_voronoi = cls.__node_voronoi(group.nodes, 6.2 / import_scale, -100, 155)
             node_bump = cls.__node_bump_shader(group.nodes, 0.3, 1.0, 90, 50)
             node_bump.invert = True
 
