@@ -585,22 +585,6 @@ class BlenderMaterials:
 
         return None
 
-        # Handle direct colors
-        # Direct colors are documented here: http://www.hassings.dk/l3/l3p.html
-        linear_rgba = cls.hex_string_to_linear_rgba(color_code)
-
-        if linear_rgba is None:
-            print("WARNING: Could not decode {0} to a color".format(color_code))
-            return None
-
-        return {
-            "name": color_code,
-            "color": linear_rgba[0:3],
-            "alpha": linear_rgba[3],
-            "luminance": 0.0,
-            "material": "BASIC"
-        }
-
     @staticmethod
     def __create_group(name, x1, y1, x2, y2, create_shader_output):
         group = bpy.data.node_groups.new(name, 'ShaderNodeTree')
