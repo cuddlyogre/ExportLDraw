@@ -124,12 +124,15 @@ class LDrawNode:
                 pass
                 # print(color_data['edge_color'])
 
-    def create_mesh(self, key, geometry):
-        vertices = [v.to_tuple() for v in geometry.vertices]
+    def create_edge_mesh(self, key, geometry):
+        if len(geometry.edge_vertices) < 1:
+            return None
+
+        vertices = [v.to_tuple() for v in geometry.edge_vertices]
         faces = []
         face_index = 0
 
-        for f in geometry.faces:
+        for f in geometry.edge_faces:
             new_face = []
             for _ in range(f):
                 new_face.append(face_index)
@@ -143,15 +146,12 @@ class LDrawNode:
 
         return mesh
 
-    def create_edge_mesh(self, key, geometry):
-        if len(geometry.edge_vertices) < 1:
-            return None
-
-        vertices = [v.to_tuple() for v in geometry.edge_vertices]
+    def create_mesh(self, key, geometry):
+        vertices = [v.to_tuple() for v in geometry.vertices]
         faces = []
         face_index = 0
 
-        for f in geometry.edge_faces:
+        for f in geometry.faces:
             new_face = []
             for _ in range(f):
                 new_face.append(face_index)
