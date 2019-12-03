@@ -46,8 +46,10 @@ class LDrawNode:
             parent_color_code = self.color_code
         key = f"{parent_color_code}_{self.file.name}"
 
-        # ['part', 'unofficial_part', 'unofficial_shortcut', 'shortcut', 'primitive', 'subpart']
-        is_part = self.file.part_type in ['part', 'unofficial_part', 'shortcut', 'unofficial_shortcut']
+        part_types = ['part', 'unofficial_part', 'unofficial_shortcut', 'shortcut', 'primitive', 'subpart']
+        part_types = ['part', 'unofficial_part']  # very fast, misses primitives in shortcut files, splits shortcuts into multiple parts - shortcut_geometry
+        part_types = ['part', 'unofficial_part', 'shortcut', 'unofficial_shortcut']
+        is_part = self.file.part_type in part_types
         if is_part and geometry is None:
             self.top = True
             print(key)
