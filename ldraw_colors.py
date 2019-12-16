@@ -8,13 +8,14 @@ class LDrawColors:
     """Parses and stores a table of color / material definitions. Converts color space."""
 
     colors = {}
+    use_alt_colors = False
 
     # if this is made a classmethod, BlenderMaterials sees colors as empty
     @staticmethod
-    def read_color_table(ldraw_path, use_alt=False):
+    def read_color_table(ldraw_path):
         """Reads the color values from the LDConfig.ldr file. For details of the
         Ldraw color system see: http://www.ldraw.org/article/547"""
-        if use_alt:
+        if LDrawColors.use_alt_colors:
             config_filename = "LDCfgalt.ldr"
         else:
             config_filename = "LDConfig.ldr"

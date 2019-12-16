@@ -56,6 +56,24 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         default="d:\\ldraw"
     )
 
+    use_alt_colors: bpy.props.BoolProperty(
+        name="Use alt colors",
+        description="Use alternate color settings",
+        default=False,
+    )
+
+    remove_doubles: bpy.props.BoolProperty(
+        name="Remove doubles",
+        description="Merge overlapping verices",
+        default=True,
+    )
+
+    shade_smooth: bpy.props.BoolProperty(
+        name="Shade smooth",
+        description="Shade smooth",
+        default=True,
+    )
+
     resolution: bpy.props.EnumProperty(
         name="Part resolution",
         description="Resolution of part primitives, ie. how much geometry they have",
@@ -86,6 +104,18 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         default=False
     )
 
+    debug_text: bpy.props.BoolProperty(
+        name="Debug text",
+        description="Show debug text. Lowers performance.",
+        default=False
+    )
+
+    no_studs: bpy.props.BoolProperty(
+        name="No studs",
+        description="Don't import studs'",
+        default=False
+    )
+
     make_gaps: bpy.props.BoolProperty(
         name="Make gaps",
         description="Puts small gaps between parts",
@@ -106,11 +136,16 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         start = time.monotonic()
 
         filesystem.resolution = self.resolution
+        ldraw_colors.LDrawColors.use_alt_colors = self.use_alt_colors
+        ldraw_file.LDrawNode.remove_doubles = self.remove_doubles
+        ldraw_file.LDrawNode.shade_smooth = self.shade_smooth
         ldraw_file.LDrawFile.display_logo = self.display_logo
         ldraw_file.LDrawFile.chosen_logo = self.chosen_logo
         ldraw_file.LDrawNode.parse_edges = self.parse_edges
         ldraw_file.LDrawNode.make_gaps = self.make_gaps
         ldraw_file.LDrawNode.gap_scale = self.gap_scale
+        ldraw_file.LDrawNode.debug_text = self.debug_text
+        ldraw_file.LDrawNode.no_studs = self.no_studs
 
         ldraw_import.do_import(bpy.path.abspath(self.filepath), self.ldraw_path)
 
@@ -120,18 +155,25 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
 
         return {'FINISHED'}
 
+    # https://docs.blender.org/api/current/bpy.types.UILayout.html
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
         box = layout.box()
         box.label(text="LDraw filepath:", icon='FILEBROWSER')
         box.prop(self, "ldraw_path")
+        box.prop(self, "use_alt_colors")
+        box.prop(self, "shade_smooth")
+        box.prop(self, "remove_doubles")
+        box.prop(self, "resolution", expand=True)
         box.prop(self, "display_logo")
         box.prop(self, "chosen_logo")
         box.prop(self, "parse_edges")
         box.prop(self, "make_gaps")
         box.prop(self, "gap_scale")
-        box.prop(self, "resolution", expand=True)
+        box.label(text="Extras")
+        box.prop(self, "debug_text")
+        box.prop(self, "no_studs")
 
 
 class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):

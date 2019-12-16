@@ -25,7 +25,7 @@ class LDrawGeometry:
         self.edge_faces.append(vert_count)
         self.edge_face_info.append(FaceInfo(color_code))
 
-    def parse_face(self, params, bfc_cull, bfc_winding_ccw):
+    def parse_face(self, params):
         vert_count = int(params[0])
         color_code = params[1]
 
@@ -43,4 +43,4 @@ class LDrawGeometry:
 
         self.vertices.extend(vertices)
         self.faces.append(vert_count)
-        self.face_info.append(FaceInfo(color_code, bfc_cull, bfc_winding_ccw))
+        self.face_info.append(FaceInfo(color_code))

@@ -8,7 +8,56 @@ from .ldraw_colors import LDrawColors
 from .blender_materials import BlenderMaterials
 from .special_bricks import SpecialBricks
 
-reuse_mesh_data = True
+
+def handle_mpd(filepath):
+    root_file = None
+
+    if os.path.exists(filepath):
+        file_encoding = filesystem.check_encoding(filepath)
+        with open(filepath, 'rt', encoding=file_encoding) as file:
+
+            lines = file.read().strip()
+            if not lines.lower().startswith("0 f"):
+                return filepath
+            lines = lines.splitlines()
+
+            current_file = None
+            for line in lines:
+                params = line.strip().split()
+
+                if len(params) == 0:
+                    continue
+
+                while len(params) < 9:
+                    params.append("")
+
+                if params[0] == "0" and params[1] == "FILE":
+                    parse_current_file(current_file)
+                    current_file = LDrawFile(line[7:])
+                    current_file.lines = []
+
+                    if root_file is None:
+                        root_file = line[7:]
+
+                elif params[0] == "0" and params[1] == "NOFILE":
+                    parse_current_file(current_file)
+                    current_file = None
+
+                else:
+                    if current_file is not None:
+                        current_file.lines.append(line)
+
+            parse_current_file(current_file)
+
+    if root_file is not None:
+        return root_file
+    return filepath
+
+
+def parse_current_file(current_file):
+    if current_file is not None:
+        current_file.parse_file()
+        LDrawNode.file_cache[current_file.filepath] = current_file
 
 
 def do_import(filepath, ldraw_path):
@@ -25,6 +74,7 @@ def do_import(filepath, ldraw_path):
     LDrawNode.file_cache = {}
     LDrawNode.face_info_cache = {}
     LDrawNode.geometry_cache = {}
+    LDrawNode.current_group = None
 
     BlenderMaterials.material_list = {}
     BlenderMaterials.create_blender_node_groups()
@@ -32,43 +82,7 @@ def do_import(filepath, ldraw_path):
     SpecialBricks.slope_angles = {}
     SpecialBricks.build_slope_angles()
 
-    root_file = None
-
-    if os.path.exists(filepath):
-        file_encoding = filesystem.check_encoding(filepath)
-        with open(filepath, 'rt', encoding=file_encoding) as file:
-            lines = file.read().strip().splitlines()
-            current_file = None
-            for line in lines:
-                params = line.strip().split()
-
-                if len(params) == 0:
-                    continue
-
-                if params[0] == "0" and params[1] == "FILE":
-                    while len(params) < 3:
-                        params.append("")
-
-                    if current_file is None:
-                        current_file = LDrawFile(params[2])
-                        current_file.lines = []
-
-                    if root_file is None:
-                        root_file = params[2]
-
-                elif params[0] == "0" and params[1] == "NOFILE":
-                    if current_file is not None:
-                        current_file.parse_file()
-                        LDrawNode.file_cache[current_file.filepath] = current_file
-                        current_file = None
-
-                else:
-                    if current_file is not None:
-                        current_file.lines.append(line)
-
-    if root_file is not None:
-        filepath = root_file
-
+    filepath = handle_mpd(filepath)
     root_node = LDrawNode(filepath)
     root_node.load()
 
@@ -77,3 +91,7 @@ def do_import(filepath, ldraw_path):
             if name not in bpy.context.scene.collection.children:
                 collection = bpy.data.collections[name]
                 bpy.context.scene.collection.children.link(collection)
+
+    if root_node.file.name in bpy.data.collections:
+        root_collection = bpy.data.collections[root_node.file.name]
+        bpy.context.scene.collection.children.link(root_collection)
