@@ -110,15 +110,15 @@ class SpecialBricks:
         # Create a regular dictionary of parts with ranges of angles to check
         margin = 5  # Allow 5 degrees either way to compensate for measuring inaccuracies
 
-        # for part in SpecialBricks.slopes:
-        #     SpecialBricks.slope_angles[part] = {(c - margin, c + margin) if type(c) is not tuple else (min(c) - margin, max(c) + margin) for c in SpecialBricks.slopes[part]}
-
         for part in SpecialBricks.slopes:
-            for c in SpecialBricks.slopes[part]:
-                if type(c) is not tuple:
-                    SpecialBricks.slope_angles[part] = {(c - margin, c + margin)}
-                else:
-                    SpecialBricks.slope_angles[part] = (min(c) - margin, max(c) + margin)
+            SpecialBricks.slope_angles[part] = {(c - margin, c + margin) if type(c) is not tuple else (min(c) - margin, max(c) + margin) for c in SpecialBricks.slopes[part]}
+
+        # for part in SpecialBricks.slopes:
+        #     for c in SpecialBricks.slopes[part]:
+        #         if type(c) is not tuple:
+        #             SpecialBricks.slope_angles[part] = {(c - margin, c + margin)}
+        #         else:
+        #             SpecialBricks.slope_angles[part] = (min(c) - margin, max(c) + margin)
 
     @staticmethod
     def is_slope_face(part_number, face):
