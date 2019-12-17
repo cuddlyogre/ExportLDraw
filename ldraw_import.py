@@ -15,7 +15,6 @@ def handle_mpd(filepath):
     if os.path.exists(filepath):
         file_encoding = filesystem.check_encoding(filepath)
         with open(filepath, 'rt', encoding=file_encoding) as file:
-
             lines = file.read().strip()
             if not lines.lower().startswith("0 f"):
                 return filepath
@@ -33,11 +32,11 @@ def handle_mpd(filepath):
 
                 if params[0] == "0" and params[1] == "FILE":
                     parse_current_file(current_file)
-                    current_file = LDrawFile(line[7:])
+                    current_file = LDrawFile(line[7:].lower())
                     current_file.lines = []
 
                     if root_file is None:
-                        root_file = line[7:]
+                        root_file = line[7:].lower()
 
                 elif params[0] == "0" and params[1] == "NOFILE":
                     parse_current_file(current_file)
@@ -56,8 +55,7 @@ def handle_mpd(filepath):
 
 def parse_current_file(current_file):
     if current_file is not None:
-        current_file.parse_file()
-        LDrawNode.file_cache[current_file.filepath] = current_file
+        LDrawNode.files[current_file.filepath] = current_file
 
 
 def do_import(filepath, ldraw_path):
@@ -71,6 +69,7 @@ def do_import(filepath, ldraw_path):
     LDrawColors.colors = {}
     LDrawColors.read_color_table(ldraw_path)
 
+    LDrawNode.files = {}
     LDrawNode.file_cache = {}
     LDrawNode.face_info_cache = {}
     LDrawNode.geometry_cache = {}
@@ -85,12 +84,6 @@ def do_import(filepath, ldraw_path):
     filepath = handle_mpd(filepath)
     root_node = LDrawNode(filepath)
     root_node.load()
-
-    for name in ['Parts', 'Edges']:
-        if name in bpy.data.collections:
-            if name not in bpy.context.scene.collection.children:
-                collection = bpy.data.collections[name]
-                bpy.context.scene.collection.children.link(collection)
 
     if root_node.file.name in bpy.data.collections:
         root_collection = bpy.data.collections[root_node.file.name]

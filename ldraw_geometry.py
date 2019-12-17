@@ -4,26 +4,20 @@ from .face_info import FaceInfo
 
 class LDrawGeometry:
     def __init__(self):
-        self.edge_vertices = []
-        self.edge_faces = []
-        self.edge_face_info = []
-
+        self.edges = []
         self.vertices = []
         self.faces = []
         self.face_info = []
 
     def parse_edge(self, params):
         vert_count = int(params[0])
-        color_code = params[1]
 
         vertices = []
         for i in range(vert_count):
             vertex = mathutils.Vector((float(params[i * 3 + 2]), float(params[i * 3 + 3]), float(params[i * 3 + 4])))
             vertices.append(vertex)
 
-        self.edge_vertices.extend(vertices)
-        self.edge_faces.append(vert_count)
-        self.edge_face_info.append(FaceInfo(color_code))
+        self.edges.append(vertices)
 
     def parse_face(self, params):
         vert_count = int(params[0])
@@ -44,3 +38,11 @@ class LDrawGeometry:
         self.vertices.extend(vertices)
         self.faces.append(vert_count)
         self.face_info.append(FaceInfo(color_code))
+
+    def copy(self):
+        new = LDrawGeometry()
+        new.edges = self.edges
+        new.vertices = self.vertices
+        new.faces = self.faces
+        new.face_info = self.face_info
+        return new

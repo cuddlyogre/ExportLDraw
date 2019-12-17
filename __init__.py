@@ -74,6 +74,12 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         default=True,
     )
 
+    bevel_edges: bpy.props.BoolProperty(
+        name="Bevel edges",
+        description="Add bevel to edges",
+        default=False,
+    )
+
     resolution: bpy.props.EnumProperty(
         name="Part resolution",
         description="Resolution of part primitives, ie. how much geometry they have",
@@ -96,12 +102,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         description="Use this logo on studs",
         default=special_bricks.SpecialBricks.logos[2],
         items=((l, l, l) for l in special_bricks.SpecialBricks.logos)
-    )
-
-    parse_edges: bpy.props.BoolProperty(
-        name="Import edges",
-        description="Import edge lines",
-        default=False
     )
 
     debug_text: bpy.props.BoolProperty(
@@ -141,11 +141,11 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         ldraw_file.LDrawNode.shade_smooth = self.shade_smooth
         ldraw_file.LDrawFile.display_logo = self.display_logo
         ldraw_file.LDrawFile.chosen_logo = self.chosen_logo
-        ldraw_file.LDrawNode.parse_edges = self.parse_edges
         ldraw_file.LDrawNode.make_gaps = self.make_gaps
         ldraw_file.LDrawNode.gap_scale = self.gap_scale
         ldraw_file.LDrawNode.debug_text = self.debug_text
         ldraw_file.LDrawNode.no_studs = self.no_studs
+        ldraw_file.LDrawNode.bevel_edges = self.bevel_edges
 
         ldraw_import.do_import(bpy.path.abspath(self.filepath), self.ldraw_path)
 
@@ -168,8 +168,8 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         box.prop(self, "resolution", expand=True)
         box.prop(self, "display_logo")
         box.prop(self, "chosen_logo")
-        box.prop(self, "parse_edges")
         box.prop(self, "make_gaps")
+        box.prop(self, "bevel_edges")
         box.prop(self, "gap_scale")
         box.label(text="Extras")
         box.prop(self, "debug_text")

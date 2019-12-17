@@ -12,10 +12,10 @@ from .special_bricks import SpecialBricks
 
 
 class LDrawNode:
+    files = {}
     file_cache = {}
     face_info_cache = {}
     geometry_cache = {}
-    parse_edges = False
     make_gaps = True
     gap_scale = 0.997
     remove_doubles = True
@@ -23,9 +23,10 @@ class LDrawNode:
     current_group = None
     debug_text = False
     no_studs = False
+    bevel_edges = False
 
     def __init__(self, filename, color_code="16", matrix=matrices.identity):
-        self.filename = filename
+        self.filename = filename.lower()
         self.file = None
         self.color_code = color_code
         self.matrix = matrix
@@ -33,7 +34,10 @@ class LDrawNode:
 
     def load(self, parent_matrix=matrices.identity, parent_color_code="16", arr=None, geometry=None, is_stud=False, is_edge_logo=False, current_group=None):
         if self.filename not in LDrawNode.file_cache:
-            ldraw_file = LDrawFile(self.filename)
+            if self.filename in LDrawNode.files:
+                ldraw_file = LDrawNode.files[self.filename]
+            else:
+                ldraw_file = LDrawFile(self.filename)
             ldraw_file.parse_file()
             LDrawNode.file_cache[self.filename] = ldraw_file
         self.file = LDrawNode.file_cache[self.filename]
@@ -48,19 +52,19 @@ class LDrawNode:
         if self.file.name in ["logo.dat", "logo2.dat"]:
             is_edge_logo = True
 
-        if self.color_code != "16":
-            parent_color_code = self.color_code
-        key = f"{parent_color_code}_{self.file.name}"
-
-        matrix = parent_matrix @ self.matrix
-
-        model_types = ['model', 'unofficial_model', None]
+        model_types = ['model', 'unofficial_model']
         is_model = self.file.part_type in model_types
 
         part_types = ['part', 'unofficial_part', 'unofficial_shortcut', 'shortcut', 'primitive', 'subpart']
         part_types = ['part', 'unofficial_part']  # very fast, misses primitives in shortcut files, splits shortcuts into multiple parts - shortcut_geometry
         part_types = ['part', 'unofficial_part', 'shortcut', 'unofficial_shortcut']
         is_part = self.file.part_type in part_types
+
+        if self.color_code != "16":
+            parent_color_code = self.color_code
+        key = f"{parent_color_code}_{self.file.name}"
+
+        matrix = parent_matrix @ self.matrix
 
         if is_model:
             if LDrawNode.debug_text:
@@ -87,11 +91,12 @@ class LDrawNode:
                 print("===========")
 
             self.top = True
-            # print(key)
-            if key in LDrawNode.geometry_cache:
-                geometry = LDrawNode.geometry_cache[key]
-            else:
+
+            if key not in LDrawNode.geometry_cache:
                 geometry = LDrawGeometry()
+            else:
+                geometry = LDrawNode.geometry_cache[key]
+
             matrix = matrices.identity
         else:
             if LDrawNode.debug_text:
@@ -102,15 +107,15 @@ class LDrawNode:
 
         if key not in LDrawNode.geometry_cache:
             if geometry is not None:
-                if LDrawNode.parse_edges or (LDrawFile.display_logo and is_edge_logo):
-                    geometry.edge_vertices.extend([matrix @ e for e in self.file.geometry.edge_vertices])
-                    geometry.edge_faces.extend(self.file.geometry.edge_faces)
+                if (not is_edge_logo) or (is_edge_logo and LDrawFile.display_logo):
+                    for edge in self.file.geometry.edges:
+                        geometry.edges.append((matrix @ edge[0], matrix @ edge[1]))
 
                 geometry.vertices.extend([matrix @ e for e in self.file.geometry.vertices])
                 geometry.faces.extend(self.file.geometry.faces)
 
+                new_face_info = []
                 if key not in LDrawNode.face_info_cache:
-                    new_face_info = []
                     for i, face_info in enumerate(self.file.geometry.face_info):
                         copy = FaceInfo(color_code=parent_color_code,
                                         grain_slope_allowed=not is_stud)
@@ -118,8 +123,8 @@ class LDrawNode:
                             copy.color_code = face_info.color_code
                         new_face_info.append(copy)
                     LDrawNode.face_info_cache[key] = new_face_info
-
                 new_face_info = LDrawNode.face_info_cache[key]
+
                 geometry.face_info.extend(new_face_info)
 
             for child in self.file.child_nodes:
@@ -132,63 +137,44 @@ class LDrawNode:
                            current_group=current_group)
 
         if self.top:
-            LDrawNode.geometry_cache[key] = geometry
+            # LDrawNode.geometry_cache[key] = geometry
 
             if key not in bpy.data.meshes:
                 mesh = self.create_mesh(key, geometry)  # combine with apply_materials
                 self.apply_materials(mesh, geometry)  # combine with create_mesh
 
                 mesh.use_auto_smooth = LDrawNode.shade_smooth
-                self.bmesh_ops(mesh)
+
+                self.bmesh_ops(mesh, geometry)
+
                 if LDrawNode.make_gaps:
                     self.do_gaps(mesh)
 
             mesh = bpy.data.meshes[key]
             obj = bpy.data.objects.new(key, mesh)
             obj.matrix_world = matrices.rotation @ parent_matrix @ self.matrix
-            # self.get_collection('Parts').objects.link(obj)
+
             if current_group is not None:
                 current_group.objects.link(obj)
             else:
                 bpy.context.scene.collection.objects.link(obj)
 
-            edge_key = f"{self.file.name}"
-            if edge_key not in bpy.data.meshes:
-                self.create_edge_mesh(edge_key, geometry)
+            if False:
+                edge_modifier = obj.modifiers.new("Edge Split", type='EDGE_SPLIT')
+                edge_modifier.use_edge_angle = False
+                edge_modifier.use_edge_sharp = True
 
-            if edge_key in bpy.data.meshes:
-                edge_mesh = bpy.data.meshes[edge_key]
-                edge_obj = bpy.data.objects.new(edge_key, edge_mesh)
-                # edge_obj.matrix_world = matrices.rotation @ self.matrix
-                edge_obj.parent = obj
-                self.get_collection('Edges').objects.link(edge_obj)
+            if LDrawNode.bevel_edges:
+                bevel_modifier = obj.modifiers.new("Bevel", type='BEVEL')
+                bevel_modifier.width = 0.10
+                bevel_modifier.segments = 4
+                bevel_modifier.profile = 0.5
+                bevel_modifier.limit_method = 'WEIGHT'
+                bevel_modifier.use_clamp_overlap = True
 
-            color_data = BlenderMaterials.get_color_data(parent_color_code)
-            if color_data is not None:
-                pass
-                # print(color_data['edge_color'])
-
-    def create_edge_mesh(self, key, geometry):
-        if len(geometry.edge_vertices) < 1:
-            return None
-
-        vertices = [v.to_tuple() for v in geometry.edge_vertices]
-        faces = []
-        face_index = 0
-
-        for f in geometry.edge_faces:
-            new_face = []
-            for _ in range(f):
-                new_face.append(face_index)
-                face_index += 1
-            faces.append(new_face)
-
-        mesh = bpy.data.meshes.new(key)
-        mesh.from_pydata(vertices, [], faces)
-        mesh.validate()
-        mesh.update()
-
-        return mesh
+            # for m in obj.modifiers:
+            #     if m.type == 'EDGE_SPLIT':
+            #         obj.modifiers.remove(m)
 
     def create_mesh(self, key, geometry):
         vertices = [v.to_tuple() for v in geometry.vertices]
@@ -209,47 +195,74 @@ class LDrawNode:
 
         return mesh
 
+    def bmesh_ops(self, mesh, geometry):
+        if LDrawNode.bevel_edges:
+            mesh.use_customdata_edge_bevel = True
+
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+
+        bm.faces.ensure_lookup_table()
+        bm.verts.ensure_lookup_table()
+        bm.edges.ensure_lookup_table()
+
+        weld_distance = 0.10
+        if LDrawNode.remove_doubles:
+            bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=weld_distance)
+
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+
+        # Create kd tree for fast "find nearest points" calculation
+        kd = mathutils.kdtree.KDTree(len(bm.verts))
+        for i, v in enumerate(bm.verts):
+            kd.insert(v.co, i)
+        kd.balance()
+        # Create edgeIndices dictionary, which is the list of edges as pairs of indicies into our bm.verts array
+        edge_indices = {}
+        for ind, edge in enumerate(geometry.edges):
+            # print(edge)
+            # Find index of nearest points in bm.verts to geomEdge[0] and geomEdge[1]
+            edges0 = [index for (co, index, dist) in kd.find_range(edge[0], weld_distance)]
+            edges1 = [index for (co, index, dist) in kd.find_range(edge[1], weld_distance)]
+
+            for e0 in edges0:
+                for e1 in edges1:
+                    edge_indices[(e0, e1)] = True
+                    edge_indices[(e1, e0)] = True
+
+        # Find layer for bevel weights
+        if 'BevelWeight' in bm.edges.layers.bevel_weight:
+            bevel_weight_layer = bm.edges.layers.bevel_weight['BevelWeight']
+        else:
+            bevel_weight_layer = None
+
+        # Find the appropriate mesh edges and make them sharp (i.e. not smooth)
+        for edge in bm.edges:
+            v0 = edge.verts[0].index
+            v1 = edge.verts[1].index
+            if (v0, v1) in edge_indices:
+                # Make edge sharp
+                edge.smooth = False
+
+                # Add bevel weight
+                if bevel_weight_layer is not None:
+                    bevel_wight = 1.0
+                    edge[bevel_weight_layer] = bevel_wight
+
+        bm.faces.ensure_lookup_table()
+        bm.verts.ensure_lookup_table()
+        bm.edges.ensure_lookup_table()
+
+        bm.to_mesh(mesh)
+
+        bm.clear()
+        bm.free()
+
     @staticmethod
     def get_collection(name):
         if name not in bpy.data.collections:
             bpy.data.collections.new(name)
         return bpy.data.collections[name]
-
-    def edge_gp(self, mesh, parent_obj):
-        key = self.file.name
-        edge_obj = bpy.data.objects.new(f"e_{key}", mesh)
-        edge_obj.matrix_world = matrices.rotation @ self.matrix
-        bpy.context.scene.collection.objects.link(edge_obj)
-
-        gpd = bpy.data.grease_pencils.new('gp')
-        gpd.pixel_factor = 5.0
-        gpd.stroke_depth_order = '3D'
-
-        material = self.get_material('black')
-        # https://developer.blender.org/T67102
-        bpy.data.materials.create_gpencil_data(material)
-        gpd.materials.append(material)
-
-        gpl = gpd.layers.new('gpl')
-        gpf = gpl.frames.new(1)
-        gpl.active_frame = gpf
-
-        for e in mesh.edges:
-            gps = gpf.strokes.new()
-            gps.material_index = 0
-            gps.line_width = 10.0
-            for v in e.vertices:
-                i = len(gps.points)
-                gps.points.add(1)
-                gpp = gps.points[i]
-                gpp.co = mesh.vertices[v].co
-
-        gpo = bpy.data.objects.new('gpo', gpd)
-        gpo.active_material = material
-        gpo.parent = parent_obj
-        self.get_collection('Edges').objects.link(gpo)
-
-        bpy.data.meshes.remove(mesh)
 
     # https://blender.stackexchange.com/a/91687
     # for f in bm.faces:
@@ -276,20 +289,6 @@ class LDrawNode:
                 mesh.materials.append(material)
             f.material_index = mesh.materials.find(material.name)
             f.use_smooth = LDrawNode.shade_smooth
-
-    def bmesh_ops(self, mesh):
-        bm = bmesh.new()
-        bm.from_mesh(mesh)
-        bm.faces.ensure_lookup_table()
-        bm.verts.ensure_lookup_table()
-        bm.edges.ensure_lookup_table()
-        if LDrawNode.remove_doubles:
-            weld_distance = 0.10
-            bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=weld_distance)
-        bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
-        bm.to_mesh(mesh)
-        bm.clear()
-        bm.free()
 
     def do_gaps(self, mesh):
         scale = LDrawNode.gap_scale
@@ -335,7 +334,7 @@ class LDrawFile:
                 if params[1] == "!LDRAW_ORG":
                     self.part_type = params[2].lower()
                 elif params[1].lower() == "name:":
-                    self.name = line[8:]
+                    self.name = line[7:].lower().strip()
                     # print(self.name)
             else:
                 if params[0] == "1":
