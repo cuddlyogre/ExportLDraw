@@ -52,7 +52,7 @@ class LDrawNode:
         if self.file.name in ["logo.dat", "logo2.dat"]:
             is_edge_logo = True
 
-        model_types = ['model', 'unofficial_model']
+        model_types = ['model', 'unofficial_model', None]
         is_model = self.file.part_type in model_types
 
         part_types = ['part', 'unofficial_part', 'unofficial_shortcut', 'shortcut', 'primitive', 'subpart']
@@ -73,9 +73,9 @@ class LDrawNode:
                 print(self.file.name)
                 print("===========")
 
-            if self.file.name not in bpy.data.collections:
-                bpy.data.collections.new(self.file.name)
-            current_group = bpy.data.collections[self.file.name]
+            # if self.file.name not in bpy.data.collections:
+            # bpy.data.collections.new(self.file.name)
+            current_group = bpy.data.collections.new(self.file.name)
 
             if LDrawNode.current_group is not None:
                 if current_group.name not in LDrawNode.current_group.children:
