@@ -1,3 +1,5 @@
+import os
+
 import bpy
 import mathutils
 import bmesh
@@ -13,9 +15,10 @@ from .special_bricks import SpecialBricks
 
 class LDrawNode:
     files = {}
+    vertex_cache = {}
+    edge_cache = {}
     file_cache = {}
     face_info_cache = {}
-    geometry_cache = {}
     make_gaps = True
     gap_scale = 0.997
     remove_doubles = True
@@ -32,7 +35,7 @@ class LDrawNode:
         self.matrix = matrix
         self.top = False
 
-    def load(self, parent_matrix=matrices.identity, parent_color_code="16", arr=None, geometry=None, is_stud=False, is_edge_logo=False, current_group=None):
+    def load(self, parent_matrix=matrices.identity, parent_color_code="16", geometry=None, is_stud=False, is_edge_logo=False, current_group=None):
         if self.filename not in LDrawNode.file_cache:
             if self.filename in LDrawNode.files:
                 ldraw_file = LDrawNode.files[self.filename]
@@ -41,6 +44,10 @@ class LDrawNode:
             ldraw_file.parse_file()
             LDrawNode.file_cache[self.filename] = ldraw_file
         self.file = LDrawNode.file_cache[self.filename]
+
+        if self.color_code != "16":
+            parent_color_code = self.color_code
+        key = f"{parent_color_code}_{self.file.name}"
 
         if self.file.name in ["stud.dat", "stud2.dat"]:
             is_stud = True
@@ -60,10 +67,6 @@ class LDrawNode:
         part_types = ['part', 'unofficial_part', 'shortcut', 'unofficial_shortcut']
         is_part = self.file.part_type in part_types
 
-        if self.color_code != "16":
-            parent_color_code = self.color_code
-        key = f"{parent_color_code}_{self.file.name}"
-
         matrix = parent_matrix @ self.matrix
 
         if is_model:
@@ -73,31 +76,24 @@ class LDrawNode:
                 print(self.file.name)
                 print("===========")
 
-            # if self.file.name not in bpy.data.collections:
-            # bpy.data.collections.new(self.file.name)
             current_group = bpy.data.collections.new(self.file.name)
-
             if LDrawNode.current_group is not None:
                 if current_group.name not in LDrawNode.current_group.children:
                     LDrawNode.current_group.children.link(current_group)
             else:
                 LDrawNode.current_group = current_group
 
-        elif is_part and geometry is None:
+        elif is_part:
             if LDrawNode.debug_text:
                 print("===========")
                 print("is_part")
                 print(self.file.name)
                 print("===========")
 
-            self.top = True
-
-            if key not in LDrawNode.geometry_cache:
+            if geometry is None:
+                self.top = True
                 geometry = LDrawGeometry()
-            else:
-                geometry = LDrawNode.geometry_cache[key]
-
-            matrix = matrices.identity
+                matrix = matrices.identity
         else:
             if LDrawNode.debug_text:
                 print("===========")
@@ -105,40 +101,40 @@ class LDrawNode:
                 print(self.file.name)
                 print("===========")
 
-        if key not in LDrawNode.geometry_cache:
-            if geometry is not None:
-                if (not is_edge_logo) or (is_edge_logo and LDrawFile.display_logo):
-                    for edge in self.file.geometry.edges:
-                        geometry.edges.append((matrix @ edge[0], matrix @ edge[1]))
+        # if its a part or subpart and not top then use cached if available
+        # if top create new
 
-                geometry.vertices.extend([matrix @ e for e in self.file.geometry.vertices])
-                geometry.faces.extend(self.file.geometry.faces)
-
+        if geometry is not None:
+            if key not in LDrawNode.face_info_cache:
                 new_face_info = []
-                if key not in LDrawNode.face_info_cache:
-                    for i, face_info in enumerate(self.file.geometry.face_info):
-                        copy = FaceInfo(color_code=parent_color_code,
-                                        grain_slope_allowed=not is_stud)
-                        if face_info.color_code != "16":
-                            copy.color_code = face_info.color_code
-                        new_face_info.append(copy)
-                    LDrawNode.face_info_cache[key] = new_face_info
-                new_face_info = LDrawNode.face_info_cache[key]
+                for face_info in self.file.geometry.face_info:
+                    copy = FaceInfo(color_code=parent_color_code,
+                                    grain_slope_allowed=not is_stud)
+                    if face_info.color_code != "16":
+                        copy.color_code = face_info.color_code
+                    new_face_info.append(copy)
+                LDrawNode.face_info_cache[key] = new_face_info
+            new_face_info = LDrawNode.face_info_cache[key]
 
-                geometry.face_info.extend(new_face_info)
+            vertices = [matrix @ e for e in self.file.geometry.vertices]
+            geometry.vertices.extend(vertices)
 
-            for child in self.file.child_nodes:
-                child.load(parent_matrix=matrix,
-                           parent_color_code=parent_color_code,
-                           arr=arr,
-                           geometry=geometry,
-                           is_stud=is_stud,
-                           is_edge_logo=is_edge_logo,
-                           current_group=current_group)
+            geometry.faces.extend(self.file.geometry.faces)
+            geometry.face_info.extend(new_face_info)
+
+            if (not is_edge_logo) or (is_edge_logo and LDrawFile.display_logo):
+                for edge in self.file.geometry.edges:
+                    geometry.edges.append((matrix @ edge[0], matrix @ edge[1]))
+
+        for child in self.file.child_nodes:
+            child.load(parent_matrix=matrix,
+                       parent_color_code=parent_color_code,
+                       geometry=geometry,
+                       is_stud=is_stud,
+                       is_edge_logo=is_edge_logo,
+                       current_group=current_group)
 
         if self.top:
-            # LDrawNode.geometry_cache[key] = geometry
-
             if key not in bpy.data.meshes:
                 mesh = self.create_mesh(key, geometry)  # combine with apply_materials
                 self.bmesh_ops(mesh, geometry)
@@ -146,8 +142,8 @@ class LDrawNode:
                 self.apply_materials(mesh, geometry)  # combine with create_mesh
                 if LDrawNode.make_gaps:
                     self.do_gaps(mesh)
-
             mesh = bpy.data.meshes[key]
+
             obj = bpy.data.objects.new(key, mesh)
             obj.matrix_world = matrices.rotation @ parent_matrix @ self.matrix
 
@@ -216,7 +212,7 @@ class LDrawNode:
         kd.balance()
         # Create edgeIndices dictionary, which is the list of edges as pairs of indicies into our bm.verts array
         edge_indices = {}
-        for ind, edge in enumerate(geometry.edges):
+        for edge in geometry.edges:
             # print(edge)
             # Find index of nearest points in bm.verts to geomEdge[0] and geomEdge[1]
             edges0 = [index for (co, index, dist) in kd.find_range(edge[0], weld_distance)]
@@ -315,6 +311,7 @@ class LDrawFile:
             # if missing, use a,b,c etc parts if available
             filepath = filesystem.locate(self.filepath)
             if filepath is None:
+                print(f"missing {self.filepath}")
                 return
             self.lines = filesystem.read_file(filepath)
 
@@ -334,6 +331,9 @@ class LDrawFile:
                     self.name = line[7:].lower().strip()
                     # print(self.name)
             else:
+                if self.name == "":
+                    self.name = os.path.basename(self.filepath)
+
                 if params[0] == "1":
                     color_code = params[1]
 

@@ -38,11 +38,3 @@ class LDrawGeometry:
         self.vertices.extend(vertices)
         self.faces.append(vert_count)
         self.face_info.append(FaceInfo(color_code))
-
-    def copy(self):
-        new = LDrawGeometry()
-        new.edges = self.edges
-        new.vertices = self.vertices
-        new.faces = self.faces
-        new.face_info = self.face_info
-        return new

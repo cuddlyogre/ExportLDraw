@@ -72,7 +72,7 @@ def do_import(filepath, ldraw_path):
     LDrawNode.files = {}
     LDrawNode.file_cache = {}
     LDrawNode.face_info_cache = {}
-    LDrawNode.geometry_cache = {}
+    LDrawNode.vertex_cache = {}
     LDrawNode.current_group = None
 
     BlenderMaterials.material_list = {}
@@ -87,4 +87,5 @@ def do_import(filepath, ldraw_path):
 
     if root_node.file.name in bpy.data.collections:
         root_collection = bpy.data.collections[root_node.file.name]
-        bpy.context.scene.collection.children.link(root_collection)
+        if root_node.file.name not in bpy.context.scene.collection.children:
+            bpy.context.scene.collection.children.link(root_collection)
