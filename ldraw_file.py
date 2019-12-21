@@ -14,12 +14,12 @@ from .special_bricks import SpecialBricks
 
 
 class LDrawNode:
-    files = {}
-    vertex_cache = {}
-    edge_cache = {}
     file_cache = {}
+    mpd_file_cache = {}
+    vertex_cache = {}
     face_info_cache = {}
     geometry_cache = {}
+
     make_gaps = True
     gap_scale = 0.997
     remove_doubles = True
@@ -38,8 +38,8 @@ class LDrawNode:
 
     def load(self, parent_matrix=matrices.identity, parent_color_code="16", geometry=None, is_stud=False, is_edge_logo=False, current_group=None):
         if self.filename not in LDrawNode.file_cache:
-            if self.filename in LDrawNode.files:
-                ldraw_file = LDrawNode.files[self.filename]
+            if self.filename in LDrawNode.mpd_file_cache:
+                ldraw_file = LDrawNode.mpd_file_cache[self.filename]
             else:
                 ldraw_file = LDrawFile(self.filename)
             ldraw_file.parse_file()
@@ -337,6 +337,8 @@ class LDrawFile:
                 elif params[1].lower() == "name:":
                     self.name = line[7:].lower().strip()
                     # print(self.name)
+                elif params[1].lower() in ['print', 'write'] and LDrawNode.debug_text:
+                    print(line[7:].lower().strip())
             else:
                 if self.name == "":
                     self.name = os.path.basename(self.filepath)

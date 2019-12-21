@@ -55,10 +55,10 @@ def handle_mpd(filepath):
 
 def parse_current_file(current_file):
     if current_file is not None:
-        LDrawNode.files[current_file.filepath] = current_file
+        LDrawNode.mpd_file_cache[current_file.filepath] = current_file
 
 
-def do_import(filepath, ldraw_path):
+def do_import(filepath, ldraw_path, clear_cache=False):
     bpy.context.scene.eevee.use_ssr = True
     bpy.context.scene.eevee.use_ssr_refraction = True
     bpy.context.scene.eevee.use_taa_reprojection = True
@@ -69,10 +69,13 @@ def do_import(filepath, ldraw_path):
     LDrawColors.colors = {}
     LDrawColors.read_color_table(ldraw_path)
 
-    LDrawNode.files = {}
-    LDrawNode.file_cache = {}
-    LDrawNode.face_info_cache = {}
-    LDrawNode.vertex_cache = {}
+    if clear_cache:
+        LDrawNode.file_cache = {}
+        LDrawNode.mpd_file_cache = {}
+        LDrawNode.vertex_cache = {}
+        LDrawNode.face_info_cache = {}
+        LDrawNode.geometry_cache = {}
+
     LDrawNode.current_group = None
 
     BlenderMaterials.material_list = {}

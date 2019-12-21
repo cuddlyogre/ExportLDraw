@@ -112,7 +112,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
 
     no_studs: bpy.props.BoolProperty(
         name="No studs",
-        description="Don't import studs'",
+        description="Don't import studs",
         default=False
     )
 
@@ -131,6 +131,12 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         max=1.0,
     )
 
+    clear_cache: bpy.props.BoolProperty(
+        name="Clear cache",
+        description="Clear cache of previously loaded parts",
+        default=False
+    )
+
     def execute(self, context):
         import time
         start = time.monotonic()
@@ -146,8 +152,9 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         ldraw_file.LDrawNode.debug_text = self.debug_text
         ldraw_file.LDrawNode.no_studs = self.no_studs
         ldraw_file.LDrawNode.bevel_edges = self.bevel_edges
+        ldraw_file.LDrawNode.bevel_edges = self.bevel_edges
 
-        ldraw_import.do_import(bpy.path.abspath(self.filepath), self.ldraw_path)
+        ldraw_import.do_import(bpy.path.abspath(self.filepath), self.ldraw_path, self.clear_cache)
 
         end = time.monotonic()
         elapsed = (end - start)
@@ -172,6 +179,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         box.prop(self, "bevel_edges")
         box.prop(self, "gap_scale")
         box.label(text="Extras")
+        box.prop(self, "clear_cache")
         box.prop(self, "debug_text")
         box.prop(self, "no_studs")
 
