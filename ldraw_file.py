@@ -14,6 +14,8 @@ from .special_bricks import SpecialBricks
 
 
 class LDrawNode:
+    first_run = True
+
     file_cache = {}
     mpd_file_cache = {}
     vertex_cache = {}
@@ -29,12 +31,20 @@ class LDrawNode:
     no_studs = False
     bevel_edges = False
 
-    def __init__(self, filename, color_code="16", matrix=matrices.identity):
+    def __init__(self, filename, color_code="16", matrix=matrices.identity, current_step=None):
         self.filename = filename.lower()
         self.file = None
         self.color_code = color_code
         self.matrix = matrix
         self.top = False
+
+        # this is for instances where a file with step is loaded from another file
+        # we start where we left off if no value has been set
+        # LDrawFile.current_step in place of self.current_step will always be the last step
+        if current_step is None:
+            self.current_step = LDrawFile.current_step
+        else:
+            self.current_step = current_step
 
     def load(self, parent_matrix=matrices.identity, parent_color_code="16", geometry=None, is_stud=False, is_edge_logo=False, current_group=None):
         if self.filename not in LDrawNode.file_cache:
@@ -53,7 +63,7 @@ class LDrawNode:
             parent_color_code = self.color_code
         key = f"{parent_color_code}_{self.file.name}"
 
-        model_types = ['model', 'unofficial_model', None]
+        model_types = ['model', 'unofficial_model', 'submodel', None]
         is_model = self.file.part_type in model_types
 
         part_types = ['part', 'unofficial_part', 'unofficial_shortcut', 'shortcut', 'primitive', 'subpart']
@@ -148,6 +158,27 @@ class LDrawNode:
 
             obj = bpy.data.objects.new(key, mesh)
             obj.matrix_world = matrices.rotation @ parent_matrix @ self.matrix
+
+            # https://docs.blender.org/api/current/bpy.types.bpy_struct.html#bpy.types.bpy_struct.keyframe_insert
+            # https://docs.blender.org/api/current/bpy.types.Scene.html?highlight=frame_set#bpy.types.Scene.frame_set
+            # https://docs.blender.org/api/current/bpy.types.Object.html?highlight=rotation_quaternion#bpy.types.Object.rotation_quaternion
+            if LDrawFile.meta_step:
+                if LDrawNode.debug_text:
+                    print(self.current_step)
+
+                start_frame = 1
+                frame_length = 3
+                bpy.context.scene.frame_set(start_frame)
+                obj.hide_viewport = True
+                obj.hide_render = True
+                obj.keyframe_insert(data_path="hide_render")
+                obj.keyframe_insert(data_path="hide_viewport")
+
+                bpy.context.scene.frame_set((start_frame + frame_length) + (frame_length * self.current_step))
+                obj.hide_viewport = False
+                obj.hide_render = False
+                obj.keyframe_insert(data_path="hide_render")
+                obj.keyframe_insert(data_path="hide_viewport")
 
             if current_group is not None:
                 current_group.objects.link(obj)
@@ -301,8 +332,16 @@ class LDrawNode:
 
 
 class LDrawFile:
+    meta_print_write = False
+    meta_step = False
+    meta_clear = False
+    meta_pause = False
+    meta_save = False
+
     display_logo = False
     chosen_logo = None
+    current_step = 0
+    do_step = False
 
     def __init__(self, filepath):
         self.filepath = filepath
@@ -335,9 +374,12 @@ class LDrawFile:
                     self.part_type = params[2].lower()
                 elif params[1].lower() == "name:":
                     self.name = line[7:].lower().strip()
-                    # print(self.name)
-                elif params[1].lower() in ['print', 'write'] and LDrawNode.debug_text:
-                    print(line[7:].lower().strip())
+                elif params[1].lower() in ['print', 'write']:
+                    if LDrawFile.meta_print_write:
+                        print(line[7:].lower().strip())
+                elif params[1].lower() in ['step']:
+                    if LDrawFile.meta_step:
+                        LDrawFile.current_step += 1
             else:
                 if self.name == "":
                     self.name = os.path.basename(self.filepath)
@@ -359,9 +401,7 @@ class LDrawFile:
                             if filesystem.locate(new_filename):
                                 filename = new_filename
 
-                    # print(f"{filename} children")
-                    ldraw_node = LDrawNode(filename, color_code=color_code, matrix=matrix)
-
+                    ldraw_node = LDrawNode(filename, color_code=color_code, matrix=matrix, current_step=LDrawFile.current_step)
                     self.child_nodes.append(ldraw_node)
                 elif params[0] in ["2", "3", "4"]:
                     if self.part_type is None:

@@ -30,7 +30,7 @@ def handle_mpd(filepath):
                 while len(params) < 9:
                     params.append("")
 
-                if params[0] == "0" and params[1] == "FILE":
+                if params[0] == "0" and params[1].lower() == "file":
                     parse_current_file(current_file)
                     current_file = LDrawFile(line[7:].lower())
                     current_file.lines = []
@@ -38,7 +38,7 @@ def handle_mpd(filepath):
                     if root_file is None:
                         root_file = line[7:].lower()
 
-                elif params[0] == "0" and params[1] == "NOFILE":
+                elif params[0] == "0" and params[1].lower() == "nofile":
                     parse_current_file(current_file)
                     current_file = None
 
@@ -64,16 +64,14 @@ def do_import(filepath, ldraw_path, clear_cache=False):
     bpy.context.scene.eevee.use_taa_reprojection = True
 
     LDrawNode.current_group = None
+    LDrawFile.current_step = 0
 
-    if clear_cache:
+    if clear_cache or LDrawNode.first_run:
         filesystem.search_paths = []
         filesystem.append_search_paths(ldraw_path)
 
         LDrawColors.colors = {}
         LDrawColors.read_color_table(ldraw_path)
-
-        BlenderMaterials.material_list = {}
-        BlenderMaterials.create_blender_node_groups()
 
         SpecialBricks.slope_angles = {}
         SpecialBricks.build_slope_angles()
@@ -84,6 +82,11 @@ def do_import(filepath, ldraw_path, clear_cache=False):
         LDrawNode.face_info_cache = {}
         LDrawNode.geometry_cache = {}
 
+        LDrawNode.first_run = False
+
+    BlenderMaterials.material_list = {}
+    BlenderMaterials.create_blender_node_groups()
+
     filepath = handle_mpd(filepath)
     root_node = LDrawNode(filepath)
     root_node.load()
@@ -92,3 +95,11 @@ def do_import(filepath, ldraw_path, clear_cache=False):
         root_collection = bpy.data.collections[root_node.file.name]
         if root_node.file.name not in bpy.context.scene.collection.children:
             bpy.context.scene.collection.children.link(root_collection)
+
+    if LDrawFile.meta_step:
+        if LDrawFile.current_step > 0:
+            bpy.context.scene.frame_end = bpy.context.scene.frame_current + 3
+            bpy.context.scene.frame_set(bpy.context.scene.frame_end)
+
+    # if clip_end
+    # bpy.context.space_data.clip_end = 10000

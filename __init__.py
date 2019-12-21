@@ -137,6 +137,36 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         default=False
     )
 
+    meta_print_write: bpy.props.BoolProperty(
+        name="PRINT/WRITE",
+        description="Process PRINT/WRITE meta command",
+        default=False
+    )
+
+    meta_step: bpy.props.BoolProperty(
+        name="STEP",
+        description="Process STEP meta command",
+        default=False
+    )
+
+    meta_clear: bpy.props.BoolProperty(
+        name="CLEAR",
+        description="Process CLEAR meta command",
+        default=False
+    )
+
+    meta_pause: bpy.props.BoolProperty(
+        name="PAUSE",
+        description="Process PAUSE meta command",
+        default=False
+    )
+
+    meta_save: bpy.props.BoolProperty(
+        name="SAVE",
+        description="Process SAVE meta command",
+        default=False
+    )
+
     def execute(self, context):
         import time
         start = time.monotonic()
@@ -152,7 +182,12 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         ldraw_file.LDrawNode.debug_text = self.debug_text
         ldraw_file.LDrawNode.no_studs = self.no_studs
         ldraw_file.LDrawNode.bevel_edges = self.bevel_edges
-        ldraw_file.LDrawNode.bevel_edges = self.bevel_edges
+
+        ldraw_file.LDrawFile.meta_print_write = self.meta_print_write
+        ldraw_file.LDrawFile.meta_step = self.meta_step
+        ldraw_file.LDrawFile.meta_clear = self.meta_clear
+        ldraw_file.LDrawFile.meta_pause = self.meta_pause
+        ldraw_file.LDrawFile.meta_save = self.meta_save
 
         ldraw_import.do_import(bpy.path.abspath(self.filepath), self.ldraw_path, self.clear_cache)
 
@@ -178,10 +213,18 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         box.prop(self, "make_gaps")
         box.prop(self, "bevel_edges")
         box.prop(self, "gap_scale")
+
         box.label(text="Extras")
         box.prop(self, "clear_cache")
         box.prop(self, "debug_text")
         box.prop(self, "no_studs")
+
+        box.label(text="Meta Commands")
+        box.prop(self, "meta_print_write")
+        box.prop(self, "meta_step")
+        box.prop(self, "meta_clear")
+        box.prop(self, "meta_pause")
+        box.prop(self, "meta_save")
 
 
 class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
