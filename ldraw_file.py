@@ -19,6 +19,7 @@ class LDrawNode:
     edge_cache = {}
     file_cache = {}
     face_info_cache = {}
+    geometry_cache = {}
     make_gaps = True
     gap_scale = 0.997
     remove_doubles = True
@@ -45,19 +46,12 @@ class LDrawNode:
             LDrawNode.file_cache[self.filename] = ldraw_file
         self.file = LDrawNode.file_cache[self.filename]
 
-        if self.color_code != "16":
-            parent_color_code = self.color_code
-        key = f"{parent_color_code}_{self.file.name}"
-
-        if self.file.name in ["stud.dat", "stud2.dat"]:
-            is_stud = True
-
         if LDrawNode.no_studs and self.file.name.startswith("stud"):
             return
 
-        # ["logo.dat", "logo2.dat", "logo3.dat", "logo4.dat", "logo5.dat"]
-        if self.file.name in ["logo.dat", "logo2.dat"]:
-            is_edge_logo = True
+        if self.color_code != "16":
+            parent_color_code = self.color_code
+        key = f"{parent_color_code}_{self.file.name}"
 
         model_types = ['model', 'unofficial_model', None]
         is_model = self.file.part_type in model_types
@@ -82,7 +76,6 @@ class LDrawNode:
                     LDrawNode.current_group.children.link(current_group)
             else:
                 LDrawNode.current_group = current_group
-
         elif is_part:
             if LDrawNode.debug_text:
                 print("===========")
@@ -101,45 +94,55 @@ class LDrawNode:
                 print(self.file.name)
                 print("===========")
 
-        # if its a part or subpart and not top then use cached if available
-        # if top create new
+        if self.top and key in LDrawNode.geometry_cache:
+            geometry = LDrawNode.geometry_cache[key]
+        else:
+            if geometry is not None:
+                if self.file.name in ["stud.dat", "stud2.dat"]:
+                    is_stud = True
 
-        if geometry is not None:
-            if key not in LDrawNode.face_info_cache:
-                new_face_info = []
-                for face_info in self.file.geometry.face_info:
-                    copy = FaceInfo(color_code=parent_color_code,
-                                    grain_slope_allowed=not is_stud)
-                    if face_info.color_code != "16":
-                        copy.color_code = face_info.color_code
-                    new_face_info.append(copy)
-                LDrawNode.face_info_cache[key] = new_face_info
-            new_face_info = LDrawNode.face_info_cache[key]
+                # ["logo.dat", "logo2.dat", "logo3.dat", "logo4.dat", "logo5.dat"]
+                if self.file.name in ["logo.dat", "logo2.dat"]:
+                    is_edge_logo = True
 
-            vertices = [matrix @ e for e in self.file.geometry.vertices]
-            geometry.vertices.extend(vertices)
+                if key not in LDrawNode.face_info_cache:
+                    new_face_info = []
+                    for face_info in self.file.geometry.face_info:
+                        copy = FaceInfo(color_code=parent_color_code,
+                                        grain_slope_allowed=not is_stud)
+                        if face_info.color_code != "16":
+                            copy.color_code = face_info.color_code
+                        new_face_info.append(copy)
+                    LDrawNode.face_info_cache[key] = new_face_info
+                new_face_info = LDrawNode.face_info_cache[key]
 
-            geometry.faces.extend(self.file.geometry.faces)
-            geometry.face_info.extend(new_face_info)
+                vertices = [matrix @ e for e in self.file.geometry.vertices]
+                geometry.vertices.extend(vertices)
 
-            if (not is_edge_logo) or (is_edge_logo and LDrawFile.display_logo):
-                for edge in self.file.geometry.edges:
-                    geometry.edges.append((matrix @ edge[0], matrix @ edge[1]))
+                geometry.faces.extend(self.file.geometry.faces)
+                geometry.face_info.extend(new_face_info)
 
-        for child in self.file.child_nodes:
-            child.load(parent_matrix=matrix,
-                       parent_color_code=parent_color_code,
-                       geometry=geometry,
-                       is_stud=is_stud,
-                       is_edge_logo=is_edge_logo,
-                       current_group=current_group)
+                if (not is_edge_logo) or (is_edge_logo and LDrawFile.display_logo):
+                    for edge in self.file.geometry.edges:
+                        geometry.edges.append((matrix @ edge[0], matrix @ edge[1]))
+
+            for child in self.file.child_nodes:
+                child.load(parent_matrix=matrix,
+                           parent_color_code=parent_color_code,
+                           geometry=geometry,
+                           is_stud=is_stud,
+                           is_edge_logo=is_edge_logo,
+                           current_group=current_group)
 
         if self.top:
+            if key not in LDrawNode.geometry_cache:
+                LDrawNode.geometry_cache[key] = geometry
+
             if key not in bpy.data.meshes:
                 mesh = self.create_mesh(key, geometry)  # combine with apply_materials
                 self.bmesh_ops(mesh, geometry)
                 mesh.use_auto_smooth = LDrawNode.shade_smooth
-                self.apply_materials(mesh, geometry)  # combine with create_mesh
+                self.apply_materials(mesh, geometry, self.file.name)  # combine with create_mesh
                 if LDrawNode.make_gaps:
                     self.do_gaps(mesh)
             mesh = bpy.data.meshes[key]
@@ -169,7 +172,8 @@ class LDrawNode:
             #     if m.type == 'EDGE_SPLIT':
             #         obj.modifiers.remove(m)
 
-    def create_mesh(self, key, geometry):
+    @staticmethod
+    def create_mesh(key, geometry):
         vertices = [v.to_tuple() for v in geometry.vertices]
         faces = []
         face_index = 0
@@ -188,7 +192,8 @@ class LDrawNode:
 
         return mesh
 
-    def bmesh_ops(self, mesh, geometry):
+    @staticmethod
+    def bmesh_ops(mesh, geometry):
         if LDrawNode.bevel_edges:
             mesh.use_customdata_edge_bevel = True
 
@@ -265,7 +270,8 @@ class LDrawNode:
     #     f.use_smooth = True
     # values = [True] * len(mesh.polygons)
     # mesh.polygons.foreach_set("use_smooth", values)
-    def apply_materials(self, mesh, geometry):
+    @staticmethod
+    def apply_materials(mesh, geometry, filename):
         # bpy.context.object.active_material.use_backface_culling = True
         # bpy.context.object.active_material.use_screen_refraction = True
 
@@ -274,7 +280,7 @@ class LDrawNode:
 
             is_slope_material = False
             if face_info.grain_slope_allowed:
-                is_slope_material = SpecialBricks.is_slope_face(self.file.name, f)
+                is_slope_material = SpecialBricks.is_slope_face(filename, f)
 
             # TODO: LDrawColors.use_alt_colors use f"{face_info.color_code}_alt"
             material = BlenderMaterials.get_material(face_info.color_code, is_slope_material=is_slope_material)
@@ -283,7 +289,8 @@ class LDrawNode:
             f.material_index = mesh.materials.find(material.name)
             f.use_smooth = LDrawNode.shade_smooth
 
-    def do_gaps(self, mesh):
+    @staticmethod
+    def do_gaps(mesh):
         scale = LDrawNode.gap_scale
         gaps_scale_matrix = mathutils.Matrix((
             (scale, 0.0, 0.0, 0.0),
