@@ -135,8 +135,7 @@ class LDrawNode:
                            current_group=current_group)
 
         if self.top:
-            if key not in LDrawNode.geometry_cache:
-                LDrawNode.geometry_cache[key] = geometry
+            LDrawNode.geometry_cache[key] = geometry
 
             if key not in bpy.data.meshes:
                 mesh = self.create_mesh(key, geometry)  # combine with apply_materials

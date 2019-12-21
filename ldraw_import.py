@@ -63,26 +63,26 @@ def do_import(filepath, ldraw_path, clear_cache=False):
     bpy.context.scene.eevee.use_ssr_refraction = True
     bpy.context.scene.eevee.use_taa_reprojection = True
 
-    filesystem.search_paths = []
-    filesystem.append_search_paths(ldraw_path)
-
-    LDrawColors.colors = {}
-    LDrawColors.read_color_table(ldraw_path)
+    LDrawNode.current_group = None
 
     if clear_cache:
+        filesystem.search_paths = []
+        filesystem.append_search_paths(ldraw_path)
+
+        LDrawColors.colors = {}
+        LDrawColors.read_color_table(ldraw_path)
+
+        BlenderMaterials.material_list = {}
+        BlenderMaterials.create_blender_node_groups()
+
+        SpecialBricks.slope_angles = {}
+        SpecialBricks.build_slope_angles()
+
         LDrawNode.file_cache = {}
         LDrawNode.mpd_file_cache = {}
         LDrawNode.vertex_cache = {}
         LDrawNode.face_info_cache = {}
         LDrawNode.geometry_cache = {}
-
-    LDrawNode.current_group = None
-
-    BlenderMaterials.material_list = {}
-    BlenderMaterials.create_blender_node_groups()
-
-    SpecialBricks.slope_angles = {}
-    SpecialBricks.build_slope_angles()
 
     filepath = handle_mpd(filepath)
     root_node = LDrawNode(filepath)
