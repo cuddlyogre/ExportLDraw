@@ -53,12 +53,15 @@ def handle_mpd(filepath):
     return filepath
 
 
-def parse_current_file(current_file):
-    if current_file is not None:
-        LDrawNode.mpd_file_cache[current_file.filepath] = current_file
+def parse_current_file(ldraw_file):
+    if ldraw_file is not None:
+        # print('==============')
+        # print(f"{ldraw_file.filepath} {len(ldraw_file.lines)}")
+        # print('==============')
+        LDrawFile.mpd_file_cache[ldraw_file.filepath] = ldraw_file
 
 
-def do_import(filepath, ldraw_path, clear_cache=False):
+def do_import(filename, ldraw_path, clear_cache=False):
     bpy.context.scene.eevee.use_ssr = True
     bpy.context.scene.eevee.use_ssr_refraction = True
     bpy.context.scene.eevee.use_taa_reprojection = True
@@ -76,9 +79,8 @@ def do_import(filepath, ldraw_path, clear_cache=False):
         SpecialBricks.slope_angles = {}
         SpecialBricks.build_slope_angles()
 
-        LDrawNode.file_cache = {}
-        LDrawNode.mpd_file_cache = {}
-        LDrawNode.vertex_cache = {}
+        LDrawFile.mpd_file_cache = {}
+        LDrawFile.file_cache = {}
         LDrawNode.face_info_cache = {}
         LDrawNode.geometry_cache = {}
 
@@ -87,13 +89,17 @@ def do_import(filepath, ldraw_path, clear_cache=False):
     BlenderMaterials.material_list = {}
     BlenderMaterials.create_blender_node_groups()
 
-    filepath = handle_mpd(filepath)
-    root_node = LDrawNode(filepath)
+    filename = handle_mpd(filename)
+    ldraw_file = LDrawFile(filename)
+    ldraw_file.read_file()
+    ldraw_file.parse_file()
+
+    root_node = LDrawNode(ldraw_file)
     root_node.load()
 
-    if root_node.file.name in bpy.data.collections:
-        root_collection = bpy.data.collections[root_node.file.name]
-        if root_node.file.name not in bpy.context.scene.collection.children:
+    if ldraw_file.name in bpy.data.collections:
+        root_collection = bpy.data.collections[ldraw_file.name]
+        if ldraw_file.name not in bpy.context.scene.collection.children:
             bpy.context.scene.collection.children.link(root_collection)
 
     if LDrawFile.meta_step:

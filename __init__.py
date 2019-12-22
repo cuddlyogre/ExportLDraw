@@ -17,6 +17,7 @@ if "bpy" in locals():
     importlib.reload(filesystem)
     importlib.reload(ldraw_export)
     importlib.reload(ldraw_file)
+    importlib.reload(ldraw_node)
     importlib.reload(ldraw_geometry)
     importlib.reload(ldraw_import)
     importlib.reload(ldraw_colors)
@@ -28,6 +29,7 @@ else:
     from . import filesystem
     from . import ldraw_export
     from . import ldraw_file
+    from . import ldraw_node
     from . import ldraw_geometry
     from . import ldraw_import
     from . import ldraw_colors
