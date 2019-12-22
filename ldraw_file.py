@@ -1,6 +1,7 @@
 import os
 import mathutils
 
+from . import options
 from . import filesystem
 
 from .ldraw_node import LDrawNode
@@ -11,17 +12,6 @@ from .special_bricks import SpecialBricks
 class LDrawFile:
     mpd_file_cache = {}
     file_cache = {}
-
-    meta_print_write = False
-    meta_step = False
-    meta_clear = False
-    meta_pause = False
-    meta_save = False
-
-    display_logo = False
-    chosen_logo = None
-    current_step = 0
-    do_step = False
 
     def __init__(self, filepath):
         self.filepath = filepath
@@ -58,11 +48,12 @@ class LDrawFile:
                 elif params[1].lower() == "name:":
                     self.name = line[7:].lower().strip()
                 elif params[1].lower() in ['print', 'write']:
-                    if LDrawFile.meta_print_write:
+                    if options.meta_print_write:
                         print(line[7:].lower().strip())
                 elif params[1].lower() in ['step']:
-                    if LDrawFile.meta_step:
-                        LDrawFile.current_step += 1
+                    if options.meta_step:
+                        ldraw_node = LDrawNode('skip')
+                        self.child_nodes.append(ldraw_node)
             else:
                 if self.name == "":
                     self.name = os.path.basename(self.filepath)
@@ -84,8 +75,6 @@ class LDrawFile:
                             if filesystem.locate(new_filename):
                                 filename = new_filename
 
-                    # print(f"{LDrawFile.current_step} {filename}")
-
                     if filename not in LDrawFile.file_cache:
                         ldraw_file = LDrawFile(filename)
                         ldraw_file.read_file()
@@ -93,7 +82,7 @@ class LDrawFile:
                         LDrawFile.file_cache[filename] = ldraw_file
                     ldraw_file = LDrawFile.file_cache[filename]
 
-                    ldraw_node = LDrawNode(ldraw_file, color_code=color_code, matrix=matrix, current_step=LDrawFile.current_step)
+                    ldraw_node = LDrawNode(ldraw_file, color_code=color_code, matrix=matrix)
                     self.child_nodes.append(ldraw_node)
                 elif params[0] in ["2", "3", "4"]:
                     if self.part_type is None:

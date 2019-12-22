@@ -1,7 +1,9 @@
 import os
 import bpy
 
+from . import options
 from . import filesystem
+
 from .ldraw_file import LDrawNode
 from .ldraw_file import LDrawFile
 from .ldraw_colors import LDrawColors
@@ -66,8 +68,7 @@ def do_import(filename, ldraw_path, clear_cache=False):
     bpy.context.scene.eevee.use_ssr_refraction = True
     bpy.context.scene.eevee.use_taa_reprojection = True
 
-    LDrawNode.current_group = None
-    LDrawFile.current_step = 0
+    options.last_frame = 0
 
     if clear_cache or LDrawNode.first_run:
         filesystem.search_paths = []
@@ -102,10 +103,9 @@ def do_import(filename, ldraw_path, clear_cache=False):
         if ldraw_file.name not in bpy.context.scene.collection.children:
             bpy.context.scene.collection.children.link(root_collection)
 
-    if LDrawFile.meta_step:
-        if LDrawFile.current_step > 0:
-            bpy.context.scene.frame_end = bpy.context.scene.frame_current + 3
-            bpy.context.scene.frame_set(bpy.context.scene.frame_end)
+    if options.meta_step:
+        bpy.context.scene.frame_end = options.last_frame + 3
+        bpy.context.scene.frame_set(bpy.context.scene.frame_end)
 
     # if clip_end
     # bpy.context.space_data.clip_end = 10000

@@ -13,6 +13,7 @@ bl_info = {
 if "bpy" in locals():
     import importlib
 
+    importlib.reload(options)
     importlib.reload(face_info)
     importlib.reload(filesystem)
     importlib.reload(ldraw_export)
@@ -25,6 +26,7 @@ if "bpy" in locals():
     importlib.reload(matrices)
     importlib.reload(special_bricks)
 else:
+    from . import options
     from . import face_info
     from . import filesystem
     from . import ldraw_export
@@ -174,22 +176,22 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         start = time.monotonic()
 
         filesystem.resolution = self.resolution
-        ldraw_colors.LDrawColors.use_alt_colors = self.use_alt_colors
+        options.use_alt_colors = self.use_alt_colors
         ldraw_file.LDrawNode.remove_doubles = self.remove_doubles
         ldraw_file.LDrawNode.shade_smooth = self.shade_smooth
-        ldraw_file.LDrawFile.display_logo = self.display_logo
-        ldraw_file.LDrawFile.chosen_logo = self.chosen_logo
+        options.display_logo = self.display_logo
+        options.chosen_logo = self.chosen_logo
         ldraw_file.LDrawNode.make_gaps = self.make_gaps
         ldraw_file.LDrawNode.gap_scale = self.gap_scale
         ldraw_file.LDrawNode.debug_text = self.debug_text
         ldraw_file.LDrawNode.no_studs = self.no_studs
         ldraw_file.LDrawNode.bevel_edges = self.bevel_edges
 
-        ldraw_file.LDrawFile.meta_print_write = self.meta_print_write
-        ldraw_file.LDrawFile.meta_step = self.meta_step
-        ldraw_file.LDrawFile.meta_clear = self.meta_clear
-        ldraw_file.LDrawFile.meta_pause = self.meta_pause
-        ldraw_file.LDrawFile.meta_save = self.meta_save
+        options.meta_print_write = self.meta_print_write
+        options.meta_step = self.meta_step
+        options.meta_clear = self.meta_clear
+        options.meta_pause = self.meta_pause
+        options.meta_save = self.meta_save
 
         ldraw_import.do_import(bpy.path.abspath(self.filepath), self.ldraw_path, self.clear_cache)
 

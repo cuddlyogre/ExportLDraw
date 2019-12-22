@@ -2,6 +2,7 @@ import bpy
 import mathutils
 import bmesh
 
+from . import options
 from . import matrices
 
 from .ldraw_geometry import LDrawGeometry
@@ -20,19 +21,18 @@ class LDrawNode:
     gap_scale = 0.997
     remove_doubles = True
     shade_smooth = True
-    current_group = None
     debug_text = False
     no_studs = False
     bevel_edges = False
+    current_step = 0
 
-    def __init__(self, file, color_code="16", matrix=matrices.identity, current_step=0):
+    def __init__(self, file, color_code="16", matrix=matrices.identity):
         self.file = file
         self.color_code = color_code
         self.matrix = matrix
         self.top = False
-        self.current_step = current_step
 
-    def load(self, parent_matrix=matrices.identity, parent_color_code="16", geometry=None, is_stud=False, is_edge_logo=False, current_group=None):
+    def load(self, parent_matrix=matrices.identity, parent_color_code="16", geometry=None, is_stud=False, is_edge_logo=False, parent_group=None):
         if LDrawNode.no_studs and self.file.name.startswith("stud"):
             return
 
@@ -50,6 +50,7 @@ class LDrawNode:
 
         matrix = parent_matrix @ self.matrix
 
+        new_group = parent_group
         if is_model:
             if LDrawNode.debug_text:
                 print("===========")
@@ -57,16 +58,10 @@ class LDrawNode:
                 print(self.file.name)
                 print("===========")
 
-            # if self.file.name not in bpy.data.collections:
-            #     bpy.data.collections.new(self.file.name)
-            # current_group = bpy.data.collections[self.file.name]
-            current_group = bpy.data.collections.new(self.file.name)
+            new_group = bpy.data.collections.new(self.file.name)
+            if parent_group is not None:
+                parent_group.children.link(new_group)
 
-            if LDrawNode.current_group is not None:
-                if current_group.name not in LDrawNode.current_group.children:
-                    LDrawNode.current_group.children.link(current_group)
-            else:
-                LDrawNode.current_group = current_group
         elif is_part:
             if LDrawNode.debug_text:
                 print("===========")
@@ -113,17 +108,20 @@ class LDrawNode:
                 geometry.faces.extend(self.file.geometry.faces)
                 geometry.face_info.extend(new_face_info)
 
-                if (not is_edge_logo): # or (is_edge_logo and LDrawFile.display_logo):
+                if (not is_edge_logo) or (is_edge_logo and options.display_logo):
                     for edge in self.file.geometry.edges:
                         geometry.edges.append((matrix @ edge[0], matrix @ edge[1]))
 
             for child in self.file.child_nodes:
-                child.load(parent_matrix=matrix,
-                           parent_color_code=parent_color_code,
-                           geometry=geometry,
-                           is_stud=is_stud,
-                           is_edge_logo=is_edge_logo,
-                           current_group=current_group)
+                if child.file == "skip":
+                    LDrawNode.current_step += 1
+                else:
+                    child.load(parent_matrix=matrix,
+                               parent_color_code=parent_color_code,
+                               geometry=geometry,
+                               is_stud=is_stud,
+                               is_edge_logo=is_edge_logo,
+                               parent_group=new_group)
 
         if self.top:
             LDrawNode.geometry_cache[key] = geometry
@@ -143,26 +141,29 @@ class LDrawNode:
             # https://docs.blender.org/api/current/bpy.types.bpy_struct.html#bpy.types.bpy_struct.keyframe_insert
             # https://docs.blender.org/api/current/bpy.types.Scene.html?highlight=frame_set#bpy.types.Scene.frame_set
             # https://docs.blender.org/api/current/bpy.types.Object.html?highlight=rotation_quaternion#bpy.types.Object.rotation_quaternion
-            # if LDrawFile.meta_step:
-            if LDrawNode.debug_text:
-                print(self.current_step)
+            if options.meta_step:
+                if LDrawNode.debug_text:
+                    print(LDrawNode.current_step)
 
-            start_frame = 1
-            frame_length = 3
-            bpy.context.scene.frame_set(start_frame)
-            obj.hide_viewport = True
-            obj.hide_render = True
-            obj.keyframe_insert(data_path="hide_render")
-            obj.keyframe_insert(data_path="hide_viewport")
+                start_frame = 1
+                frame_length = 3
+                bpy.context.scene.frame_set(start_frame)
+                obj.hide_viewport = True
+                obj.hide_render = True
+                obj.keyframe_insert(data_path="hide_render")
+                obj.keyframe_insert(data_path="hide_viewport")
 
-            bpy.context.scene.frame_set((start_frame + frame_length) + (frame_length * self.current_step))
-            obj.hide_viewport = False
-            obj.hide_render = False
-            obj.keyframe_insert(data_path="hide_render")
-            obj.keyframe_insert(data_path="hide_viewport")
+                bpy.context.scene.frame_set((start_frame + frame_length) + (frame_length * LDrawNode.current_step))
+                obj.hide_viewport = False
+                obj.hide_render = False
+                obj.keyframe_insert(data_path="hide_render")
+                obj.keyframe_insert(data_path="hide_viewport")
 
-            if current_group is not None:
-                current_group.objects.link(obj)
+                if options.last_frame < bpy.context.scene.frame_current:
+                    options.last_frame = bpy.context.scene.frame_current
+
+            if new_group is not None:
+                new_group.objects.link(obj)
             else:
                 bpy.context.scene.collection.objects.link(obj)
 
@@ -293,7 +294,7 @@ class LDrawNode:
             if face_info.grain_slope_allowed:
                 is_slope_material = SpecialBricks.is_slope_face(filename, f)
 
-            # TODO: LDrawColors.use_alt_colors use f"{face_info.color_code}_alt"
+            # TODO: options.use_alt_colors use f"{face_info.color_code}_alt"
             material = BlenderMaterials.get_material(face_info.color_code, is_slope_material=is_slope_material)
             if material.name not in mesh.materials:
                 mesh.materials.append(material)
