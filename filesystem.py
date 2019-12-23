@@ -4,6 +4,11 @@ search_paths = []
 resolution = None
 
 
+def reset_caches():
+    global search_paths
+    search_paths = []
+
+
 def append_search_path(path):
     if path != "" and os.path.exists(path):
         search_paths.append(path)

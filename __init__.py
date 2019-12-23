@@ -177,23 +177,22 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
 
         filesystem.resolution = self.resolution
         options.use_alt_colors = self.use_alt_colors
-        ldraw_file.LDrawNode.remove_doubles = self.remove_doubles
-        ldraw_file.LDrawNode.shade_smooth = self.shade_smooth
+        options.remove_doubles = self.remove_doubles
+        options.shade_smooth = self.shade_smooth
         options.display_logo = self.display_logo
         options.chosen_logo = self.chosen_logo
-        ldraw_file.LDrawNode.make_gaps = self.make_gaps
-        ldraw_file.LDrawNode.gap_scale = self.gap_scale
-        ldraw_file.LDrawNode.debug_text = self.debug_text
-        ldraw_file.LDrawNode.no_studs = self.no_studs
-        ldraw_file.LDrawNode.bevel_edges = self.bevel_edges
-
+        options.make_gaps = self.make_gaps
+        options.gap_scale = self.gap_scale
+        options.debug_text = self.debug_text
+        options.no_studs = self.no_studs
+        options.bevel_edges = self.bevel_edges
         options.meta_print_write = self.meta_print_write
         options.meta_step = self.meta_step
         options.meta_clear = self.meta_clear
         options.meta_pause = self.meta_pause
         options.meta_save = self.meta_save
 
-        ldraw_import.do_import(bpy.path.abspath(self.filepath), self.ldraw_path, self.clear_cache)
+        ldraw_import.LDrawImporter.do_import(bpy.path.abspath(self.filepath), self.ldraw_path, self.clear_cache)
 
         end = time.monotonic()
         elapsed = (end - start)
@@ -277,12 +276,11 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
     )
 
     def execute(self, context):
-        ldraw_export.triangulate = self.triangulate
-        ldraw_export.selection_only = self.selection_only
-        ldraw_export.recalculate_normals = self.recalculate_normals
-        ldraw_export.ngon_handling = self.ngon_handling
-
-        ldraw_export.do_export(bpy.path.abspath(self.filepath), self.ldraw_path)
+        ldraw_export.LDrawExporter.triangulate = self.triangulate
+        ldraw_export.LDrawExporter.selection_only = self.selection_only
+        ldraw_export.LDrawExporter.recalculate_normals = self.recalculate_normals
+        ldraw_export.LDrawExporter.ngon_handling = self.ngon_handling
+        ldraw_export.LDrawExporter.do_export(bpy.path.abspath(self.filepath), self.ldraw_path)
 
         return {'FINISHED'}
 

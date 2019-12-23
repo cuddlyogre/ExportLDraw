@@ -1,14 +1,19 @@
 import bpy
 import mathutils
+
 from .ldraw_colors import LDrawColors
 
 
 class BlenderMaterials:
     """Creates and stores a cache of materials for Blender"""
 
-    material_list = {}
+    material_cache = {}
     curved_walls = False
     add_subsurface = False
+
+    @classmethod
+    def reset_caches(cls):
+        cls.material_cache = {}
 
     @classmethod
     def create_blender_node_groups(cls):
@@ -45,8 +50,8 @@ class BlenderMaterials:
             color_code = color_code + "_s"
 
         # If it's already in the cache, use that
-        if color_code in cls.material_list:
-            result = cls.material_list[color_code]
+        if color_code in cls.material_cache:
+            result = cls.material_cache[color_code]
             return result
 
         # Create a name for the material based on the color
@@ -56,11 +61,11 @@ class BlenderMaterials:
             blender_name = "Material_{0}".format(color_code)
 
         # Create new material
-        col = cls.get_color_data(pure_color_code)
+        col = LDrawColors.get_color(pure_color_code)
         material = cls.__create_node_based_material(blender_name, col, is_slope_material)
 
         # Add material to cache
-        cls.material_list[color_code] = material
+        cls.material_cache[color_code] = material
         return material
 
     @staticmethod
@@ -564,26 +569,6 @@ class BlenderMaterials:
         node = cls.__node_lego_milky_white(nodes, diff_color, 0, 5)
         out = cls.__node_output(nodes, 200, 0)
         links.new(node.outputs['Shader'], out.inputs[0])
-
-    @staticmethod
-    def __is_int(s):
-        try:
-            int(s)
-            return True
-        except ValueError:
-            return False
-
-    @classmethod
-    def get_color_data(cls, color_code):
-        """Get the color data associated with the color name"""
-
-        # Try the LDraw defined colors
-        if cls.__is_int(color_code):
-            color_int = int(color_code)
-            if color_int in LDrawColors.colors:
-                return LDrawColors.colors[color_int]
-
-        return None
 
     @staticmethod
     def __create_group(name, x1, y1, x2, y2, create_shader_output):

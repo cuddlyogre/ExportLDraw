@@ -21,6 +21,11 @@ class LDrawFile:
         self.part_type = None
         self.lines = None
 
+    @classmethod
+    def reset_caches(cls):
+        cls.mpd_file_cache = {}
+        cls.file_cache = {}
+
     def read_file(self):
         if self.filepath in LDrawFile.mpd_file_cache:
             self.lines = LDrawFile.mpd_file_cache[self.filepath].lines
@@ -66,12 +71,12 @@ class LDrawFile:
 
                     filename = " ".join(params[14:]).lower()
 
-                    if LDrawFile.display_logo:
+                    if options.display_logo:
                         if filename in SpecialBricks.studs:
                             parts = filename.split(".")
                             name = parts[0]
                             ext = parts[1]
-                            new_filename = f"{name}-{LDrawFile.chosen_logo}.{ext}"
+                            new_filename = f"{name}-{options.chosen_logo}.{ext}"
                             if filesystem.locate(new_filename):
                                 filename = new_filename
 

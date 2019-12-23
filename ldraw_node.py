@@ -12,19 +12,10 @@ from .special_bricks import SpecialBricks
 
 
 class LDrawNode:
-    first_run = True
-
+    current_step = 0
+    last_frame = 0
     face_info_cache = {}
     geometry_cache = {}
-
-    make_gaps = True
-    gap_scale = 0.997
-    remove_doubles = True
-    shade_smooth = True
-    debug_text = False
-    no_studs = False
-    bevel_edges = False
-    current_step = 0
 
     def __init__(self, file, color_code="16", matrix=matrices.identity):
         self.file = file
@@ -32,8 +23,18 @@ class LDrawNode:
         self.matrix = matrix
         self.top = False
 
+    @classmethod
+    def reset(cls):
+        cls.current_step = 0
+        cls.last_frame = 0
+
+    @classmethod
+    def reset_caches(cls):
+        cls.face_info_cache = {}
+        cls.geometry_cache = {}
+
     def load(self, parent_matrix=matrices.identity, parent_color_code="16", geometry=None, is_stud=False, is_edge_logo=False, parent_group=None):
-        if LDrawNode.no_studs and self.file.name.startswith("stud"):
+        if options.no_studs and self.file.name.startswith("stud"):
             return
 
         if self.color_code != "16":
@@ -52,7 +53,7 @@ class LDrawNode:
 
         new_group = parent_group
         if is_model:
-            if LDrawNode.debug_text:
+            if options.debug_text:
                 print("===========")
                 print("is_model")
                 print(self.file.name)
@@ -63,7 +64,7 @@ class LDrawNode:
                 parent_group.children.link(new_group)
 
         elif is_part:
-            if LDrawNode.debug_text:
+            if options.debug_text:
                 print("===========")
                 print("is_part")
                 print(self.file.name)
@@ -74,7 +75,7 @@ class LDrawNode:
                 geometry = LDrawGeometry()
                 matrix = matrices.identity
         else:
-            if LDrawNode.debug_text:
+            if options.debug_text:
                 print("===========")
                 print("is_subpart")
                 print(self.file.name)
@@ -129,9 +130,9 @@ class LDrawNode:
             if key not in bpy.data.meshes:
                 mesh = self.create_mesh(key, geometry)  # combine with apply_materials
                 self.bmesh_ops(mesh, geometry)
-                mesh.use_auto_smooth = LDrawNode.shade_smooth
+                mesh.use_auto_smooth = options.shade_smooth
                 self.apply_materials(mesh, geometry, self.file.name)  # combine with create_mesh
-                if LDrawNode.make_gaps:
+                if options.make_gaps:
                     self.do_gaps(mesh)
             mesh = bpy.data.meshes[key]
 
@@ -142,7 +143,7 @@ class LDrawNode:
             # https://docs.blender.org/api/current/bpy.types.Scene.html?highlight=frame_set#bpy.types.Scene.frame_set
             # https://docs.blender.org/api/current/bpy.types.Object.html?highlight=rotation_quaternion#bpy.types.Object.rotation_quaternion
             if options.meta_step:
-                if LDrawNode.debug_text:
+                if options.debug_text:
                     print(LDrawNode.current_step)
 
                 start_frame = 1
@@ -159,8 +160,11 @@ class LDrawNode:
                 obj.keyframe_insert(data_path="hide_render")
                 obj.keyframe_insert(data_path="hide_viewport")
 
-                if options.last_frame < bpy.context.scene.frame_current:
-                    options.last_frame = bpy.context.scene.frame_current
+                if LDrawNode.last_frame <= bpy.context.scene.frame_current:
+                    LDrawNode.last_frame = bpy.context.scene.frame_current
+
+                if options.debug_text:
+                    print(LDrawNode.last_frame)
 
             if new_group is not None:
                 new_group.objects.link(obj)
@@ -172,7 +176,7 @@ class LDrawNode:
                 edge_modifier.use_edge_angle = False
                 edge_modifier.use_edge_sharp = True
 
-            if LDrawNode.bevel_edges:
+            if options.bevel_edges:
                 bevel_modifier = obj.modifiers.new("Bevel", type='BEVEL')
                 bevel_modifier.width = 0.10
                 bevel_modifier.segments = 4
@@ -206,7 +210,7 @@ class LDrawNode:
 
     @staticmethod
     def bmesh_ops(mesh, geometry):
-        if LDrawNode.bevel_edges:
+        if options.bevel_edges:
             mesh.use_customdata_edge_bevel = True
 
         bm = bmesh.new()
@@ -217,7 +221,7 @@ class LDrawNode:
         bm.edges.ensure_lookup_table()
 
         weld_distance = 0.10
-        if LDrawNode.remove_doubles:
+        if options.remove_doubles:
             bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=weld_distance)
 
         bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
@@ -230,7 +234,6 @@ class LDrawNode:
         # Create edgeIndices dictionary, which is the list of edges as pairs of indicies into our bm.verts array
         edge_indices = {}
         for edge in geometry.edges:
-            # print(edge)
             # Find index of nearest points in bm.verts to geomEdge[0] and geomEdge[1]
             edges0 = [index for (co, index, dist) in kd.find_range(edge[0], weld_distance)]
             edges1 = [index for (co, index, dist) in kd.find_range(edge[1], weld_distance)]
@@ -299,11 +302,11 @@ class LDrawNode:
             if material.name not in mesh.materials:
                 mesh.materials.append(material)
             f.material_index = mesh.materials.find(material.name)
-            f.use_smooth = LDrawNode.shade_smooth
+            f.use_smooth = options.shade_smooth
 
     @staticmethod
     def do_gaps(mesh):
-        scale = LDrawNode.gap_scale
+        scale = options.gap_scale
         gaps_scale_matrix = mathutils.Matrix((
             (scale, 0.0, 0.0, 0.0),
             (0.0, scale, 0.0, 0.0),

@@ -11,6 +11,30 @@ class LDrawColors:
 
     colors = {}
 
+    @staticmethod
+    def reset_caches():
+        LDrawColors.colors = {}
+
+    @staticmethod
+    def __is_int(s):
+        try:
+            int(s)
+            return True
+        except ValueError:
+            return False
+
+    @staticmethod
+    def get_color(color_code):
+        if options.debug_text:
+            print(len(LDrawColors.colors))
+
+        if LDrawColors.__is_int(color_code):
+            color_int = int(color_code)
+            if color_int in LDrawColors.colors:
+                return LDrawColors.colors[color_int]
+
+        return None
+
     # if this is made a classmethod, BlenderMaterials sees colors as empty
     @staticmethod
     def read_color_table(ldraw_path):
@@ -35,13 +59,19 @@ class LDrawColors:
 
                     name = line_split[2]
                     code = int(line_split[4])
+
                     linear_rgba = LDrawColors.hex_digits_to_linear_rgba(line_split[6][1:], 1.0)
+                    alpha = linear_rgba[3]
+                    linear_rgba = LDrawColors.srgb_to_linear_rgb(linear_rgba[0:3])
+
                     lineaer_rgba_edge = LDrawColors.hex_digits_to_linear_rgba(line_split[8][1:], 1.0)  # if color_code == 24, color_code = edge_color_code
+                    lineaer_rgba_edge = LDrawColors.srgb_to_linear_rgb(lineaer_rgba_edge[0:3])
+
                     color = {
                         "name": name,
-                        "color": linear_rgba[0:3],
-                        "alpha": linear_rgba[3],
-                        "edge_color": lineaer_rgba_edge[0:3],
+                        "color": linear_rgba,
+                        "alpha": alpha,
+                        "edge_color": lineaer_rgba_edge,
                         "luminance": 0.0,
                         "material": "BASIC"
                     }
@@ -77,11 +107,6 @@ class LDrawColors:
                         color["maxsize"] = LDrawColors.__get_value(subline, "MAXSIZE")
 
                     LDrawColors.colors[code] = color
-
-        # Color Space Management: Convert these sRGB color values to Blender's linear RGB color space
-        for key in LDrawColors.colors:
-            LDrawColors.colors[key]["color"] = LDrawColors.srgb_to_linear_rgb(LDrawColors.colors[key]["color"])
-            LDrawColors.colors[key]["edge_color"] = LDrawColors.srgb_to_linear_rgb(LDrawColors.colors[key]["edge_color"])
 
     @staticmethod
     def __clamp(value):
