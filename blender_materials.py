@@ -943,6 +943,7 @@ class BlenderMaterials:
             group.links.new(node_principled.outputs['BSDF'], node_output.inputs['Shader'])
 
     @classmethod
+    # https://blender.stackexchange.com/a/137791
     # https://blenderartists.org/t/realistic-glass-in-eevee/1149937/19
     def __create_blender_lego_glass_node_group(cls):
         group_name = 'Lego Glass'
