@@ -32,6 +32,7 @@ class BlenderMaterials:
 
         cls.__create_blender_lego_standard_node_group()
         cls.__create_blender_lego_transparent_node_group()
+        cls.__create_blender_lego_glass_node_group()
         cls.__create_blender_lego_transparent_fluorescent_node_group()
         cls.__create_blender_lego_rubber_node_group()
         cls.__create_blender_lego_rubber_translucent_node_group()
@@ -170,6 +171,14 @@ class BlenderMaterials:
     def __node_lego_transparent(nodes, color, x, y):
         node = nodes.new('ShaderNodeGroup')
         node.node_tree = bpy.data.node_groups['Lego Transparent']
+        node.location = x, y
+        node.inputs['Color'].default_value = color
+        return node
+
+    @staticmethod
+    def __node_lego_glass(nodes, color, x, y):
+        node = nodes.new('ShaderNodeGroup')
+        node.node_tree = bpy.data.node_groups['Lego Glass']
         node.location = x, y
         node.inputs['Color'].default_value = color
         return node
@@ -492,7 +501,8 @@ class BlenderMaterials:
             if LDrawColors.is_fluorescent_transparent(col_name):
                 node = cls.__node_lego_transparent_fluorescent(nodes, diff_color, 0, 5)
             else:
-                node = cls.__node_lego_transparent(nodes, diff_color, 0, 5)
+                # node = cls.__node_lego_transparent(nodes, diff_color, 0, 5)
+                node = cls.__node_lego_glass(nodes, diff_color, 0, 5)
         else:
             node = cls.__node_lego_standard(nodes, diff_color, 0, 5)
 
@@ -927,6 +937,96 @@ class BlenderMaterials:
             group.links.new(node_input.outputs['Color'], node_principled.inputs['Base Color'])
             group.links.new(node_input.outputs['Normal'], node_principled.inputs['Normal'])
             group.links.new(node_principled.outputs['BSDF'], node_output.inputs['Shader'])
+
+    @classmethod
+    # https://blenderartists.org/t/realistic-glass-in-eevee/1149937/19
+    def __create_blender_lego_glass_node_group(cls):
+        group_name = 'Lego Glass'
+        if bpy.data.node_groups.get(group_name) is None:
+            print("createBlenderLegoGlassNodeGroup #create")
+
+            group = bpy.data.node_groups.new(group_name, 'ShaderNodeTree')
+
+            i1 = group.nodes.new("NodeGroupInput")
+            i1.location = (-465.2269, 27.7136)
+            # i1.label = "i1"
+
+            if "Color" not in group.inputs:
+                group.inputs.new('NodeSocketColor', "Color")
+            is1 = group.inputs["Color"]
+
+            if "Normal" not in group.inputs:
+                group.inputs.new('NodeSocketVectorDirection', "Normal")
+            is2 = group.inputs["Normal"]
+
+            s1 = group.nodes.new("ShaderNodeBsdfGlass")
+            s1.location = (-94.0096, -123.3116)
+            s1.inputs[1].default_value = 0.0
+            s1.inputs[2].default_value = 1.45
+            # s1.label = "s1"
+
+            s2 = group.nodes.new("ShaderNodeBsdfGlossy")
+            s2.location = (295.1122, -79.7802)
+            s2.inputs[1].default_value = 0.5
+            # s2.label = "s2"
+
+            s3 = group.nodes.new("ShaderNodeFresnel")
+            s3.location = (-487.2804, 202.5795)
+            s3.inputs[0].default_value = 1.4
+            # s3.label = "s3"
+
+            s8 = group.nodes.new("ShaderNodeBsdfGlossy")
+            s8.location = (-94.9641, -396.0273)
+            s8.inputs[1].default_value = 0.5
+            # s8.label = "s8"
+
+            s4 = group.nodes.new("ShaderNodeRGBCurve")
+            s4.location = (-137.4662, 390.0757)
+            s4.inputs[0].default_value = 0.5
+            # s4.label = "s4"
+            c = 3
+            r = 0
+            g = 1
+            b = 2
+            c = s4.mapping.curves[c]
+            c.points.new(0.0000, 0.0000)
+            c.points.new(0.6227, 0.2438)
+            c.points.new(1.0000, 1.0000)
+
+            s5 = group.nodes.new("ShaderNodeMixShader")
+            s5.location = (293.4988, 100.1442)
+            s5.inputs[0].default_value = 0.25
+            # s5.label = "s5"
+
+            s6 = group.nodes.new("ShaderNodeFresnel")
+            s6.location = (289.9015, 280.8444)
+            s6.inputs[0].default_value = 1.4
+            # s6.label = "s6"
+
+            s7 = group.nodes.new("ShaderNodeMixShader")
+            s7.location = (583.3330, 104.1106)
+            s7.inputs[0].default_value = 0.5
+            # s7.label = "s7"
+
+            o1 = group.nodes.new("NodeGroupOutput")
+            o1.location = (783.3330, 0.0000)
+            # o1.label = "o1"
+
+            if "Shader" not in group.outputs:
+                group.outputs.new('NodeSocketShader', "Shader")
+            os1 = group.outputs["Shader"]
+
+            group.links.new(i1.outputs[0], s1.inputs[0])
+            group.links.new(i1.outputs[1], s1.inputs[3])
+            group.links.new(i1.outputs[0], s2.inputs[0])
+            group.links.new(s1.outputs[0], s5.inputs[1])
+            group.links.new(s8.outputs[0], s5.inputs[2])
+            group.links.new(s2.outputs[0], s7.inputs[2])
+            group.links.new(s5.outputs[0], s7.inputs[1])
+            group.links.new(s7.outputs[0], o1.inputs[0])
+            group.links.new(s3.outputs[0], s4.inputs[1])
+            group.links.new(s4.outputs[0], s5.inputs[0])
+            group.links.new(s6.outputs[0], s7.inputs[0])
 
     @classmethod
     def __create_blender_lego_transparent_fluorescent_node_group(cls):
