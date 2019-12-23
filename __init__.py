@@ -171,6 +171,19 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         default=False
     )
 
+    set_end_frame: bpy.props.BoolProperty(
+        name="Set step end frame",
+        description="Set the end frame to the last step",
+        default=False
+    )
+
+    frames_per_step: bpy.props.IntProperty(
+        name="Frames per step",
+        description="Frames per step",
+        default=3,
+        min=1,
+    )
+
     def execute(self, context):
         import time
         start = time.monotonic()
@@ -191,6 +204,8 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         options.meta_clear = self.meta_clear
         options.meta_pause = self.meta_pause
         options.meta_save = self.meta_save
+        options.set_end_frame = self.set_end_frame
+        options.frames_per_step = self.frames_per_step
 
         ldraw_import.LDrawImporter.do_import(bpy.path.abspath(self.filepath), self.ldraw_path, self.clear_cache)
 
@@ -225,6 +240,8 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         box.label(text="Meta Commands")
         box.prop(self, "meta_print_write")
         box.prop(self, "meta_step")
+        box.prop(self, "frames_per_step")
+        box.prop(self, "set_end_frame")
         box.prop(self, "meta_clear")
         box.prop(self, "meta_pause")
         box.prop(self, "meta_save")

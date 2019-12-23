@@ -14,3 +14,6 @@ gap_scale = 0.997
 debug_text = False
 no_studs = False
 bevel_edges = False
+set_end_frame = False
+starting_step_frame = 1
+frames_per_step = 3

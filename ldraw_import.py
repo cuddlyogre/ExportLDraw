@@ -101,8 +101,9 @@ class LDrawImporter:
                 bpy.context.scene.collection.children.link(root_collection)
 
         if options.meta_step:
-            bpy.context.scene.frame_end = LDrawNode.last_frame + 3
-            bpy.context.scene.frame_set(bpy.context.scene.frame_end)
+            if options.set_end_frame:
+                bpy.context.scene.frame_end = LDrawNode.last_frame + options.frames_per_step
+                bpy.context.scene.frame_set(bpy.context.scene.frame_end)
 
         # https://blender.stackexchange.com/questions/38611/setting-camera-clip-end-via-python
         clip_end = 10000

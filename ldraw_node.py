@@ -146,8 +146,8 @@ class LDrawNode:
                 if options.debug_text:
                     print(LDrawNode.current_step)
 
-                start_frame = 1
-                frame_length = 3
+                start_frame = options.starting_step_frame
+                frame_length = options.frames_per_step
                 bpy.context.scene.frame_set(start_frame)
                 obj.hide_viewport = True
                 obj.hide_render = True
