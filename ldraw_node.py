@@ -16,6 +16,7 @@ class LDrawNode:
     last_frame = 0
     face_info_cache = {}
     geometry_cache = {}
+    top_group = None
 
     def __init__(self, file, color_code="16", matrix=matrices.identity):
         self.file = file
@@ -27,6 +28,7 @@ class LDrawNode:
     def reset(cls):
         cls.current_step = 0
         cls.last_frame = 0
+        cls.top_group = None
 
     @classmethod
     def reset_caches(cls):
@@ -39,7 +41,13 @@ class LDrawNode:
 
         if self.color_code != "16":
             parent_color_code = self.color_code
-        key = f"{parent_color_code}_{self.file.name}"
+
+        key = []
+        key.append(parent_color_code)
+        if options.use_alt_colors:
+            key.append("alt")
+        key.append(self.file.name)
+        key = "_".join(key)
 
         model_types = ['model', 'unofficial_model', 'submodel', None]
         is_model = self.file.part_type in model_types
@@ -60,6 +68,10 @@ class LDrawNode:
                 print("===========")
 
             new_group = bpy.data.collections.new(self.file.name)
+            if LDrawNode.top_group is None:
+                LDrawNode.top_group = new_group
+                print(LDrawNode.get_top_group().name)
+
             if parent_group is not None:
                 parent_group.children.link(new_group)
 
@@ -187,6 +199,10 @@ class LDrawNode:
             # for m in obj.modifiers:
             #     if m.type == 'EDGE_SPLIT':
             #         obj.modifiers.remove(m)
+
+    @staticmethod
+    def get_top_group():
+        return LDrawNode.top_group
 
     @staticmethod
     def create_mesh(key, geometry):

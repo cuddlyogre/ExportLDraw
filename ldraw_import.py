@@ -71,21 +71,21 @@ class LDrawImporter:
             filesystem.reset_caches()
             filesystem.append_search_paths(ldraw_path)
 
-            LDrawColors.reset_caches()
-            LDrawColors.read_color_table(ldraw_path)
-
             SpecialBricks.reset_caches()
             SpecialBricks.build_slope_angles()
 
             LDrawFile.reset_caches()
             LDrawNode.reset_caches()
 
-        BlenderMaterials.reset_caches()
-        BlenderMaterials.create_blender_node_groups()
-
         options.first_run = False
 
         LDrawNode.reset()
+
+        LDrawColors.reset_caches()
+        LDrawColors.read_color_table(ldraw_path)
+
+        BlenderMaterials.reset_caches()
+        BlenderMaterials.create_blender_node_groups()
 
         filename = LDrawImporter.handle_mpd(filename)
         ldraw_file = LDrawFile(filename)
@@ -95,10 +95,8 @@ class LDrawImporter:
         root_node = LDrawNode(ldraw_file)
         root_node.load()
 
-        if ldraw_file.name in bpy.data.collections:
-            root_collection = bpy.data.collections[ldraw_file.name]
-            if ldraw_file.name not in bpy.context.scene.collection.children:
-                bpy.context.scene.collection.children.link(root_collection)
+        if LDrawNode.get_top_group() is not None:
+            bpy.context.scene.collection.children.link(LDrawNode.get_top_group())
 
         if options.meta_step:
             if options.set_end_frame:

@@ -63,7 +63,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
     use_alt_colors: bpy.props.BoolProperty(
         name="Use alt colors",
         description="Use alternate color settings",
-        default=False,
+        default=True,
     )
 
     remove_doubles: bpy.props.BoolProperty(

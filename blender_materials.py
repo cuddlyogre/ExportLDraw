@@ -1,6 +1,7 @@
 import bpy
 import mathutils
 
+from . import options
 from .ldraw_colors import LDrawColors
 
 
@@ -60,6 +61,9 @@ class BlenderMaterials:
             blender_name = "Material_{0}_c".format(color_code)
         else:
             blender_name = "Material_{0}".format(color_code)
+
+        if options.use_alt_colors:
+            blender_name = f"{blender_name}_alt"
 
         # Create new material
         col = LDrawColors.get_color(pure_color_code)
