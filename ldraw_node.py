@@ -47,6 +47,8 @@ class LDrawNode:
         key.append(parent_color_code)
         if options.display_logo:
             key.append(options.chosen_logo)
+        if options.remove_doubles:
+            key.append("rd")
         if options.use_alt_colors:
             key.append("alt")
         if options.curved_walls:

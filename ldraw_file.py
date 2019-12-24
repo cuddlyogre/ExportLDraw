@@ -1,5 +1,6 @@
 import os
 import mathutils
+import re
 
 from . import options
 from . import filesystem
@@ -85,8 +86,14 @@ class LDrawFile:
 
                     key = []
                     key.append(options.resolution)
-                    key.append(filename)
+                    if options.display_logo:
+                        key.append(options.chosen_logo)
+                    if options.remove_doubles:
+                        key.append("rd")
+                    key.append(color_code)
+                    key.append(os.path.basename(filename))
                     key = "_".join([k.lower() for k in key])
+                    key = re.sub(r"[^a-z0-9._]", "-", key)
 
                     if key not in LDrawFile.file_cache:
                         ldraw_file = LDrawFile(filename)
