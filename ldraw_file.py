@@ -21,10 +21,10 @@ class LDrawFile:
         self.part_type = None
         self.lines = None
 
-    @classmethod
-    def reset_caches(cls):
-        cls.mpd_file_cache = {}
-        cls.file_cache = {}
+    @staticmethod
+    def reset_caches():
+        LDrawFile.mpd_file_cache = {}
+        LDrawFile.file_cache = {}
 
     def read_file(self):
         if self.filepath in LDrawFile.mpd_file_cache:
@@ -105,3 +105,50 @@ class LDrawFile:
                         self.geometry.parse_edge(params)
                     elif params[0] in ["3", "4"]:
                         self.geometry.parse_face(params)
+
+    @classmethod
+    def handle_mpd(cls, filepath):
+        ldraw_file = LDrawFile(filepath)
+        ldraw_file.read_file()
+        lines = ldraw_file.lines
+
+        if not lines[0].lower().startswith("0 f"):
+            return filepath
+
+        root_file = None
+        current_file = None
+        for line in lines:
+            params = line.strip().split()
+
+            if len(params) == 0:
+                continue
+
+            while len(params) < 9:
+                params.append("")
+
+            if params[0] == "0" and params[1].lower() == "file":
+                cls.parse_current_file(current_file)
+                current_file = LDrawFile(line[7:].lower())
+                current_file.lines = []
+
+                if root_file is None:
+                    root_file = line[7:].lower()
+
+            elif params[0] == "0" and params[1].lower() == "nofile":
+                cls.parse_current_file(current_file)
+                current_file = None
+
+            else:
+                if current_file is not None:
+                    current_file.lines.append(line)
+
+        cls.parse_current_file(current_file)
+
+        if root_file is not None:
+            return root_file
+        return filepath
+
+    @classmethod
+    def parse_current_file(cls, ldraw_file):
+        if ldraw_file is not None:
+            cls.mpd_file_cache[ldraw_file.filepath] = ldraw_file
