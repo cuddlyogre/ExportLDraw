@@ -68,9 +68,6 @@ class LDrawImporter:
         bpy.context.scene.eevee.use_taa_reprojection = True
 
         if clear_cache or options.first_run:
-            filesystem.reset_caches()
-            filesystem.append_search_paths(ldraw_path)
-
             SpecialBricks.reset_caches()
             SpecialBricks.build_slope_angles()
 
@@ -78,6 +75,9 @@ class LDrawImporter:
             LDrawNode.reset_caches()
 
         options.first_run = False
+
+        filesystem.reset_caches()
+        filesystem.append_search_paths(ldraw_path)
 
         LDrawNode.reset()
 

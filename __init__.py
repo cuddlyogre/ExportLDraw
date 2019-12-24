@@ -78,6 +78,18 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         default=True,
     )
 
+    curved_walls: bpy.props.BoolProperty(
+        name="Curved walls",
+        description="Makes surfaces look slightly concave",
+        default=False,
+    )
+
+    add_subsurface: bpy.props.BoolProperty(
+        name="Add subsurface",
+        description="Add subsurface to materials",
+        default=False,
+    )
+
     bevel_edges: bpy.props.BoolProperty(
         name="Bevel edges",
         description="Add bevel to edges",
@@ -188,7 +200,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         import time
         start = time.monotonic()
 
-        filesystem.resolution = self.resolution
+        options.resolution = self.resolution
         options.use_alt_colors = self.use_alt_colors
         options.remove_doubles = self.remove_doubles
         options.shade_smooth = self.shade_smooth
@@ -206,6 +218,8 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         options.meta_save = self.meta_save
         options.set_end_frame = self.set_end_frame
         options.frames_per_step = self.frames_per_step
+        options.curved_walls = self.curved_walls
+        options.add_subsurface = self.add_subsurface
 
         ldraw_import.LDrawImporter.do_import(bpy.path.abspath(self.filepath), self.ldraw_path, self.clear_cache)
 
@@ -223,8 +237,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         box.label(text="LDraw filepath:", icon='FILEBROWSER')
         box.prop(self, "ldraw_path")
         box.prop(self, "use_alt_colors")
-        box.prop(self, "shade_smooth")
-        box.prop(self, "remove_doubles")
         box.prop(self, "resolution", expand=True)
         box.prop(self, "display_logo")
         box.prop(self, "chosen_logo")
@@ -233,9 +245,13 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         box.prop(self, "gap_scale")
 
         box.label(text="Extras")
+        box.prop(self, "shade_smooth")
+        box.prop(self, "remove_doubles")
         box.prop(self, "clear_cache")
         box.prop(self, "debug_text")
         box.prop(self, "no_studs")
+        box.prop(self, "curved_walls")
+        box.prop(self, "add_subsurface")
 
         box.label(text="Meta Commands")
         box.prop(self, "meta_print_write")

@@ -55,9 +55,12 @@ class LDrawFile:
                 elif params[1].lower() in ['print', 'write']:
                     if options.meta_print_write:
                         print(line[7:].lower().strip())
+                elif params[1].lower() in ['clear']:
+                    ldraw_node = LDrawNode('clear')
+                    self.child_nodes.append(ldraw_node)
                 elif params[1].lower() in ['step']:
                     if options.meta_step:
-                        ldraw_node = LDrawNode('skip')
+                        ldraw_node = LDrawNode('step')
                         self.child_nodes.append(ldraw_node)
             else:
                 if self.name == "":
@@ -80,12 +83,17 @@ class LDrawFile:
                             if filesystem.locate(new_filename):
                                 filename = new_filename
 
-                    if filename not in LDrawFile.file_cache:
+                    key = []
+                    key.append(options.resolution)
+                    key.append(filename)
+                    key = "_".join([k.lower() for k in key])
+
+                    if key not in LDrawFile.file_cache:
                         ldraw_file = LDrawFile(filename)
                         ldraw_file.read_file()
                         ldraw_file.parse_file()
-                        LDrawFile.file_cache[filename] = ldraw_file
-                    ldraw_file = LDrawFile.file_cache[filename]
+                        LDrawFile.file_cache[key] = ldraw_file
+                    ldraw_file = LDrawFile.file_cache[key]
 
                     ldraw_node = LDrawNode(ldraw_file, color_code=color_code, matrix=matrix)
                     self.child_nodes.append(ldraw_node)

@@ -17,3 +17,6 @@ bevel_edges = False
 set_end_frame = False
 starting_step_frame = 1
 frames_per_step = 3
+curved_walls = False
+add_subsurface = False
+resolution = "Standard"

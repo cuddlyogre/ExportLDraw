@@ -9,8 +9,6 @@ class BlenderMaterials:
     """Creates and stores a cache of materials for Blender"""
 
     material_cache = {}
-    curved_walls = False
-    add_subsurface = False
 
     @classmethod
     def reset_caches(cls):
@@ -48,29 +46,30 @@ class BlenderMaterials:
     @classmethod
     def get_material(cls, color_code, is_slope_material=False):
         pure_color_code = color_code
+
+        key = []
+        key.append(color_code)
+        if options.use_alt_colors:
+            key.append("alt")
         if is_slope_material:
-            color_code = color_code + "_s"
+            key.append("s")
+        if options.curved_walls:
+            key.append("c")
+        if options.add_subsurface:
+            key.append("ss")
+        key = "_".join([k.lower() for k in key])
 
         # If it's already in the cache, use that
-        if color_code in cls.material_cache:
-            result = cls.material_cache[color_code]
+        if key in cls.material_cache:
+            result = cls.material_cache[key]
             return result
-
-        # Create a name for the material based on the color
-        if cls.curved_walls and not is_slope_material:
-            blender_name = "Material_{0}_c".format(color_code)
-        else:
-            blender_name = "Material_{0}".format(color_code)
-
-        if options.use_alt_colors:
-            blender_name = f"{blender_name}_alt"
 
         # Create new material
         col = LDrawColors.get_color(pure_color_code)
-        material = cls.__create_node_based_material(blender_name, col, is_slope_material)
+        material = cls.__create_node_based_material(key, col, is_slope_material)
 
         # Add material to cache
-        cls.material_cache[color_code] = material
+        cls.material_cache[key] = material
         return material
 
     @staticmethod
@@ -82,10 +81,11 @@ class BlenderMaterials:
         """Set Cycles Material Values."""
 
         # Reuse current material if it exists, otherwise create a new material
-        if bpy.data.materials.get(blender_name) is None:
-            material = bpy.data.materials.new(blender_name)
-        else:
-            material = bpy.data.materials[blender_name]
+        # if bpy.data.materials.get(blender_name) is None:
+        #     material = bpy.data.materials.new(blender_name)
+        # else:
+        #     material = bpy.data.materials[blender_name]
+        material = bpy.data.materials.new(blender_name)
 
         # Use nodes
         material.use_nodes = True
@@ -129,7 +129,7 @@ class BlenderMaterials:
 
             if is_slope_material:
                 cls.__create_cycles_slope_texture(nodes, links, 0.6)
-            elif cls.curved_walls:
+            elif options.curved_walls:
                 cls.__create_cycles_concave_walls(nodes, links, 0.2)
 
             material["Lego.isTransparent"] = is_transparent
@@ -290,7 +290,7 @@ class BlenderMaterials:
     def __node_principled(cls, nodes, subsurface, sub_rad, metallic, roughness, clearcoat, clearcoat_roughness, ior, transmission, x, y):
         node = nodes.new('ShaderNodeBsdfPrincipled')
         node.location = x, y
-        if cls.add_subsurface:
+        if options.add_subsurface:
             node.inputs['Subsurface'].default_value = subsurface
             node.inputs['Subsurface Radius'].default_value = mathutils.Vector((sub_rad, sub_rad, sub_rad))
         node.inputs['Metallic'].default_value = metallic
@@ -917,7 +917,7 @@ class BlenderMaterials:
             node_main = cls.__node_principled(group.nodes, 0.05, 0.05, 0.0, 0.1, 0.0, 0.0, 1.45, 0.0, 0, 0)
             output_name = 'BSDF'
             color_name = 'Base Color'
-            if cls.add_subsurface:
+            if options.add_subsurface:
                 group.links.new(node_input.outputs['Color'], node_main.inputs['Subsurface Color'])
 
             # link nodes together
@@ -942,9 +942,9 @@ class BlenderMaterials:
             group.links.new(node_input.outputs['Normal'], node_principled.inputs['Normal'])
             group.links.new(node_principled.outputs['BSDF'], node_output.inputs['Shader'])
 
-    @classmethod
     # https://blender.stackexchange.com/a/137791
     # https://blenderartists.org/t/realistic-glass-in-eevee/1149937/19
+    @classmethod
     def __create_blender_lego_glass_node_group(cls):
         group_name = 'Lego Glass'
         if bpy.data.node_groups.get(group_name) is None:
@@ -1132,7 +1132,7 @@ class BlenderMaterials:
             node_mix = cls.__node_mix(group.nodes, 0.5, 0, 90)
 
             node_main = cls.__node_principled(group.nodes, 1.0, 0.05, 0.0, 0.5, 0.0, 0.03, 1.45, 0.0, -242, 154 + 240)
-            if cls.add_subsurface:
+            if options.add_subsurface:
                 group.links.new(node_input.outputs['Color'], node_main.inputs['Subsurface Color'])
             group.links.new(node_input.outputs['Color'], node_emit.inputs['Color'])
             main_color = 'Base Color'
@@ -1196,7 +1196,7 @@ class BlenderMaterials:
             group.links.new(node_sep_hsv.outputs['S'], node_com_hsv.inputs['S'])
             group.links.new(node_sep_hsv.outputs['V'], node_multiply.inputs[0])
             group.links.new(node_com_hsv.outputs['Color'], node_principled.inputs['Base Color'])
-            if cls.add_subsurface:
+            if options.add_subsurface:
                 group.links.new(node_com_hsv.outputs['Color'], node_principled.inputs['Subsurface Color'])
             group.links.new(node_tex_coord.outputs['Object'], node_tex_wave.inputs['Vector'])
             group.links.new(node_tex_wave.outputs['Fac'], node_color_ramp.inputs['Fac'])
@@ -1293,7 +1293,7 @@ class BlenderMaterials:
             node_mix = cls.__node_mix(group.nodes, 0.5, 65, -40)
 
             group.links.new(node_input.outputs['Color'], node_principled.inputs['Base Color'])
-            if cls.add_subsurface:
+            if options.add_subsurface:
                 group.links.new(node_input.outputs['Color'], node_principled.inputs['Subsurface Color'])
             group.links.new(node_input.outputs['Normal'], node_principled.inputs['Normal'])
             group.links.new(node_input.outputs['Normal'], node_translucent.inputs['Normal'])

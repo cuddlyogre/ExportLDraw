@@ -1,7 +1,8 @@
 import os
 
+from . import options
+
 search_paths = []
-resolution = None
 
 
 def reset_caches():
@@ -16,20 +17,20 @@ def append_search_path(path):
 
 def append_search_paths(base_path):
     append_search_path(os.path.join(base_path, "models"))
+
     append_search_path(os.path.join(base_path, "unofficial", "lsynth"))
-
-    append_search_path(os.path.join(base_path, "parts"))
     append_search_path(os.path.join(base_path, "unofficial", "parts"))
+    append_search_path(os.path.join(base_path, "parts"))
 
-    if resolution == "High":
+    if options.resolution == "High":
         append_search_path(os.path.join(base_path, "unofficial", "p", "48"))
-    elif resolution == "Low":
+    elif options.resolution == "Low":
         append_search_path(os.path.join(base_path, "unofficial", "p", "8"))
     append_search_path(os.path.join(base_path, "unofficial", "p"))
 
-    if resolution == "High":
+    if options.resolution == "High":
         append_search_path(os.path.join(base_path, "p", "48"))
-    elif resolution == "Low":
+    elif options.resolution == "Low":
         append_search_path(os.path.join(base_path, "p", "8"))
     append_search_path(os.path.join(base_path, "p"))
 

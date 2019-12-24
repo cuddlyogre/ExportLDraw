@@ -43,11 +43,18 @@ class LDrawNode:
             parent_color_code = self.color_code
 
         key = []
+        key.append(options.resolution)
         key.append(parent_color_code)
+        if options.display_logo:
+            key.append(options.chosen_logo)
         if options.use_alt_colors:
             key.append("alt")
+        if options.curved_walls:
+            key.append("c")
+        if options.add_subsurface:
+            key.append("ss")
         key.append(self.file.name)
-        key = "_".join(key)
+        key = "_".join([k.lower() for k in key])
 
         model_types = ['model', 'unofficial_model', 'submodel', None]
         is_model = self.file.part_type in model_types
@@ -70,7 +77,8 @@ class LDrawNode:
             new_group = bpy.data.collections.new(self.file.name)
             if LDrawNode.top_group is None:
                 LDrawNode.top_group = new_group
-                print(LDrawNode.get_top_group().name)
+                if options.debug_text:
+                    print(LDrawNode.get_top_group().name)
 
             if parent_group is not None:
                 parent_group.children.link(new_group)
@@ -126,8 +134,16 @@ class LDrawNode:
                         geometry.edges.append((matrix @ edge[0], matrix @ edge[1]))
 
             for child in self.file.child_nodes:
-                if child.file == "skip":
+                if child.file == "step":
                     LDrawNode.current_step += 1
+                elif child.file == "clear":
+                    if LDrawNode.top_group is not None:
+                        for ob in LDrawNode.top_group.all_objects:
+                            bpy.context.scene.frame_set(LDrawNode.last_frame)
+                            ob.hide_viewport = True
+                            ob.hide_render = True
+                            ob.keyframe_insert(data_path="hide_render")
+                            ob.keyframe_insert(data_path="hide_viewport")
                 else:
                     child.load(parent_matrix=matrix,
                                parent_color_code=parent_color_code,
