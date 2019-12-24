@@ -504,8 +504,8 @@ class BlenderMaterials:
             if LDrawColors.is_fluorescent_transparent(col_name):
                 node = cls.__node_lego_transparent_fluorescent(nodes, diff_color, 0, 5)
             else:
-                # node = cls.__node_lego_transparent(nodes, diff_color, 0, 5)
-                node = cls.__node_lego_glass(nodes, diff_color, 0, 5)
+                node = cls.__node_lego_transparent(nodes, diff_color, 0, 5)
+                # node = cls.__node_lego_glass(nodes, diff_color, 0, 5)
         else:
             node = cls.__node_lego_standard(nodes, diff_color, 0, 5)
 
