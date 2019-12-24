@@ -4,8 +4,8 @@ from .face_info import FaceInfo
 
 class LDrawGeometry:
     def __init__(self):
-        self.edges = []
         self.vertices = []
+        self.edges = []
         self.faces = []
         self.face_info = []
 
