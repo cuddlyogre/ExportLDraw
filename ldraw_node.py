@@ -12,6 +12,7 @@ from .special_bricks import SpecialBricks
 
 
 class LDrawNode:
+    current_part = 0
     current_step = 0
     last_frame = 0
     face_info_cache = {}
@@ -103,6 +104,11 @@ class LDrawNode:
                 print(self.file.name)
                 print("===========")
 
+        if is_part and self.top:
+            LDrawNode.current_part += 1
+
+        # if it's a part and already in the cache, reuse it
+        # meta commands are not in self.top files which is how they are counted
         if self.top and key in LDrawNode.geometry_cache:
             geometry = LDrawNode.geometry_cache[key]
         else:
@@ -136,9 +142,13 @@ class LDrawNode:
                         geometry.edges.append((matrix @ edge[0], matrix @ edge[1]))
 
             for child in self.file.child_nodes:
-                if child.file == "step":
+                if options.meta_step and child.file == "step":  # last_frame is not correct - maybe gets set at the wrong time
                     LDrawNode.current_step += 1
-                elif child.file == "clear":
+                    bpy.context.scene.timeline_markers.new('STEP', frame=LDrawNode.last_frame)
+                elif options.meta_save and child.file == "save":
+                    bpy.context.scene.timeline_markers.new('SAVE', frame=LDrawNode.last_frame)
+                elif options.meta_clear and child.file == "clear":
+                    bpy.context.scene.timeline_markers.new('CLEAR', frame=LDrawNode.last_frame)
                     if LDrawNode.top_group is not None:
                         for ob in LDrawNode.top_group.all_objects:
                             bpy.context.scene.frame_set(LDrawNode.last_frame)
@@ -190,7 +200,7 @@ class LDrawNode:
                 obj.keyframe_insert(data_path="hide_render")
                 obj.keyframe_insert(data_path="hide_viewport")
 
-                if LDrawNode.last_frame <= bpy.context.scene.frame_current:
+                if LDrawNode.last_frame < bpy.context.scene.frame_current:
                     LDrawNode.last_frame = bpy.context.scene.frame_current
 
                 if options.debug_text:

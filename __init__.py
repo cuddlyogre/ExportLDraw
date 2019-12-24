@@ -259,7 +259,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         box.prop(self, "frames_per_step")
         box.prop(self, "set_end_frame")
         box.prop(self, "meta_clear")
-        box.prop(self, "meta_pause")
+        # box.prop(self, "meta_pause")
         box.prop(self, "meta_save")
 
 
