@@ -81,11 +81,10 @@ class BlenderMaterials:
         """Set Cycles Material Values."""
 
         # Reuse current material if it exists, otherwise create a new material
-        # if bpy.data.materials.get(blender_name) is None:
-        #     material = bpy.data.materials.new(blender_name)
-        # else:
-        #     material = bpy.data.materials[blender_name]
-        material = bpy.data.materials.new(blender_name)
+        if bpy.data.materials.get(blender_name) is None:
+            material = bpy.data.materials.new(blender_name)
+        else:
+            material = bpy.data.materials[blender_name]
 
         # Use nodes
         material.use_nodes = True
