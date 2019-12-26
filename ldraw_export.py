@@ -84,7 +84,7 @@ class LDrawExporter:
     # TODO: if obj["section_label"] then:
     #  0 // f{obj["section_label"]}
     @classmethod
-    def export_subfiles(cls,obj, lines):
+    def export_subfiles(cls, obj, lines):
         import re
         # subpart.dat
         # subpart.dat.001 both match
@@ -116,7 +116,7 @@ class LDrawExporter:
 
         line = f"1 16 {x} {z} {y} {a} {c} {b} {g} {i} {h} {d} {f} {e} {name}"
         # line = f"1 4 {x} {y} {z} {a} {b} {c} {d} {e} {f} {g} {h} {i} {name}"
-        lines.extend([line])
+        lines.append(line)
 
         return True
 
@@ -158,7 +158,7 @@ class LDrawExporter:
 
             for v in p.vertices:
                 for vv in mesh.vertices[v].co:
-                    line.extend([cls.fix_round(vv)])
+                    line.append(cls.fix_round(vv))
 
             lines.append(line)
 
@@ -168,7 +168,7 @@ class LDrawExporter:
                 line = ["2", "24"]
                 for v in e.vertices:
                     for vv in mesh.vertices[v].co:
-                        line.extend([cls.fix_round(vv)])
+                        line.append(cls.fix_round(vv))
 
                 lines.append(line)
 
@@ -176,23 +176,6 @@ class LDrawExporter:
         bpy.data.meshes.remove(mesh)
 
         return True
-
-    @staticmethod
-    def write_file(lines, filepath):
-        with open(filepath, 'w') as file:
-            current_color_code = None
-            for line in lines:
-                if len(line) > 2:
-                    new_color_code = int(line[1])
-                    if new_color_code != current_color_code:
-                        current_color_code = new_color_code
-                        name = LDrawColors.get_color(current_color_code)['name']
-                        file.write("\n")
-                        file.write(" ".join(["0 //", name]))
-                        file.write("\n")
-
-                file.write(" ".join(line))
-                file.write("\n")
 
     # objects in "Scene Collection > subfiles" will be output as line type 1
     # objects marked sharp and with a bevel weight of 1.00 will be output as line type 2
@@ -222,7 +205,7 @@ class LDrawExporter:
         header_text_name = "header"
         if header_text_name in bpy.data.texts:
             for line in bpy.data.texts[header_text_name].lines:
-                lines.append([line.body])
+                lines.append(line.body)
 
         part_lines = []
         for obj in objects:
@@ -231,12 +214,27 @@ class LDrawExporter:
                 continue
             cls.export_polygons(obj, part_lines)
 
-        # print(part_lines)
-
         part_lines = sorted(part_lines, key=lambda pl: (int(pl[1]), int(pl[0])))
-        lines.extend(part_lines)
 
-        cls.write_file(lines, filepath)
+        sorted_part_lines = []
+        current_color_code = None
+        for line in part_lines:
+            if len(line) > 2:
+                new_color_code = int(line[1])
+                if new_color_code != current_color_code:
+                    current_color_code = new_color_code
+                    name = LDrawColors.get_color(current_color_code)['name']
+                    sorted_part_lines.append("\n")
+                    sorted_part_lines.append(f"0 // {name}")
+            sorted_part_lines.append(" ".join(line))
+        lines.extend(sorted_part_lines)
+
+        with open(filepath, 'w') as file:
+            for i, line in enumerate(lines):
+                # print(line)
+                if line != "\n":
+                    file.write(line)
+                file.write("\n")
 
         for obj in selected:
             if not obj.select_get():
