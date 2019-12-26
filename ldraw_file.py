@@ -73,7 +73,13 @@ class LDrawFile:
                     color_code = params[1]
 
                     (x, y, z, a, b, c, d, e, f, g, h, i) = map(float, params[2:14])
-                    matrix = mathutils.Matrix(((a, b, c, x), (d, e, f, y), (g, h, i, z), (0, 0, 0, 1)))
+
+                    matrix = mathutils.Matrix((
+                        (a, b, c, x),
+                        (d, e, f, y),
+                        (g, h, i, z),
+                        (0, 0, 0, 1)
+                    ))
 
                     filename = " ".join(params[14:]).lower()
 
