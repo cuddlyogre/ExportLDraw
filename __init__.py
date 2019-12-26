@@ -198,6 +198,12 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         min=1,
     )
 
+    set_timelime_markers: bpy.props.BoolProperty(
+        name="Set timeline markers",
+        description="Set timeline markers for meta commands",
+        default=False
+    )
+
     def execute(self, context):
         import time
         start = time.monotonic()
@@ -222,6 +228,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         options.frames_per_step = self.frames_per_step
         options.curved_walls = self.curved_walls
         options.add_subsurface = self.add_subsurface
+        options.set_timelime_markers = self.set_timelime_markers
 
         ldraw_import.LDrawImporter.do_import(bpy.path.abspath(self.filepath), self.ldraw_path, self.clear_cache)
 
@@ -246,6 +253,16 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         box.prop(self, "bevel_edges")
         box.prop(self, "gap_scale")
 
+        box.label(text="Meta Commands")
+        box.prop(self, "set_timelime_markers")
+        box.prop(self, "meta_print_write")
+        box.prop(self, "meta_step")
+        box.prop(self, "frames_per_step")
+        box.prop(self, "set_end_frame")
+        box.prop(self, "meta_clear")
+        # box.prop(self, "meta_pause")
+        box.prop(self, "meta_save")
+
         box.label(text="Extras")
         box.prop(self, "shade_smooth")
         box.prop(self, "remove_doubles")
@@ -254,15 +271,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         box.prop(self, "no_studs")
         box.prop(self, "curved_walls")
         box.prop(self, "add_subsurface")
-
-        box.label(text="Meta Commands")
-        box.prop(self, "meta_print_write")
-        box.prop(self, "meta_step")
-        box.prop(self, "frames_per_step")
-        box.prop(self, "set_end_frame")
-        box.prop(self, "meta_clear")
-        # box.prop(self, "meta_pause")
-        box.prop(self, "meta_save")
 
 
 class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):

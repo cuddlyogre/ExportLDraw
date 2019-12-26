@@ -114,8 +114,9 @@ class LDrawExporter:
         name = re.sub(r"\.\d+$", "", name)
         # name = re.sub(r"^\d+_", "", name)
 
+        # line = ["1", "16", x, z, y, a, c, b, g, i, h, d, f, e, name]
+        # line = f"1 16 {x} {y} {z} {a} {b} {c} {d} {e} {f} {g} {h} {i} {name}"
         line = f"1 16 {x} {z} {y} {a} {c} {b} {g} {i} {h} {d} {f} {e} {name}"
-        # line = f"1 4 {x} {y} {z} {a} {b} {c} {d} {e} {f} {g} {h} {i} {name}"
         lines.append(line)
 
         return True

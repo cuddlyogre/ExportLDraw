@@ -20,3 +20,4 @@ frames_per_step = 3
 curved_walls = False
 add_subsurface = False
 resolution = "Standard"
+set_timelime_markers = "Standard"

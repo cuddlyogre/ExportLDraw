@@ -53,18 +53,24 @@ class LDrawFile:
                     self.part_type = params[2].lower()
                 elif params[1].lower() == "name:":
                     self.name = line[7:].lower().strip()
+                elif params[1].lower() in ['step']:
+                    if options.meta_step:
+                        ldraw_node = LDrawNode(None)
+                        ldraw_node.meta_command = params[1].lower()
+                        self.child_nodes.append(ldraw_node)
+                elif params[1].lower() in ['save']:
+                    if options.meta_save:
+                        ldraw_node = LDrawNode(None)
+                        ldraw_node.meta_command = params[1].lower()
+                        self.child_nodes.append(ldraw_node)
+                elif params[1].lower() in ['clear']:
+                    if options.meta_clear:
+                        ldraw_node = LDrawNode(None)
+                        ldraw_node.meta_command = params[1].lower()
+                        self.child_nodes.append(ldraw_node)
                 elif params[1].lower() in ['print', 'write']:
                     if options.meta_print_write:
-                        print(line[7:].lower().strip())
-                elif params[1].lower() in ['step']:
-                    ldraw_node = LDrawNode('step')
-                    self.child_nodes.append(ldraw_node)
-                elif params[1].lower() in ['save']:
-                    ldraw_node = LDrawNode('save')
-                    self.child_nodes.append(ldraw_node)
-                elif params[1].lower() in ['clear']:
-                    ldraw_node = LDrawNode('clear')
-                    self.child_nodes.append(ldraw_node)
+                        print(line[7:].strip())
             else:
                 if self.name == "":
                     self.name = os.path.basename(self.filepath)

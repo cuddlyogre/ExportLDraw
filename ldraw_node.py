@@ -24,11 +24,14 @@ class LDrawNode:
         self.color_code = color_code
         self.matrix = matrix
         self.top = False
+        self.meta_command = None
+        self.meta_args = None
 
     @classmethod
     def reset(cls):
         cls.current_step = 0
-        cls.last_frame = 0
+        if options.meta_step:
+            LDrawNode.set_step()
         cls.top_group = None
 
     @classmethod
@@ -36,7 +39,35 @@ class LDrawNode:
         cls.face_info_cache = {}
         cls.geometry_cache = {}
 
+    @staticmethod
+    def set_step():
+        start_frame = options.starting_step_frame
+        frame_length = options.frames_per_step
+        LDrawNode.last_frame = (start_frame + frame_length) + (frame_length * LDrawNode.current_step)
+        if options.set_timelime_markers:
+            bpy.context.scene.timeline_markers.new('STEP', frame=LDrawNode.last_frame)
+
     def load(self, parent_matrix=matrices.identity, parent_color_code="16", geometry=None, is_stud=False, is_edge_logo=False, parent_group=None):
+        if self.file is None:
+            if self.meta_command == "step":
+                LDrawNode.current_step += 1
+                LDrawNode.set_step()
+            elif self.meta_command == "save":
+                if options.set_timelime_markers:
+                    bpy.context.scene.timeline_markers.new('SAVE', frame=LDrawNode.last_frame)
+            elif self.meta_command == "clear":
+                if options.set_timelime_markers:
+                    bpy.context.scene.timeline_markers.new('CLEAR', frame=LDrawNode.last_frame)
+                if LDrawNode.top_group is not None:
+                    for ob in LDrawNode.top_group.all_objects:
+                        bpy.context.scene.frame_set(LDrawNode.last_frame)
+                        ob.hide_viewport = True
+                        ob.hide_render = True
+                        ob.keyframe_insert(data_path="hide_render")
+                        ob.keyframe_insert(data_path="hide_viewport")
+
+            return
+
         if options.no_studs and self.file.name.startswith("stud"):
             return
 
@@ -104,7 +135,7 @@ class LDrawNode:
                 print(self.file.name)
                 print("===========")
 
-        if is_part and self.top:
+        if self.top and is_part:
             LDrawNode.current_part += 1
 
         # if it's a part and already in the cache, reuse it
@@ -142,30 +173,16 @@ class LDrawNode:
                         geometry.edges.append((matrix @ edge[0], matrix @ edge[1]))
 
             for child in self.file.child_nodes:
-                if options.meta_step and child.file == "step":  # last_frame is not correct - maybe gets set at the wrong time
-                    LDrawNode.current_step += 1
-                    bpy.context.scene.timeline_markers.new('STEP', frame=LDrawNode.last_frame)
-                elif options.meta_save and child.file == "save":
-                    bpy.context.scene.timeline_markers.new('SAVE', frame=LDrawNode.last_frame)
-                elif options.meta_clear and child.file == "clear":
-                    bpy.context.scene.timeline_markers.new('CLEAR', frame=LDrawNode.last_frame)
-                    if LDrawNode.top_group is not None:
-                        for ob in LDrawNode.top_group.all_objects:
-                            bpy.context.scene.frame_set(LDrawNode.last_frame)
-                            ob.hide_viewport = True
-                            ob.hide_render = True
-                            ob.keyframe_insert(data_path="hide_render")
-                            ob.keyframe_insert(data_path="hide_viewport")
-                else:
-                    child.load(parent_matrix=matrix,
-                               parent_color_code=parent_color_code,
-                               geometry=geometry,
-                               is_stud=is_stud,
-                               is_edge_logo=is_edge_logo,
-                               parent_group=new_group)
+                child.load(parent_matrix=matrix,
+                           parent_color_code=parent_color_code,
+                           geometry=geometry,
+                           is_stud=is_stud,
+                           is_edge_logo=is_edge_logo,
+                           parent_group=new_group)
 
         if self.top:
-            LDrawNode.geometry_cache[key] = geometry
+            if key not in LDrawNode.geometry_cache:
+                LDrawNode.geometry_cache[key] = geometry
 
             if key not in bpy.data.meshes:
                 mesh = self.create_mesh(key, geometry)  # combine with apply_materials
@@ -177,6 +194,7 @@ class LDrawNode:
             mesh = bpy.data.meshes[key]
 
             obj = bpy.data.objects.new(key, mesh)
+            # obj.matrix_world = parent_matrix @ self.matrix
             obj.matrix_world = matrices.rotation @ parent_matrix @ self.matrix
 
             # https://docs.blender.org/api/current/bpy.types.bpy_struct.html#bpy.types.bpy_struct.keyframe_insert
@@ -186,22 +204,17 @@ class LDrawNode:
                 if options.debug_text:
                     print(LDrawNode.current_step)
 
-                start_frame = options.starting_step_frame
-                frame_length = options.frames_per_step
-                bpy.context.scene.frame_set(start_frame)
+                bpy.context.scene.frame_set(options.starting_step_frame)
                 obj.hide_viewport = True
                 obj.hide_render = True
                 obj.keyframe_insert(data_path="hide_render")
                 obj.keyframe_insert(data_path="hide_viewport")
 
-                bpy.context.scene.frame_set((start_frame + frame_length) + (frame_length * LDrawNode.current_step))
+                bpy.context.scene.frame_set(LDrawNode.last_frame)
                 obj.hide_viewport = False
                 obj.hide_render = False
                 obj.keyframe_insert(data_path="hide_render")
                 obj.keyframe_insert(data_path="hide_viewport")
-
-                if LDrawNode.last_frame < bpy.context.scene.frame_current:
-                    LDrawNode.last_frame = bpy.context.scene.frame_current
 
                 if options.debug_text:
                     print(LDrawNode.last_frame)
