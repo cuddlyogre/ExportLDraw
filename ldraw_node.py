@@ -65,7 +65,6 @@ class LDrawNode:
                         ob.hide_render = True
                         ob.keyframe_insert(data_path="hide_render")
                         ob.keyframe_insert(data_path="hide_viewport")
-
             return
 
         if options.no_studs and self.file.name.startswith("stud"):
@@ -87,6 +86,8 @@ class LDrawNode:
             key.append("c")
         if options.add_subsurface:
             key.append("ss")
+        if parent_color_code == "24":
+            key.append("edge")
         key.append(self.file.name)
         key = "_".join([k.lower() for k in key])
 
@@ -156,6 +157,8 @@ class LDrawNode:
                     for face_info in self.file.geometry.face_info:
                         copy = FaceInfo(color_code=parent_color_code,
                                         grain_slope_allowed=not is_stud)
+                        if parent_color_code == "24":
+                            copy.use_edge_color = True
                         if face_info.color_code != "16":
                             copy.color_code = face_info.color_code
                         new_face_info.append(copy)
@@ -354,8 +357,7 @@ class LDrawNode:
             if face_info.grain_slope_allowed:
                 is_slope_material = SpecialBricks.is_slope_face(filename, f)
 
-            # TODO: options.use_alt_colors use f"{face_info.color_code}_alt"
-            material = BlenderMaterials.get_material(face_info.color_code, is_slope_material=is_slope_material)
+            material = BlenderMaterials.get_material(face_info.color_code, use_edge_color=face_info.use_edge_color, is_slope_material=is_slope_material)
             if material.name not in mesh.materials:
                 mesh.materials.append(material)
             f.material_index = mesh.materials.find(material.name)

@@ -44,7 +44,7 @@ class BlenderMaterials:
         cls.__create_blender_lego_milky_white_node_group()
 
     @classmethod
-    def get_material(cls, color_code, is_slope_material=False):
+    def get_material(cls, color_code, use_edge_color=False, is_slope_material=False):
         pure_color_code = color_code
 
         key = []
@@ -57,6 +57,8 @@ class BlenderMaterials:
             key.append("c")
         if options.add_subsurface:
             key.append("ss")
+        if use_edge_color:
+            key.append("edge")
         key = "_".join([k.lower() for k in key])
 
         # If it's already in the cache, use that
@@ -66,7 +68,7 @@ class BlenderMaterials:
 
         # Create new material
         col = LDrawColors.get_color(pure_color_code)
-        material = cls.__create_node_based_material(key, col, is_slope_material)
+        material = cls.__create_node_based_material(key, col, use_edge_color=use_edge_color, is_slope_material=is_slope_material)
 
         # Add material to cache
         cls.material_cache[key] = material
@@ -77,7 +79,7 @@ class BlenderMaterials:
         return color + (1.0,)
 
     @classmethod
-    def __create_node_based_material(cls, blender_name, col, is_slope_material=False):
+    def __create_node_based_material(cls, blender_name, col, use_edge_color=False, is_slope_material=False):
         """Set Cycles Material Values."""
 
         # Reuse current material if it exists, otherwise create a new material
@@ -97,6 +99,12 @@ class BlenderMaterials:
             nodes.remove(n)
 
         if col is not None:
+            if use_edge_color:
+                color = col["edge_color"] + (1.0,)
+                material.diffuse_color = cls.__get_diffuse_color(col["edge_color"])
+                cls.__create_cycles_basic(nodes, links, color, 1.0, "")
+                return material
+
             color = col["color"] + (1.0,)
             material.diffuse_color = cls.__get_diffuse_color(col["color"])
 
