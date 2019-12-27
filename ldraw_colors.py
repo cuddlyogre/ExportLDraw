@@ -208,11 +208,6 @@ class LDrawColors:
         return None
 
     @classmethod
-    def __overwrite_color(cls, index, color):
-        if index in cls.colors:
-            cls.colors[index]["color"] = color
-
-    @classmethod
     def lighten_rgba(cls, color, scale):
         # Moves the linear RGB values closer to white
         # scale = 0 means full white
