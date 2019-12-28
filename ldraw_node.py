@@ -189,9 +189,9 @@ class LDrawNode:
 
             if key not in bpy.data.meshes:
                 mesh = self.create_mesh(key, geometry)  # combine with apply_materials
-                self.bmesh_ops(mesh, geometry)
                 mesh.use_auto_smooth = options.shade_smooth
                 self.apply_materials(mesh, geometry, self.file.name)  # combine with create_mesh
+                self.bmesh_ops(mesh, geometry)
                 if options.make_gaps:
                     self.do_gaps(mesh)
             mesh = bpy.data.meshes[key]
