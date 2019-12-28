@@ -1,9 +1,8 @@
-import os
 import re
 import math
-import struct
 
 from . import options
+from .ldraw_file import LDrawFile
 
 
 class LDrawColors:
@@ -35,96 +34,53 @@ class LDrawColors:
 
         return None
 
-    # if this is made a classmethod, BlenderMaterials sees colors as empty
     @staticmethod
-    def read_color_table(ldraw_path):
+    def set_color(color_code, color):
+        LDrawColors.colors[color_code] = color
+
+    @staticmethod
+    def read_color_table():
         """Reads the color values from the LDConfig.ldr file. For details of the
         Ldraw color system see: http://www.ldraw.org/article/547"""
+
         if options.use_alt_colors:
-            config_filename = "LDCfgalt.ldr"
+            filepath = "LDCfgalt.ldr"
         else:
-            config_filename = "LDConfig.ldr"
+            filepath = "LDConfig.ldr"
 
-        config_filepath = os.path.join(ldraw_path, config_filename)
-
-        ldconfig_lines = ""
-        if os.path.exists(config_filepath):
-            with open(config_filepath, "rt", encoding="utf_8") as ldconfig:
-                ldconfig_lines = ldconfig.readlines()
-
-        for line in ldconfig_lines:
-            if len(line) > 3:
-                if line[2:4].lower() == '!c':
-                    line_split = line.split()
-
-                    name = line_split[2]
-                    code = int(line_split[4])
-
-                    linear_rgba = LDrawColors.hex_digits_to_linear_rgba(line_split[6][1:], 1.0)
-                    alpha = linear_rgba[3]
-                    linear_rgba = LDrawColors.srgb_to_linear_rgb(linear_rgba[0:3])
-
-                    lineaer_rgba_edge = LDrawColors.hex_digits_to_linear_rgba(line_split[8][1:], 1.0)  # if color_code == 24, color_code = edge_color_code
-                    lineaer_rgba_edge = LDrawColors.srgb_to_linear_rgb(lineaer_rgba_edge[0:3])
-
-                    color = {
-                        "name": name,
-                        "color": linear_rgba,
-                        "alpha": alpha,
-                        "edge_color": lineaer_rgba_edge,
-                        "luminance": 0.0,
-                        "material": "BASIC"
-                    }
-
-                    if "ALPHA" in line_split:
-                        color["alpha"] = int(LDrawColors.__get_value(line_split, "ALPHA")) / 256.0
-
-                    if "LUMINANCE" in line_split:
-                        color["luminance"] = int(LDrawColors.__get_value(line_split, "LUMINANCE"))
-
-                    if "CHROME" in line_split:
-                        color["material"] = "CHROME"
-
-                    if "PEARLESCENT" in line_split:
-                        color["material"] = "PEARLESCENT"
-
-                    if "RUBBER" in line_split:
-                        color["material"] = "RUBBER"
-
-                    if "METAL" in line_split:
-                        color["material"] = "METAL"
-
-                    if "MATERIAL" in line_split:
-                        subline = line_split[line_split.index("MATERIAL"):]
-
-                        color["material"] = LDrawColors.__get_value(subline, "MATERIAL")
-                        hex_digits = LDrawColors.__get_value(subline, "VALUE")[1:]
-                        color["secondary_color"] = LDrawColors.hex_digits_to_linear_rgba(hex_digits, 1.0)
-                        color["fraction"] = LDrawColors.__get_value(subline, "FRACTION")
-                        color["vfraction"] = LDrawColors.__get_value(subline, "VFRACTION")
-                        color["size"] = LDrawColors.__get_value(subline, "SIZE")
-                        color["minsize"] = LDrawColors.__get_value(subline, "MINSIZE")
-                        color["maxsize"] = LDrawColors.__get_value(subline, "MAXSIZE")
-
-                    LDrawColors.colors[code] = color
+        ldraw_file = LDrawFile(filepath)
+        ldraw_file.read_file()
+        ldraw_file.parse_file()
 
     @staticmethod
     def __clamp(value):
         return max(min(value, 1.0), 0.0)
 
-    @staticmethod
-    def __get_value(line, value):
-        """Parses a color value from the ldConfig.ldr file"""
-        if value in line:
-            n = line.index(value)
-            return line[n + 1]
+    @classmethod
+    def lighten_rgba(cls, color, scale):
+        # Moves the linear RGB values closer to white
+        # scale = 0 means full white
+        # scale = 1 means color stays same
+        color = ((1.0 - color[0]) * scale,
+                 (1.0 - color[1]) * scale,
+                 (1.0 - color[2]) * scale,
+                 color[3])
+        return (cls.__clamp(1.0 - color[0]),
+                cls.__clamp(1.0 - color[1]),
+                cls.__clamp(1.0 - color[2]),
+                color[3])
 
     @staticmethod
-    def __srgb_to_rgb_value(value):
-        # See https://en.wikipedia.org/wiki/SRGB#The_reverse_transformation
-        if value < 0.04045:
-            return value / 12.92
-        return ((value + 0.055) / 1.055) ** 2.4
+    def is_fluorescent_transparent(col_name):
+        if col_name == "Trans_Neon_Orange":
+            return True
+        if col_name == "Trans_Neon_Green":
+            return True
+        if col_name == "Trans_Neon_Yellow":
+            return True
+        if col_name == "Trans_Bright_Green":
+            return True
+        return False
 
     @staticmethod
     def is_dark(color):
@@ -139,23 +95,6 @@ class LDrawColors:
         if brightness < 0.02:
             return True
         return False
-
-    @classmethod
-    def srgb_to_linear_rgb(cls, srgb_color):
-        # See https://en.wikipedia.org/wiki/SRGB#The_reverse_transformation
-        (sr, sg, sb) = srgb_color
-        r = cls.__srgb_to_rgb_value(sr)
-        g = cls.__srgb_to_rgb_value(sg)
-        b = cls.__srgb_to_rgb_value(sb)
-        return r, g, b
-
-    @classmethod
-    def hex_digits_to_linear_rgba(cls, hex_digits, alpha):
-        # String is "RRGGBB" format
-        int_tuple = struct.unpack('BBB', bytes.fromhex(hex_digits))
-        srgb = tuple([val / 255 for val in int_tuple])
-        linear_rgb = cls.srgb_to_linear_rgb(srgb)
-        return linear_rgb[0], linear_rgb[1], linear_rgb[2], alpha
 
     @classmethod
     def hex_string_to_linear_rgba(cls, hex_string):
@@ -206,29 +145,3 @@ class LDrawColors:
             # String is "RRGGBB" format
             return cls.hex_digits_to_linear_rgba(rgb_str, alpha)
         return None
-
-    @classmethod
-    def lighten_rgba(cls, color, scale):
-        # Moves the linear RGB values closer to white
-        # scale = 0 means full white
-        # scale = 1 means color stays same
-        color = ((1.0 - color[0]) * scale,
-                 (1.0 - color[1]) * scale,
-                 (1.0 - color[2]) * scale,
-                 color[3])
-        return (cls.__clamp(1.0 - color[0]),
-                cls.__clamp(1.0 - color[1]),
-                cls.__clamp(1.0 - color[2]),
-                color[3])
-
-    @staticmethod
-    def is_fluorescent_transparent(col_name):
-        if col_name == "Trans_Neon_Orange":
-            return True
-        if col_name == "Trans_Neon_Green":
-            return True
-        if col_name == "Trans_Neon_Yellow":
-            return True
-        if col_name == "Trans_Bright_Green":
-            return True
-        return False

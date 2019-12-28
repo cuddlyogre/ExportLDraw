@@ -32,7 +32,7 @@ class LDrawImporter:
         LDrawNode.reset()
 
         LDrawColors.reset_caches()
-        LDrawColors.read_color_table(ldraw_path)
+        LDrawColors.read_color_table()
 
         BlenderMaterials.reset_caches()
         BlenderMaterials.create_blender_node_groups()

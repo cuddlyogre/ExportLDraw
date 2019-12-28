@@ -16,8 +16,8 @@ def append_search_path(path):
 
 
 def append_search_paths(base_path):
+    append_search_path(os.path.join(base_path))
     append_search_path(os.path.join(base_path, "models"))
-
     append_search_path(os.path.join(base_path, "unofficial", "lsynth"))
     append_search_path(os.path.join(base_path, "unofficial", "parts"))
     append_search_path(os.path.join(base_path, "parts"))
