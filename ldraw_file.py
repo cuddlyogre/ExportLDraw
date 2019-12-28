@@ -1,6 +1,8 @@
 import os
 import mathutils
 import re
+import csv
+import io
 
 from . import options
 from . import filesystem
@@ -40,7 +42,13 @@ class LDrawFile:
 
     def parse_file(self):
         for line in self.lines:
-            params = line.strip().split()
+            line = line.replace("\t", " ")
+            rows = list(csv.reader(io.StringIO(line), delimiter=' ', quotechar='"', skipinitialspace=True))
+
+            if len(rows) == 0:
+                continue
+
+            params = rows[0]
 
             if len(params) == 0:
                 continue
