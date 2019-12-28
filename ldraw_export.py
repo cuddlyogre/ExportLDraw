@@ -89,7 +89,7 @@ class LDrawExporter:
         import re
         # subpart.dat
         # subpart.dat.001 both match
-        if not re.search("(.*\.(?:mpd|dat|ldr))\.*.*$", obj.name):
+        if not re.search(r"(.*\.(?:mpd|dat|ldr))\.*.*$", obj.name):
             return False
 
         aa = obj.matrix_world
