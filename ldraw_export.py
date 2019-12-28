@@ -115,9 +115,15 @@ class LDrawExporter:
         name = re.sub(r"\.\d+$", "", name)
         # name = re.sub(r"^\d+_", "", name)
 
-        # line = ["1", "16", x, z, y, a, c, b, g, i, h, d, f, e, name]
-        # line = f"1 16 {x} {y} {z} {a} {b} {c} {d} {e} {f} {g} {h} {i} {name}"
-        line = f"1 16 {x} {z} {y} {a} {c} {b} {g} {i} {h} {d} {f} {e} {name}"
+        color_code = "16"
+        if len(obj.data.materials) > 0:
+            color = LDrawColors.get_color(obj.data.materials[0].name)
+            if color is not None:
+                color_code = color["code"]
+
+        # line = ["1", color_code, x, z, y, a, c, b, g, i, h, d, f, e, name]
+        # line = f"1 {color_code} {x} {y} {z} {a} {b} {c} {d} {e} {f} {g} {h} {i} {name}"
+        line = f"1 {color_code} {x} {z} {y} {a} {c} {b} {g} {i} {h} {d} {f} {e} {name}"
         lines.append(line)
 
         return True

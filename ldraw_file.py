@@ -72,6 +72,7 @@ class LDrawFile:
 
                     color = {
                         "name": name,
+                        "code": color_code,
                         "color": linear_rgba,
                         "alpha": alpha,
                         "edge_color": lineaer_rgba_edge,
