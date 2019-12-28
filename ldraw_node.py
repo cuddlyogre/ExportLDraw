@@ -25,7 +25,7 @@ class LDrawNode:
         self.matrix = matrix
         self.top = False
         self.meta_command = None
-        self.meta_args = None
+        self.meta_args = []
 
     @classmethod
     def reset(cls):
