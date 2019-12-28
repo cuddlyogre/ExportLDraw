@@ -15,6 +15,105 @@ class LDrawColors:
         LDrawColors.colors = {}
 
     @staticmethod
+    def read_color_table():
+        """Reads the color values from the LDConfig.ldr file. For details of the
+        Ldraw color system see: http://www.ldraw.org/article/547"""
+
+        if options.use_alt_colors:
+            filepath = "LDCfgalt.ldr"
+        else:
+            filepath = "LDConfig.ldr"
+
+        ldraw_file = LDrawFile(filepath)
+        ldraw_file.read_file()
+        ldraw_file.parse_file()
+
+    @staticmethod
+    def parse_color(params):
+        name = params[2]
+        color_code = int(params[4])
+
+        linear_rgba = LDrawColors.__hex_digits_to_linear_rgba(params[6][1:], 1.0)
+        alpha = linear_rgba[3]
+        linear_rgba = LDrawColors.__srgb_to_linear_rgb(linear_rgba[0:3])
+
+        lineaer_rgba_edge = LDrawColors.__hex_digits_to_linear_rgba(params[8][1:], 1.0)
+        lineaer_rgba_edge = LDrawColors.__srgb_to_linear_rgb(lineaer_rgba_edge[0:3])
+
+        color = {
+            "name": name,
+            "code": color_code,
+            "color": linear_rgba,
+            "alpha": alpha,
+            "edge_color": lineaer_rgba_edge,
+            "luminance": 0.0,
+            "material": "BASIC"
+        }
+
+        if "ALPHA" in params:
+            color["alpha"] = int(LDrawColors.__get_value(params, "ALPHA")) / 256.0
+
+        if "LUMINANCE" in params:
+            color["luminance"] = int(LDrawColors.__get_value(params, "LUMINANCE"))
+
+        if "CHROME" in params:
+            color["material"] = "CHROME"
+
+        if "PEARLESCENT" in params:
+            color["material"] = "PEARLESCENT"
+
+        if "RUBBER" in params:
+            color["material"] = "RUBBER"
+
+        if "METAL" in params:
+            color["material"] = "METAL"
+
+        if "MATERIAL" in params:
+            subline = params[params.index("MATERIAL"):]
+
+            color["material"] = LDrawColors.__get_value(subline, "MATERIAL")
+            hex_digits = LDrawColors.__get_value(subline, "VALUE")[1:]
+            color["secondary_color"] = LDrawColors.__hex_digits_to_linear_rgba(hex_digits, 1.0)
+            color["fraction"] = LDrawColors.__get_value(subline, "FRACTION")
+            color["vfraction"] = LDrawColors.__get_value(subline, "VFRACTION")
+            color["size"] = LDrawColors.__get_value(subline, "SIZE")
+            color["minsize"] = LDrawColors.__get_value(subline, "MINSIZE")
+            color["maxsize"] = LDrawColors.__get_value(subline, "MAXSIZE")
+
+        LDrawColors.set_color(color_code, color)
+
+    @staticmethod
+    def __get_value(line, value):
+        """Parses a color value from the ldConfig.ldr file"""
+        if value in line:
+            n = line.index(value)
+            return line[n + 1]
+
+    @staticmethod
+    def __srgb_to_rgb_value(value):
+        # See https://en.wikipedia.org/wiki/SRGB#The_reverse_transformation
+        if value < 0.04045:
+            return value / 12.92
+        return ((value + 0.055) / 1.055) ** 2.4
+
+    @classmethod
+    def __srgb_to_linear_rgb(cls, srgb_color):
+        # See https://en.wikipedia.org/wiki/SRGB#The_reverse_transformation
+        (sr, sg, sb) = srgb_color
+        r = cls.__srgb_to_rgb_value(sr)
+        g = cls.__srgb_to_rgb_value(sg)
+        b = cls.__srgb_to_rgb_value(sb)
+        return r, g, b
+
+    @classmethod
+    def __hex_digits_to_linear_rgba(cls, hex_digits, alpha):
+        # String is "RRGGBB" format
+        int_tuple = struct.unpack('BBB', bytes.fromhex(hex_digits))
+        srgb = tuple([val / 255 for val in int_tuple])
+        linear_rgb = cls.__srgb_to_linear_rgb(srgb)
+        return linear_rgb[0], linear_rgb[1], linear_rgb[2], alpha
+
+    @staticmethod
     def __is_int(s):
         try:
             int(s)
@@ -37,20 +136,6 @@ class LDrawColors:
     @staticmethod
     def set_color(color_code, color):
         LDrawColors.colors[color_code] = color
-
-    @staticmethod
-    def read_color_table():
-        """Reads the color values from the LDConfig.ldr file. For details of the
-        Ldraw color system see: http://www.ldraw.org/article/547"""
-
-        if options.use_alt_colors:
-            filepath = "LDCfgalt.ldr"
-        else:
-            filepath = "LDConfig.ldr"
-
-        ldraw_file = LDrawFile(filepath)
-        ldraw_file.read_file()
-        ldraw_file.parse_file()
 
     @staticmethod
     def __clamp(value):
