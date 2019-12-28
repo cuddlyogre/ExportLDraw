@@ -145,8 +145,8 @@ def locate(filename):
     part_path = os.path.expanduser(part_path)
     for path in search_paths:
         full_path = os.path.join(path, part_path)
-        # if '57909' in part_path:
-        #     print(full_path)
+        if options.debug_text:
+            print(full_path)
         full_path = path_insensitive(full_path)
         if os.path.exists(full_path):
             return full_path
