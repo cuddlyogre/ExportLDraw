@@ -1,5 +1,6 @@
 import bpy
 
+from . import filesystem
 from .ldraw_colors import LDrawColors
 
 
@@ -186,7 +187,6 @@ class LDrawExporter:
     @classmethod
     def do_export(cls, filepath):
         filesystem.append_search_paths()
-
         LDrawColors.reset_caches()
         LDrawColors.read_color_table()
 
