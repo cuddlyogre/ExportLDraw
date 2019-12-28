@@ -91,48 +91,7 @@ class LDrawFile:
                     self.name = os.path.basename(self.filepath)
 
                 if params[0] == "1":
-                    color_code = params[1]
-
-                    (x, y, z, a, b, c, d, e, f, g, h, i) = map(float, params[2:14])
-
-                    matrix = mathutils.Matrix((
-                        (a, b, c, x),
-                        (d, e, f, y),
-                        (g, h, i, z),
-                        (0, 0, 0, 1)
-                    ))
-
-                    filename = " ".join(params[14:]).lower()
-
-                    if options.display_logo:
-                        if filename in SpecialBricks.studs:
-                            parts = filename.split(".")
-                            name = parts[0]
-                            ext = parts[1]
-                            new_filename = f"{name}-{options.chosen_logo}.{ext}"
-                            if filesystem.locate(new_filename):
-                                filename = new_filename
-
-                    key = []
-                    key.append(options.resolution)
-                    if options.display_logo:
-                        key.append(options.chosen_logo)
-                    if options.remove_doubles:
-                        key.append("rd")
-                    key.append(color_code)
-                    key.append(os.path.basename(filename))
-                    key = "_".join([k.lower() for k in key])
-                    key = re.sub(r"[^a-z0-9._]", "-", key)
-
-                    if key not in LDrawFile.file_cache:
-                        ldraw_file = LDrawFile(filename)
-                        ldraw_file.read_file()
-                        ldraw_file.parse_file()
-                        LDrawFile.file_cache[key] = ldraw_file
-                    ldraw_file = LDrawFile.file_cache[key]
-
-                    ldraw_node = LDrawNode(ldraw_file, color_code=color_code, matrix=matrix)
-                    self.child_nodes.append(ldraw_node)
+                    self.parse_child_node(params)
                 elif params[0] in ["2", "3", "4"]:
                     if self.part_type is None:
                         self.part_type = 'part'
@@ -141,6 +100,47 @@ class LDrawFile:
                         self.geometry.parse_edge(params)
                     elif params[0] in ["3", "4"]:
                         self.geometry.parse_face(params)
+
+    def parse_child_node(self, params):
+        color_code = params[1]
+
+        (x, y, z, a, b, c, d, e, f, g, h, i) = map(float, params[2:14])
+        matrix = mathutils.Matrix((
+            (a, b, c, x),
+            (d, e, f, y),
+            (g, h, i, z),
+            (0, 0, 0, 1)
+        ))
+
+        filename = " ".join(params[14:]).lower()
+        if options.display_logo:
+            if filename in SpecialBricks.studs:
+                parts = filename.split(".")
+                name = parts[0]
+                ext = parts[1]
+                new_filename = f"{name}-{options.chosen_logo}.{ext}"
+                if filesystem.locate(new_filename):
+                    filename = new_filename
+        key = []
+        key.append(options.resolution)
+        if options.display_logo:
+            key.append(options.chosen_logo)
+        if options.remove_doubles:
+            key.append("rd")
+        key.append(color_code)
+        key.append(os.path.basename(filename))
+        key = "_".join([k.lower() for k in key])
+        key = re.sub(r"[^a-z0-9._]", "-", key)
+
+        if key not in LDrawFile.file_cache:
+            ldraw_file = LDrawFile(filename)
+            ldraw_file.read_file()
+            ldraw_file.parse_file()
+            LDrawFile.file_cache[key] = ldraw_file
+        ldraw_file = LDrawFile.file_cache[key]
+
+        ldraw_node = LDrawNode(ldraw_file, color_code=color_code, matrix=matrix)
+        self.child_nodes.append(ldraw_node)
 
     @classmethod
     def handle_mpd(cls, filepath):
