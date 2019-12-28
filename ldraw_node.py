@@ -91,13 +91,17 @@ class LDrawNode:
         key.append(self.file.name)
         key = "_".join([k.lower() for k in key])
 
-        model_types = ['model', 'unofficial_model', 'submodel', None]
+        model_types = ['model', 'unofficial_model', 'un-official model', 'submodel', None]
         is_model = self.file.part_type in model_types
 
-        part_types = ['part', 'unofficial_part', 'unofficial_shortcut', 'shortcut', 'primitive', 'subpart']
-        part_types = ['part', 'unofficial_part']  # very fast, misses primitives in shortcut files, splits shortcuts into multiple parts - shortcut_geometry
-        part_types = ['part', 'unofficial_part', 'shortcut', 'unofficial_shortcut']
+        part_types = ['part', 'unofficial_part', 'un-official part']
         is_part = self.file.part_type in part_types
+
+        shortcut_types = ['shortcut', 'unofficial_shortcut', 'un-official shortcut']
+        is_shortcut = self.file.part_type in shortcut_types
+
+        subpart_types = ['primitive', 'subpart', 'un-official primitive', 'un-official subpart']
+        is_subpart = self.file.part_type in subpart_types
 
         matrix = parent_matrix @ self.matrix
 
@@ -117,24 +121,30 @@ class LDrawNode:
 
             if parent_group is not None:
                 parent_group.children.link(new_group)
-
-        elif is_part:
-            if options.debug_text:
-                print("===========")
-                print("is_part")
-                print(self.file.name)
-                print("===========")
-
+        else:
             if geometry is None:
                 self.top = True
                 geometry = LDrawGeometry()
                 matrix = matrices.identity
-        else:
-            if options.debug_text:
-                print("===========")
-                print("is_subpart")
-                print(self.file.name)
-                print("===========")
+
+            if is_part:
+                if options.debug_text:
+                    print("===========")
+                    print("is_part")
+                    print(self.file.name)
+                    print("===========")
+            elif is_shortcut:
+                if options.debug_text:
+                    print("===========")
+                    print("is_shortcut")
+                    print(self.file.name)
+                    print("===========")
+            elif is_subpart:
+                if options.debug_text:
+                    print("===========")
+                    print("is_subpart")
+                    print(self.file.name)
+                    print("===========")
 
         if self.top and is_part:
             LDrawNode.current_part += 1
