@@ -12,7 +12,7 @@ from .special_bricks import SpecialBricks
 
 class LDrawImporter:
     @staticmethod
-    def do_import(filename, ldraw_path, clear_cache=False):
+    def do_import(filename, clear_cache=False):
         bpy.context.scene.eevee.use_ssr = True
         bpy.context.scene.eevee.use_ssr_refraction = True
         bpy.context.scene.eevee.use_taa_reprojection = True
@@ -27,7 +27,7 @@ class LDrawImporter:
         options.first_run = False
 
         filesystem.reset_caches()
-        filesystem.append_search_paths(ldraw_path)
+        filesystem.append_search_paths()
 
         LDrawNode.reset()
 

@@ -1,3 +1,4 @@
+ldraw_path = None
 first_run = True
 meta_print_write = False
 meta_step = False

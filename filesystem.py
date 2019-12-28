@@ -15,24 +15,26 @@ def append_search_path(path):
         search_paths.append(path)
 
 
-def append_search_paths(base_path):
-    append_search_path(os.path.join(base_path))
-    append_search_path(os.path.join(base_path, "models"))
-    append_search_path(os.path.join(base_path, "unofficial", "lsynth"))
-    append_search_path(os.path.join(base_path, "unofficial", "parts"))
-    append_search_path(os.path.join(base_path, "parts"))
+def append_search_paths():
+    ldraw_path = options.ldraw_path
+
+    append_search_path(os.path.join(ldraw_path))
+    append_search_path(os.path.join(ldraw_path, "models"))
+    append_search_path(os.path.join(ldraw_path, "unofficial", "lsynth"))
+    append_search_path(os.path.join(ldraw_path, "unofficial", "parts"))
+    append_search_path(os.path.join(ldraw_path, "parts"))
 
     if options.resolution == "High":
-        append_search_path(os.path.join(base_path, "unofficial", "p", "48"))
+        append_search_path(os.path.join(ldraw_path, "unofficial", "p", "48"))
     elif options.resolution == "Low":
-        append_search_path(os.path.join(base_path, "unofficial", "p", "8"))
-    append_search_path(os.path.join(base_path, "unofficial", "p"))
+        append_search_path(os.path.join(ldraw_path, "unofficial", "p", "8"))
+    append_search_path(os.path.join(ldraw_path, "unofficial", "p"))
 
     if options.resolution == "High":
-        append_search_path(os.path.join(base_path, "p", "48"))
+        append_search_path(os.path.join(ldraw_path, "p", "48"))
     elif options.resolution == "Low":
-        append_search_path(os.path.join(base_path, "p", "8"))
-    append_search_path(os.path.join(base_path, "p"))
+        append_search_path(os.path.join(ldraw_path, "p", "8"))
+    append_search_path(os.path.join(ldraw_path, "p"))
 
 
 # https://stackoverflow.com/a/8462613

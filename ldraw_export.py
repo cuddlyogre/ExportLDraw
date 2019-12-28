@@ -184,9 +184,11 @@ class LDrawExporter:
     # if ngons are triangulated, they will be line type 3, otherwise they won't be exported at all
     # conditional lines, line type 5, aren't handled
     @classmethod
-    def do_export(cls, filepath, ldraw_path):
+    def do_export(cls, filepath):
+        filesystem.append_search_paths()
+
         LDrawColors.reset_caches()
-        LDrawColors.read_color_table(ldraw_path)
+        LDrawColors.read_color_table()
 
         all_objects = bpy.context.scene.objects
         selected = bpy.context.selected_objects

@@ -208,6 +208,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         import time
         start = time.monotonic()
 
+        options.ldraw_path = self.ldraw_path
         options.resolution = self.resolution
         options.use_alt_colors = self.use_alt_colors
         options.remove_doubles = self.remove_doubles
@@ -230,7 +231,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         options.add_subsurface = self.add_subsurface
         options.set_timelime_markers = self.set_timelime_markers
 
-        ldraw_import.LDrawImporter.do_import(bpy.path.abspath(self.filepath), self.ldraw_path, self.clear_cache)
+        ldraw_import.LDrawImporter.do_import(bpy.path.abspath(self.filepath), self.clear_cache)
 
         end = time.monotonic()
         elapsed = (end - start)
@@ -319,11 +320,13 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
     )
 
     def execute(self, context):
+        options.ldraw_path = self.ldraw_path
+
         ldraw_export.LDrawExporter.triangulate = self.triangulate
         ldraw_export.LDrawExporter.selection_only = self.selection_only
         ldraw_export.LDrawExporter.recalculate_normals = self.recalculate_normals
         ldraw_export.LDrawExporter.ngon_handling = self.ngon_handling
-        ldraw_export.LDrawExporter.do_export(bpy.path.abspath(self.filepath), self.ldraw_path)
+        ldraw_export.LDrawExporter.do_export(bpy.path.abspath(self.filepath))
 
         return {'FINISHED'}
 
