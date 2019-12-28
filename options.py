@@ -22,3 +22,4 @@ curved_walls = False
 add_subsurface = False
 resolution = "Standard"
 set_timelime_markers = "Standard"
+prefer_unofficial = False
