@@ -1,4 +1,5 @@
 import os
+import codecs
 
 from . import options
 
@@ -117,40 +118,14 @@ def _path_insensitive(path):
         return
 
 
-def check_encoding(filepath):
-    """Check the encoding of a file for Endian encoding."""
-
-    filepath = path_insensitive(filepath)
-
-    # Open it, read just the area containing a possible byte mark
-    with open(filepath, "rb") as encode_check:
-        encoding = encode_check.readline(3)
-
-    # The file uses UCS-2 (UTF-16) Big Endian encoding
-    if encoding == b"\xfe\xff\x00":
-        return "utf_16_be"
-
-    # The file uses UCS-2 (UTF-16) Little Endian
-    elif encoding == b"\xff\xfe0":
-        return "utf_16_le"
-
-    # Use LDraw model standard UTF-8
-    else:
-        return "utf_8"
-
-
 def read_file(filepath):
-    # print(filepath)
-    lines = []
-    if os.path.exists(filepath):
-        file_encoding = check_encoding(filepath)
-        try:
-            with open(filepath, 'rt', encoding=file_encoding) as file:
-                lines = file.read().strip().splitlines()
-        except:
-            with open(filepath, 'rt', encoding="latin_1") as file:
-                lines = file.read().strip().splitlines()
-    return lines
+    filepath = path_insensitive(filepath)
+    with open(filepath, 'rb') as file:
+        string = file.read()
+        for c in [codecs.BOM_UTF8, codecs.BOM_UTF16, codecs.BOM_UTF32]:
+            string = string.replace(c, b'')
+        # print(string)
+        return string.decode('utf-8').strip().splitlines()
 
 
 def locate(filename):
