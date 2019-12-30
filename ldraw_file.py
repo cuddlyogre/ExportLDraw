@@ -35,6 +35,7 @@ class LDrawFile:
             self.lines = LDrawFile.mpd_file_cache[self.filepath].lines
         else:
             # if missing, use a,b,c etc parts if available
+            # TODO: look in this file's directory and directories relative to this file's directory
             filepath = filesystem.locate(self.filepath)
             if filepath is None:
                 print(f"missing {self.filepath}")
