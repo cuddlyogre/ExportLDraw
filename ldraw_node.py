@@ -201,6 +201,7 @@ class LDrawNode:
             obj = bpy.data.objects.new(key, mesh)
             # obj.matrix_world = parent_matrix @ self.matrix
             obj.matrix_world = matrices.rotation @ parent_matrix @ self.matrix
+            # loc, rot, scale = obj.matrix_world.decompose()
 
             # https://docs.blender.org/api/current/bpy.types.bpy_struct.html#bpy.types.bpy_struct.keyframe_insert
             # https://docs.blender.org/api/current/bpy.types.Scene.html?highlight=frame_set#bpy.types.Scene.frame_set
