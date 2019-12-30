@@ -231,7 +231,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         options.add_subsurface = self.add_subsurface
         options.set_timelime_markers = self.set_timelime_markers
 
-        ldraw_import.LDrawImporter.do_import(bpy.path.abspath(self.filepath), self.clear_cache)
+        ldraw_import.LDrawImporter.do_import(bpy.path.abspath(self.filepath))
 
         end = time.monotonic()
         elapsed = (end - start)
@@ -267,7 +267,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         box.label(text="Extras")
         box.prop(self, "shade_smooth")
         box.prop(self, "remove_doubles")
-        box.prop(self, "clear_cache")
+        # box.prop(self, "clear_cache")
         box.prop(self, "debug_text")
         box.prop(self, "no_studs")
         box.prop(self, "curved_walls")
