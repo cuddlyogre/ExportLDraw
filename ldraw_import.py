@@ -12,26 +12,21 @@ from .special_bricks import SpecialBricks
 
 class LDrawImporter:
     @staticmethod
-    def do_import(filename):
+    def do_import(filename, clear_cache=False):
         bpy.context.scene.eevee.use_ssr = True
         bpy.context.scene.eevee.use_ssr_refraction = True
         bpy.context.scene.eevee.use_taa_reprojection = True
 
-        SpecialBricks.reset_caches()
-        SpecialBricks.build_slope_angles()
+        if clear_cache or options.first_run:
+            SpecialBricks.build_slope_angles()
+            LDrawFile.reset_caches()
+            LDrawNode.reset_caches()
 
-        LDrawFile.reset_caches()
-        LDrawNode.reset_caches()
-
-        filesystem.reset_caches()
-        filesystem.append_search_paths()
+        options.first_run = False
 
         LDrawNode.reset()
-
-        LDrawColors.reset_caches()
+        filesystem.build_search_paths()
         LDrawColors.read_color_table()
-
-        BlenderMaterials.reset_caches()
         BlenderMaterials.create_blender_node_groups()
 
         filename = LDrawFile.handle_mpd(filename)

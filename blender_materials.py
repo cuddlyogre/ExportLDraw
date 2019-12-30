@@ -16,6 +16,8 @@ class BlenderMaterials:
 
     @classmethod
     def create_blender_node_groups(cls):
+        cls.reset_caches()
+
         cls.__create_blender_distance_to_center_node_group()
         cls.__create_blender_vector_element_power_node_group()
         cls.__create_blender_convert_to_normals_node_group()
@@ -63,8 +65,7 @@ class BlenderMaterials:
 
         # If it's already in the cache, use that
         if key in cls.material_cache:
-            result = cls.material_cache[key]
-            return result
+            return cls.material_cache[key]
 
         # Create new material
         col = LDrawColors.get_color(pure_color_code)

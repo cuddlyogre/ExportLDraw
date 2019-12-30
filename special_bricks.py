@@ -111,6 +111,8 @@ class SpecialBricks:
 
     @staticmethod
     def build_slope_angles():
+        SpecialBricks.reset_caches()
+
         # Create a regular dictionary of parts with ranges of angles to check
         margin = 5  # Allow 5 degrees either way to compensate for measuring inaccuracies
 

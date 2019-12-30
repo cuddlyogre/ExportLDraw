@@ -17,6 +17,8 @@ class LDrawColors:
 
     @staticmethod
     def read_color_table():
+        LDrawColors.reset_caches()
+
         """Reads the color values from the LDConfig.ldr file. For details of the
         Ldraw color system see: http://www.ldraw.org/article/547"""
 

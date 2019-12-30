@@ -192,8 +192,7 @@ class LDrawExporter:
     # conditional lines, line type 5, aren't handled
     @classmethod
     def do_export(cls, filepath):
-        filesystem.append_search_paths()
-        LDrawColors.reset_caches()
+        filesystem.build_search_paths()
         LDrawColors.read_color_table()
 
         all_objects = bpy.context.scene.objects

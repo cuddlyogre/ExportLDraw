@@ -16,7 +16,9 @@ def append_search_path(path):
         search_paths.append(path)
 
 
-def append_search_paths():
+def build_search_paths():
+    reset_caches()
+
     ldraw_path = options.ldraw_path
 
     append_search_path(os.path.join(ldraw_path))
