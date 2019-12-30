@@ -80,14 +80,14 @@ class BlenderMaterials:
         return color + (1.0,)
 
     @classmethod
-    def __create_node_based_material(cls, blender_name, col, use_edge_color=False, is_slope_material=False):
+    def __create_node_based_material(cls, key, col, use_edge_color=False, is_slope_material=False):
         """Set Cycles Material Values."""
 
         # Reuse current material if it exists, otherwise create a new material
-        if bpy.data.materials.get(blender_name) is None:
-            material = bpy.data.materials.new(blender_name)
+        if bpy.data.materials.get(key) is None:
+            material = bpy.data.materials.new(key)
         else:
-            material = bpy.data.materials[blender_name]
+            material = bpy.data.materials[key]
 
         # Use nodes
         material.use_nodes = True
