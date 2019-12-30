@@ -162,6 +162,15 @@ class LDrawNode:
                 if self.file.name in ["logo.dat", "logo2.dat"]:
                     is_edge_logo = True
 
+                vertices = [matrix @ e for e in self.file.geometry.vertices]
+                geometry.vertices.extend(vertices)
+
+                if (not is_edge_logo) or (is_edge_logo and options.display_logo):
+                    for edge in self.file.geometry.edges:
+                        geometry.edges.append((matrix @ edge[0], matrix @ edge[1]))
+
+                geometry.faces.extend(self.file.geometry.faces)
+
                 if key not in LDrawNode.face_info_cache:
                     new_face_info = []
                     for face_info in self.file.geometry.face_info:
@@ -174,16 +183,7 @@ class LDrawNode:
                         new_face_info.append(copy)
                     LDrawNode.face_info_cache[key] = new_face_info
                 new_face_info = LDrawNode.face_info_cache[key]
-
-                vertices = [matrix @ e for e in self.file.geometry.vertices]
-                geometry.vertices.extend(vertices)
-
-                geometry.faces.extend(self.file.geometry.faces)
                 geometry.face_info.extend(new_face_info)
-
-                if (not is_edge_logo) or (is_edge_logo and options.display_logo):
-                    for edge in self.file.geometry.edges:
-                        geometry.edges.append((matrix @ edge[0], matrix @ edge[1]))
 
             for child in self.file.child_nodes:
                 child.load(parent_matrix=matrix,
