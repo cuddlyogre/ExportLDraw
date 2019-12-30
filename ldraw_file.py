@@ -1,6 +1,5 @@
 import os
 import mathutils
-import struct
 import re
 import csv
 import io

@@ -1,5 +1,6 @@
 import re
 import math
+import struct
 
 from . import options
 from .ldraw_file import LDrawFile
