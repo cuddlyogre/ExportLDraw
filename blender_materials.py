@@ -609,7 +609,9 @@ class BlenderMaterials:
     @classmethod
     def __create_blender_distance_to_center_node_group(cls):
         if bpy.data.node_groups.get('Distance-To-Center') is None:
-            print("createBlenderDistanceToCenterNodeGroup #create")
+            if options.debug_text:
+                print("createBlenderDistanceToCenterNodeGroup #create")
+
             # create a group
             group, node_input, node_output = cls.__create_group('Distance-To-Center', -930, 0, 240, 0, False)
             group.outputs.new('NodeSocketVectorDirection', 'Vector')
@@ -646,7 +648,9 @@ class BlenderMaterials:
     @classmethod
     def __create_blender_vector_element_power_node_group(cls):
         if bpy.data.node_groups.get('Vector-Element-Power') is None:
-            print("createBlenderVectorElementPowerNodeGroup #create")
+            if options.debug_text:
+                print("createBlenderVectorElementPowerNodeGroup #create")
+
             # create a group
             group, node_input, node_output = cls.__create_group('Vector-Element-Power', -580, 0, 400, 0, False)
             group.inputs.new('NodeSocketFloat', 'Exponent')
@@ -687,7 +691,9 @@ class BlenderMaterials:
     @classmethod
     def __create_blender_convert_to_normals_node_group(cls):
         if bpy.data.node_groups.get('Convert-To-Normals') is None:
-            print("createBlenderConvertToNormalsNodeGroup #create")
+            if options.debug_text:
+                print("createBlenderConvertToNormalsNodeGroup #create")
+
             # create a group
             group, node_input, node_output = cls.__create_group('Convert-To-Normals', -490, 0, 400, 0, False)
             group.inputs.new('NodeSocketFloat', 'Vector Length')
@@ -723,7 +729,9 @@ class BlenderMaterials:
     @classmethod
     def __create_blender_concave_walls_node_group(cls):
         if bpy.data.node_groups.get('Concave Walls') is None:
-            print("createBlenderConcaveWallsNodeGroup #create")
+            if options.debug_text:
+                print("createBlenderConcaveWallsNodeGroup #create")
+
             # create a group
             group, node_input, node_output = cls.__create_group('Concave Walls', -530, 0, 300, 0, False)
             group.inputs.new('NodeSocketFloat', 'Strength')
@@ -756,7 +764,9 @@ class BlenderMaterials:
     @classmethod
     def __create_blender_slope_texture_node_group(cls):
         if bpy.data.node_groups.get('Slope Texture') is None:
-            print("createBlenderSlopeTextureNodeGroup #create")
+            if options.debug_text:
+                print("createBlenderSlopeTextureNodeGroup #create")
+
             # create a group
             group, node_input, node_output = cls.__create_group('Slope Texture', -530, 0, 300, 0, False)
             group.inputs.new('NodeSocketFloat', 'Strength')
@@ -779,7 +789,9 @@ class BlenderMaterials:
     @classmethod
     def __create_blender_fresnel_node_group(cls):
         if bpy.data.node_groups.get('PBR-Fresnel-Roughness') is None:
-            print("createBlenderFresnelNodeGroup #create")
+            if options.debug_text:
+                print("createBlenderFresnelNodeGroup #create")
+
             # create a group
             group, node_input, node_output = cls.__create_group('PBR-Fresnel-Roughness', -530, 0, 300, 0, False)
             group.inputs.new('NodeSocketFloatFactor', 'Roughness')
@@ -814,7 +826,9 @@ class BlenderMaterials:
     @classmethod
     def __create_blender_reflection_node_group(cls):
         if bpy.data.node_groups.get('PBR-Reflection') is None:
-            print("createBlenderReflectionNodeGroup #create")
+            if options.debug_text:
+                print("createBlenderReflectionNodeGroup #create")
+
             # create a group
             group, node_input, node_output = cls.__create_group('PBR-Reflection', -530, 0, 300, 0, True)
             group.inputs.new('NodeSocketShader', 'Shader')
@@ -854,7 +868,9 @@ class BlenderMaterials:
     @classmethod
     def __create_blender_dielectric_node_group(cls):
         if bpy.data.node_groups.get('PBR-Dielectric') is None:
-            print("createBlenderDielectricNodeGroup #create")
+            if options.debug_text:
+                print("createBlenderDielectricNodeGroup #create")
+
             # create a group
             group, node_input, node_output = cls.__create_group('PBR-Dielectric', -530, 70, 500, 0, True)
             group.inputs.new('NodeSocketColor', 'Color')
@@ -915,7 +931,9 @@ class BlenderMaterials:
     def __create_blender_lego_standard_node_group(cls):
         group_name = 'Lego Standard'
         if bpy.data.node_groups.get(group_name) is None:
-            print("createBlenderLegoStandardNodeGroup #create")
+            if options.debug_text:
+                print("createBlenderLegoStandardNodeGroup #create")
+
             # create a group
             group, node_input, node_output = cls.__create_group(group_name, -250, 0, 250, 0, True)
             group.inputs.new('NodeSocketColor', 'Color')
@@ -936,7 +954,9 @@ class BlenderMaterials:
     def __create_blender_lego_transparent_node_group(cls):
         group_name = 'Lego Transparent'
         if bpy.data.node_groups.get(group_name) is None:
-            print("createBlenderLegoTransparentNodeGroup #create")
+            if options.debug_text:
+                print("createBlenderLegoTransparentNodeGroup #create")
+
             # create a group
             group, node_input, node_output = cls.__create_group(group_name, -250, 0, 250, 0, True)
             group.inputs.new('NodeSocketColor', 'Color')
@@ -955,7 +975,8 @@ class BlenderMaterials:
     def __create_blender_lego_glass_node_group(cls):
         group_name = 'Lego Glass'
         if bpy.data.node_groups.get(group_name) is None:
-            print("createBlenderLegoGlassNodeGroup #create")
+            if options.debug_text:
+                print("createBlenderLegoGlassNodeGroup #create")
 
             group = bpy.data.node_groups.new(group_name, 'ShaderNodeTree')
 
@@ -1044,7 +1065,9 @@ class BlenderMaterials:
     def __create_blender_lego_transparent_fluorescent_node_group(cls):
         group_name = 'Lego Transparent Fluorescent'
         if bpy.data.node_groups.get(group_name) is None:
-            print("createBlenderLegoTransparentFluorescentNodeGroup #create")
+            if options.debug_text:
+                print("createBlenderLegoTransparentFluorescentNodeGroup #create")
+
             # create a group
             group, node_input, node_output = cls.__create_group(group_name, -250, 0, 250, 0, True)
             group.inputs.new('NodeSocketColor', 'Color')
@@ -1068,7 +1091,9 @@ class BlenderMaterials:
     def __create_blender_lego_rubber_node_group(cls):
         group_name = 'Lego Rubber Solid'
         if bpy.data.node_groups.get(group_name) is None:
-            print("createBlenderLegoRubberNodeGroup #create")
+            if options.debug_text:
+                print("createBlenderLegoRubberNodeGroup #create")
+
             # create a group
             group, node_input, node_output = cls.__create_group(group_name, 45 - 950, 340 - 50, 45 + 200,
                                                                 340 - 5, True)
@@ -1094,7 +1119,9 @@ class BlenderMaterials:
     def __create_blender_lego_rubber_translucent_node_group(cls):
         group_name = 'Lego Rubber Translucent'
         if bpy.data.node_groups.get(group_name) is None:
-            print("createBlenderLegoRubberTranslucentNodeGroup #create")
+            if options.debug_text:
+                print("createBlenderLegoRubberTranslucentNodeGroup #create")
+
             # create a group
             group, node_input, node_output = cls.__create_group(group_name, -250, 0, 250, 0, True)
             group.inputs.new('NodeSocketColor', 'Color')
@@ -1127,7 +1154,8 @@ class BlenderMaterials:
     def __create_blender_lego_emission_node_group(cls):
         group_name = 'Lego Emission'
         if bpy.data.node_groups.get(group_name) is None:
-            print("createBlenderLegoEmissionNodeGroup #create")
+            if options.debug_text:
+                print("createBlenderLegoEmissionNodeGroup #create")
 
             # create a group
             group, node_input, node_output = cls.__create_group(group_name, -450, 90, 250, 0, True)
@@ -1156,7 +1184,8 @@ class BlenderMaterials:
     def __create_blender_lego_chrome_node_group(cls):
         group_name = 'Lego Chrome'
         if bpy.data.node_groups.get(group_name) is None:
-            print("createBlenderLegoChromeNodeGroup #create")
+            if options.debug_text:
+                print("createBlenderLegoChromeNodeGroup #create")
 
             # create a group
             group, node_input, node_output = cls.__create_group(group_name, -450, 90, 250, 0, True)
@@ -1178,7 +1207,8 @@ class BlenderMaterials:
     def __create_blender_lego_pearlescent_node_group(cls):
         group_name = 'Lego Pearlescent'
         if bpy.data.node_groups.get(group_name) is None:
-            print("createBlenderLegoPearlescentNodeGroup #create")
+            if options.debug_text:
+                print("createBlenderLegoPearlescentNodeGroup #create")
 
             # create a group
             group, node_input, node_output = cls.__create_group(group_name, -450, 90, 630, 95, True)
@@ -1215,7 +1245,8 @@ class BlenderMaterials:
     def __create_blender_lego_metal_node_group(cls):
         group_name = 'Lego Metal'
         if bpy.data.node_groups.get(group_name) is None:
-            print("createBlenderLegoMetalNodeGroup #create")
+            if options.debug_text:
+                print("createBlenderLegoMetalNodeGroup #create")
 
             # create a group
             group, node_input, node_output = cls.__create_group(group_name, -450, 90, 250, 0, True)
@@ -1232,7 +1263,8 @@ class BlenderMaterials:
     def __create_blender_lego_glitter_node_group(cls):
         group_name = 'Lego Glitter'
         if bpy.data.node_groups.get(group_name) is None:
-            print("createBlenderLegoGlitterNodeGroup #create")
+            if options.debug_text:
+                print("createBlenderLegoGlitterNodeGroup #create")
 
             # create a group
             group, node_input, node_output = cls.__create_group(group_name, -450, 0, 410, 0, True)
@@ -1260,7 +1292,8 @@ class BlenderMaterials:
     def __create_blender_lego_speckle_node_group(cls):
         group_name = 'Lego Speckle'
         if bpy.data.node_groups.get(group_name) is None:
-            print("createBlenderLegoSpeckleNodeGroup #create")
+            if options.debug_text:
+                print("createBlenderLegoSpeckleNodeGroup #create")
 
             # create a group
             group, node_input, node_output = cls.__create_group(group_name, -450, 0, 410, 0, True)
@@ -1288,7 +1321,8 @@ class BlenderMaterials:
     def __create_blender_lego_milky_white_node_group(cls):
         group_name = 'Lego Milky White'
         if bpy.data.node_groups.get(group_name) is None:
-            print("createBlenderLegoMilkyWhiteNodeGroup #create")
+            if options.debug_text:
+                print("createBlenderLegoMilkyWhiteNodeGroup #create")
 
             # create a group
             group, node_input, node_output = cls.__create_group(group_name, -450, 0, 350, 0, True)
