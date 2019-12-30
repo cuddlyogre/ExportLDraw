@@ -127,24 +127,16 @@ class LDrawNode:
                 geometry = LDrawGeometry()
                 matrix = matrices.identity
 
-            if is_part:
-                if options.debug_text:
-                    print("===========")
+            if options.debug_text:
+                print("===========")
+                if is_part:
                     print("is_part")
-                    print(self.file.name)
-                    print("===========")
-            elif is_shortcut:
-                if options.debug_text:
-                    print("===========")
+                elif is_shortcut:
                     print("is_shortcut")
-                    print(self.file.name)
-                    print("===========")
-            elif is_subpart:
-                if options.debug_text:
-                    print("===========")
+                elif is_subpart:
                     print("is_subpart")
-                    print(self.file.name)
-                    print("===========")
+                print(self.file.name)
+                print("===========")
 
         if self.top and is_part:
             LDrawNode.current_part += 1
