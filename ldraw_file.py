@@ -86,20 +86,33 @@ class LDrawFile:
                 elif params[1].lower() in ['print', 'write']:
                     if options.meta_print_write:
                         print(line[7:].strip())
+                else:
+                    continue
+                    # https://www.ldraw.org/documentation/ldraw-org-file-format-standards/language-extension-for-texture-mapping.html
+                    if params[1].lower() in ["!texmap"]:
+                        ldraw_node = LDrawNode(None)
+                        ldraw_node.meta_command = params[1].lower()
+                        ldraw_node.meta_args = params[2:]
+                        self.child_nodes.append(ldraw_node)
+                    elif params[1].lower() in ["!:"]:
+                        self.parse_geometry_line(params[2:])
             else:
-                if self.name == "":
-                    self.name = os.path.basename(self.filepath)
+                self.parse_geometry_line(params)
 
-                if params[0] == "1":
-                    self.parse_child_node(params)
-                elif params[0] in ["2", "3", "4"]:
-                    if self.part_type is None:
-                        self.part_type = 'part'
+        if self.name == "":
+            self.name = os.path.basename(self.filepath)
 
-                    if params[0] in ["2"]:
-                        self.geometry.parse_edge(params)
-                    elif params[0] in ["3", "4"]:
-                        self.geometry.parse_face(params)
+    def parse_geometry_line(self, params):
+        if params[0] == "1":
+            self.parse_child_node(params)
+        elif params[0] in ["2"]:
+            if self.part_type is None:
+                self.part_type = 'part'
+            self.geometry.parse_edge(params)
+        elif params[0] in ["3", "4"]:
+            if self.part_type is None:
+                self.part_type = 'part'
+            self.geometry.parse_face(params)
 
     def parse_child_node(self, params):
         color_code = params[1]
