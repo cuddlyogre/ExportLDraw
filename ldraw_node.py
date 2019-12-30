@@ -290,9 +290,8 @@ class LDrawNode:
         bm.verts.ensure_lookup_table()
         bm.edges.ensure_lookup_table()
 
-        weld_distance = 0.10
         if options.remove_doubles:
-            bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=weld_distance)
+            bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=options.merge_distance)
 
         bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
 
@@ -305,8 +304,8 @@ class LDrawNode:
         edge_indices = {}
         for edge in geometry.edges:
             # Find index of nearest points in bm.verts to geomEdge[0] and geomEdge[1]
-            edges0 = [index for (co, index, dist) in kd.find_range(edge[0], weld_distance)]
-            edges1 = [index for (co, index, dist) in kd.find_range(edge[1], weld_distance)]
+            edges0 = [index for (co, index, dist) in kd.find_range(edge[0], options.merge_distance)]
+            edges1 = [index for (co, index, dist) in kd.find_range(edge[1], options.merge_distance)]
 
             for e0 in edges0:
                 for e1 in edges1:

@@ -74,6 +74,14 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         default=True,
     )
 
+    merge_distance: bpy.props.FloatProperty(
+        name="Merge Distance",
+        description="Maximum distance between elements to merge",
+        default=0.05,
+        precision=3,
+        min=0.0,
+    )
+
     shade_smooth: bpy.props.BoolProperty(
         name="Shade smooth",
         description="Shade smooth",
@@ -212,6 +220,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         options.resolution = self.resolution
         options.use_alt_colors = self.use_alt_colors
         options.remove_doubles = self.remove_doubles
+        options.merge_distance = self.merge_distance
         options.shade_smooth = self.shade_smooth
         options.display_logo = self.display_logo
         options.chosen_logo = self.chosen_logo
@@ -267,6 +276,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         box.label(text="Extras")
         box.prop(self, "shade_smooth")
         box.prop(self, "remove_doubles")
+        box.prop(self, "merge_distance")
         # box.prop(self, "clear_cache")
         box.prop(self, "debug_text")
         box.prop(self, "no_studs")
