@@ -3,7 +3,6 @@ import math
 import struct
 
 from . import options
-from .ldraw_file import LDrawFile
 
 
 class LDrawColors:
@@ -14,22 +13,6 @@ class LDrawColors:
     @staticmethod
     def reset_caches():
         LDrawColors.colors = {}
-
-    @staticmethod
-    def read_color_table():
-        LDrawColors.reset_caches()
-
-        """Reads the color values from the LDConfig.ldr file. For details of the
-        Ldraw color system see: http://www.ldraw.org/article/547"""
-
-        if options.use_alt_colors:
-            filepath = "LDCfgalt.ldr"
-        else:
-            filepath = "LDConfig.ldr"
-
-        ldraw_file = LDrawFile(filepath)
-        ldraw_file.read_file()
-        ldraw_file.parse_file()
 
     @staticmethod
     def parse_color(params):
@@ -221,15 +204,15 @@ class LDrawColors:
                 r = float(int(rgb_str[0], 16)) / 15
                 g = float(int(rgb_str[1], 16)) / 15
                 b = float(int(rgb_str[2], 16)) / 15
-                color1 = cls.srgb_to_linear_rgb((r, g, b))
+                color1 = cls.__srgb_to_linear_rgb((r, g, b))
                 r = float(int(rgb_str[3], 16)) / 15
                 g = float(int(rgb_str[4], 16)) / 15
                 b = float(int(rgb_str[5], 16)) / 15
-                color2 = cls.srgb_to_linear_rgb((r, g, b))
+                color2 = cls.__srgb_to_linear_rgb((r, g, b))
                 return (0.5 * (color1[0] + color2[0]),
                         0.5 * (color1[1] + color2[1]),
                         0.5 * (color1[2] + color2[2]), alpha)
 
             # String is "RRGGBB" format
-            return cls.hex_digits_to_linear_rgba(rgb_str, alpha)
+            return cls.__hex_digits_to_linear_rgba(rgb_str, alpha)
         return None

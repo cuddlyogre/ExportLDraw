@@ -26,7 +26,7 @@ class LDrawImporter:
 
         LDrawNode.reset()
         filesystem.build_search_paths()
-        LDrawColors.read_color_table()
+        LDrawFile.read_color_table()
         BlenderMaterials.create_blender_node_groups()
 
         filename = LDrawFile.handle_mpd(filename)

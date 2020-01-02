@@ -200,3 +200,21 @@ class LDrawFile:
     def __parse_current_file(cls, ldraw_file):
         if ldraw_file is not None:
             cls.mpd_file_cache[ldraw_file.filepath] = ldraw_file
+
+    @staticmethod
+    # if this is in LDrawColors, ImportError: cannot import name 'LDrawColors' from 'ExportLdraw.ldraw_colors'
+    # two files cannot refer to each other
+    def read_color_table():
+        LDrawColors.reset_caches()
+
+        """Reads the color values from the LDConfig.ldr file. For details of the
+        Ldraw color system see: http://www.ldraw.org/article/547"""
+
+        if options.use_alt_colors:
+            filepath = "LDCfgalt.ldr"
+        else:
+            filepath = "LDConfig.ldr"
+
+        ldraw_file = LDrawFile(filepath)
+        ldraw_file.read_file()
+        ldraw_file.parse_file()

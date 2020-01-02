@@ -1,6 +1,7 @@
 import bpy
 
 from . import filesystem
+from .ldraw_file import LDrawFile
 from .ldraw_colors import LDrawColors
 
 
@@ -193,7 +194,7 @@ class LDrawExporter:
     @classmethod
     def do_export(cls, filepath):
         filesystem.build_search_paths()
-        LDrawColors.read_color_table()
+        LDrawFile.read_color_table()
 
         all_objects = bpy.context.scene.objects
         selected = bpy.context.selected_objects
