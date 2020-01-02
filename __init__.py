@@ -13,7 +13,6 @@ bl_info = {
 if "bpy" in locals():
     import importlib
 
-    importlib.reload(ldraw_export)
     importlib.reload(options)
     importlib.reload(face_info)
     importlib.reload(filesystem)
@@ -27,7 +26,6 @@ if "bpy" in locals():
     importlib.reload(matrices)
     importlib.reload(special_bricks)
 else:
-    from . import ldraw_export
     from . import options
     from . import face_info
     from . import filesystem
