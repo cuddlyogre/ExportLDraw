@@ -24,3 +24,6 @@ add_subsurface = False
 resolution = "Standard"
 set_timelime_markers = "Standard"
 prefer_unofficial = False
+smooth_type = "edge_split"  # "auto_smooth"
+gap_target = "object"  # "mesh"
+import_edges = False

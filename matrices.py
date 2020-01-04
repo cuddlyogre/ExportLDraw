@@ -24,3 +24,12 @@ scale = mathutils.Matrix((
     (0.0, 0.0, 1.0, 0.0),
     (0.0, 0.0, 0.0, 1.0)
 ))
+
+
+def scaled_matrix(gap_scale=1.0):
+    return mathutils.Matrix((
+        (gap_scale, 0.0, 0.0, 0.0),
+        (0.0, gap_scale, 0.0, 0.0),
+        (0.0, 0.0, gap_scale, 0.0),
+        (0.0, 0.0, 0.0, 1.0)
+    ))

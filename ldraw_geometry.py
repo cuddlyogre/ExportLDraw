@@ -6,7 +6,9 @@ class LDrawGeometry:
     def __init__(self):
         self.vertices = []
         self.edges = []
+        self.edge_vertices = []
         self.faces = []
+        self.edge_faces = []
         self.face_info = []
 
     def parse_edge(self, params):
@@ -17,7 +19,8 @@ class LDrawGeometry:
             vertex = mathutils.Vector((float(params[i * 3 + 2]), float(params[i * 3 + 3]), float(params[i * 3 + 4])))
             vertices.append(vertex)
 
-        self.edges.append(vertices)
+        self.edge_vertices.extend(vertices)
+        self.edges.append(vert_count)
 
     def parse_face(self, params):
         vert_count = int(params[0])

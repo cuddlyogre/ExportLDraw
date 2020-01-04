@@ -128,6 +128,26 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         items=((l, l, l) for l in special_bricks.SpecialBricks.logos)
     )
 
+    smooth_type: bpy.props.EnumProperty(
+        name="Smooth type",
+        description="Use this strategy to smooth meshes",
+        default="edge_split",
+        items=(
+            ("edge_split", "Edge split", "Use an edge split modifier"),
+            ("auto_smooth", "Auto smooth", "Use auto smooth"),
+        )
+    )
+
+    gap_target: bpy.props.EnumProperty(
+        name="Gap target",
+        description="Where to apply gap",
+        default="object",
+        items=(
+            ("object", "Object", "Apply gap to the object"),
+            ("mesh", "Mesh", "Apply gap to the mesh"),
+        )
+    )
+
     debug_text: bpy.props.BoolProperty(
         name="Debug text",
         description="Show debug text. Lowers performance.",
@@ -210,6 +230,12 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         default=False
     )
 
+    import_edges: bpy.props.BoolProperty(
+        name="Import edges",
+        description="Import edge meshes",
+        default=False
+    )
+
     def execute(self, context):
         import time
         start = time.monotonic()
@@ -236,7 +262,10 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         options.frames_per_step = self.frames_per_step
         options.curved_walls = self.curved_walls
         options.add_subsurface = self.add_subsurface
+        options.smooth_type = self.smooth_type
+        options.gap_target = self.gap_target
         options.set_timelime_markers = self.set_timelime_markers
+        options.import_edges = self.import_edges
 
         ldraw_import.LDrawImporter.do_import(bpy.path.abspath(self.filepath), self.clear_cache)
 
@@ -258,8 +287,8 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         box.prop(self, "display_logo")
         box.prop(self, "chosen_logo")
         box.prop(self, "make_gaps")
-        box.prop(self, "bevel_edges")
         box.prop(self, "gap_scale")
+        box.prop(self, "bevel_edges")
 
         box.label(text="Meta Commands")
         box.prop(self, "set_timelime_markers")
@@ -272,7 +301,9 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         box.prop(self, "meta_save")
 
         box.label(text="Extras")
+        box.prop(self, "gap_target")
         box.prop(self, "shade_smooth")
+        box.prop(self, "smooth_type")
         box.prop(self, "remove_doubles")
         box.prop(self, "merge_distance")
         box.prop(self, "clear_cache")
@@ -280,6 +311,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         box.prop(self, "no_studs")
         box.prop(self, "curved_walls")
         box.prop(self, "add_subsurface")
+        box.prop(self, "import_edges")
 
 
 class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):

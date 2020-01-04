@@ -1,4 +1,6 @@
+import os
 import bpy
+import math
 import mathutils
 import bmesh
 
@@ -17,7 +19,8 @@ class LDrawNode:
     last_frame = 0
     face_info_cache = {}
     geometry_cache = {}
-    top_group = None
+    top_collection = None
+    top_empty = None
 
     def __init__(self, file, color_code="16", matrix=matrices.identity):
         self.file = file
@@ -32,7 +35,8 @@ class LDrawNode:
         cls.current_step = 0
         if options.meta_step:
             LDrawNode.set_step()
-        cls.top_group = None
+        cls.top_collection = None
+        cls.top_empty = None
 
     @classmethod
     def reset_caches(cls):
@@ -47,7 +51,7 @@ class LDrawNode:
         if options.set_timelime_markers:
             bpy.context.scene.timeline_markers.new('STEP', frame=LDrawNode.last_frame)
 
-    def load(self, parent_matrix=matrices.identity, parent_color_code="16", geometry=None, is_stud=False, is_edge_logo=False, parent_group=None):
+    def load(self, parent_matrix=matrices.identity, parent_color_code="16", geometry=None, is_stud=False, is_edge_logo=False, parent_collection=None):
         if self.file is None:
             if self.meta_command == "step":
                 LDrawNode.current_step += 1
@@ -58,8 +62,8 @@ class LDrawNode:
             elif self.meta_command == "clear":
                 if options.set_timelime_markers:
                     bpy.context.scene.timeline_markers.new('CLEAR', frame=LDrawNode.last_frame)
-                if LDrawNode.top_group is not None:
-                    for ob in LDrawNode.top_group.all_objects:
+                if LDrawNode.top_collection is not None:
+                    for ob in LDrawNode.top_collection.all_objects:
                         bpy.context.scene.frame_set(LDrawNode.last_frame)
                         ob.hide_viewport = True
                         ob.hide_render = True
@@ -105,7 +109,7 @@ class LDrawNode:
 
         matrix = parent_matrix @ self.matrix
 
-        new_group = parent_group
+        file_collection = parent_collection
         if is_model:
             if options.debug_text:
                 print("===========")
@@ -113,15 +117,11 @@ class LDrawNode:
                 print(self.file.name)
                 print("===========")
 
-            new_group = bpy.data.collections.new(self.file.name)
-            if LDrawNode.top_group is None:
-                LDrawNode.top_group = new_group
-                if options.debug_text:
-                    print(LDrawNode.get_top_group().name)
-
-            if parent_group is not None:
-                parent_group.children.link(new_group)
+            file_collection = self.set_file_collection(parent_collection)
         else:
+            if LDrawNode.top_collection is None:
+                file_collection = self.set_file_collection(parent_collection)
+
             if geometry is None:
                 self.top = True
                 geometry = LDrawGeometry()
@@ -154,13 +154,14 @@ class LDrawNode:
                 if self.file.name in ["logo.dat", "logo2.dat"]:
                     is_edge_logo = True
 
-                vertices = [matrix @ e for e in self.file.geometry.vertices]
+                vertices = [matrix @ v for v in self.file.geometry.vertices]
                 geometry.vertices.extend(vertices)
 
                 if (not is_edge_logo) or (is_edge_logo and options.display_logo):
-                    for edge in self.file.geometry.edges:
-                        geometry.edges.append((matrix @ edge[0], matrix @ edge[1]))
+                    vertices = [matrix @ v for v in self.file.geometry.edge_vertices]
+                    geometry.edge_vertices.extend(vertices)
 
+                geometry.edges.extend(self.file.geometry.edges)
                 geometry.faces.extend(self.file.geometry.faces)
 
                 if key not in LDrawNode.face_info_cache:
@@ -183,7 +184,7 @@ class LDrawNode:
                            geometry=geometry,
                            is_stud=is_stud,
                            is_edge_logo=is_edge_logo,
-                           parent_group=new_group)
+                           parent_collection=file_collection)
 
         if self.top:
             if key not in LDrawNode.geometry_cache:
@@ -191,17 +192,29 @@ class LDrawNode:
 
             if key not in bpy.data.meshes:
                 mesh = self.create_mesh(key, geometry)  # combine with apply_materials
-                mesh.use_auto_smooth = options.shade_smooth
                 self.apply_materials(mesh, geometry, self.file.name)  # combine with create_mesh
                 self.bmesh_ops(mesh, geometry)
-                if options.make_gaps:
-                    self.do_gaps(mesh)
+                if options.smooth_type == "auto_smooth":
+                    mesh.use_auto_smooth = options.shade_smooth
+                    mesh.auto_smooth_angle = math.radians(89.9)  # 1.56905 - 89.9 so 90 degrees and up are affected
+                if options.make_gaps and options.gap_target == "mesh":
+                    mesh.transform(matrices.scaled_matrix(options.gap_scale))
             mesh = bpy.data.meshes[key]
 
             obj = bpy.data.objects.new(key, mesh)
-            # obj.matrix_world = parent_matrix @ self.matrix
-            obj.matrix_world = matrices.rotation @ parent_matrix @ self.matrix
-            # loc, rot, scale = obj.matrix_world.decompose()
+            obj.matrix_world = parent_matrix @ self.matrix
+
+            e_key = f"e_{key}"
+            edge_obj = None
+            if options.import_edges:
+                if e_key not in bpy.data.meshes:
+                    edge_mesh = self.create_edge_mesh(e_key, geometry)
+                    if options.make_gaps and options.gap_target == "mesh":
+                        edge_mesh.transform(matrices.scaled_matrix(options.gap_scale))
+                edge_mesh = bpy.data.meshes[e_key]
+
+                edge_obj = bpy.data.objects.new(e_key, edge_mesh)
+                edge_obj.matrix_world = parent_matrix @ self.matrix
 
             # https://docs.blender.org/api/current/bpy.types.bpy_struct.html#bpy.types.bpy_struct.keyframe_insert
             # https://docs.blender.org/api/current/bpy.types.Scene.html?highlight=frame_set#bpy.types.Scene.frame_set
@@ -225,15 +238,35 @@ class LDrawNode:
                 if options.debug_text:
                     print(LDrawNode.last_frame)
 
-            if new_group is not None:
-                new_group.objects.link(obj)
+            if file_collection is not None:
+                file_collection.objects.link(obj)
+                if edge_obj is not None:
+                    file_collection.objects.link(edge_obj)
             else:
                 bpy.context.scene.collection.objects.link(obj)
+                if edge_obj is not None:
+                    bpy.context.scene.collection.objects.link(edge_obj)
 
-            if False:
+            obj.parent = LDrawNode.top_empty
+            if edge_obj is not None:
+                edge_obj.parent = LDrawNode.top_empty
+
+            if options.smooth_type == "edge_split":
                 edge_modifier = obj.modifiers.new("Edge Split", type='EDGE_SPLIT')
-                edge_modifier.use_edge_angle = False
+                edge_modifier.use_edge_angle = True
+                edge_modifier.split_angle = math.radians(89.9)  # 1.56905 - 89.9 so 90 degrees and up are affected
                 edge_modifier.use_edge_sharp = True
+
+            if options.make_gaps and options.gap_target == "object":
+                name = "gap_scale"
+                if name not in bpy.data.objects:
+                    gap_scale_target = bpy.data.objects.new(name, None)
+                    gap_scale_target.matrix_world = gap_scale_target.matrix_world @ matrices.scaled_matrix(options.gap_scale)
+                    LDrawNode.top_collection.objects.link(gap_scale_target)
+                gap_scale_target = bpy.data.objects[name]
+                copy_constraint = obj.constraints.new("COPY_SCALE")
+                copy_constraint.target = gap_scale_target
+                copy_constraint.target.parent = LDrawNode.top_empty
 
             if options.bevel_edges:
                 bevel_modifier = obj.modifiers.new("Bevel", type='BEVEL')
@@ -243,13 +276,49 @@ class LDrawNode:
                 bevel_modifier.limit_method = 'WEIGHT'
                 bevel_modifier.use_clamp_overlap = True
 
-            # for m in obj.modifiers:
-            #     if m.type == 'EDGE_SPLIT':
-            #         obj.modifiers.remove(m)
+    def set_file_collection(self, parent_collection):
+        file_collection = bpy.data.collections.new(os.path.basename(self.file.filepath))
+
+        if parent_collection is not None:
+            parent_collection.children.link(file_collection)
+
+        if LDrawNode.top_collection is None:
+            LDrawNode.top_collection = file_collection
+            if options.debug_text:
+                print(LDrawNode.top_collection.name)
+
+        if LDrawNode.top_empty is None:
+            LDrawNode.top_empty = bpy.data.objects.new(file_collection.name, None)
+            LDrawNode.top_empty.matrix_world = matrices.rotation @ LDrawNode.top_empty.matrix_world @ matrices.scaled_matrix(0.02)
+            LDrawNode.top_collection.objects.link(LDrawNode.top_empty)
+            if options.debug_text:
+                print(LDrawNode.top_empty.name)
+
+        return file_collection
 
     @staticmethod
     def get_top_group():
-        return LDrawNode.top_group
+        return LDrawNode.top_collection
+
+    @staticmethod
+    def create_edge_mesh(key, geometry):
+        vertices = [v.to_tuple() for v in geometry.edge_vertices]
+        faces = []
+        face_index = 0
+
+        for f in geometry.edges:
+            new_face = []
+            for _ in range(f):
+                new_face.append(face_index)
+                face_index += 1
+            faces.append(new_face)
+
+        mesh = bpy.data.meshes.new(key)
+        mesh.from_pydata(vertices, [], faces)
+        mesh.validate()
+        mesh.update()
+
+        return mesh
 
     @staticmethod
     def create_mesh(key, geometry):
@@ -273,9 +342,6 @@ class LDrawNode:
 
     @staticmethod
     def bmesh_ops(mesh, geometry):
-        if options.bevel_edges:
-            mesh.use_customdata_edge_bevel = True
-
         bm = bmesh.new()
         bm.from_mesh(mesh)
 
@@ -288,22 +354,8 @@ class LDrawNode:
 
         bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
 
-        # Create kd tree for fast "find nearest points" calculation
-        kd = mathutils.kdtree.KDTree(len(bm.verts))
-        for i, v in enumerate(bm.verts):
-            kd.insert(v.co, i)
-        kd.balance()
-        # Create edgeIndices dictionary, which is the list of edges as pairs of indicies into our bm.verts array
-        edge_indices = {}
-        for edge in geometry.edges:
-            # Find index of nearest points in bm.verts to geomEdge[0] and geomEdge[1]
-            edges0 = [index for (co, index, dist) in kd.find_range(edge[0], options.merge_distance)]
-            edges1 = [index for (co, index, dist) in kd.find_range(edge[1], options.merge_distance)]
-
-            for e0 in edges0:
-                for e1 in edges1:
-                    edge_indices[(e0, e1)] = True
-                    edge_indices[(e1, e0)] = True
+        if options.bevel_edges:
+            mesh.use_customdata_edge_bevel = True
 
         # Find layer for bevel weights
         if 'BevelWeight' in bm.edges.layers.bevel_weight:
@@ -311,18 +363,34 @@ class LDrawNode:
         else:
             bevel_weight_layer = None
 
+        # Create kd tree for fast "find nearest points" calculation
+        kd = mathutils.kdtree.KDTree(len(bm.verts))
+        for i, v in enumerate(bm.verts):
+            kd.insert(v.co, i)
+        kd.balance()
+        # Create edgeIndices dictionary, which is the list of edges as pairs of indicies into our bm.verts array
+        edge_indices = {}
+        for i in range(0, len(geometry.edge_vertices), 2):
+            edges0 = [index for (co, index, dist) in kd.find_range(geometry.edge_vertices[i + 0], options.merge_distance)]
+            edges1 = [index for (co, index, dist) in kd.find_range(geometry.edge_vertices[i + 1], options.merge_distance)]
+
+            for e0 in edges0:
+                for e1 in edges1:
+                    edge_indices[(e0, e1)] = True
+                    edge_indices[(e1, e0)] = True
+
         # Find the appropriate mesh edges and make them sharp (i.e. not smooth)
-        for edge in bm.edges:
-            v0 = edge.verts[0].index
-            v1 = edge.verts[1].index
+        for edge_vertex in bm.edges:
+            v0 = edge_vertex.verts[0].index
+            v1 = edge_vertex.verts[1].index
             if (v0, v1) in edge_indices:
                 # Make edge sharp
-                edge.smooth = False
+                edge_vertex.smooth = False
 
                 # Add bevel weight
                 if bevel_weight_layer is not None:
                     bevel_wight = 1.0
-                    edge[bevel_weight_layer] = bevel_wight
+                    edge_vertex[bevel_weight_layer] = bevel_wight
 
         bm.faces.ensure_lookup_table()
         bm.verts.ensure_lookup_table()
@@ -364,14 +432,3 @@ class LDrawNode:
                 mesh.materials.append(material)
             f.material_index = mesh.materials.find(material.name)
             f.use_smooth = options.shade_smooth
-
-    @staticmethod
-    def do_gaps(mesh):
-        scale = options.gap_scale
-        gaps_scale_matrix = mathutils.Matrix((
-            (scale, 0.0, 0.0, 0.0),
-            (0.0, scale, 0.0, 0.0),
-            (0.0, 0.0, scale, 0.0),
-            (0.0, 0.0, 0.0, 1.0)
-        ))
-        mesh.transform(gaps_scale_matrix)
