@@ -26,7 +26,7 @@ class LDrawExporter:
         bm = bmesh.new()
         bm.from_object(obj, bpy.context.evaluated_depsgraph_get())
 
-        bm.transform(Matrix.Rotation(radians(90), 4, 'X') @ obj.matrix_world)
+        bm.transform(matrices.reverse_rotation @ obj.matrix_world)
 
         if LDrawExporter.ngon_handling == "triangulate":
             faces = []
