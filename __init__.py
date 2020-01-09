@@ -131,10 +131,10 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
     smooth_type: bpy.props.EnumProperty(
         name="Smooth type",
         description="Use this strategy to smooth meshes",
-        default="edge_split",
+        default="auto_smooth",
         items=(
-            ("edge_split", "Edge split", "Use an edge split modifier"),
             ("auto_smooth", "Auto smooth", "Use auto smooth"),
+            ("edge_split", "Edge split", "Use an edge split modifier"),
         )
     )
 
