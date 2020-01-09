@@ -21,8 +21,6 @@ class LDrawExporter:
 
     @staticmethod
     def clean_mesh(obj):
-        mesh = obj.data.copy()
-
         bm = bmesh.new()
         bm.from_object(obj, bpy.context.evaluated_depsgraph_get())
 
@@ -38,10 +36,10 @@ class LDrawExporter:
                                   quad_method='BEAUTY',
                                   ngon_method='BEAUTY')
 
+        mesh = obj.data.copy()
         bm.to_mesh(mesh)
         bm.clear()
         bm.free()
-
         return mesh
 
     # https://stackoverflow.com/a/2440786
