@@ -222,6 +222,7 @@ class LDrawNode:
                 obj = bpy.data.objects.new(key, mesh)
                 obj.matrix_world = parent_matrix @ self.matrix
                 obj.parent = LDrawNode.top_empty
+                obj["filename"] = self.file.name
 
                 if file_collection is not None:
                     file_collection.objects.link(obj)

@@ -86,6 +86,7 @@ class BlenderMaterials:
         # Reuse current material if it exists, otherwise create a new material
         if bpy.data.materials.get(key) is None:
             material = bpy.data.materials.new(key)
+            material["color_code"] = col["code"]
         else:
             material = bpy.data.materials[key]
 
