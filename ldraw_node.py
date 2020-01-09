@@ -21,6 +21,7 @@ class LDrawNode:
     geometry_cache = {}
     top_collection = None
     top_empty = None
+    gap_scale_empty = None
 
     def __init__(self, file, color_code="16", matrix=matrices.identity):
         self.file = file
@@ -37,6 +38,7 @@ class LDrawNode:
             LDrawNode.set_step()
         cls.top_collection = None
         cls.top_empty = None
+        cls.gap_scale_empty = None
 
     @classmethod
     def reset_caches(cls):
@@ -204,81 +206,68 @@ class LDrawNode:
                 if options.make_gaps and options.gap_target == "mesh":
                     mesh.transform(matrices.scaled_matrix(options.gap_scale))
             mesh = bpy.data.meshes[key]
+            meshes[mesh.name] = mesh
 
-            obj = bpy.data.objects.new(key, mesh)
-            obj.matrix_world = parent_matrix @ self.matrix
-
-            e_key = f"e_{key}"
-            edge_obj = None
             if options.import_edges:
+                e_key = f"e_{key}"
                 if e_key not in bpy.data.meshes:
                     edge_mesh = self.create_edge_mesh(e_key, geometry)
                     if options.make_gaps and options.gap_target == "mesh":
                         edge_mesh.transform(matrices.scaled_matrix(options.gap_scale))
                 edge_mesh = bpy.data.meshes[e_key]
+                meshes[edge_mesh.name] = edge_mesh
 
-                edge_obj = bpy.data.objects.new(e_key, edge_mesh)
-                edge_obj.matrix_world = parent_matrix @ self.matrix
+            for key in meshes:
+                mesh = meshes[key]
 
-            # https://docs.blender.org/api/current/bpy.types.bpy_struct.html#bpy.types.bpy_struct.keyframe_insert
-            # https://docs.blender.org/api/current/bpy.types.Scene.html?highlight=frame_set#bpy.types.Scene.frame_set
-            # https://docs.blender.org/api/current/bpy.types.Object.html?highlight=rotation_quaternion#bpy.types.Object.rotation_quaternion
-            if options.meta_step:
-                if options.debug_text:
-                    print(LDrawNode.current_step)
+                obj = bpy.data.objects.new(key, mesh)
+                obj.matrix_world = parent_matrix @ self.matrix
+                obj.parent = LDrawNode.top_empty
 
-                bpy.context.scene.frame_set(options.starting_step_frame)
-                obj.hide_viewport = True
-                obj.hide_render = True
-                obj.keyframe_insert(data_path="hide_render")
-                obj.keyframe_insert(data_path="hide_viewport")
+                if file_collection is not None:
+                    file_collection.objects.link(obj)
+                else:
+                    bpy.context.scene.collection.objects.link(obj)
 
-                bpy.context.scene.frame_set(LDrawNode.last_frame)
-                obj.hide_viewport = False
-                obj.hide_render = False
-                obj.keyframe_insert(data_path="hide_render")
-                obj.keyframe_insert(data_path="hide_viewport")
+                # https://docs.blender.org/api/current/bpy.types.bpy_struct.html#bpy.types.bpy_struct.keyframe_insert
+                # https://docs.blender.org/api/current/bpy.types.Scene.html?highlight=frame_set#bpy.types.Scene.frame_set
+                # https://docs.blender.org/api/current/bpy.types.Object.html?highlight=rotation_quaternion#bpy.types.Object.rotation_quaternion
+                if options.meta_step:
+                    if options.debug_text:
+                        print(LDrawNode.current_step)
+                    bpy.context.scene.frame_set(options.starting_step_frame)
+                    obj.hide_viewport = True
+                    obj.hide_render = True
+                    obj.keyframe_insert(data_path="hide_render")
+                    obj.keyframe_insert(data_path="hide_viewport")
 
-                if options.debug_text:
-                    print(LDrawNode.last_frame)
+                    bpy.context.scene.frame_set(LDrawNode.last_frame)
+                    obj.hide_viewport = False
+                    obj.hide_render = False
+                    obj.keyframe_insert(data_path="hide_render")
+                    obj.keyframe_insert(data_path="hide_viewport")
 
-            if file_collection is not None:
-                file_collection.objects.link(obj)
-                if edge_obj is not None:
-                    file_collection.objects.link(edge_obj)
-            else:
-                bpy.context.scene.collection.objects.link(obj)
-                if edge_obj is not None:
-                    bpy.context.scene.collection.objects.link(edge_obj)
+                    if options.debug_text:
+                        print(LDrawNode.last_frame)
 
-            obj.parent = LDrawNode.top_empty
-            if edge_obj is not None:
-                edge_obj.parent = LDrawNode.top_empty
+                if options.smooth_type == "edge_split":
+                    edge_modifier = obj.modifiers.new("Edge Split", type='EDGE_SPLIT')
+                    edge_modifier.use_edge_angle = True
+                    edge_modifier.split_angle = math.radians(89.9)  # 1.56905 - 89.9 so 90 degrees and up are affected
+                    edge_modifier.use_edge_sharp = True
 
-            if options.smooth_type == "edge_split":
-                edge_modifier = obj.modifiers.new("Edge Split", type='EDGE_SPLIT')
-                edge_modifier.use_edge_angle = True
-                edge_modifier.split_angle = math.radians(89.9)  # 1.56905 - 89.9 so 90 degrees and up are affected
-                edge_modifier.use_edge_sharp = True
+                if options.make_gaps and options.gap_target == "object":
+                    copy_constraint = obj.constraints.new("COPY_SCALE")
+                    copy_constraint.target = LDrawNode.gap_scale_empty
+                    copy_constraint.target.parent = LDrawNode.top_empty
 
-            if options.make_gaps and options.gap_target == "object":
-                name = "gap_scale"
-                if name not in bpy.data.objects:
-                    gap_scale_target = bpy.data.objects.new(name, None)
-                    gap_scale_target.matrix_world = gap_scale_target.matrix_world @ matrices.scaled_matrix(options.gap_scale)
-                    LDrawNode.top_collection.objects.link(gap_scale_target)
-                gap_scale_target = bpy.data.objects[name]
-                copy_constraint = obj.constraints.new("COPY_SCALE")
-                copy_constraint.target = gap_scale_target
-                copy_constraint.target.parent = LDrawNode.top_empty
-
-            if options.bevel_edges:
-                bevel_modifier = obj.modifiers.new("Bevel", type='BEVEL')
-                bevel_modifier.width = 0.10
-                bevel_modifier.segments = 4
-                bevel_modifier.profile = 0.5
-                bevel_modifier.limit_method = 'WEIGHT'
-                bevel_modifier.use_clamp_overlap = True
+                if options.bevel_edges:
+                    bevel_modifier = obj.modifiers.new("Bevel", type='BEVEL')
+                    bevel_modifier.width = 0.10
+                    bevel_modifier.segments = 4
+                    bevel_modifier.profile = 0.5
+                    bevel_modifier.limit_method = 'WEIGHT'
+                    bevel_modifier.use_clamp_overlap = True
 
     def set_file_collection(self, parent_collection):
         file_collection = bpy.data.collections.new(os.path.basename(self.file.filepath))
@@ -297,6 +286,14 @@ class LDrawNode:
             LDrawNode.top_collection.objects.link(LDrawNode.top_empty)
             if options.debug_text:
                 print(LDrawNode.top_empty.name)
+
+        if options.make_gaps and options.gap_target == "object":
+            if LDrawNode.gap_scale_empty is None:
+                LDrawNode.gap_scale_empty = bpy.data.objects.new("gap_scale", None)
+                LDrawNode.gap_scale_empty.matrix_world = LDrawNode.gap_scale_empty.matrix_world @ matrices.scaled_matrix(options.gap_scale)
+                LDrawNode.top_collection.objects.link(LDrawNode.gap_scale_empty)
+                if options.debug_text:
+                    print(LDrawNode.gap_scale_empty.name)
 
         return file_collection
 
