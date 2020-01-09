@@ -19,6 +19,8 @@ class LDrawExporter:
     selection_only = None
     ngon_handling = None
 
+    # https://devtalk.blender.org/t/to-mesh-and-creating-new-object-issues/8557/4
+    # https://docs.blender.org/api/current/bpy.types.Depsgraph.html
     @staticmethod
     def clean_mesh(obj):
         bm = bmesh.new()
