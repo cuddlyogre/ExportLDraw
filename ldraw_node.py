@@ -342,6 +342,9 @@ class LDrawNode:
 
     @staticmethod
     def bmesh_ops(mesh, geometry):
+        if options.bevel_edges:
+            mesh.use_customdata_edge_bevel = True
+
         bm = bmesh.new()
         bm.from_mesh(mesh)
 
@@ -352,16 +355,13 @@ class LDrawNode:
         if options.remove_doubles:
             bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=options.merge_distance)
 
-        bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
-
-        if options.bevel_edges:
-            mesh.use_customdata_edge_bevel = True
-
         # Find layer for bevel weights
-        if 'BevelWeight' in bm.edges.layers.bevel_weight:
-            bevel_weight_layer = bm.edges.layers.bevel_weight['BevelWeight']
-        else:
-            bevel_weight_layer = None
+        bevel_weight_layer = None
+        if options.bevel_edges:
+            if 'BevelWeight' in bm.edges.layers.bevel_weight:
+                bevel_weight_layer = bm.edges.layers.bevel_weight['BevelWeight']
+
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
 
         # Create kd tree for fast "find nearest points" calculation
         kd = mathutils.kdtree.KDTree(len(bm.verts))
