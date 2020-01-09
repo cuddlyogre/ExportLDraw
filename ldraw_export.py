@@ -28,11 +28,15 @@ class LDrawExporter:
 
         bm.transform(Matrix.Rotation(radians(90), 4, 'X') @ obj.matrix_world)
 
-        faces = []
-        for f in bm.faces:
-            if len(f.verts) > 4:
-                faces.append(f)
-        bmesh.ops.triangulate(bm, faces=faces)
+        if LDrawExporter.ngon_handling == "triangulate":
+            faces = []
+            for f in bm.faces:
+                if len(f.verts) > 4:
+                    faces.append(f)
+            bmesh.ops.triangulate(bm,
+                                  faces=faces,
+                                  quad_method='BEAUTY',
+                                  ngon_method='BEAUTY')
 
         bm.to_mesh(mesh)
         bm.clear()
