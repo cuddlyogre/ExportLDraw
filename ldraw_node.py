@@ -186,10 +186,10 @@ class LDrawNode:
                            is_edge_logo=is_edge_logo,
                            parent_collection=file_collection)
 
-        if self.top:
-            if key not in LDrawNode.geometry_cache:
                 LDrawNode.geometry_cache[key] = geometry
 
+        if self.top:
+            meshes = {}
             if key not in bpy.data.meshes:
                 mesh = self.create_mesh(key, geometry)  # combine with apply_materials
                 self.apply_materials(mesh, geometry, self.file.name)  # combine with create_mesh
