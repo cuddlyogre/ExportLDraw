@@ -84,6 +84,10 @@ class LDrawNode:
             key.append(options.chosen_logo)
         if options.remove_doubles:
             key.append("rd")
+        if options.smooth_type == "auto_smooth":
+            key.append("as")
+        if options.smooth_type == "edge_split":
+            key.append("es")
         if options.use_alt_colors:
             key.append("alt")
         if options.curved_walls:
