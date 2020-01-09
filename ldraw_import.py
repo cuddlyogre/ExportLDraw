@@ -5,7 +5,6 @@ from . import filesystem
 
 from .ldraw_node import LDrawNode
 from .ldraw_file import LDrawFile
-from .ldraw_colors import LDrawColors
 from .blender_materials import BlenderMaterials
 from .special_bricks import SpecialBricks
 
