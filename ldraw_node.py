@@ -14,7 +14,7 @@ from .special_bricks import SpecialBricks
 
 
 class LDrawNode:
-    current_part = 0
+    part_count = 0
     current_step = 0
     last_frame = 0
     face_info_cache = {}
@@ -39,6 +39,7 @@ class LDrawNode:
         cls.top_collection = None
         cls.top_empty = None
         cls.gap_scale_empty = None
+        cls.part_count = 0
 
     @classmethod
     def reset_caches(cls):
@@ -132,6 +133,7 @@ class LDrawNode:
                 self.top = True
                 geometry = LDrawGeometry()
                 matrix = matrices.identity
+                LDrawNode.part_count += 1
 
             if options.debug_text:
                 print("===========")
@@ -143,9 +145,6 @@ class LDrawNode:
                     print("is_subpart")
                 print(self.file.name)
                 print("===========")
-
-        if self.top and is_part:
-            LDrawNode.current_part += 1
 
         # if it's a part and already in the cache, reuse it
         # meta commands are not in self.top files which is how they are counted

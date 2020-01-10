@@ -39,6 +39,7 @@ else:
     from . import matrices
     from . import special_bricks
 
+import time
 import bpy
 from bpy_extras.io_utils import ImportHelper, ExportHelper
 
@@ -237,7 +238,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
     )
 
     def execute(self, context):
-        import time
         start = time.monotonic()
 
         options.ldraw_path = self.ldraw_path
@@ -269,9 +269,15 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
 
         ldraw_import.LDrawImporter.do_import(bpy.path.abspath(self.filepath), self.clear_cache)
 
+        print("")
+        print("======Import Complete======")
+        print(self.filepath)
+        print(f"Part count: {ldraw_node.LDrawNode.part_count}")
         end = time.monotonic()
         elapsed = (end - start)
-        print(elapsed)
+        print(f"elapsed: {elapsed}")
+        print("===========================")
+        print("")
 
         return {'FINISHED'}
 
@@ -360,6 +366,8 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
     )
 
     def execute(self, context):
+        start = time.monotonic()
+
         options.ldraw_path = self.ldraw_path
 
         ldraw_export.LDrawExporter.triangulate = self.triangulate
@@ -367,6 +375,15 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
         ldraw_export.LDrawExporter.recalculate_normals = self.recalculate_normals
         ldraw_export.LDrawExporter.ngon_handling = self.ngon_handling
         ldraw_export.LDrawExporter.do_export(bpy.path.abspath(self.filepath))
+
+        print("")
+        print("======Export Complete======")
+        print(self.filepath)
+        end = time.monotonic()
+        elapsed = (end - start)
+        print(f"elapsed: {elapsed}")
+        print("===========================")
+        print("")
 
         return {'FINISHED'}
 
