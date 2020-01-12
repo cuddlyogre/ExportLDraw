@@ -155,6 +155,11 @@ class LDrawFile:
         ldraw_node = LDrawNode(ldraw_file, color_code=color_code, matrix=matrix)
         self.child_nodes.append(ldraw_node)
 
+        subpart_types = ['primitive', 'subpart', 'un-official primitive', 'un-official subpart']
+        if self.part_type is None:
+            if ldraw_node.file.part_type in subpart_types:
+                self.part_type = "part"
+
     @classmethod
     def handle_mpd(cls, filepath):
         ldraw_file = LDrawFile(filepath)
