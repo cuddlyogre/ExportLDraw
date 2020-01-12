@@ -22,6 +22,9 @@ class LDrawNode:
     top_collection = None
     top_empty = None
     gap_scale_empty = None
+    collection_cache = {}
+    next_collection = None
+    end_next_collection = False
 
     def __init__(self, file, color_code="16", matrix=matrices.identity):
         self.file = file
@@ -29,7 +32,7 @@ class LDrawNode:
         self.matrix = matrix
         self.top = False
         self.meta_command = None
-        self.meta_args = []
+        self.meta_args = {}
 
     @classmethod
     def reset(cls):
@@ -40,6 +43,7 @@ class LDrawNode:
         cls.top_empty = None
         cls.gap_scale_empty = None
         cls.part_count = 0
+        cls.collection_cache = {}
 
     @classmethod
     def reset_caches(cls):
@@ -54,11 +58,35 @@ class LDrawNode:
         if options.set_timelime_markers:
             bpy.context.scene.timeline_markers.new('STEP', frame=LDrawNode.last_frame)
 
+    def create_meta_group(self, key, parent_collection):
+        if self.meta_args[key] not in LDrawNode.collection_cache:
+            LDrawNode.collection_cache[self.meta_args[key]] = bpy.data.collections.new(self.meta_args[key])
+        collection = LDrawNode.collection_cache[self.meta_args[key]]
+        if parent_collection is not None:
+            if collection.name not in parent_collection.children:
+                parent_collection.children.link(collection)
+        else:
+            if collection.name not in bpy.context.scene.collection.children:
+                bpy.context.scene.collection.children.link(collection)
+
     def load(self, parent_matrix=matrices.identity, parent_color_code="16", geometry=None, is_stud=False, is_edge_logo=False, parent_collection=None):
         if self.file is None:
             if self.meta_command == "step":
                 LDrawNode.current_step += 1
                 LDrawNode.set_step()
+            elif self.meta_command == "group_begin":
+                self.create_meta_group('name', parent_collection)
+                LDrawNode.end_next_collection = False
+                if self.meta_args['name'] in LDrawNode.collection_cache:
+                    LDrawNode.next_collection = LDrawNode.collection_cache[self.meta_args['name']]
+            elif self.meta_command == "group_end":
+                LDrawNode.end_next_collection = True
+            elif self.meta_command == "group_def":
+                self.create_meta_group('id', parent_collection)
+            elif self.meta_command == "group_nxt":
+                if self.meta_args['id'] in LDrawNode.collection_cache:
+                    LDrawNode.next_collection = LDrawNode.collection_cache[self.meta_args['id']]
+                LDrawNode.end_next_collection = True
             elif self.meta_command == "save":
                 if options.set_timelime_markers:
                     bpy.context.scene.timeline_markers.new('SAVE', frame=LDrawNode.last_frame)
@@ -115,36 +143,34 @@ class LDrawNode:
         is_subpart = self.file.part_type in subpart_types
 
         matrix = parent_matrix @ self.matrix
-
         file_collection = parent_collection
-        if is_model:
-            if options.debug_text:
-                print("===========")
-                print("is_model")
-                print(self.file.name)
-                print("===========")
 
+        if LDrawNode.top_collection is None:
             file_collection = self.set_file_collection(parent_collection)
-        else:
-            if LDrawNode.top_collection is None:
-                file_collection = self.set_file_collection(parent_collection)
 
-            if geometry is None:
-                self.top = True
-                geometry = LDrawGeometry()
-                matrix = matrices.identity
-                LDrawNode.part_count += 1
+        if LDrawNode.next_collection is not None:
+            file_collection = LDrawNode.next_collection
+            if LDrawNode.end_next_collection:
+                LDrawNode.next_collection = None
 
-            if options.debug_text:
-                print("===========")
-                if is_part:
-                    print("is_part")
-                elif is_shortcut:
-                    print("is_shortcut")
-                elif is_subpart:
-                    print("is_subpart")
-                print(self.file.name)
-                print("===========")
+        if options.debug_text:
+            print("===========")
+            if is_model:
+                print("is_model")
+            if is_part:
+                print("is_part")
+            elif is_shortcut:
+                print("is_shortcut")
+            elif is_subpart:
+                print("is_subpart")
+            print(self.file.name)
+            print("===========")
+
+        if not is_model and geometry is None:
+            geometry = LDrawGeometry()
+            matrix = matrices.identity
+            self.top = True
+            LDrawNode.part_count += 1
 
         # if it's a part and already in the cache, reuse it
         # meta commands are not in self.top files which is how they are counted

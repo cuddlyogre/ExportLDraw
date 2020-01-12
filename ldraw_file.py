@@ -86,6 +86,51 @@ class LDrawFile:
                 elif params[1].lower() in ['print', 'write']:
                     if options.meta_print_write:
                         print(line[7:].strip())
+                elif params[1].lower() in ["!ldcad"]:  # http://www.melkert.net/LDCad/tech/meta
+                    if params[2].lower() in ["group_def"]:
+                        line_regex = r"(.*?)\s+(.*?)\s+(.*?)\s+(\[.*?\])\s+(\[.*?\])\s+(\[.*?\])\s+(\[.*?\])(.*)\s*"
+                        params = re.search(line_regex, line)
+
+                        ldraw_node = LDrawNode(None)
+                        ldraw_node.meta_command = "group_def"
+
+                        id_args = re.search(r"\[(.*)=(.*)\]", params[5])
+                        ldraw_node.meta_args['id'] = id_args[2]
+
+                        name_args = re.search(r"\[(.*)=(.*)\]", params[7])
+                        ldraw_node.meta_args['name'] = name_args[2]
+
+                        self.child_nodes.append(ldraw_node)
+                    elif params[2].lower() in ["group_nxt"]:
+                        line_regex = r"(.*?)\s+(.*?)\s+(.*?)\s+(\[.*?\])(.*)\s*"
+                        params = re.search(line_regex, line)
+
+                        ldraw_node = LDrawNode(None)
+                        ldraw_node.meta_command = "group_nxt"
+
+                        id_args = re.search(r"\[(.*)=(.*)\]", params[4])
+                        ldraw_node.meta_args['id'] = id_args[2]
+
+                        self.child_nodes.append(ldraw_node)
+                elif params[1].lower() in ["!leocad"]:  # https://www.leocad.org/docs/meta.html
+                    if params[2].lower() in ["group"]:
+                        begin_regex = r"(.*?)\s+(.*?)\s+(.*?)\s+(.*?)\s+(.*)\s*"
+                        begin_params = re.search(begin_regex, line)
+
+                        end_regex = r"(.*?)\s+(.*?)\s+(.*?)\s+(.*)\s*"
+                        end_params = re.search(end_regex, line)
+
+                        if begin_params is not None:
+                            if begin_params[4].lower() in ["begin"]:
+                                ldraw_node = LDrawNode(None)
+                                ldraw_node.meta_command = "group_begin"
+                                ldraw_node.meta_args['name'] = begin_params[5]
+                                self.child_nodes.append(ldraw_node)
+                        elif end_params is not None:
+                            if end_params[4].lower() in ["end"]:
+                                ldraw_node = LDrawNode(None)
+                                ldraw_node.meta_command = "group_end"
+                                self.child_nodes.append(ldraw_node)
                 else:
                     continue
                     # https://www.ldraw.org/documentation/ldraw-org-file-format-standards/language-extension-for-texture-mapping.html
