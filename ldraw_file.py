@@ -61,7 +61,7 @@ class LDrawFile:
             if params[0] == "0":
                 if params[1].lower() in ["!colour"]:
                     LDrawColors.parse_color(params)
-                if params[1].lower() in ["!ldraw_org"]:
+                elif params[1].lower() in ["!ldraw_org"]:
                     if params[2].lower() in ["lcad"]:
                         self.part_type = params[3].lower()
                     else:
