@@ -22,6 +22,7 @@ if "bpy" in locals():
     importlib.reload(ldraw_geometry)
     importlib.reload(ldraw_import)
     importlib.reload(ldraw_colors)
+    importlib.reload(ldraw_camera)
     importlib.reload(blender_materials)
     importlib.reload(matrices)
     importlib.reload(special_bricks)
@@ -35,6 +36,7 @@ else:
     from . import ldraw_geometry
     from . import ldraw_import
     from . import ldraw_colors
+    from . import ldraw_camera
     from . import blender_materials
     from . import matrices
     from . import special_bricks

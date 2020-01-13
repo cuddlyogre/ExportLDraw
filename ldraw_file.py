@@ -11,6 +11,7 @@ from .ldraw_node import LDrawNode
 from .ldraw_geometry import LDrawGeometry
 from .special_bricks import SpecialBricks
 from .ldraw_colors import LDrawColors
+from .ldraw_camera import LDrawCamera
 
 
 class LDrawFile:
@@ -43,6 +44,8 @@ class LDrawFile:
             self.lines = filesystem.read_file(filepath)
 
     def parse_file(self):
+        ldraw_camera = None
+
         for line in self.lines:
             line = line.replace("\t", " ")
             rows = list(csv.reader(io.StringIO(line), delimiter=' ', quotechar='"', skipinitialspace=True))
@@ -131,6 +134,73 @@ class LDrawFile:
                                 ldraw_node = LDrawNode(None)
                                 ldraw_node.meta_command = "group_end"
                                 self.child_nodes.append(ldraw_node)
+                    elif params[2] == "CAMERA":
+                        if ldraw_camera is None:
+                            ldraw_camera = LDrawCamera()
+
+                        params = params[3:]
+
+                        # https://www.leocad.org/docs/meta.html
+                        # "Camera commands can be grouped in the same line"
+                        # params = params[1:] at the end bumps promotes params[2] to params[1]
+
+                        while len(params) > 0:
+                            if params[0] == "FOV":
+                                ldraw_camera.fov = float(params[1])
+                                params = params[2:]
+                            elif params[0] == "ZNEAR":
+                                scale = 1.0
+                                ldraw_camera.z_near = scale * float(params[1])
+                                params = params[2:]
+                            elif params[0] == "ZFAR":
+                                scale = 1.0
+                                ldraw_camera.z_far = scale * float(params[1])
+                                params = params[2:]
+                            elif params[0] in ["POSITION", "TARGET_POSITION", "UP_VECTOR"]:
+                                (x, y, z) = map(float, params[1:4])
+                                vector = mathutils.Vector((x, y, z))
+
+                                if params[0] == "POSITION":
+                                    ldraw_camera.position = vector
+                                    print("POSITION")
+                                    print(ldraw_camera.position)
+                                    print(ldraw_camera.target_position)
+                                    print(ldraw_camera.up_vector)
+
+                                elif params[0] == "TARGET_POSITION":
+                                    ldraw_camera.target_position = vector
+                                    print("TARGET_POSITION")
+                                    print(ldraw_camera.position)
+                                    print(ldraw_camera.target_position)
+                                    print(ldraw_camera.up_vector)
+
+                                elif params[0] == "UP_VECTOR":
+                                    ldraw_camera.up_vector = vector
+                                    print("UP_VECTOR")
+                                    print(ldraw_camera.position)
+                                    print(ldraw_camera.target_position)
+                                    print(ldraw_camera.up_vector)
+
+                                params = params[4:]
+
+                            elif params[0] == "ORTHOGRAPHIC":
+                                ldraw_camera.orthographic = True
+                                params = params[1:]
+                            elif params[0] == "HIDDEN":
+                                ldraw_camera.hidden = True
+                                params = params[1:]
+                            elif params[0] == "NAME":
+                                camera_name_regex = r"(.*?)\s+(.*?)\s+(.*?)\s+(.*?)\s+(.*)\s*"
+                                camera_name_params = re.search(camera_name_regex, line)
+                                ldraw_camera.name = camera_name_params[5].strip()
+
+                                # By definition this is the last of the parameters
+                                params = []
+
+                                LDrawCamera.add_camera(ldraw_camera)
+                                ldraw_camera = None
+                            else:
+                                params = params[1:]
                 else:
                     continue
                     # https://www.ldraw.org/documentation/ldraw-org-file-format-standards/language-extension-for-texture-mapping.html

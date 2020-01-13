@@ -62,12 +62,10 @@ class LDrawNode:
         if self.meta_args[key] not in LDrawNode.collection_cache:
             LDrawNode.collection_cache[self.meta_args[key]] = bpy.data.collections.new(self.meta_args[key])
         collection = LDrawNode.collection_cache[self.meta_args[key]]
-        if parent_collection is not None:
-            if collection.name not in parent_collection.children:
-                parent_collection.children.link(collection)
-        else:
-            if collection.name not in bpy.context.scene.collection.children:
-                bpy.context.scene.collection.children.link(collection)
+        if parent_collection is None:
+            parent_collection = bpy.context.scene.collection
+        if collection.name not in parent_collection.children:
+            parent_collection.children.link(collection)
 
     def load(self, parent_matrix=matrices.identity, parent_color_code="16", geometry=None, is_stud=False, is_edge_logo=False, parent_collection=None):
         if self.file is None:
@@ -309,7 +307,7 @@ class LDrawNode:
 
         if LDrawNode.top_empty is None:
             LDrawNode.top_empty = bpy.data.objects.new(file_collection.name, None)
-            LDrawNode.top_empty.matrix_world = matrices.rotation @ LDrawNode.top_empty.matrix_world @ matrices.scaled_matrix(0.02)
+            LDrawNode.top_empty.matrix_world = matrices.rotation @ LDrawNode.top_empty.matrix_world @ matrices.scaled_matrix(options.scale)
             LDrawNode.top_collection.objects.link(LDrawNode.top_empty)
             if options.debug_text:
                 print(LDrawNode.top_empty.name)
@@ -325,8 +323,12 @@ class LDrawNode:
         return file_collection
 
     @staticmethod
-    def get_top_group():
+    def get_top_collection():
         return LDrawNode.top_collection
+
+    @staticmethod
+    def get_top_empty():
+        return LDrawNode.top_empty
 
     @staticmethod
     def create_edge_mesh(key, geometry):
