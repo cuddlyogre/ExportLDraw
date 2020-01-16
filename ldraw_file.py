@@ -162,24 +162,27 @@ class LDrawFile:
 
                                 if params[0] == "POSITION":
                                     ldraw_camera.position = vector
-                                    print("POSITION")
-                                    print(ldraw_camera.position)
-                                    print(ldraw_camera.target_position)
-                                    print(ldraw_camera.up_vector)
+                                    if options.debug_text:
+                                        print("POSITION")
+                                        print(ldraw_camera.position)
+                                        print(ldraw_camera.target_position)
+                                        print(ldraw_camera.up_vector)
 
                                 elif params[0] == "TARGET_POSITION":
                                     ldraw_camera.target_position = vector
-                                    print("TARGET_POSITION")
-                                    print(ldraw_camera.position)
-                                    print(ldraw_camera.target_position)
-                                    print(ldraw_camera.up_vector)
+                                    if options.debug_text:
+                                        print("TARGET_POSITION")
+                                        print(ldraw_camera.position)
+                                        print(ldraw_camera.target_position)
+                                        print(ldraw_camera.up_vector)
 
                                 elif params[0] == "UP_VECTOR":
                                     ldraw_camera.up_vector = vector
-                                    print("UP_VECTOR")
-                                    print(ldraw_camera.position)
-                                    print(ldraw_camera.target_position)
-                                    print(ldraw_camera.up_vector)
+                                    if options.debug_text:
+                                        print("UP_VECTOR")
+                                        print(ldraw_camera.position)
+                                        print(ldraw_camera.target_position)
+                                        print(ldraw_camera.up_vector)
 
                                 params = params[4:]
 
