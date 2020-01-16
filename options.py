@@ -31,3 +31,4 @@ scale = 0.02
 camera_fov = 30.0
 camera_near = 1.0
 camera_far = 10000.0
+ldraw_name_key = "ldraw_name"

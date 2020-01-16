@@ -229,6 +229,7 @@ class LDrawNode:
                     mesh.auto_smooth_angle = math.radians(89.9)  # 1.56905 - 89.9 so 90 degrees and up are affected
                 if options.make_gaps and options.gap_target == "mesh":
                     mesh.transform(matrices.scaled_matrix(options.gap_scale))
+                mesh[options.ldraw_name_key] = self.file.name
             mesh = bpy.data.meshes[key]
             meshes[mesh.name] = mesh
 
@@ -247,7 +248,7 @@ class LDrawNode:
                 obj = bpy.data.objects.new(key, mesh)
                 obj.matrix_world = parent_matrix @ self.matrix
                 obj.parent = LDrawNode.top_empty
-                obj["filename"] = self.file.name
+                obj[options.ldraw_name_key] = self.file.name
 
                 if file_collection is not None:
                     file_collection.objects.link(obj)
