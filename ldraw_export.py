@@ -1,5 +1,3 @@
-from math import radians
-from mathutils import Matrix
 import re
 import csv
 import io
@@ -7,10 +5,11 @@ import io
 import bpy
 import bmesh
 
-from . import filesystem
 from .ldraw_file import LDrawFile
 from .ldraw_colors import LDrawColors
+from . import filesystem
 from . import matrices
+from . import options
 
 
 class LDrawExporter:
@@ -63,12 +62,12 @@ class LDrawExporter:
     def export_subfiles(cls, obj, lines, is_model=False):
         # subpart.dat
         # subpart.dat.001 both match
-        if not re.search(r"(.*\.(?:mpd|dat|ldr))\.*.*$", obj.name):
-            return False
-
         name = obj.name
-        if "filename" in obj:
-            name = obj["filename"]
+        if options.ldraw_name_key in obj:
+            name = obj[options.ldraw_name_key]
+
+        if not re.search(r"(.*\.(?:mpd|dat|ldr))\.*.*$", name):
+            return False
 
         # remove .000 for duplicated parts
         name = re.sub(r"\.\d+$", "", name)
@@ -172,7 +171,7 @@ class LDrawExporter:
 
         # export edges
         for e in mesh.edges:
-            if e.use_edge_sharp and e.bevel_weight == 1.00:
+            if e.use_edge_sharp:
                 line = ["2", "24"]
                 for v in e.vertices:
                     for vv in mesh.vertices[v].co:
