@@ -143,10 +143,30 @@ class LDrawNode:
         matrix = parent_matrix @ self.matrix
         file_collection = parent_collection
 
-        if LDrawNode.top_collection is None:
-            file_collection = self.set_file_collection(parent_collection)
+        if is_model:
+            file_collection = bpy.data.collections.new(os.path.basename(self.file.filepath))
+            if parent_collection is not None:
+                parent_collection.children.link(file_collection)
 
-        if LDrawNode.next_collection is not None:
+            if LDrawNode.top_collection is None:
+                LDrawNode.top_collection = file_collection
+                if options.debug_text:
+                    print(LDrawNode.top_collection.name)
+
+                if LDrawNode.top_empty is None:
+                    LDrawNode.top_empty = bpy.data.objects.new(LDrawNode.top_collection.name, None)
+                    LDrawNode.top_empty.matrix_world = LDrawNode.top_empty.matrix_world @ matrices.rotation @ matrices.scaled_matrix(options.scale)
+                    if LDrawNode.top_collection is not None:
+                        LDrawNode.top_collection.objects.link(LDrawNode.top_empty)
+                    if options.debug_text:
+                        print(LDrawNode.top_empty.name)
+        elif geometry is None:
+            geometry = LDrawGeometry()
+            matrix = matrices.identity
+            self.top = True
+            LDrawNode.part_count += 1
+
+        if options.meta_group and LDrawNode.next_collection is not None:
             file_collection = LDrawNode.next_collection
             if LDrawNode.end_next_collection:
                 LDrawNode.next_collection = None
@@ -163,12 +183,6 @@ class LDrawNode:
                 print("is_subpart")
             print(self.file.name)
             print("===========")
-
-        if not is_model and geometry is None:
-            geometry = LDrawGeometry()
-            matrix = matrices.identity
-            self.top = True
-            LDrawNode.part_count += 1
 
         # if it's a part and already in the cache, reuse it
         # meta commands are not in self.top files which is how they are counted
@@ -227,8 +241,6 @@ class LDrawNode:
                 if options.smooth_type == "auto_smooth":
                     mesh.use_auto_smooth = options.shade_smooth
                     mesh.auto_smooth_angle = math.radians(89.9)  # 1.56905 - 89.9 so 90 degrees and up are affected
-                if options.make_gaps and options.gap_target == "mesh":
-                    mesh.transform(matrices.scaled_matrix(options.gap_scale))
                 mesh[options.ldraw_name_key] = self.file.name
             mesh = bpy.data.meshes[key]
             meshes[mesh.name] = mesh
@@ -237,18 +249,32 @@ class LDrawNode:
                 e_key = f"e_{key}"
                 if e_key not in bpy.data.meshes:
                     edge_mesh = self.create_edge_mesh(e_key, geometry)
-                    if options.make_gaps and options.gap_target == "mesh":
-                        edge_mesh.transform(matrices.scaled_matrix(options.gap_scale))
+                    edge_mesh[options.ldraw_edge_key] = self.file.name
                 edge_mesh = bpy.data.meshes[e_key]
                 meshes[edge_mesh.name] = edge_mesh
+
+            if LDrawNode.gap_scale_empty is None:
+                if LDrawNode.top_collection is not None:
+                    LDrawNode.gap_scale_empty = bpy.data.objects.new("gap_scale", None)
+                    LDrawNode.gap_scale_empty.matrix_world = LDrawNode.gap_scale_empty.matrix_world @ matrices.scaled_matrix(options.gap_scale)
+                    LDrawNode.top_collection.objects.link(LDrawNode.gap_scale_empty)
+                    if options.debug_text:
+                        print(LDrawNode.gap_scale_empty.name)
 
             for key in meshes:
                 mesh = meshes[key]
 
                 obj = bpy.data.objects.new(key, mesh)
-                obj.matrix_world = parent_matrix @ self.matrix
-                obj.parent = LDrawNode.top_empty
                 obj[options.ldraw_name_key] = self.file.name
+
+                if LDrawNode.top_empty is None:
+                    obj.matrix_world = matrices.rotation @ parent_matrix @ self.matrix @ matrices.scaled_matrix(options.scale)
+                else:
+                    obj.matrix_world = parent_matrix @ self.matrix
+                    obj.parent = LDrawNode.top_empty
+                    copy_constraint = obj.constraints.new("COPY_SCALE")
+                    copy_constraint.target = LDrawNode.gap_scale_empty
+                    copy_constraint.target.parent = LDrawNode.top_empty
 
                 if file_collection is not None:
                     file_collection.objects.link(obj)
@@ -282,11 +308,6 @@ class LDrawNode:
                     edge_modifier.split_angle = math.radians(89.9)  # 1.56905 - 89.9 so 90 degrees and up are affected
                     edge_modifier.use_edge_sharp = True
 
-                if options.make_gaps and options.gap_target == "object":
-                    copy_constraint = obj.constraints.new("COPY_SCALE")
-                    copy_constraint.target = LDrawNode.gap_scale_empty
-                    copy_constraint.target.parent = LDrawNode.top_empty
-
                 if options.bevel_edges:
                     bevel_modifier = obj.modifiers.new("Bevel", type='BEVEL')
                     bevel_modifier.width = 0.10
@@ -294,34 +315,6 @@ class LDrawNode:
                     bevel_modifier.profile = 0.5
                     bevel_modifier.limit_method = 'WEIGHT'
                     bevel_modifier.use_clamp_overlap = True
-
-    def set_file_collection(self, parent_collection):
-        file_collection = bpy.data.collections.new(os.path.basename(self.file.filepath))
-
-        if parent_collection is not None:
-            parent_collection.children.link(file_collection)
-
-        if LDrawNode.top_collection is None:
-            LDrawNode.top_collection = file_collection
-            if options.debug_text:
-                print(LDrawNode.top_collection.name)
-
-        if LDrawNode.top_empty is None:
-            LDrawNode.top_empty = bpy.data.objects.new(file_collection.name, None)
-            LDrawNode.top_empty.matrix_world = matrices.rotation @ LDrawNode.top_empty.matrix_world @ matrices.scaled_matrix(options.scale)
-            LDrawNode.top_collection.objects.link(LDrawNode.top_empty)
-            if options.debug_text:
-                print(LDrawNode.top_empty.name)
-
-        if options.make_gaps and options.gap_target == "object":
-            if LDrawNode.gap_scale_empty is None:
-                LDrawNode.gap_scale_empty = bpy.data.objects.new("gap_scale", None)
-                LDrawNode.gap_scale_empty.matrix_world = LDrawNode.gap_scale_empty.matrix_world @ matrices.scaled_matrix(options.gap_scale)
-                LDrawNode.top_collection.objects.link(LDrawNode.gap_scale_empty)
-                if options.debug_text:
-                    print(LDrawNode.gap_scale_empty.name)
-
-        return file_collection
 
     @staticmethod
     def get_top_collection():

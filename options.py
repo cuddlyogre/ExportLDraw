@@ -1,5 +1,6 @@
 ldraw_path = None
 first_run = True
+meta_group = True
 meta_print_write = False
 meta_step = False
 meta_clear = False
@@ -32,3 +33,4 @@ camera_fov = 30.0
 camera_near = 1.0
 camera_far = 10000.0
 ldraw_name_key = "ldraw_name"
+ldraw_edge_key = "ldraw_edge"
