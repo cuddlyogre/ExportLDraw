@@ -50,11 +50,9 @@ class LDrawImporter:
             if area.type == 'VIEW_3D':
                 for space in area.spaces:
                     if space.type == 'VIEW_3D':
-                        space.clip_end = options.camera_far * options.scale
+                        space.clip_end = options.camera_far #* options.scale
 
         for camera in LDrawCamera.get_cameras():
-            camera.create_camera_node(empty=LDrawNode.get_top_empty(), collection=LDrawNode.get_top_collection())
-
-        # https://blender.stackexchange.com/questions/38611/setting-camera-clip-end-via-python
-        if bpy.context.scene.camera is not None:
-            bpy.context.scene.camera.data.clip_end = options.camera_far * options.scale
+            camera = camera.create_camera_node(empty=LDrawNode.get_top_empty(), collection=LDrawNode.get_top_collection())
+            if bpy.context.scene.camera is None:
+                bpy.context.scene.camera = camera

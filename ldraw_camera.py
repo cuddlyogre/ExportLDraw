@@ -3,7 +3,6 @@ import mathutils
 import math
 
 from . import options
-from . import matrices
 
 
 class LDrawCamera:
@@ -52,27 +51,15 @@ class LDrawCamera:
         else:
             obj.data.type = 'PERSP'
 
-        # https://blender.stackexchange.com/a/72899
-        # https://blender.stackexchange.com/a/154926
-        # https://blender.stackexchange.com/a/29148
-        # when parenting the location of the parented obj is affected by the transform of the empty
-        # this undoes the transform of the empty
-        # obj.parent = empty
-        if collection is None:
-            collection = bpy.context.scene.collection
-        if obj.name not in collection:
-            collection.objects.link(obj)
-        obj.matrix_parent_inverse = obj.parent.matrix_world.inverted()
-        obj.matrix_world = matrices.rotation @ obj.matrix_world
-        bpy.context.view_layer.update()
-        # ===
-
-        obj.location.x = obj.location.x * options.scale
-        obj.location.y = obj.location.y * options.scale
-        obj.location.z = obj.location.z * options.scale
-
         obj.data.clip_start = obj.data.clip_start * options.scale
         obj.data.clip_end = obj.data.clip_end * options.scale
+
+        location = obj.location.copy()
+        location.x = location.x * options.scale
+        location.y = location.y * options.scale
+        location.z = location.z * options.scale
+        obj.location = location
+        # bpy.context.view_layer.update()
 
         self.target_position.x = self.target_position.x * options.scale
         self.target_position.y = self.target_position.y * options.scale
@@ -81,6 +68,25 @@ class LDrawCamera:
         self.up_vector.x = self.up_vector.x * options.scale
         self.up_vector.y = self.up_vector.y * options.scale
         self.up_vector.z = self.up_vector.z * options.scale
+
+        if collection is None:
+            collection = bpy.context.scene.collection
+        if obj.name not in collection:
+            collection.objects.link(obj)
+
+        # https://blender.stackexchange.com/a/72899
+        # https://blender.stackexchange.com/a/154926
+        # https://blender.stackexchange.com/a/29148
+        # when parenting the location of the parented obj is affected by the transform of the empty
+        # this undoes the transform of the empty
+        obj.parent = empty
+        if obj.parent is not None:
+            obj.matrix_parent_inverse = obj.parent.matrix_world.inverted()
+
+        # https://docs.blender.org/api/current/info_gotcha.html#stale-data
+        # https://blenderartists.org/t/how-to-avoid-bpy-context-scene-update/579222/6
+        # https://blenderartists.org/t/where-do-matrix-changes-get-stored-before-view-layer-update/1182838
+        bpy.context.view_layer.update()
 
         LDrawCamera.look_at(obj, self.target_position, self.up_vector)
 
