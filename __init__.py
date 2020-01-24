@@ -141,6 +141,26 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         )
     )
 
+    gap_target: bpy.props.EnumProperty(
+        name="Gap target",
+        description="Where to apply gap",
+        default="object",
+        items=(
+            ("object", "Object", "Scale the object to create the gap"),
+            ("mesh", "Mesh", "Transform the mesh to create the gap"),
+        )
+    )
+
+    gap_scale_strategy: bpy.props.EnumProperty(
+        name="Gap strategy",
+        description="How to scale the object to create the gap",
+        default="constraint",
+        items=(
+            ("object", "Object", "Apply gap directly to the object"),
+            ("constraint", "Constraint", "Use a constraint, allowing the gap to easily be adjusted later"),
+        )
+    )
+
     debug_text: bpy.props.BoolProperty(
         name="Debug text",
         description="Show debug text. Negatively affects performance",
@@ -151,6 +171,12 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         name="No studs",
         description="Don't import studs",
         default=False
+    )
+
+    parent_to_empty: bpy.props.BoolProperty(
+        name="Parent to empty",
+        description="Parent the model to an empty",
+        default=True
     )
 
     import_scale: bpy.props.FloatProperty(
@@ -274,6 +300,9 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         options.smooth_type = self.smooth_type
         options.import_edges = self.import_edges
         options.import_scale = self.import_scale
+        options.parent_to_empty = self.parent_to_empty
+        options.gap_target = self.gap_target
+        options.gap_scale_strategy = self.gap_scale_strategy
 
         ldraw_import.LDrawImporter.do_import(bpy.path.abspath(self.filepath), self.clear_cache)
 
@@ -316,6 +345,9 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         box.prop(self, "set_timelime_markers")
 
         box.label(text="Extras")
+        box.prop(self, "parent_to_empty")
+        box.prop(self, "gap_target")
+        box.prop(self, "gap_scale_strategy")
         box.prop(self, "bevel_edges")
         box.prop(self, "shade_smooth")
         box.prop(self, "smooth_type")

@@ -153,7 +153,7 @@ class LDrawNode:
                 if options.debug_text:
                     print(LDrawNode.top_collection.name)
 
-                if LDrawNode.top_empty is None:
+                if options.parent_to_empty and LDrawNode.top_empty is None:
                     LDrawNode.top_empty = bpy.data.objects.new(LDrawNode.top_collection.name, None)
                     LDrawNode.top_empty.matrix_world = LDrawNode.top_empty.matrix_world @ matrices.rotation @ matrices.scaled_matrix(options.scale)
                     if LDrawNode.top_collection is not None:
@@ -241,6 +241,8 @@ class LDrawNode:
                 if options.smooth_type == "auto_smooth":
                     mesh.use_auto_smooth = options.shade_smooth
                     mesh.auto_smooth_angle = math.radians(89.9)  # 1.56905 - 89.9 so 90 degrees and up are affected
+                if options.make_gaps and options.gap_target == "mesh":
+                    mesh.transform(matrices.scaled_matrix(options.gap_scale))
                 mesh[options.ldraw_name_key] = self.file.name
             mesh = bpy.data.meshes[key]
             meshes[mesh.name] = mesh
@@ -250,16 +252,10 @@ class LDrawNode:
                 if e_key not in bpy.data.meshes:
                     edge_mesh = self.create_edge_mesh(e_key, geometry)
                     edge_mesh[options.ldraw_edge_key] = self.file.name
+                    if options.make_gaps and options.gap_target == "mesh":
+                        edge_mesh.transform(matrices.scaled_matrix(options.gap_scale))
                 edge_mesh = bpy.data.meshes[e_key]
                 meshes[edge_mesh.name] = edge_mesh
-
-            if LDrawNode.gap_scale_empty is None:
-                if LDrawNode.top_collection is not None:
-                    LDrawNode.gap_scale_empty = bpy.data.objects.new("gap_scale", None)
-                    LDrawNode.gap_scale_empty.matrix_world = LDrawNode.gap_scale_empty.matrix_world @ matrices.scaled_matrix(options.gap_scale)
-                    LDrawNode.top_collection.objects.link(LDrawNode.gap_scale_empty)
-                    if options.debug_text:
-                        print(LDrawNode.gap_scale_empty.name)
 
             for key in meshes:
                 mesh = meshes[key]
@@ -268,13 +264,25 @@ class LDrawNode:
                 obj[options.ldraw_name_key] = self.file.name
 
                 if LDrawNode.top_empty is None:
-                    obj.matrix_world = matrices.rotation @ parent_matrix @ self.matrix @ matrices.scaled_matrix(options.scale)
+                    obj.matrix_world = matrices.scaled_matrix(options.scale) @ matrices.rotation @ parent_matrix @ self.matrix
+                    if options.make_gaps and options.gap_target == "object":
+                        obj.matrix_world = obj.matrix_world @ matrices.scaled_matrix(options.gap_scale)
                 else:
                     obj.matrix_world = parent_matrix @ self.matrix
-                    obj.parent = LDrawNode.top_empty
-                    copy_constraint = obj.constraints.new("COPY_SCALE")
-                    copy_constraint.target = LDrawNode.gap_scale_empty
-                    copy_constraint.target.parent = LDrawNode.top_empty
+                    if options.make_gaps and options.gap_target == "object":
+                        if options.gap_scale_strategy == "object":
+                            obj.matrix_world = obj.matrix_world @ matrices.scaled_matrix(options.gap_scale)
+                        elif options.gap_scale_strategy == "constraint":
+                            if LDrawNode.gap_scale_empty is None and LDrawNode.top_collection is not None:
+                                LDrawNode.gap_scale_empty = bpy.data.objects.new("gap_scale", None)
+                                LDrawNode.gap_scale_empty.matrix_world = LDrawNode.gap_scale_empty.matrix_world @ matrices.scaled_matrix(options.gap_scale)
+                                LDrawNode.top_collection.objects.link(LDrawNode.gap_scale_empty)
+                                if options.debug_text:
+                                    print(LDrawNode.gap_scale_empty.name)
+                            copy_constraint = obj.constraints.new("COPY_SCALE")
+                            copy_constraint.target = LDrawNode.gap_scale_empty
+                            copy_constraint.target.parent = LDrawNode.top_empty
+                    obj.parent = LDrawNode.top_empty  # must be after matrix_world set or else transform is incorrect
 
                 if file_collection is not None:
                     file_collection.objects.link(obj)
