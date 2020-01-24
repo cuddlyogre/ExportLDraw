@@ -30,29 +30,31 @@ class LDrawCamera:
         return LDrawCamera.cameras
 
     def create_camera_node(self, empty=None, collection=None):
-        obj = bpy.data.objects.new(self.name, bpy.data.cameras.new(self.name))
+        camera = bpy.data.cameras.new(self.name)
+
+        obj = bpy.data.objects.new(self.name, camera)
 
         obj.name = self.name
         obj.location = self.position
         obj.hide_viewport = self.hidden
         obj.hide_render = self.hidden
 
-        obj.data.sensor_fit = 'VERTICAL'
+        camera.sensor_fit = 'VERTICAL'
         # camera.sensor_height = self.fov
-        obj.data.lens_unit = 'FOV'
-        obj.data.angle = math.radians(self.fov)  # self.fov * 3.1415926 / 180.0
-        obj.data.clip_start = self.z_near
-        obj.data.clip_end = self.z_far
+        camera.lens_unit = 'FOV'
+        camera.angle = math.radians(self.fov)  # self.fov * 3.1415926 / 180.0
+        camera.clip_start = self.z_near
+        camera.clip_end = self.z_far
 
         if self.orthographic:
             dist_target_to_camera = (self.position - self.target_position).length
-            obj.data.ortho_scale = dist_target_to_camera / 1.92
-            obj.data.type = 'ORTHO'
+            camera.ortho_scale = dist_target_to_camera / 1.92
+            camera.type = 'ORTHO'
         else:
-            obj.data.type = 'PERSP'
+            camera.type = 'PERSP'
 
-        obj.data.clip_start = obj.data.clip_start * options.scale
-        obj.data.clip_end = obj.data.clip_end * options.scale
+        camera.clip_start = camera.clip_start * options.scale
+        camera.clip_end = camera.clip_end * options.scale
 
         location = obj.location.copy()
         location.x = location.x * options.scale
