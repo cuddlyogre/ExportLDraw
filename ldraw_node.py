@@ -233,7 +233,6 @@ class LDrawNode:
                 LDrawNode.geometry_cache[key] = geometry
 
         if self.top:
-            meshes = {}
             if key not in bpy.data.meshes:
                 mesh = self.create_mesh(key, geometry)  # combine with apply_materials
                 self.apply_materials(mesh, geometry, self.file.name)  # combine with create_mesh
@@ -245,7 +244,6 @@ class LDrawNode:
                     mesh.transform(matrices.scaled_matrix(options.gap_scale))
                 mesh[options.ldraw_name_key] = self.file.name
             mesh = bpy.data.meshes[key]
-            meshes[mesh.name] = mesh
 
             if options.import_edges:
                 e_key = f"e_{key}"
@@ -255,74 +253,79 @@ class LDrawNode:
                     if options.make_gaps and options.gap_target == "mesh":
                         edge_mesh.transform(matrices.scaled_matrix(options.gap_scale))
                 edge_mesh = bpy.data.meshes[e_key]
-                meshes[edge_mesh.name] = edge_mesh
 
-            for key in meshes:
-                mesh = meshes[key]
+            obj = LDrawNode.create_object(mesh, parent_matrix, self.matrix)
+            obj[options.ldraw_name_key] = self.file.name
 
-                obj = bpy.data.objects.new(key, mesh)
-                obj[options.ldraw_name_key] = self.file.name
+            if file_collection is not None:
+                file_collection.objects.link(obj)
+            else:
+                bpy.context.scene.collection.objects.link(obj)
 
-                if LDrawNode.top_empty is None:
-                    obj.matrix_world = matrices.scaled_matrix(options.scale) @ matrices.rotation @ parent_matrix @ self.matrix
-                    if options.make_gaps and options.gap_target == "object":
-                        obj.matrix_world = obj.matrix_world @ matrices.scaled_matrix(options.gap_scale)
-                else:
-                    obj.matrix_world = parent_matrix @ self.matrix
-                    if options.make_gaps and options.gap_target == "object":
-                        if options.gap_scale_strategy == "object":
-                            obj.matrix_world = obj.matrix_world @ matrices.scaled_matrix(options.gap_scale)
-                        elif options.gap_scale_strategy == "constraint":
-                            if LDrawNode.gap_scale_empty is None and LDrawNode.top_collection is not None:
-                                LDrawNode.gap_scale_empty = bpy.data.objects.new("gap_scale", None)
-                                LDrawNode.gap_scale_empty.matrix_world = LDrawNode.gap_scale_empty.matrix_world @ matrices.scaled_matrix(options.gap_scale)
-                                LDrawNode.top_collection.objects.link(LDrawNode.gap_scale_empty)
-                                if options.debug_text:
-                                    print(LDrawNode.gap_scale_empty.name)
-                            copy_constraint = obj.constraints.new("COPY_SCALE")
-                            copy_constraint.target = LDrawNode.gap_scale_empty
-                            copy_constraint.target.parent = LDrawNode.top_empty
-                    obj.parent = LDrawNode.top_empty  # must be after matrix_world set or else transform is incorrect
+    @staticmethod
+    def create_object(mesh, parent_matrix, matrix):
+        obj = bpy.data.objects.new(mesh.name, mesh)
 
-                if file_collection is not None:
-                    file_collection.objects.link(obj)
-                else:
-                    bpy.context.scene.collection.objects.link(obj)
+        if LDrawNode.top_empty is None:
+            obj.matrix_world = matrices.scaled_matrix(options.scale) @ matrices.rotation @ parent_matrix @ matrix
+            if options.make_gaps and options.gap_target == "object":
+                obj.matrix_world = obj.matrix_world @ matrices.scaled_matrix(options.gap_scale)
+        else:
+            obj.matrix_world = parent_matrix @ matrix
 
-                # https://docs.blender.org/api/current/bpy.types.bpy_struct.html#bpy.types.bpy_struct.keyframe_insert
-                # https://docs.blender.org/api/current/bpy.types.Scene.html?highlight=frame_set#bpy.types.Scene.frame_set
-                # https://docs.blender.org/api/current/bpy.types.Object.html?highlight=rotation_quaternion#bpy.types.Object.rotation_quaternion
-                if options.meta_step:
-                    if options.debug_text:
-                        print(LDrawNode.current_step)
-                    bpy.context.scene.frame_set(options.starting_step_frame)
-                    obj.hide_viewport = True
-                    obj.hide_render = True
-                    obj.keyframe_insert(data_path="hide_render")
-                    obj.keyframe_insert(data_path="hide_viewport")
+            if options.make_gaps and options.gap_target == "object":
+                if options.gap_scale_strategy == "object":
+                    obj.matrix_world = obj.matrix_world @ matrices.scaled_matrix(options.gap_scale)
+                elif options.gap_scale_strategy == "constraint":
+                    if LDrawNode.gap_scale_empty is None and LDrawNode.top_collection is not None:
+                        LDrawNode.gap_scale_empty = bpy.data.objects.new("gap_scale", None)
+                        LDrawNode.gap_scale_empty.matrix_world = LDrawNode.gap_scale_empty.matrix_world @ matrices.scaled_matrix(options.gap_scale)
+                        LDrawNode.top_collection.objects.link(LDrawNode.gap_scale_empty)
+                        if options.debug_text:
+                            print(LDrawNode.gap_scale_empty.name)
+                    copy_constraint = obj.constraints.new("COPY_SCALE")
+                    copy_constraint.target = LDrawNode.gap_scale_empty
+                    copy_constraint.target.parent = LDrawNode.top_empty
 
-                    bpy.context.scene.frame_set(LDrawNode.last_frame)
-                    obj.hide_viewport = False
-                    obj.hide_render = False
-                    obj.keyframe_insert(data_path="hide_render")
-                    obj.keyframe_insert(data_path="hide_viewport")
+            obj.parent = LDrawNode.top_empty  # must be after matrix_world set or else transform is incorrect
 
-                    if options.debug_text:
-                        print(LDrawNode.last_frame)
+        # https://docs.blender.org/api/current/bpy.types.bpy_struct.html#bpy.types.bpy_struct.keyframe_insert
+        # https://docs.blender.org/api/current/bpy.types.Scene.html?highlight=frame_set#bpy.types.Scene.frame_set
+        # https://docs.blender.org/api/current/bpy.types.Object.html?highlight=rotation_quaternion#bpy.types.Object.rotation_quaternion
+        if options.meta_step:
+            if options.debug_text:
+                print(LDrawNode.current_step)
 
-                if options.smooth_type == "edge_split":
-                    edge_modifier = obj.modifiers.new("Edge Split", type='EDGE_SPLIT')
-                    edge_modifier.use_edge_angle = True
-                    edge_modifier.split_angle = math.radians(89.9)  # 1.56905 - 89.9 so 90 degrees and up are affected
-                    edge_modifier.use_edge_sharp = True
+            bpy.context.scene.frame_set(options.starting_step_frame)
+            obj.hide_viewport = True
+            obj.hide_render = True
+            obj.keyframe_insert(data_path="hide_render")
+            obj.keyframe_insert(data_path="hide_viewport")
 
-                if options.bevel_edges:
-                    bevel_modifier = obj.modifiers.new("Bevel", type='BEVEL')
-                    bevel_modifier.width = 0.10
-                    bevel_modifier.segments = 4
-                    bevel_modifier.profile = 0.5
-                    bevel_modifier.limit_method = 'WEIGHT'
-                    bevel_modifier.use_clamp_overlap = True
+            bpy.context.scene.frame_set(LDrawNode.last_frame)
+            obj.hide_viewport = False
+            obj.hide_render = False
+            obj.keyframe_insert(data_path="hide_render")
+            obj.keyframe_insert(data_path="hide_viewport")
+
+            if options.debug_text:
+                print(LDrawNode.last_frame)
+
+        if options.smooth_type == "edge_split":
+            edge_modifier = obj.modifiers.new("Edge Split", type='EDGE_SPLIT')
+            edge_modifier.use_edge_angle = True
+            edge_modifier.split_angle = math.radians(89.9)  # 1.56905 - 89.9 so 90 degrees and up are affected
+            edge_modifier.use_edge_sharp = True
+
+        if options.bevel_edges:
+            bevel_modifier = obj.modifiers.new("Bevel", type='BEVEL')
+            bevel_modifier.width = 0.10
+            bevel_modifier.segments = 4
+            bevel_modifier.profile = 0.5
+            bevel_modifier.limit_method = 'WEIGHT'
+            bevel_modifier.use_clamp_overlap = True
+
+        return obj
 
     @staticmethod
     def get_top_collection():
@@ -339,12 +342,14 @@ class LDrawNode:
         face_index = 0
 
         for f in geometry.edges:
+            # add materials here
             new_face = []
             for _ in range(f):
                 new_face.append(face_index)
                 face_index += 1
             faces.append(new_face)
 
+        # add materials before doing from_pydata step
         mesh = bpy.data.meshes.new(key)
         mesh.from_pydata(vertices, [], faces)
         mesh.validate()
@@ -359,18 +364,47 @@ class LDrawNode:
         face_index = 0
 
         for f in geometry.faces:
+            # add materials here
             new_face = []
             for _ in range(f):
                 new_face.append(face_index)
                 face_index += 1
             faces.append(new_face)
 
+        # add materials before doing from_pydata step
         mesh = bpy.data.meshes.new(key)
         mesh.from_pydata(vertices, [], faces)
         mesh.validate()
         mesh.update()
 
         return mesh
+
+    # https://blender.stackexchange.com/a/91687
+    # for f in bm.faces:
+    #     f.smooth = True
+    # mesh = context.object.data
+    # for f in mesh.polygons:
+    #     f.use_smooth = True
+    # values = [True] * len(mesh.polygons)
+    # mesh.polygons.foreach_set("use_smooth", values)
+    # bpy.context.object.active_material.use_backface_culling = True
+    # bpy.context.object.active_material.use_screen_refraction = True
+    @staticmethod
+    def apply_materials(mesh, geometry, filename):
+        for i, f in enumerate(mesh.polygons):
+            face_info = geometry.face_info[i]
+
+            is_slope_material = False
+            if face_info.grain_slope_allowed:
+                is_slope_material = SpecialBricks.is_slope_face(filename, f)
+
+            material = BlenderMaterials.get_material(face_info.color_code,
+                                                     use_edge_color=face_info.use_edge_color,
+                                                     is_slope_material=is_slope_material)
+            if material.name not in mesh.materials:
+                mesh.materials.append(material)
+            f.material_index = mesh.materials.find(material.name)
+            f.use_smooth = options.shade_smooth
 
     @staticmethod
     def bmesh_ops(mesh, geometry):
