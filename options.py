@@ -29,6 +29,7 @@ smooth_type = "edge_split"  # "auto_smooth"
 gap_target = "object"  # "mesh"
 gap_scale_strategy = "constraint"  # "object"
 import_edges = False
+grease_pencil_edges = False
 scale = 0.02
 camera_fov = 30.0
 camera_near = 1.0

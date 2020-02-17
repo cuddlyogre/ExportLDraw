@@ -254,6 +254,19 @@ class LDrawNode:
                         edge_mesh.transform(matrices.scaled_matrix(options.gap_scale))
                 edge_mesh = bpy.data.meshes[e_key]
 
+                if options.grease_pencil_edges:
+                    gp_mesh = LDrawNode.create_gp_mesh(key, edge_mesh)
+                    LDrawNode.apply_gp_materials(gp_mesh)
+                    gp_object = bpy.data.objects.new(key, gp_mesh)
+                    gp_object.active_material_index = len(gp_mesh.materials)
+
+                    collection_name = "Grease Pencil Edges"
+                    if collection_name not in bpy.context.scene.collection.children:
+                        collection = bpy.data.collections.new(collection_name)
+                        bpy.context.scene.collection.children.link(collection)
+                    collection = bpy.context.scene.collection.children[collection_name]
+                    collection.objects.link(gp_object)
+
             obj = LDrawNode.create_object(mesh, parent_matrix, self.matrix)
             obj[options.ldraw_name_key] = self.file.name
 
@@ -468,33 +481,35 @@ class LDrawNode:
         bm.free()
 
     @staticmethod
-    def get_collection(name):
-        if name not in bpy.data.collections:
-            bpy.data.collections.new(name)
-        return bpy.data.collections[name]
+    def create_gp_mesh(key, mesh):
+        gp_mesh = bpy.data.grease_pencils.new(key)
 
-    # https://blender.stackexchange.com/a/91687
-    # for f in bm.faces:
-    #     f.smooth = True
-    # mesh = context.object.data
-    # for f in mesh.polygons:
-    #     f.use_smooth = True
-    # values = [True] * len(mesh.polygons)
-    # mesh.polygons.foreach_set("use_smooth", values)
+        gp_mesh.pixel_factor = 5.0
+        gp_mesh.stroke_depth_order = '3D'
+
+        gp_layer = gp_mesh.layers.new('gpl')
+        gp_frame = gp_layer.frames.new(1)
+        gp_layer.active_frame = gp_frame
+
+        for e in mesh.edges:
+            gp_stroke = gp_frame.strokes.new()
+            gp_stroke.material_index = 0
+            gp_stroke.line_width = 10.0
+            for v in e.vertices:
+                i = len(gp_stroke.points)
+                gp_stroke.points.add(1)
+                gp_point = gp_stroke.points[i]
+                gp_point.co = mesh.vertices[v].co
+
+        return gp_mesh
+
     @staticmethod
-    def apply_materials(mesh, geometry, filename):
-        # bpy.context.object.active_material.use_backface_culling = True
-        # bpy.context.object.active_material.use_screen_refraction = True
-
-        for i, f in enumerate(mesh.polygons):
-            face_info = geometry.face_info[i]
-
-            is_slope_material = False
-            if face_info.grain_slope_allowed:
-                is_slope_material = SpecialBricks.is_slope_face(filename, f)
-
-            material = BlenderMaterials.get_material(face_info.color_code, use_edge_color=face_info.use_edge_color, is_slope_material=is_slope_material)
-            if material.name not in mesh.materials:
-                mesh.materials.append(material)
-            f.material_index = mesh.materials.find(material.name)
-            f.use_smooth = options.shade_smooth
+    def apply_gp_materials(gp_mesh):
+        base_material = BlenderMaterials.get_material('0', use_edge_color=True)
+        material_name = f"gp_{base_material.name}"
+        if material_name not in bpy.data.materials:
+            material = base_material.copy()
+            material.name = material_name
+            bpy.data.materials.create_gpencil_data(material)  # https://developer.blender.org/T67102
+        material = bpy.data.materials[material_name]
+        gp_mesh.materials.append(material)

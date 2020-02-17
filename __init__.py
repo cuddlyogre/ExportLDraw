@@ -270,6 +270,12 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         default=False
     )
 
+    grease_pencil_edges: bpy.props.BoolProperty(
+        name="Imported edges as grease pencil",
+        description="Import edges as grease pencil strokes",
+        default=False
+    )
+
     def execute(self, context):
         start = time.monotonic()
 
@@ -299,6 +305,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         options.add_subsurface = self.add_subsurface
         options.smooth_type = self.smooth_type
         options.import_edges = self.import_edges
+        options.grease_pencil_edges = self.grease_pencil_edges
         options.import_scale = self.import_scale
         options.parent_to_empty = self.parent_to_empty
         options.gap_target = self.gap_target
@@ -359,6 +366,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         box.prop(self, "curved_walls")
         box.prop(self, "add_subsurface")
         box.prop(self, "import_edges")
+        box.prop(self, "grease_pencil_edges")
 
 
 class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
