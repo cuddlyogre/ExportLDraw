@@ -234,7 +234,7 @@ class LDrawNode:
 
         if self.top:
             if key not in bpy.data.meshes:
-                mesh = self.create_mesh(key, geometry)  # combine with apply_materials
+                mesh = self.create_mesh(key, geometry)
                 self.apply_materials(mesh, geometry, self.file.name)  # combine with create_mesh
                 self.bmesh_ops(mesh, geometry)
                 if options.smooth_type == "auto_smooth":
@@ -348,14 +348,21 @@ class LDrawNode:
     def get_top_empty():
         return LDrawNode.top_empty
 
+    # https://devtalk.blender.org/t/bmesh-adding-new-verts/11108/2
+    # f1 = Vector((rand(-5, 5),rand(-5, 5),rand(-5, 5)))
+    # f2 = Vector((rand(-5, 5),rand(-5, 5),rand(-5, 5)))
+    # f3 = Vector((rand(-5, 5),rand(-5, 5),rand(-5, 5)))
+    # f = [f1, f2, f3]
+    # for f in enumerate(faces):
+    #     this_vert = bm.verts.new(f)
     @staticmethod
-    def create_edge_mesh(key, geometry):
-        vertices = [v.to_tuple() for v in geometry.edge_vertices]
+    def do_create_mesh(key, geometry_vertices, geometry_faces):
+        vertices = [v.to_tuple() for v in geometry_vertices]
         faces = []
         face_index = 0
 
-        for f in geometry.edges:
-            # add materials here
+        # makes indexes sequential
+        for f in geometry_faces:
             new_face = []
             for _ in range(f):
                 new_face.append(face_index)
@@ -369,28 +376,14 @@ class LDrawNode:
         mesh.update()
 
         return mesh
+
+    @staticmethod
+    def create_edge_mesh(key, geometry):
+        return LDrawNode.do_create_mesh(key, geometry.edge_vertices, geometry.edges)
 
     @staticmethod
     def create_mesh(key, geometry):
-        vertices = [v.to_tuple() for v in geometry.vertices]
-        faces = []
-        face_index = 0
-
-        for f in geometry.faces:
-            # add materials here
-            new_face = []
-            for _ in range(f):
-                new_face.append(face_index)
-                face_index += 1
-            faces.append(new_face)
-
-        # add materials before doing from_pydata step
-        mesh = bpy.data.meshes.new(key)
-        mesh.from_pydata(vertices, [], faces)
-        mesh.validate()
-        mesh.update()
-
-        return mesh
+        return LDrawNode.do_create_mesh(key, geometry.vertices, geometry.faces)
 
     # https://blender.stackexchange.com/a/91687
     # for f in bm.faces:
