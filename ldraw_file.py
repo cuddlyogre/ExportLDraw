@@ -5,6 +5,7 @@ import re
 from . import options
 from . import filesystem
 from . import helpers
+from . import ldraw_part_types
 
 from .ldraw_node import LDrawNode
 from .ldraw_geometry import LDrawGeometry
@@ -263,9 +264,8 @@ class LDrawFile:
         ldraw_node = LDrawNode(ldraw_file, color_code=color_code, matrix=matrix)
         self.child_nodes.append(ldraw_node)
 
-        subpart_types = ['primitive', 'subpart', 'un-official primitive', 'un-official subpart']
         if self.part_type is None:
-            if ldraw_node.file.part_type in subpart_types:
+            if ldraw_node.file.part_type in ldraw_part_types.subpart_types:
                 self.part_type = "part"
 
     @classmethod

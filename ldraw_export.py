@@ -9,6 +9,7 @@ from . import filesystem
 from . import matrices
 from . import options
 from . import helpers
+from . import ldraw_part_types
 
 
 class LDrawExporter:
@@ -223,8 +224,7 @@ class LDrawExporter:
                         else:
                             part_type = params[2].lower()
 
-        model_types = ['model', 'unofficial_model', 'un-official model', 'submodel', None]
-        is_model = part_type in model_types
+        is_model = part_type in ldraw_part_types.model_types
 
         part_lines = []
         for obj in objects:

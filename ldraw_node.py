@@ -6,6 +6,7 @@ import bmesh
 
 from . import options
 from . import matrices
+from . import ldraw_part_types
 
 from .ldraw_geometry import LDrawGeometry
 from .face_info import FaceInfo
@@ -128,17 +129,10 @@ class LDrawNode:
         key.append(self.file.name)
         key = "_".join([k.lower() for k in key])
 
-        model_types = ['model', 'unofficial_model', 'un-official model', 'submodel', None]
-        is_model = self.file.part_type in model_types
-
-        part_types = ['part', 'unofficial_part', 'un-official part']
-        is_part = self.file.part_type in part_types
-
-        shortcut_types = ['shortcut', 'unofficial_shortcut', 'un-official shortcut']
-        is_shortcut = self.file.part_type in shortcut_types
-
-        subpart_types = ['primitive', 'subpart', 'un-official primitive', 'un-official subpart']
-        is_subpart = self.file.part_type in subpart_types
+        is_model = self.file.part_type in ldraw_part_types.model_types
+        is_part = self.file.part_type in ldraw_part_types.part_types
+        is_shortcut = self.file.part_type in ldraw_part_types.shortcut_types
+        is_subpart = self.file.part_type in ldraw_part_types.subpart_types
 
         matrix = parent_matrix @ self.matrix
         file_collection = parent_collection
