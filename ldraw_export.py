@@ -1,6 +1,4 @@
 import re
-import csv
-import io
 
 import bpy
 import bmesh
@@ -10,6 +8,7 @@ from .ldraw_colors import LDrawColors
 from . import filesystem
 from . import matrices
 from . import options
+from . import helpers
 
 
 class LDrawExporter:
@@ -212,19 +211,10 @@ class LDrawExporter:
 
                 line = text_line.body
 
-                line = line.replace("\t", " ")
-                rows = list(csv.reader(io.StringIO(line), delimiter=' ', quotechar='"', skipinitialspace=True))
+                params = helpers.parse_line(line, 14)
 
-                if len(rows) == 0:
+                if params is None:
                     continue
-
-                params = rows[0]
-
-                if len(params) == 0:
-                    continue
-
-                while len(params) < 14:
-                    params.append("")
 
                 if params[0] == "0":
                     if params[1].lower() in ["!ldraw_org"]:

@@ -1,11 +1,10 @@
 import os
 import mathutils
 import re
-import csv
-import io
 
 from . import options
 from . import filesystem
+from . import helpers
 
 from .ldraw_node import LDrawNode
 from .ldraw_geometry import LDrawGeometry
@@ -47,19 +46,10 @@ class LDrawFile:
         ldraw_camera = None
 
         for line in self.lines:
-            line = line.replace("\t", " ")
-            rows = list(csv.reader(io.StringIO(line), delimiter=' ', quotechar='"', skipinitialspace=True))
+            params = helpers.parse_line(line, 14)
 
-            if len(rows) == 0:
+            if params is None:
                 continue
-
-            params = rows[0]
-
-            if len(params) == 0:
-                continue
-
-            while len(params) < 14:
-                params.append("")
 
             if params[0] == "0":
                 if params[1].lower() in ["!colour"]:
@@ -290,13 +280,10 @@ class LDrawFile:
         root_file = None
         current_file = None
         for line in lines:
-            params = line.strip().split()
+            params = helpers.parse_line(line, 9)
 
-            if len(params) == 0:
+            if params is None:
                 continue
-
-            while len(params) < 9:
-                params.append("")
 
             if params[0] == "0" and params[1].lower() == "file":
                 cls.__parse_current_file(current_file)

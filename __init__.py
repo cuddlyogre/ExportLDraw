@@ -16,6 +16,7 @@ if "bpy" in locals():
     importlib.reload(options)
     importlib.reload(face_info)
     importlib.reload(filesystem)
+    importlib.reload(helpers)
     importlib.reload(ldraw_export)
     importlib.reload(ldraw_file)
     importlib.reload(ldraw_node)
@@ -30,6 +31,7 @@ else:
     from . import options
     from . import face_info
     from . import filesystem
+    from . import helpers
     from . import ldraw_export
     from . import ldraw_file
     from . import ldraw_node
