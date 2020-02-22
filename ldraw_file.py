@@ -82,8 +82,7 @@ class LDrawFile:
                         print(line[7:].strip())
                 elif params[1].lower() in ["!ldcad"]:  # http://www.melkert.net/LDCad/tech/meta
                     if params[2].lower() in ["group_def"]:
-                        line_regex = r"(.*?)\s+(.*?)\s+(.*?)\s+(\[.*?\])\s+(\[.*?\])\s+(\[.*?\])\s+(\[.*?\])(.*)\s*"
-                        params = re.search(line_regex, line)
+                        params = re.search(r"(.*?)\s+(.*?)\s+(.*?)\s+(\[.*?\])\s+(\[.*?\])\s+(\[.*?\])\s+(\[.*?\])(.*)\s*", line)
 
                         ldraw_node = LDrawNode(None)
                         ldraw_node.meta_command = "group_def"
@@ -96,8 +95,7 @@ class LDrawFile:
 
                         self.child_nodes.append(ldraw_node)
                     elif params[2].lower() in ["group_nxt"]:
-                        line_regex = r"(.*?)\s+(.*?)\s+(.*?)\s+(\[.*?\])(.*)\s*"
-                        params = re.search(line_regex, line)
+                        params = re.search(r"(.*?)\s+(.*?)\s+(.*?)\s+(\[.*?\])(.*)\s*", line)
 
                         ldraw_node = LDrawNode(None)
                         ldraw_node.meta_command = "group_nxt"
@@ -108,23 +106,19 @@ class LDrawFile:
                         self.child_nodes.append(ldraw_node)
                 elif params[1].lower() in ["!leocad"]:  # https://www.leocad.org/docs/meta.html
                     if params[2].lower() in ["group"]:
-                        begin_regex = r"(.*?)\s+(.*?)\s+(.*?)\s+(.*?)\s+(.*)\s*"
-                        begin_params = re.search(begin_regex, line)
+                        if params[3].lower() in ["begin"]:
+                            begin_params = re.search(r"(?:.*\s+){3}begin\s+(.*)", line, re.IGNORECASE)
 
-                        end_regex = r"(.*?)\s+(.*?)\s+(.*?)\s+(.*)\s*"
-                        end_params = re.search(end_regex, line)
-
-                        if begin_params is not None:
-                            if begin_params[4].lower() in ["begin"]:
+                            if begin_params is not None:
                                 ldraw_node = LDrawNode(None)
                                 ldraw_node.meta_command = "group_begin"
-                                ldraw_node.meta_args['name'] = begin_params[5]
+                                ldraw_node.meta_args['name'] = begin_params[1]
                                 self.child_nodes.append(ldraw_node)
-                        elif end_params is not None:
-                            if end_params[4].lower() in ["end"]:
-                                ldraw_node = LDrawNode(None)
-                                ldraw_node.meta_command = "group_end"
-                                self.child_nodes.append(ldraw_node)
+                        elif params[3].lower() in ["end"]:
+                            ldraw_node = LDrawNode(None)
+                            ldraw_node.meta_command = "group_end"
+                            self.child_nodes.append(ldraw_node)
+
                     elif params[2] == "CAMERA":
                         if ldraw_camera is None:
                             ldraw_camera = LDrawCamera()
@@ -184,9 +178,8 @@ class LDrawFile:
                                 ldraw_camera.hidden = True
                                 params = params[1:]
                             elif params[0] == "NAME":
-                                camera_name_regex = r"(.*?)\s+(.*?)\s+(.*?)\s+(.*?)\s+(.*)\s*"
-                                camera_name_params = re.search(camera_name_regex, line)
-                                ldraw_camera.name = camera_name_params[5].strip()
+                                camera_name_params = re.search(r"(?:.*\s+){3}name(.*)", line, re.IGNORECASE)
+                                ldraw_camera.name = camera_name_params[1].strip()
 
                                 # By definition this is the last of the parameters
                                 params = []
@@ -206,14 +199,14 @@ class LDrawFile:
                     elif params[1].lower() in ["!:"]:
                         self.parse_geometry_line(params[2:])
             else:
-                self.parse_geometry_line(params)
+                self.parse_geometry_line(line, params)
 
         if self.name == "":
             self.name = os.path.basename(self.filepath)
 
-    def parse_geometry_line(self, params):
+    def parse_geometry_line(self, line, params):
         if params[0] == "1":
-            self.parse_child_node(params)
+            self.parse_child_node(line, params)
         elif params[0] in ["2"]:
             if self.part_type is None:
                 self.part_type = 'part'
@@ -223,7 +216,7 @@ class LDrawFile:
                 self.part_type = 'part'
             self.geometry.parse_face(params)
 
-    def parse_child_node(self, params):
+    def parse_child_node(self, line, params):
         color_code = params[1]
 
         (x, y, z, a, b, c, d, e, f, g, h, i) = map(float, params[2:14])
@@ -234,7 +227,8 @@ class LDrawFile:
             (0, 0, 0, 1)
         ))
 
-        filename = " ".join(params[14:]).lower()
+        # there might be spaces in the filename, so don't just split on whitespace
+        filename = re.search(r"(?:.*\s+){14}(.*)", line)[1]
         if options.display_logo:
             if filename in SpecialBricks.studs:
                 parts = filename.split(".")
