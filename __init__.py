@@ -4,7 +4,7 @@ bl_info = {
     "version": (0, 1),
     "blender": (2, 80, 0),
     "location": "File > Export > LDraw (.mpd/.ldr/.l3b/.dat)",
-    "description": "Exports LDraw Models",
+    "description": "Imports and Exports LDraw Models",
     "warning": "",
     "wiki_url": "",
     "category": "Import-Export",
