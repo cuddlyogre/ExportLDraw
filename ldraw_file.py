@@ -82,32 +82,45 @@ class LDrawFile:
                         print(line[7:].strip())
                 elif params[1].lower() in ["!ldcad"]:  # http://www.melkert.net/LDCad/tech/meta
                     if params[2].lower() in ["group_def"]:
-                        params = re.search(r"(.*?)\s+(.*?)\s+(.*?)\s+(\[.*?\])\s+(\[.*?\])\s+(\[.*?\])\s+(\[.*?\])(.*)\s*", line)
+                        params = re.search(r".*?\s+.*?\s+.*?\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])", line.strip())
+
+                        # if params is None:
+                        #     print(f"BAD LINE: {line}")
+                        #     continue
 
                         ldraw_node = LDrawNode(None)
                         ldraw_node.meta_command = "group_def"
 
-                        id_args = re.search(r"\[(.*)=(.*)\]", params[5])
+                        id_args = re.search(r"\[(.*)=(.*)\]", params[2])
                         ldraw_node.meta_args['id'] = id_args[2]
 
-                        name_args = re.search(r"\[(.*)=(.*)\]", params[7])
+                        name_args = re.search(r"\[(.*)=(.*)\]", params[4])
                         ldraw_node.meta_args['name'] = name_args[2]
 
                         self.child_nodes.append(ldraw_node)
                     elif params[2].lower() in ["group_nxt"]:
-                        params = re.search(r"(.*?)\s+(.*?)\s+(.*?)\s+(\[.*?\])(.*)\s*", line)
+                        params = re.search(r".*\s+.*\s+.*\s+(\[.*\])\s+(\[.*\])", line.strip())
+
+                        # if params is None:
+                        #     print(f"BAD LINE: {line}")
+                        #     continue
 
                         ldraw_node = LDrawNode(None)
                         ldraw_node.meta_command = "group_nxt"
 
-                        id_args = re.search(r"\[(.*)=(.*)\]", params[4])
+                        id_args = re.search(r"\[(.*)=(.*)\]", params[1])
                         ldraw_node.meta_args['id'] = id_args[2]
 
                         self.child_nodes.append(ldraw_node)
                 elif params[1].lower() in ["!leocad"]:  # https://www.leocad.org/docs/meta.html
                     if params[2].lower() in ["group"]:
                         if params[3].lower() in ["begin"]:
-                            begin_params = re.search(r"(?:.*\s+){3}begin\s+(.*)", line, re.IGNORECASE)
+                            # begin_params = re.search(r"(?:.*\s+){3}begin\s+(.*)", line, re.IGNORECASE)
+                            begin_params = re.search(r".*?\s+.*?\s+.*?\s+.*?\s+(.*)", line.strip())
+
+                            # if begin_params is None:
+                            #     print(f"BAD LINE: {line}")
+                            #     continue
 
                             if begin_params is not None:
                                 ldraw_node = LDrawNode(None)
@@ -178,7 +191,13 @@ class LDrawFile:
                                 ldraw_camera.hidden = True
                                 params = params[1:]
                             elif params[0] == "NAME":
-                                camera_name_params = re.search(r"(?:.*\s+){3}name(.*)", line, re.IGNORECASE)
+                                # camera_name_params = re.search(r"(?:.*\s+){3}name(.*)", line, re.IGNORECASE)
+                                camera_name_params = re.search(r".*?\s+.*?\s+.*?\s+.*?\s+(.*)", line.strip())
+
+                                # if camera_name_params is None:
+                                #     print(f"BAD LINE: {line}")
+                                #     continue
+
                                 ldraw_camera.name = camera_name_params[1].strip()
 
                                 # By definition this is the last of the parameters
@@ -228,7 +247,16 @@ class LDrawFile:
         ))
 
         # there might be spaces in the filename, so don't just split on whitespace
-        filename = re.search(r"(?:.*\s+){14}(.*)", line)[1]
+        # filename_args = re.search(r"(?:.*\s+){14}(.*)", line.strip())
+        # print(line.strip())
+        filename_args = re.search(r".*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+(.*)", line.strip())
+
+        # if filename_args is None:
+        #     print(f"BAD LINE: {line}")
+        #     return
+
+        filename = filename_args[1].lower()
+        # filename = " ".join(params[14:]).lower()
         if options.display_logo:
             if filename in SpecialBricks.studs:
                 parts = filename.split(".")
