@@ -134,7 +134,6 @@ class LDrawFile:
                             ldraw_node = LDrawNode(None)
                             ldraw_node.meta_command = "group_end"
                             self.child_nodes.append(ldraw_node)
-
                     elif params[2] == "CAMERA":
                         if ldraw_camera is None:
                             ldraw_camera = LDrawCamera()
@@ -297,6 +296,7 @@ class LDrawFile:
     def handle_mpd(cls, filepath):
         ldraw_file = LDrawFile(filepath)
         ldraw_file.read_file()
+
         lines = ldraw_file.lines
 
         if len(lines) < 1:
