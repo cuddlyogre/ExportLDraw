@@ -405,6 +405,9 @@ class LDrawNode:
             material = BlenderMaterials.get_material(face_info.color_code,
                                                      use_edge_color=face_info.use_edge_color,
                                                      is_slope_material=is_slope_material)
+            if material is None:
+                continue
+
             if material.name not in mesh.materials:
                 mesh.materials.append(material)
             f.material_index = mesh.materials.find(material.name)
@@ -497,6 +500,9 @@ class LDrawNode:
     @staticmethod
     def apply_gp_materials(gp_mesh):
         base_material = BlenderMaterials.get_material('0', use_edge_color=True)
+        if base_material is None:
+            return
+
         material_name = f"gp_{base_material.name}"
         if material_name not in bpy.data.materials:
             material = base_material.copy()

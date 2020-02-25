@@ -69,6 +69,9 @@ class BlenderMaterials:
 
         # Create new material
         col = LDrawColors.get_color(pure_color_code)
+        if col is None:
+            return
+
         material = BlenderMaterials.__create_node_based_material(key, col, use_edge_color=use_edge_color, is_slope_material=is_slope_material)
 
         # Add material to cache
