@@ -44,6 +44,9 @@ class LDrawFile:
             self.lines = filesystem.read_file(filepath)
 
     def parse_file(self):
+        if len(self.lines) < 1:
+            return
+
         ldraw_camera = None
 
         for line in self.lines:
@@ -295,6 +298,9 @@ class LDrawFile:
         ldraw_file = LDrawFile(filepath)
         ldraw_file.read_file()
         lines = ldraw_file.lines
+
+        if len(lines) < 1:
+            return None
 
         if not lines[0].lower().startswith("0 f"):
             return filepath
