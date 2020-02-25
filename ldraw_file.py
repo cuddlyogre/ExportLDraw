@@ -324,9 +324,8 @@ class LDrawFile:
                 cls.__parse_current_file(current_file)
                 current_file = None
 
-            else:
-                if current_file is not None:
-                    current_file.lines.append(line)
+            elif current_file is not None:
+                current_file.lines.append(line)
 
         cls.__parse_current_file(current_file)
 
