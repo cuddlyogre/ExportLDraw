@@ -3,7 +3,7 @@ import io
 
 
 def parse_line(line, padding=0):
-    line = line.replace("\t", " ")
+    line = line.strip().replace("\t", " ")
     rows = list(csv.reader(io.StringIO(line), delimiter=' ', quotechar='"', skipinitialspace=True))
 
     if len(rows) == 0:
