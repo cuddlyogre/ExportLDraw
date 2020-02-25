@@ -23,7 +23,7 @@ class LDrawFile:
         self.name = ""
         self.child_nodes = []
         self.geometry = LDrawGeometry()
-        self.part_type = None
+        self.part_type = 'part'
         self.lines = []
 
     @staticmethod
@@ -229,12 +229,10 @@ class LDrawFile:
         if params[0] == "1":
             self.parse_child_node(line, params)
         elif params[0] in ["2"]:
-            if self.part_type is None:
-                self.part_type = 'part'
+            self.part_type = 'part'
             self.geometry.parse_edge(params)
         elif params[0] in ["3", "4"]:
-            if self.part_type is None:
-                self.part_type = 'part'
+            self.part_type = 'part'
             self.geometry.parse_face(params)
 
     def parse_child_node(self, line, params):
