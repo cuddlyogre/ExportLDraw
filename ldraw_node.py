@@ -23,7 +23,7 @@ class LDrawNode:
     top_collection = None
     top_empty = None
     gap_scale_empty = None
-    collection_cache = {}
+    collection_id_map = {}
     next_collection = None
     end_next_collection = False
 
@@ -45,7 +45,7 @@ class LDrawNode:
         LDrawNode.top_collection = None
         LDrawNode.top_empty = None
         LDrawNode.gap_scale_empty = None
-        LDrawNode.collection_cache = {}
+        LDrawNode.collection_id_map = {}
         LDrawNode.next_collection = None
         LDrawNode.end_next_collection = False
         if options.meta_step:
@@ -60,9 +60,9 @@ class LDrawNode:
             bpy.context.scene.timeline_markers.new('STEP', frame=LDrawNode.last_frame)
 
     def create_meta_group(self, key, parent_collection):
-        if self.meta_args[key] not in LDrawNode.collection_cache:
-            LDrawNode.collection_cache[self.meta_args[key]] = bpy.data.collections.new(self.meta_args[key])
-        collection = LDrawNode.collection_cache[self.meta_args[key]]
+        if self.meta_args[key] not in bpy.data.collections:
+            bpy.data.collections.new(self.meta_args[key])
+        collection = bpy.data.collections[self.meta_args[key]]
         if parent_collection is None:
             parent_collection = bpy.context.scene.collection
         if collection.name not in parent_collection.children:
@@ -76,15 +76,19 @@ class LDrawNode:
             elif self.meta_command == "group_begin":
                 self.create_meta_group('name', parent_collection)
                 LDrawNode.end_next_collection = False
-                if self.meta_args['name'] in LDrawNode.collection_cache:
-                    LDrawNode.next_collection = LDrawNode.collection_cache[self.meta_args['name']]
+                if self.meta_args['name'] in bpy.data.collections:
+                    LDrawNode.next_collection = bpy.data.collections[self.meta_args['name']]
             elif self.meta_command == "group_end":
                 LDrawNode.end_next_collection = True
             elif self.meta_command == "group_def":
-                self.create_meta_group('id', parent_collection)
+                if self.meta_args['id'] not in LDrawNode.collection_id_map:
+                    LDrawNode.collection_id_map[self.meta_args['id']] = self.meta_args['name']
+                self.create_meta_group('name', parent_collection)
             elif self.meta_command == "group_nxt":
-                if self.meta_args['id'] in LDrawNode.collection_cache:
-                    LDrawNode.next_collection = LDrawNode.collection_cache[self.meta_args['id']]
+                if self.meta_args['id'] in LDrawNode.collection_id_map:
+                    key = LDrawNode.collection_id_map[self.meta_args['id']]
+                    if key in bpy.data.collections:
+                        LDrawNode.next_collection = bpy.data.collections[key]
                 LDrawNode.end_next_collection = True
             elif self.meta_command == "save":
                 if options.set_timelime_markers:
