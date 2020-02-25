@@ -21,9 +21,9 @@ class LDrawCamera:
         self.up_vector = mathutils.Vector((0.0, 1.0, 0.0))
         self.name = "Camera"
 
-    @classmethod
-    def reset(cls):
-        cls.cameras = []
+    @staticmethod
+    def reset_caches():
+        LDrawCamera.cameras = []
 
     @staticmethod
     def get_cameras():

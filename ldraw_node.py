@@ -35,21 +35,21 @@ class LDrawNode:
         self.meta_command = None
         self.meta_args = {}
 
-    @classmethod
-    def reset(cls):
-        cls.current_step = 0
+    @staticmethod
+    def reset_caches():
+        LDrawNode.part_count = 0
+        LDrawNode.current_step = 0
+        LDrawNode.last_frame = 0
+        LDrawNode.face_info_cache = {}
+        LDrawNode.geometry_cache = {}
+        LDrawNode.top_collection = None
+        LDrawNode.top_empty = None
+        LDrawNode.gap_scale_empty = None
+        LDrawNode.collection_cache = {}
+        LDrawNode.next_collection = None
+        LDrawNode.end_next_collection = False
         if options.meta_step:
             LDrawNode.set_step()
-        cls.top_collection = None
-        cls.top_empty = None
-        cls.gap_scale_empty = None
-        cls.part_count = 0
-        cls.collection_cache = {}
-
-    @classmethod
-    def reset_caches(cls):
-        cls.face_info_cache = {}
-        cls.geometry_cache = {}
 
     @staticmethod
     def set_step():

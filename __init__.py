@@ -207,12 +207,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         max=1.0,
     )
 
-    clear_cache: bpy.props.BoolProperty(
-        name="Clear cache",
-        description="Clear cache of previously loaded parts",
-        default=False
-    )
-
     meta_print_write: bpy.props.BoolProperty(
         name="PRINT/WRITE",
         description="Process PRINT/WRITE meta command",
@@ -315,7 +309,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         options.gap_target = self.gap_target
         options.gap_scale_strategy = self.gap_scale_strategy
 
-        ldraw_import.LDrawImporter.do_import(bpy.path.abspath(self.filepath), self.clear_cache)
+        ldraw_import.LDrawImporter.do_import(bpy.path.abspath(self.filepath))
 
         print("")
         print("======Import Complete======")
@@ -364,7 +358,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         box.prop(self, "smooth_type")
         box.prop(self, "remove_doubles")
         box.prop(self, "merge_distance")
-        box.prop(self, "clear_cache")
         box.prop(self, "debug_text")
         box.prop(self, "no_studs")
         box.prop(self, "curved_walls")

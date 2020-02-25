@@ -10,43 +10,43 @@ class BlenderMaterials:
 
     material_cache = {}
 
-    @classmethod
-    def reset_caches(cls):
-        cls.material_cache = {}
+    @staticmethod
+    def reset_caches():
+        BlenderMaterials.material_cache = {}
 
-    @classmethod
-    def create_blender_node_groups(cls):
-        cls.reset_caches()
+    @staticmethod
+    def create_blender_node_groups():
+        BlenderMaterials.reset_caches()
 
-        cls.__create_blender_distance_to_center_node_group()
-        cls.__create_blender_vector_element_power_node_group()
-        cls.__create_blender_convert_to_normals_node_group()
-        cls.__create_blender_concave_walls_node_group()
-        cls.__create_blender_slope_texture_node_group()
+        BlenderMaterials.__create_blender_distance_to_center_node_group()
+        BlenderMaterials.__create_blender_vector_element_power_node_group()
+        BlenderMaterials.__create_blender_convert_to_normals_node_group()
+        BlenderMaterials.__create_blender_concave_walls_node_group()
+        BlenderMaterials.__create_blender_slope_texture_node_group()
 
         # Originally based on ideas from https://www.youtube.com/watch?v=V3wghbZ-Vh4
         # "Create your own PBR Material [Fixed!]" by BlenderGuru
         # Updated with Principled Shader, if available
-        cls.__create_blender_fresnel_node_group()
-        cls.__create_blender_reflection_node_group()
-        cls.__create_blender_dielectric_node_group()
+        BlenderMaterials.__create_blender_fresnel_node_group()
+        BlenderMaterials.__create_blender_reflection_node_group()
+        BlenderMaterials.__create_blender_dielectric_node_group()
 
-        cls.__create_blender_lego_standard_node_group()
-        cls.__create_blender_lego_transparent_node_group()
-        cls.__create_blender_lego_glass_node_group()
-        cls.__create_blender_lego_transparent_fluorescent_node_group()
-        cls.__create_blender_lego_rubber_node_group()
-        cls.__create_blender_lego_rubber_translucent_node_group()
-        cls.__create_blender_lego_emission_node_group()
-        cls.__create_blender_lego_chrome_node_group()
-        cls.__create_blender_lego_pearlescent_node_group()
-        cls.__create_blender_lego_metal_node_group()
-        cls.__create_blender_lego_glitter_node_group()
-        cls.__create_blender_lego_speckle_node_group()
-        cls.__create_blender_lego_milky_white_node_group()
+        BlenderMaterials.__create_blender_lego_standard_node_group()
+        BlenderMaterials.__create_blender_lego_transparent_node_group()
+        BlenderMaterials.__create_blender_lego_glass_node_group()
+        BlenderMaterials.__create_blender_lego_transparent_fluorescent_node_group()
+        BlenderMaterials.__create_blender_lego_rubber_node_group()
+        BlenderMaterials.__create_blender_lego_rubber_translucent_node_group()
+        BlenderMaterials.__create_blender_lego_emission_node_group()
+        BlenderMaterials.__create_blender_lego_chrome_node_group()
+        BlenderMaterials.__create_blender_lego_pearlescent_node_group()
+        BlenderMaterials.__create_blender_lego_metal_node_group()
+        BlenderMaterials.__create_blender_lego_glitter_node_group()
+        BlenderMaterials.__create_blender_lego_speckle_node_group()
+        BlenderMaterials.__create_blender_lego_milky_white_node_group()
 
-    @classmethod
-    def get_material(cls, color_code, use_edge_color=False, is_slope_material=False):
+    @staticmethod
+    def get_material(color_code, use_edge_color=False, is_slope_material=False):
         pure_color_code = color_code
 
         key = []
@@ -64,15 +64,15 @@ class BlenderMaterials:
         key = "_".join([k.lower() for k in key])
 
         # If it's already in the cache, use that
-        if key in cls.material_cache:
-            return cls.material_cache[key]
+        if key in BlenderMaterials.material_cache:
+            return BlenderMaterials.material_cache[key]
 
         # Create new material
         col = LDrawColors.get_color(pure_color_code)
-        material = cls.__create_node_based_material(key, col, use_edge_color=use_edge_color, is_slope_material=is_slope_material)
+        material = BlenderMaterials.__create_node_based_material(key, col, use_edge_color=use_edge_color, is_slope_material=is_slope_material)
 
         # Add material to cache
-        cls.material_cache[key] = material
+        BlenderMaterials.material_cache[key] = material
         return material
 
     @staticmethod

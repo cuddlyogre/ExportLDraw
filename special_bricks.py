@@ -106,9 +106,9 @@ class SpecialBricks:
         '54869.dat': (1.0, 0.052, 0.017, 1.0),
     }
 
-    @classmethod
-    def reset_caches(cls):
-        cls.slope_angles = {}
+    @staticmethod
+    def reset_caches():
+        SpecialBricks.slope_angles = {}
 
     @staticmethod
     def build_slope_angles():
