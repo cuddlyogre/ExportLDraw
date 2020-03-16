@@ -59,10 +59,11 @@ class LDrawNode:
         if options.set_timelime_markers:
             bpy.context.scene.timeline_markers.new('STEP', frame=LDrawNode.last_frame)
 
-    def create_meta_group(self, key, parent_collection):
-        if self.meta_args[key] not in bpy.data.collections:
-            bpy.data.collections.new(self.meta_args[key])
-        collection = bpy.data.collections[self.meta_args[key]]
+    @staticmethod
+    def create_meta_group(key, parent_collection):
+        if key not in bpy.data.collections:
+            bpy.data.collections.new(key)
+        collection = bpy.data.collections[key]
         if parent_collection is None:
             parent_collection = bpy.context.scene.collection
         if collection.name not in parent_collection.children:
@@ -74,7 +75,7 @@ class LDrawNode:
                 LDrawNode.current_step += 1
                 LDrawNode.set_step()
             elif self.meta_command == "group_begin":
-                self.create_meta_group('name', parent_collection)
+                LDrawNode.create_meta_group(self.meta_args['name'], parent_collection)
                 LDrawNode.end_next_collection = False
                 if self.meta_args['name'] in bpy.data.collections:
                     LDrawNode.next_collection = bpy.data.collections[self.meta_args['name']]
@@ -83,7 +84,7 @@ class LDrawNode:
             elif self.meta_command == "group_def":
                 if self.meta_args['id'] not in LDrawNode.collection_id_map:
                     LDrawNode.collection_id_map[self.meta_args['id']] = self.meta_args['name']
-                self.create_meta_group('name', parent_collection)
+                LDrawNode.create_meta_group(self.meta_args['name'], parent_collection)
             elif self.meta_command == "group_nxt":
                 if self.meta_args['id'] in LDrawNode.collection_id_map:
                     key = LDrawNode.collection_id_map[self.meta_args['id']]
@@ -232,7 +233,7 @@ class LDrawNode:
 
         if self.top:
             if key not in bpy.data.meshes:
-                mesh = self.create_mesh(key, geometry)
+                mesh = LDrawNode.create_mesh(key, geometry)
 
                 # apply materials to mesh
                 # then mesh cleanup
@@ -240,9 +241,9 @@ class LDrawNode:
                 # this order is important because bmesh_ops causes 
                 # mesh.polygons to get out of sync geometry.face_info 
                 # which causes materials and slop materials to be applied incorrectly
-                self.apply_materials(mesh, geometry)  # combine with create_mesh
-                self.bmesh_ops(mesh, geometry)
-                self.apply_slope_materials(mesh, self.file.name)
+                LDrawNode.apply_materials(mesh, geometry)  # combine with create_mesh
+                LDrawNode.bmesh_ops(mesh, geometry)
+                LDrawNode.apply_slope_materials(mesh, self.file.name)
 
                 if options.smooth_type == "auto_smooth":
                     mesh.use_auto_smooth = options.shade_smooth
@@ -255,7 +256,7 @@ class LDrawNode:
             if options.import_edges:
                 e_key = f"e_{key}"
                 if e_key not in bpy.data.meshes:
-                    edge_mesh = self.create_edge_mesh(e_key, geometry)
+                    edge_mesh = LDrawNode.create_edge_mesh(e_key, geometry)
                     edge_mesh[options.ldraw_edge_key] = self.file.name
                     if options.make_gaps and options.gap_target == "mesh":
                         edge_mesh.transform(matrices.scaled_matrix(options.gap_scale))
