@@ -233,8 +233,17 @@ class LDrawNode:
         if self.top:
             if key not in bpy.data.meshes:
                 mesh = self.create_mesh(key, geometry)
-                self.apply_materials(mesh, geometry, self.file.name)  # combine with create_mesh
+
+                # apply materials to mesh
+                # then mesh cleanup
+                # then apply slope materials
+                # this order is important because bmesh_ops causes 
+                # mesh.polygons to get out of sync geometry.face_info 
+                # which causes materials and slop materials to be applied incorrectly
+                self.apply_materials(mesh, geometry)  # combine with create_mesh
                 self.bmesh_ops(mesh, geometry)
+                self.apply_slope_materials(mesh, self.file.name)
+
                 if options.smooth_type == "auto_smooth":
                     mesh.use_auto_smooth = options.shade_smooth
                     mesh.auto_smooth_angle = math.radians(89.9)  # 1.56905 - 89.9 so 90 degrees and up are affected
@@ -272,6 +281,25 @@ class LDrawNode:
                 file_collection.objects.link(obj)
             else:
                 bpy.context.scene.collection.objects.link(obj)
+
+    @staticmethod
+    def apply_slope_materials(mesh, filename):
+        if len(mesh.materials) > 0:
+            for f in mesh.polygons:
+                face_material = mesh.materials[f.material_index]
+
+                if 'color_code' not in face_material:
+                    continue
+                color_code = str(face_material['color_code'])
+
+                is_slope_material = SpecialBricks.is_slope_face(filename, f)
+                material = BlenderMaterials.get_material(color_code, is_slope_material=is_slope_material)
+                if material is None:
+                    continue
+
+                if material.name not in mesh.materials:
+                    mesh.materials.append(material)
+                f.material_index = mesh.materials.find(material.name)
 
     @staticmethod
     def create_object(mesh, parent_matrix, matrix):
@@ -394,23 +422,20 @@ class LDrawNode:
     # bpy.context.object.active_material.use_backface_culling = True
     # bpy.context.object.active_material.use_screen_refraction = True
     @staticmethod
-    def apply_materials(mesh, geometry, filename):
+    def apply_materials(mesh, geometry):
         for i, f in enumerate(mesh.polygons):
             face_info = geometry.face_info[i]
 
-            is_slope_material = False
-            if face_info.grain_slope_allowed:
-                is_slope_material = SpecialBricks.is_slope_face(filename, f)
+            grain_slope_allowed = face_info.grain_slope_allowed
 
-            material = BlenderMaterials.get_material(face_info.color_code,
-                                                     use_edge_color=face_info.use_edge_color,
-                                                     is_slope_material=is_slope_material)
+            material = BlenderMaterials.get_material(face_info.color_code, use_edge_color=face_info.use_edge_color)
             if material is None:
                 continue
 
             if material.name not in mesh.materials:
                 mesh.materials.append(material)
             f.material_index = mesh.materials.find(material.name)
+
             f.use_smooth = options.shade_smooth
 
     @staticmethod
