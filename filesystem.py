@@ -23,7 +23,6 @@ def build_search_paths():
 
     append_search_path(os.path.join(ldraw_path))
     append_search_path(os.path.join(ldraw_path, "models"))
-    append_search_path(os.path.join(ldraw_path, "unofficial", "lsynth"))
 
     if options.prefer_unofficial:
         append_unofficial(ldraw_path)
