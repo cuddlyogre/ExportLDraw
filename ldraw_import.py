@@ -7,7 +7,7 @@ from . import ldraw_node
 from .ldraw_file import LDrawFile
 from .ldraw_camera import LDrawCamera
 from . import blender_materials
-from .special_bricks import SpecialBricks
+from . import special_bricks
 
 
 class LDrawImporter:
@@ -17,7 +17,7 @@ class LDrawImporter:
         bpy.context.scene.eevee.use_ssr_refraction = True
         bpy.context.scene.eevee.use_taa_reprojection = True
 
-        SpecialBricks.build_slope_angles()
+        special_bricks.build_slope_angles()
         LDrawFile.reset_caches()
         ldraw_node.reset_caches()
         LDrawCamera.reset_caches()

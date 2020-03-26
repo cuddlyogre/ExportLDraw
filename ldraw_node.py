@@ -11,7 +11,7 @@ from . import ldraw_part_types
 from .ldraw_geometry import LDrawGeometry
 from .face_info import FaceInfo
 from . import blender_materials
-from .special_bricks import SpecialBricks
+from . import special_bricks
 
 part_count = 0
 current_step = 0
@@ -83,7 +83,7 @@ def apply_slope_materials(mesh, filename):
                 continue
             color_code = str(face_material[options.ldraw_color_code_key])
 
-            is_slope_material = SpecialBricks.is_slope_face(filename, f)
+            is_slope_material = special_bricks.is_slope_face(filename, f)
             material = blender_materials.get_material(color_code, is_slope_material=is_slope_material)
             if material is None:
                 continue

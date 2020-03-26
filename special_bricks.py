@@ -369,47 +369,45 @@ lights = {
 }
 
 
-class SpecialBricks:
-    @staticmethod
-    def reset_caches():
-        global slope_angles
-        slope_angles = {}
+def reset_caches():
+    global slope_angles
+    slope_angles = {}
 
-    @staticmethod
-    def build_slope_angles():
-        SpecialBricks.reset_caches()
 
-        # Create a regular dictionary of parts with ranges of angles to check
-        margin = 5  # Allow 5 degrees either way to compensate for measuring inaccuracies
+def build_slope_angles():
+    reset_caches()
 
-        for part in slopes:
-            slope_angle = set()
-            for c in slopes[part]:
-                if type(c) is tuple:
-                    slope_angle.add((min(c) - margin, max(c) + margin))
-                else:
-                    slope_angle.add((c - margin, c + margin))
-            slope_angles[part] = slope_angle
+    # Create a regular dictionary of parts with ranges of angles to check
+    margin = 5  # Allow 5 degrees either way to compensate for measuring inaccuracies
 
-    @staticmethod
-    def is_slope_face(part_number, face):
-        if part_number not in slope_angles:
-            return
+    for part in slopes:
+        slope_angle = set()
+        for c in slopes[part]:
+            if type(c) is tuple:
+                slope_angle.add((min(c) - margin, max(c) + margin))
+            else:
+                slope_angle.add((c - margin, c + margin))
+        slope_angles[part] = slope_angle
 
-        # Step 2: Calculate angle of face normal to the ground
-        face_normal = face.normal.normalized()
 
-        # Clamp value to range -1 to 1 (ensure we are in the strict range of the acos function, taking account of rounding errors)
-        cosine = min(max(face_normal.y, -1.0), 1.0)
+def is_slope_face(part_number, face):
+    if part_number not in slope_angles:
+        return
 
-        # Calculate angle of face normal to the ground (-90 to 90 degrees)
-        angle_to_ground_degrees = math.degrees(math.acos(cosine)) - 90
+    # Step 2: Calculate angle of face normal to the ground
+    face_normal = face.normal.normalized()
 
-        # print(f"{face_normal} --  {angle_to_ground_degrees}")
-        # debugPrint("Angle to ground {0}".format(angleToGroundDegrees))
+    # Clamp value to range -1 to 1 (ensure we are in the strict range of the acos function, taking account of rounding errors)
+    cosine = min(max(face_normal.y, -1.0), 1.0)
 
-        # Step 3: Check angle of normal to ground is within one of the acceptable ranges for this part
-        for c in slope_angles[part_number]:
-            if c[0] <= angle_to_ground_degrees <= c[1]:
-                return True
-        return False
+    # Calculate angle of face normal to the ground (-90 to 90 degrees)
+    angle_to_ground_degrees = math.degrees(math.acos(cosine)) - 90
+
+    # print(f"{face_normal} --  {angle_to_ground_degrees}")
+    # debugPrint("Angle to ground {0}".format(angleToGroundDegrees))
+
+    # Step 3: Check angle of normal to ground is within one of the acceptable ranges for this part
+    for c in slope_angles[part_number]:
+        if c[0] <= angle_to_ground_degrees <= c[1]:
+            return True
+    return False
