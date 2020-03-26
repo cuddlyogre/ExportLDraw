@@ -64,7 +64,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
     ldraw_path: bpy.props.StringProperty(
         name="",
         description="Full filepath to the LDraw Parts Library (download from http://www.ldraw.org)",
-        default="d:\\ldraw"
+        default=filesystem.locate_ldraw()
     )
 
     use_alt_colors: bpy.props.BoolProperty(

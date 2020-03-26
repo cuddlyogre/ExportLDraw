@@ -1,5 +1,8 @@
 import os
 import codecs
+import string
+from sys import platform
+from pathlib import Path
 
 from . import options
 
@@ -14,6 +17,28 @@ def reset_caches():
 def append_search_path(path):
     if path != "" and os.path.exists(path):
         search_paths.append(path)
+
+
+def locate_ldraw():
+    home = str(Path.home())
+    ldraw_path = os.path.join(os.path.join(home, 'ldraw'))
+    if os.path.isdir(ldraw_path):
+        return ldraw_path
+
+    if platform == "linux" or platform == "linux2":
+        pass
+        # linux
+    elif platform == "darwin":
+        pass
+        # OS X
+    elif platform == "win32":
+        drive_letters = list(string.ascii_lowercase)
+        for drive_letter in drive_letters:
+            ldraw_path = os.path.join(os.path.join(f"{drive_letter}:\\", 'ldraw'))
+            if os.path.isdir(ldraw_path):
+                return ldraw_path
+
+    return ""
 
 
 def build_search_paths():
