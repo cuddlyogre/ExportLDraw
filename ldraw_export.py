@@ -35,6 +35,9 @@ class LDrawExporter:
                                   quad_method='BEAUTY',
                                   ngon_method='BEAUTY')
 
+        if LDrawExporter.remove_doubles == "triangulate":
+            bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=options.merge_distance)
+
         mesh = obj.data.copy()
         bm.to_mesh(mesh)
         bm.clear()

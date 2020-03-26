@@ -389,6 +389,12 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
         default=True
     )
 
+    remove_doubles: bpy.props.BoolProperty(
+        name="Remove doubles",
+        description="Merge overlapping verices",
+        default=True,
+    )
+
     recalculate_normals: bpy.props.BoolProperty(
         name="Recalculate Normals",
         description="Recalculate Normals",
@@ -418,6 +424,7 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
 
         ldraw_export.LDrawExporter.triangulate = self.triangulate
         ldraw_export.LDrawExporter.selection_only = self.selection_only
+        ldraw_export.LDrawExporter.remove_doubles = self.remove_doubles
         ldraw_export.LDrawExporter.recalculate_normals = self.recalculate_normals
         ldraw_export.LDrawExporter.ngon_handling = self.ngon_handling
         ldraw_export.LDrawExporter.do_export(bpy.path.abspath(self.filepath))
