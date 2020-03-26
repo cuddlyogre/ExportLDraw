@@ -11,7 +11,7 @@ from .ldraw_node import LDrawNode
 from .ldraw_geometry import LDrawGeometry
 from . import special_bricks
 from .ldraw_colors import LDrawColors
-from .ldraw_camera import LDrawCamera
+from . import ldraw_camera
 
 
 class LDrawFile:
@@ -47,7 +47,7 @@ class LDrawFile:
         if len(self.lines) < 1:
             return
 
-        ldraw_camera = None
+        camera = None
 
         for line in self.lines:
             params = helpers.parse_line(line, 14)
@@ -135,8 +135,8 @@ class LDrawFile:
                             ldraw_node.meta_command = "group_end"
                             self.child_nodes.append(ldraw_node)
                     elif params[2] == "CAMERA":
-                        if ldraw_camera is None:
-                            ldraw_camera = LDrawCamera()
+                        if camera is None:
+                            camera = LDrawCamera()
 
                         params = params[3:]
 
@@ -146,51 +146,51 @@ class LDrawFile:
 
                         while len(params) > 0:
                             if params[0] == "FOV":
-                                ldraw_camera.fov = float(params[1])
+                                camera.fov = float(params[1])
                                 params = params[2:]
                             elif params[0] == "ZNEAR":
                                 scale = 1.0
-                                ldraw_camera.z_near = scale * float(params[1])
+                                camera.z_near = scale * float(params[1])
                                 params = params[2:]
                             elif params[0] == "ZFAR":
                                 scale = 1.0
-                                ldraw_camera.z_far = scale * float(params[1])
+                                camera.z_far = scale * float(params[1])
                                 params = params[2:]
                             elif params[0] in ["POSITION", "TARGET_POSITION", "UP_VECTOR"]:
                                 (x, y, z) = map(float, params[1:4])
                                 vector = mathutils.Vector((x, y, z))
 
                                 if params[0] == "POSITION":
-                                    ldraw_camera.position = vector
+                                    camera.position = vector
                                     if options.debug_text:
                                         print("POSITION")
-                                        print(ldraw_camera.position)
-                                        print(ldraw_camera.target_position)
-                                        print(ldraw_camera.up_vector)
+                                        print(camera.position)
+                                        print(camera.target_position)
+                                        print(camera.up_vector)
 
                                 elif params[0] == "TARGET_POSITION":
-                                    ldraw_camera.target_position = vector
+                                    camera.target_position = vector
                                     if options.debug_text:
                                         print("TARGET_POSITION")
-                                        print(ldraw_camera.position)
-                                        print(ldraw_camera.target_position)
-                                        print(ldraw_camera.up_vector)
+                                        print(camera.position)
+                                        print(camera.target_position)
+                                        print(camera.up_vector)
 
                                 elif params[0] == "UP_VECTOR":
-                                    ldraw_camera.up_vector = vector
+                                    camera.up_vector = vector
                                     if options.debug_text:
                                         print("UP_VECTOR")
-                                        print(ldraw_camera.position)
-                                        print(ldraw_camera.target_position)
-                                        print(ldraw_camera.up_vector)
+                                        print(camera.position)
+                                        print(camera.target_position)
+                                        print(camera.up_vector)
 
                                 params = params[4:]
 
                             elif params[0] == "ORTHOGRAPHIC":
-                                ldraw_camera.orthographic = True
+                                camera.orthographic = True
                                 params = params[1:]
                             elif params[0] == "HIDDEN":
-                                ldraw_camera.hidden = True
+                                camera.hidden = True
                                 params = params[1:]
                             elif params[0] == "NAME":
                                 # camera_name_params = re.search(r"(?:.*\s+){3}name(.*)", line, re.IGNORECASE)
@@ -200,13 +200,13 @@ class LDrawFile:
                                 #     print(f"BAD LINE: {line}")
                                 #     continue
 
-                                ldraw_camera.name = camera_name_params[1].strip()
+                                camera.name = camera_name_params[1].strip()
 
                                 # By definition this is the last of the parameters
                                 params = []
 
-                                LDrawCamera.add_camera(ldraw_camera)
-                                ldraw_camera = None
+                                ldraw_camera.cameras.append(camera)
+                                camera = None
                             else:
                                 params = params[1:]
                 else:

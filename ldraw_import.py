@@ -5,7 +5,7 @@ from . import filesystem
 
 from . import ldraw_node
 from .ldraw_file import LDrawFile
-from .ldraw_camera import LDrawCamera
+from . import ldraw_camera
 from . import blender_materials
 from . import special_bricks
 
@@ -20,7 +20,7 @@ class LDrawImporter:
         special_bricks.build_slope_angles()
         LDrawFile.reset_caches()
         ldraw_node.reset_caches()
-        LDrawCamera.reset_caches()
+        ldraw_camera.reset_caches()
         filesystem.build_search_paths()
         LDrawFile.read_color_table()
         blender_materials.create_blender_node_groups()
@@ -50,7 +50,7 @@ class LDrawImporter:
                     if space.type == 'VIEW_3D':
                         space.clip_end = options.camera_far  # * options.scale
 
-        for camera in LDrawCamera.get_cameras():
-            camera = camera.create_camera_node(empty=ldraw_node.top_empty, collection=ldraw_node.top_collection)
+        for camera in ldraw_camera.cameras:
+            blender_camera = ldraw_camera.create_camera(camera, empty=ldraw_node.top_empty, collection=ldraw_node.top_collection)
             if bpy.context.scene.camera is None:
-                bpy.context.scene.camera = camera
+                bpy.context.scene.camera = blender_camera
