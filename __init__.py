@@ -422,12 +422,12 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
 
         options.ldraw_path = self.ldraw_path
 
-        ldraw_export.LDrawExporter.triangulate = self.triangulate
-        ldraw_export.LDrawExporter.selection_only = self.selection_only
-        ldraw_export.LDrawExporter.remove_doubles = self.remove_doubles
-        ldraw_export.LDrawExporter.recalculate_normals = self.recalculate_normals
-        ldraw_export.LDrawExporter.ngon_handling = self.ngon_handling
-        ldraw_export.LDrawExporter.do_export(bpy.path.abspath(self.filepath))
+        ldraw_export.triangulate = self.triangulate
+        ldraw_export.selection_only = self.selection_only
+        ldraw_export.remove_doubles = self.remove_doubles
+        ldraw_export.recalculate_normals = self.recalculate_normals
+        ldraw_export.ngon_handling = self.ngon_handling
+        ldraw_export.do_export(bpy.path.abspath(self.filepath))
 
         print("")
         print("======Export Complete======")
