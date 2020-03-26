@@ -9,7 +9,7 @@ from . import ldraw_part_types
 
 from .ldraw_node import LDrawNode
 from .ldraw_geometry import LDrawGeometry
-from .special_bricks import SpecialBricks
+from . import special_bricks
 from .ldraw_colors import LDrawColors
 from .ldraw_camera import LDrawCamera
 
@@ -258,7 +258,7 @@ class LDrawFile:
         filename = filename_args[1].lower()
         # filename = " ".join(params[14:]).lower()
         if options.display_logo:
-            if filename in SpecialBricks.studs:
+            if filename in special_bricks.studs:
                 parts = filename.split(".")
                 name = parts[0]
                 ext = parts[1]

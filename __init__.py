@@ -131,8 +131,8 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
     chosen_logo: bpy.props.EnumProperty(
         name="Chosen logo",
         description="Use this logo on studs",
-        default=special_bricks.SpecialBricks.logos[2],
-        items=((l, l, l) for l in special_bricks.SpecialBricks.logos)
+        default=special_bricks.logos[2],
+        items=((l, l, l) for l in special_bricks.logos)
     )
 
     smooth_type: bpy.props.EnumProperty(
