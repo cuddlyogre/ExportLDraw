@@ -384,7 +384,7 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
     )
 
     selection_only: bpy.props.BoolProperty(
-        name="Selection Only",
+        name="Selection only",
         description="Export selected objects only",
         default=True
     )
@@ -396,19 +396,19 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
     )
 
     recalculate_normals: bpy.props.BoolProperty(
-        name="Recalculate Normals",
-        description="Recalculate Normals",
+        name="Recalculate normals",
+        description="Recalculate normals",
         default=True
     )
 
     triangulate: bpy.props.BoolProperty(
-        name="Triangulate Mesh",
+        name="Triangulate mesh",
         description="Triangulate the entire mesh",
         default=False
     )
 
     ngon_handling: bpy.props.EnumProperty(
-        name="Ngon Handling",
+        name="Ngon handling",
         description="What to do with ngons",
         items=[
             ("skip", "Skip", "Don't export ngons at all"),
