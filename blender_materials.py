@@ -74,7 +74,7 @@ class BlenderMaterials:
 
         material = BlenderMaterials.__create_node_based_material(key,
                                                                  col,
-                                                                 use_edge_color=use_edge_color, 
+                                                                 use_edge_color=use_edge_color,
                                                                  is_slope_material=is_slope_material)
 
         # Add material to cache
@@ -92,7 +92,7 @@ class BlenderMaterials:
         # Reuse current material if it exists, otherwise create a new material
         if bpy.data.materials.get(key) is None:
             material = bpy.data.materials.new(key)
-            material["color_code"] = col["code"]
+            material[options.ldraw_color_code_key] = col["code"]
         else:
             material = bpy.data.materials[key]
 

@@ -33,6 +33,9 @@ scale = 0.02
 camera_fov = 30.0
 camera_near = 1.0
 camera_far = 10000.0
-ldraw_name_key = "ldraw_name"
 ldraw_edge_key = "ldraw_edge"
 parent_to_empty = True
+
+ldraw_filename_key = "ldraw_filename"
+ldraw_color_code_key = "ldraw_color_code"
+ldraw_export_polygons_key = "ldraw_export_polygons"

@@ -1,5 +1,3 @@
-import re
-
 import bpy
 import bmesh
 
@@ -59,72 +57,60 @@ class LDrawExporter:
     # TODO: if obj["section_label"] then:
     #  0 // f{obj["section_label"]}
     @classmethod
-    def export_subfiles(cls, obj, lines, is_model=False):
-        # subpart.dat
-        # subpart.dat.001 both match
-        name = obj.name
-        if options.ldraw_name_key in obj:
-            name = obj[options.ldraw_name_key]
-
-        if not re.search(r"(.*\.(?:mpd|dat|ldr))\.*.*$", name):
-            return False
-
-        # remove .000 for duplicated parts
-        name = re.sub(r"\.\d+$", "", name)
-        # name = re.sub(r"^\d+_", "", name)
-
+    def export_subfiles(cls, obj, name, lines, is_model=False):
         color_code = "16"
         if len(obj.data.materials) > 0:
             material = obj.data.materials[0]
-            color_code = material.name
-            if "color_code" in material:
-                color_code = material["color_code"]
+            if options.ldraw_color_code_key in material:
+                color_code = material[options.ldraw_color_code_key]
 
             color = LDrawColors.get_color(color_code)
             if color is not None:
                 color_code = color["code"]
 
+        precision = 3
+        if "ldraw_export_precision" in obj:
+            precision = obj["ldraw_export_precision"]
+
         if is_model:
             aa = matrices.reverse_rotation @ obj.matrix_world
 
-            a = cls.fix_round(aa[0][0])
-            b = cls.fix_round(aa[0][1])
-            c = cls.fix_round(aa[0][2])
-            x = cls.fix_round(aa[0][3])
+            a = cls.fix_round(aa[0][0], precision)
+            b = cls.fix_round(aa[0][1], precision)
+            c = cls.fix_round(aa[0][2], precision)
+            x = cls.fix_round(aa[0][3], precision)
 
-            d = cls.fix_round(aa[1][0])
-            e = cls.fix_round(aa[1][1])
-            f = cls.fix_round(aa[1][2])
-            y = cls.fix_round(aa[1][3])
+            d = cls.fix_round(aa[1][0], precision)
+            e = cls.fix_round(aa[1][1], precision)
+            f = cls.fix_round(aa[1][2], precision)
+            y = cls.fix_round(aa[1][3], precision)
 
-            g = cls.fix_round(aa[2][0])
-            h = cls.fix_round(aa[2][1])
-            i = cls.fix_round(aa[2][2])
-            z = cls.fix_round(aa[2][3])
+            g = cls.fix_round(aa[2][0], precision)
+            h = cls.fix_round(aa[2][1], precision)
+            i = cls.fix_round(aa[2][2], precision)
+            z = cls.fix_round(aa[2][3], precision)
 
             line = f"1 {color_code} {x} {y} {z} {a} {b} {c} {d} {e} {f} {g} {h} {i} {name}"
         else:
             aa = obj.matrix_world
 
-            a = cls.fix_round(aa[0][0])
-            b = cls.fix_round(aa[0][1])
-            c = cls.fix_round(-aa[0][2])
-            x = cls.fix_round(aa[0][3])
+            a = cls.fix_round(aa[0][0], precision)
+            b = cls.fix_round(aa[0][1], precision)
+            c = cls.fix_round(-aa[0][2], precision)
+            x = cls.fix_round(aa[0][3], precision)
 
-            d = cls.fix_round(aa[1][0])
-            e = cls.fix_round(aa[1][1])
-            f = cls.fix_round(-aa[1][2])
-            y = cls.fix_round(aa[1][3])
+            d = cls.fix_round(aa[1][0], precision)
+            e = cls.fix_round(aa[1][1], precision)
+            f = cls.fix_round(-aa[1][2], precision)
+            y = cls.fix_round(aa[1][3], precision)
 
-            g = cls.fix_round(-aa[2][0])
-            h = cls.fix_round(-aa[2][1])
-            i = cls.fix_round(aa[2][2])
-            z = cls.fix_round(-aa[2][3])
+            g = cls.fix_round(-aa[2][0], precision)
+            h = cls.fix_round(-aa[2][1], precision)
+            i = cls.fix_round(aa[2][2], precision)
+            z = cls.fix_round(-aa[2][3], precision)
 
             line = f"1 {color_code} {x} {z} {y} {a} {c} {b} {g} {i} {h} {d} {f} {e} {name}"
         lines.append(line)
-
-        return True
 
     @classmethod
     def export_polygons(cls, obj, lines):
@@ -137,6 +123,10 @@ class LDrawExporter:
             return False
 
         mesh = cls.clean_mesh(obj)
+
+        precision = 3
+        if "ldraw_export_precision" in obj:
+            precision = obj["ldraw_export_precision"]
 
         for p in mesh.polygons:
             length = len(p.vertices)
@@ -152,9 +142,8 @@ class LDrawExporter:
             color_code = "16"
             if p.material_index + 1 <= len(mesh.materials):
                 material = mesh.materials[p.material_index]
-                color_code = material.name
-                if "color_code" in material:
-                    color_code = material["color_code"]
+                if options.ldraw_color_code_key in material:
+                    color_code = material[options.ldraw_color_code_key]
 
             color = LDrawColors.get_color(color_code)
             color_code = "16"
@@ -165,7 +154,7 @@ class LDrawExporter:
 
             for v in p.vertices:
                 for vv in mesh.vertices[v].co:
-                    line.append(cls.fix_round(vv))
+                    line.append(cls.fix_round(vv, precision))
 
             lines.append(line)
 
@@ -201,28 +190,35 @@ class LDrawExporter:
         if cls.selection_only:
             objects = selected
 
-        lines = []
+        if options.ldraw_filename_key not in bpy.context.object:
+            return
 
+        header_text_name = bpy.context.object[options.ldraw_filename_key]
+
+        if header_text_name not in bpy.data.texts:
+            return
+
+        lines = []
         part_type = None
 
-        header_text_name = "header"
-        if header_text_name in bpy.data.texts:
-            for text_line in bpy.data.texts[header_text_name].lines:
-                lines.append(text_line.body)
+        header_text = bpy.data.texts[header_text_name]
 
-                line = text_line.body
+        for text_line in header_text.lines:
+            lines.append(text_line.body)
 
-                params = helpers.parse_line(line, 14)
+            line = text_line.body
 
-                if params is None:
-                    continue
+            params = helpers.parse_line(line, 14)
 
-                if params[0] == "0":
-                    if params[1].lower() in ["!ldraw_org"]:
-                        if params[2].lower() in ["lcad"]:
-                            part_type = params[3].lower()
-                        else:
-                            part_type = params[2].lower()
+            if params is None:
+                continue
+
+            if params[0] == "0":
+                if params[1].lower() in ["!ldraw_org"]:
+                    if params[2].lower() in ["lcad"]:
+                        part_type = params[3].lower()
+                    else:
+                        part_type = params[2].lower()
 
         is_model = part_type in ldraw_part_types.model_types
 
@@ -230,10 +226,19 @@ class LDrawExporter:
         for obj in objects:
             if obj.data is None:
                 continue
-            # print(obj.name)
-            if cls.export_subfiles(obj, lines, is_model=is_model):
+
+            if options.ldraw_filename_key not in obj:
                 continue
-            cls.export_polygons(obj, part_lines)
+            name = obj[options.ldraw_filename_key]
+
+            export_polygons = False
+            if options.ldraw_export_polygons_key in obj:
+                export_polygons = obj[options.ldraw_export_polygons_key] == 1
+
+            if export_polygons:
+                cls.export_polygons(obj, part_lines)
+            else:
+                cls.export_subfiles(obj, name, lines, is_model=is_model)
 
         part_lines = sorted(part_lines, key=lambda pl: (int(pl[1]), int(pl[0])))
 

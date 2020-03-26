@@ -250,7 +250,7 @@ class LDrawNode:
                     mesh.auto_smooth_angle = math.radians(89.9)  # 1.56905 - 89.9 so 90 degrees and up are affected
                 if options.make_gaps and options.gap_target == "mesh":
                     mesh.transform(matrices.scaled_matrix(options.gap_scale))
-                mesh[options.ldraw_name_key] = self.file.name
+                mesh[options.ldraw_filename_key] = self.file.name
             mesh = bpy.data.meshes[key]
 
             if options.import_edges:
@@ -276,7 +276,7 @@ class LDrawNode:
                     collection.objects.link(gp_object)
 
             obj = LDrawNode.create_object(mesh, parent_matrix, self.matrix)
-            obj[options.ldraw_name_key] = self.file.name
+            obj[options.ldraw_filename_key] = self.file.name
 
             if file_collection is not None:
                 file_collection.objects.link(obj)
@@ -289,9 +289,9 @@ class LDrawNode:
             for f in mesh.polygons:
                 face_material = mesh.materials[f.material_index]
 
-                if 'color_code' not in face_material:
+                if options.ldraw_color_code_key not in face_material:
                     continue
-                color_code = str(face_material['color_code'])
+                color_code = str(face_material[options.ldraw_color_code_key])
 
                 is_slope_material = SpecialBricks.is_slope_face(filename, f)
                 material = BlenderMaterials.get_material(color_code, is_slope_material=is_slope_material)
