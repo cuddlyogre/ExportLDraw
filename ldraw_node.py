@@ -10,7 +10,7 @@ from . import ldraw_part_types
 
 from .ldraw_geometry import LDrawGeometry
 from .face_info import FaceInfo
-from .blender_materials import BlenderMaterials
+from . import blender_materials
 from .special_bricks import SpecialBricks
 
 part_count = 0
@@ -54,6 +54,7 @@ def reset_caches():
     if options.meta_step:
         set_step()
 
+
 def set_step():
     start_frame = options.starting_step_frame
     frame_length = options.frames_per_step
@@ -83,7 +84,7 @@ def apply_slope_materials(mesh, filename):
             color_code = str(face_material[options.ldraw_color_code_key])
 
             is_slope_material = SpecialBricks.is_slope_face(filename, f)
-            material = BlenderMaterials.get_material(color_code, is_slope_material=is_slope_material)
+            material = blender_materials.get_material(color_code, is_slope_material=is_slope_material)
             if material is None:
                 continue
 
@@ -211,7 +212,7 @@ def apply_materials(mesh, geometry):
 
         grain_slope_allowed = face_info.grain_slope_allowed
 
-        material = BlenderMaterials.get_material(face_info.color_code, use_edge_color=face_info.use_edge_color)
+        material = blender_materials.get_material(face_info.color_code, use_edge_color=face_info.use_edge_color)
         if material is None:
             continue
 
@@ -307,7 +308,7 @@ def create_gp_mesh(key, mesh):
 
 
 def apply_gp_materials(gp_mesh):
-    base_material = BlenderMaterials.get_material('0', use_edge_color=True)
+    base_material = blender_materials.get_material('0', use_edge_color=True)
     if base_material is None:
         return
 

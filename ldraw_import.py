@@ -6,7 +6,7 @@ from . import filesystem
 from . import ldraw_node
 from .ldraw_file import LDrawFile
 from .ldraw_camera import LDrawCamera
-from .blender_materials import BlenderMaterials
+from . import blender_materials
 from .special_bricks import SpecialBricks
 
 
@@ -23,7 +23,7 @@ class LDrawImporter:
         LDrawCamera.reset_caches()
         filesystem.build_search_paths()
         LDrawFile.read_color_table()
-        BlenderMaterials.create_blender_node_groups()
+        blender_materials.create_blender_node_groups()
 
         filename = LDrawFile.handle_mpd(filename)
         if filename is None:
