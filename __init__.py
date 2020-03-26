@@ -124,7 +124,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
 
     display_logo: bpy.props.BoolProperty(
         name="Display logo",
-        description="Display logo on studs",
+        description="Display logo on studs. Requires unofficial parts library to be downloaded",
         default=False
     )
 
