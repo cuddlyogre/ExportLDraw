@@ -309,7 +309,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         options.gap_target = self.gap_target
         options.gap_scale_strategy = self.gap_scale_strategy
 
-        ldraw_import.LDrawImporter.do_import(bpy.path.abspath(self.filepath))
+        ldraw_import.do_import(bpy.path.abspath(self.filepath))
 
         print("")
         print("======Import Complete======")
