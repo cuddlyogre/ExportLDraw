@@ -30,10 +30,7 @@ class LDrawExporter:
             for f in bm.faces:
                 if len(f.verts) > 4:
                     faces.append(f)
-            bmesh.ops.triangulate(bm,
-                                  faces=faces,
-                                  quad_method='BEAUTY',
-                                  ngon_method='BEAUTY')
+            bmesh.ops.triangulate(bm, faces=faces, quad_method='BEAUTY', ngon_method='BEAUTY')
 
         if LDrawExporter.remove_doubles == "triangulate":
             bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=options.merge_distance)
@@ -195,7 +192,6 @@ class LDrawExporter:
 
         if options.ldraw_filename_key not in bpy.context.object:
             return
-
         header_text_name = bpy.context.object[options.ldraw_filename_key]
 
         if header_text_name not in bpy.data.texts:
