@@ -1,4 +1,10 @@
 ldraw_path = None
+ldraw_edge_key = "ldraw_edge"
+ldraw_filename_key = "ldraw_filename"
+ldraw_color_code_key = "ldraw_color_code"
+ldraw_export_polygons_key = "ldraw_export_polygons"
+ldraw_export_precision_key = "ldraw_export_precision"
+
 meta_group = True
 meta_print_write = False
 meta_step = False
@@ -33,10 +39,4 @@ scale = 0.02
 camera_fov = 30.0
 camera_near = 1.0
 camera_far = 10000.0
-ldraw_edge_key = "ldraw_edge"
 parent_to_empty = True
-
-ldraw_filename_key = "ldraw_filename"
-ldraw_color_code_key = "ldraw_color_code"
-ldraw_export_polygons_key = "ldraw_export_polygons"
-ldraw_export_precision_key = "ldraw_export_precision"
