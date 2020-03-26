@@ -72,8 +72,8 @@ class LDrawExporter:
                 color_code = color["code"]
 
         precision = 3
-        if "ldraw_export_precision" in obj:
-            precision = obj["ldraw_export_precision"]
+        if options.ldraw_export_precision_key in obj:
+            precision = obj[options.ldraw_export_precision_key]
 
         if is_model:
             aa = matrices.reverse_rotation @ obj.matrix_world
@@ -128,8 +128,8 @@ class LDrawExporter:
         mesh = cls.clean_mesh(obj)
 
         precision = 3
-        if "ldraw_export_precision" in obj:
-            precision = obj["ldraw_export_precision"]
+        if options.ldraw_export_precision_key in obj:
+            precision = obj[options.ldraw_export_precision_key]
 
         for p in mesh.polygons:
             length = len(p.vertices)
