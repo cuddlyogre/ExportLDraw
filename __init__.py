@@ -314,7 +314,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         print("")
         print("======Import Complete======")
         print(self.filepath)
-        print(f"Part count: {ldraw_node.LDrawNode.part_count}")
+        print(f"Part count: {ldraw_node.part_count}")
         end = time.monotonic()
         elapsed = (end - start)
         print(f"elapsed: {elapsed}")
