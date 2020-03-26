@@ -2,7 +2,7 @@ import bpy
 import bmesh
 
 from . import ldraw_file
-from .ldraw_colors import LDrawColors
+from . import ldraw_colors
 from . import filesystem
 from . import matrices
 from . import options
@@ -63,7 +63,7 @@ def export_subfiles(obj, name, lines, is_model=False):
         if options.ldraw_color_code_key in material:
             color_code = material[options.ldraw_color_code_key]
 
-        color = LDrawColors.get_color(color_code)
+        color = ldraw_colors.get_color(color_code)
         if color is not None:
             color_code = color["code"]
 
@@ -144,7 +144,7 @@ def export_polygons(obj, lines):
             if options.ldraw_color_code_key in material:
                 color_code = material[options.ldraw_color_code_key]
 
-        color = LDrawColors.get_color(color_code)
+        color = ldraw_colors.get_color(color_code)
         color_code = "16"
         if color is not None:
             color_code = color["code"]
@@ -247,7 +247,7 @@ def do_export(filepath):
             new_color_code = int(text_line[1])
             if new_color_code != current_color_code:
                 current_color_code = new_color_code
-                name = LDrawColors.get_color(current_color_code)['name']
+                name = ldraw_colors.get_color(current_color_code)['name']
                 sorted_part_lines.append("\n")
                 sorted_part_lines.append(f"0 // {name}")
         sorted_part_lines.append(" ".join(text_line))

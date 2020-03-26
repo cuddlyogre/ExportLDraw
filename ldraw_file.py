@@ -10,7 +10,7 @@ from . import ldraw_part_types
 from .ldraw_node import LDrawNode
 from .ldraw_geometry import LDrawGeometry
 from . import special_bricks
-from .ldraw_colors import LDrawColors
+from . import ldraw_colors
 from . import ldraw_camera
 
 mpd_file_cache = {}
@@ -25,9 +25,8 @@ def reset_caches():
     file_cache = {}
 
 
-# if this is in LDrawColors, ImportError: cannot import name 'LDrawColors' from 'ExportLdraw.ldraw_colors'
-# two files cannot refer to each other
 def read_color_table():
+    ldraw_colors.reset_caches()
     reset_caches()
 
     """Reads the color values from the LDConfig.ldr file. For details of the
@@ -124,7 +123,7 @@ class LDrawFile:
 
             if params[0] == "0":
                 if params[1].lower() in ["!colour"]:
-                    LDrawColors.parse_color(params)
+                    ldraw_colors.parse_color(params)
                 elif params[1].lower() in ["!ldraw_org"]:
                     if params[2].lower() in ["lcad"]:
                         self.part_type = params[3].lower()

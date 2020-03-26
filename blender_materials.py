@@ -2,7 +2,7 @@ import bpy
 import mathutils
 
 from . import options
-from .ldraw_colors import LDrawColors
+from . import ldraw_colors
 
 material_cache = {}
 
@@ -65,7 +65,7 @@ def get_material(color_code, use_edge_color=False, is_slope_material=False):
         return material_cache[key]
 
     # Create new material
-    col = LDrawColors.get_color(pure_color_code)
+    col = ldraw_colors.get_color(pure_color_code)
     if col is None:
         return
 
@@ -511,7 +511,7 @@ def __create_cycles_basic(nodes, links, diff_color, alpha, col_name):
     """Basic Material for Cycles render engine."""
 
     if alpha < 1:
-        if LDrawColors.is_fluorescent_transparent(col_name):
+        if ldraw_colors.is_fluorescent_transparent(col_name):
             node = __node_lego_transparent_fluorescent(nodes, diff_color, 0, 5)
         else:
             node = __node_lego_transparent(nodes, diff_color, 0, 5)
@@ -558,7 +558,7 @@ def __create_cycles_metal(nodes, links, diff_color):
 def __create_cycles_glitter(nodes, links, diff_color, glitter_color):
     """Glitter material for Cycles render engine."""
 
-    glitter_color = LDrawColors.lighten_rgba(glitter_color, 0.5)
+    glitter_color = ldraw_colors.lighten_rgba(glitter_color, 0.5)
     node = __node_lego_glitter(nodes, diff_color, glitter_color, 0, 5)
     out = __node_output(nodes, 200, 0)
     links.new(node.outputs['Shader'], out.inputs[0])
@@ -567,7 +567,7 @@ def __create_cycles_glitter(nodes, links, diff_color, glitter_color):
 def __create_cycles_speckle(nodes, links, diff_color, speckle_color):
     """Speckle material for Cycles render engine."""
 
-    speckle_color = LDrawColors.lighten_rgba(speckle_color, 0.5)
+    speckle_color = ldraw_colors.lighten_rgba(speckle_color, 0.5)
     node = __node_lego_speckle(nodes, diff_color, speckle_color, 0, 5)
     out = __node_output(nodes, 200, 0)
     links.new(node.outputs['Shader'], out.inputs[0])
