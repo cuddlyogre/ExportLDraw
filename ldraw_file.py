@@ -23,7 +23,7 @@ class LDrawFile:
         self.name = ""
         self.child_nodes = []
         self.geometry = LDrawGeometry()
-        self.part_type = 'part'
+        self.part_type = None
         self.lines = []
 
     @staticmethod
@@ -227,13 +227,18 @@ class LDrawFile:
 
     def parse_geometry_line(self, line, params):
         if params[0] == "1":
-            self.parse_child_node(line, params)
+            child_node = self.parse_child_node(line, params)
+            if self.part_type in ldraw_part_types.model_types:
+                if child_node.file.part_type in ldraw_part_types.subpart_types:
+                    self.part_type = "part"
         elif params[0] in ["2"]:
-            self.part_type = 'part'
             self.geometry.parse_edge(params)
+            if self.part_type in ldraw_part_types.model_types:
+                self.part_type = "part"
         elif params[0] in ["3", "4"]:
-            self.part_type = 'part'
             self.geometry.parse_face(params)
+            if self.part_type in ldraw_part_types.model_types:
+                self.part_type = "part"
 
     def parse_child_node(self, line, params):
         color_code = params[1]
@@ -286,9 +291,7 @@ class LDrawFile:
         ldraw_node = LDrawNode(ldraw_file, color_code=color_code, matrix=matrix)
         self.child_nodes.append(ldraw_node)
 
-        if self.part_type is None:
-            if ldraw_node.file.part_type in ldraw_part_types.subpart_types:
-                self.part_type = "part"
+        return ldraw_node
 
     @classmethod
     def handle_mpd(cls, filepath):
