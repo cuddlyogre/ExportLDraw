@@ -209,8 +209,7 @@ class LDrawNode:
                 if key not in LDrawNode.face_info_cache:
                     new_face_info = []
                     for face_info in self.file.geometry.face_info:
-                        copy = FaceInfo(color_code=parent_color_code,
-                                        grain_slope_allowed=not is_stud)
+                        copy = FaceInfo(color_code=parent_color_code, grain_slope_allowed=not is_stud)
                         if parent_color_code == "24":
                             copy.use_edge_color = True
                         if face_info.color_code != "16":
