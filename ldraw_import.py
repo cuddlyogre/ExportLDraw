@@ -4,7 +4,7 @@ from . import options
 from . import filesystem
 
 from . import ldraw_node
-from .ldraw_file import LDrawFile
+from . import ldraw_file
 from . import ldraw_camera
 from . import blender_materials
 from . import special_bricks
@@ -18,22 +18,22 @@ class LDrawImporter:
         bpy.context.scene.eevee.use_taa_reprojection = True
 
         special_bricks.build_slope_angles()
-        LDrawFile.reset_caches()
+        ldraw_file.reset_caches()
         ldraw_node.reset_caches()
         ldraw_camera.reset_caches()
         filesystem.build_search_paths()
-        LDrawFile.read_color_table()
+        ldraw_file.read_color_table()
         blender_materials.create_blender_node_groups()
 
-        filename = LDrawFile.handle_mpd(filename)
+        filename = ldraw_file.handle_mpd(filename)
         if filename is None:
             return
 
-        ldraw_file = LDrawFile(filename)
-        ldraw_file.read_file()
-        ldraw_file.parse_file()
+        file = ldraw_file.LDrawFile(filename)
+        file.read_file()
+        file.parse_file()
 
-        root_node = ldraw_node.LDrawNode(ldraw_file)
+        root_node = ldraw_node.LDrawNode(file)
         root_node.load()
 
         if ldraw_node.top_collection is not None:

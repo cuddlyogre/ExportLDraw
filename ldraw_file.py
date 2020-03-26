@@ -13,11 +13,83 @@ from . import special_bricks
 from .ldraw_colors import LDrawColors
 from . import ldraw_camera
 
+mpd_file_cache = {}
+file_cache = {}
 
-class LDrawFile:
+
+def reset_caches():
+    global mpd_file_cache
+    global file_cache
+
     mpd_file_cache = {}
     file_cache = {}
 
+
+# if this is in LDrawColors, ImportError: cannot import name 'LDrawColors' from 'ExportLdraw.ldraw_colors'
+# two files cannot refer to each other
+def read_color_table():
+    reset_caches()
+
+    """Reads the color values from the LDConfig.ldr file. For details of the
+    Ldraw color system see: http://www.ldraw.org/article/547"""
+
+    if options.use_alt_colors:
+        filepath = "LDCfgalt.ldr"
+    else:
+        filepath = "LDConfig.ldr"
+
+    ldraw_file = LDrawFile(filepath)
+    ldraw_file.read_file()
+    ldraw_file.parse_file()
+
+
+def handle_mpd(filepath):
+    ldraw_file = LDrawFile(filepath)
+    ldraw_file.read_file()
+
+    lines = ldraw_file.lines
+
+    if len(lines) < 1:
+        return None
+
+    if not lines[0].lower().startswith("0 f"):
+        return filepath
+
+    root_file = None
+    current_file = None
+    for line in lines:
+        params = helpers.parse_line(line, 9)
+
+        if params is None:
+            continue
+
+        if params[0] == "0" and params[1].lower() == "file":
+            __parse_current_file(current_file)
+            current_file = LDrawFile(line[7:].lower())
+
+            if root_file is None:
+                root_file = line[7:].lower()
+
+        elif params[0] == "0" and params[1].lower() == "nofile":
+            __parse_current_file(current_file)
+            current_file = None
+
+        elif current_file is not None:
+            current_file.lines.append(line)
+
+    __parse_current_file(current_file)
+
+    if root_file is not None:
+        return root_file
+    return filepath
+
+
+def __parse_current_file(ldraw_file):
+    if ldraw_file is not None:
+        mpd_file_cache[ldraw_file.filepath] = ldraw_file
+
+
+class LDrawFile:
     def __init__(self, filepath):
         self.filepath = filepath
         self.name = ""
@@ -26,14 +98,9 @@ class LDrawFile:
         self.part_type = None
         self.lines = []
 
-    @staticmethod
-    def reset_caches():
-        LDrawFile.mpd_file_cache = {}
-        LDrawFile.file_cache = {}
-
     def read_file(self):
-        if self.filepath in LDrawFile.mpd_file_cache:
-            self.lines = LDrawFile.mpd_file_cache[self.filepath].lines
+        if self.filepath in mpd_file_cache:
+            self.lines = mpd_file_cache[self.filepath].lines
         else:
             # if missing, use a,b,c etc parts if available
             # TODO: look in this file's directory and directories relative to this file's directory
@@ -281,78 +348,14 @@ class LDrawFile:
         key = "_".join([k.lower() for k in key])
         key = re.sub(r"[^a-z0-9._]", "-", key)
 
-        if key not in LDrawFile.file_cache:
+        if key not in file_cache:
             ldraw_file = LDrawFile(filename)
             ldraw_file.read_file()
             ldraw_file.parse_file()
-            LDrawFile.file_cache[key] = ldraw_file
-        ldraw_file = LDrawFile.file_cache[key]
+            file_cache[key] = ldraw_file
+        ldraw_file = file_cache[key]
 
         ldraw_node = LDrawNode(ldraw_file, color_code=color_code, matrix=matrix)
         self.child_nodes.append(ldraw_node)
 
         return ldraw_node
-
-    @classmethod
-    def handle_mpd(cls, filepath):
-        ldraw_file = LDrawFile(filepath)
-        ldraw_file.read_file()
-
-        lines = ldraw_file.lines
-
-        if len(lines) < 1:
-            return None
-
-        if not lines[0].lower().startswith("0 f"):
-            return filepath
-
-        root_file = None
-        current_file = None
-        for line in lines:
-            params = helpers.parse_line(line, 9)
-
-            if params is None:
-                continue
-
-            if params[0] == "0" and params[1].lower() == "file":
-                cls.__parse_current_file(current_file)
-                current_file = LDrawFile(line[7:].lower())
-
-                if root_file is None:
-                    root_file = line[7:].lower()
-
-            elif params[0] == "0" and params[1].lower() == "nofile":
-                cls.__parse_current_file(current_file)
-                current_file = None
-
-            elif current_file is not None:
-                current_file.lines.append(line)
-
-        cls.__parse_current_file(current_file)
-
-        if root_file is not None:
-            return root_file
-        return filepath
-
-    @classmethod
-    def __parse_current_file(cls, ldraw_file):
-        if ldraw_file is not None:
-            cls.mpd_file_cache[ldraw_file.filepath] = ldraw_file
-
-    @staticmethod
-    # if this is in LDrawColors, ImportError: cannot import name 'LDrawColors' from 'ExportLdraw.ldraw_colors'
-    # two files cannot refer to each other
-    def read_color_table():
-        LDrawColors.reset_caches()
-
-        """Reads the color values from the LDConfig.ldr file. For details of the
-        Ldraw color system see: http://www.ldraw.org/article/547"""
-
-        if options.use_alt_colors:
-            filepath = "LDCfgalt.ldr"
-        else:
-            filepath = "LDConfig.ldr"
-
-        ldraw_file = LDrawFile(filepath)
-        ldraw_file.read_file()
-        ldraw_file.parse_file()

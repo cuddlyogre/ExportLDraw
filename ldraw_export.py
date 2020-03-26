@@ -1,7 +1,7 @@
 import bpy
 import bmesh
 
-from .ldraw_file import LDrawFile
+from . import ldraw_file
 from .ldraw_colors import LDrawColors
 from . import filesystem
 from . import matrices
@@ -179,7 +179,7 @@ def export_polygons(obj, lines):
 # conditional lines, line type 5, aren't handled
 def do_export(filepath):
     filesystem.build_search_paths()
-    LDrawFile.read_color_table()
+    ldraw_file.read_color_table()
 
     all_objects = bpy.context.scene.objects
     selected = bpy.context.selected_objects
