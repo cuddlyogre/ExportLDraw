@@ -176,11 +176,13 @@ def export_polygons(obj, lines):
     return True
 
 
-# objects in "Scene Collection > subfiles" will be output as line type 1
-# objects marked sharp and with a bevel weight of 1.00 will be output as line type 2
-# objects in "Scene Collection > polygons" will be output as line type 3 or 4, depending on their vertex count
-# if ngons are triangulated, they will be line type 3, otherwise they won't be exported at all
-# conditional lines, line type 5, aren't handled
+# edges marked sharp will be output as line type 2
+# tris => line type 3
+# quads => line type 4
+# conditional lines => line type 5 and ngons, aren't handled
+# header file is determined by options.ldraw_filename_key of active object
+# if options.ldraw_export_polygons_key == 1 current object being iterated will be exported as line type 2,3,4
+# otherwise line type 2
 def do_export(filepath):
     filesystem.build_search_paths()
     ldraw_file.read_color_table()
