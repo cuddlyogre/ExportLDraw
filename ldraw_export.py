@@ -56,7 +56,11 @@ def fix_round(number, places=3):
 
 # TODO: if obj["section_label"] then:
 #  0 // f{obj["section_label"]}
-def export_subfiles(obj, name, lines, is_model=False):
+def export_subfiles(obj, lines, is_model=False):
+    if options.ldraw_filename_key not in obj:
+        return False
+    name = obj[options.ldraw_filename_key]
+
     color_code = "16"
     if len(obj.data.materials) > 0:
         material = obj.data.materials[0]
@@ -181,30 +185,30 @@ def do_export(filepath):
     filesystem.build_search_paths()
     ldraw_file.read_color_table()
 
+    active_object = bpy.context.object
     all_objects = bpy.context.scene.objects
-    selected = bpy.context.selected_objects
-    active = bpy.context.view_layer.objects.active
+    selected_objects = bpy.context.selected_objects
+    active_objects = bpy.context.view_layer.objects.active
 
     objects = all_objects
     if selection_only:
-        objects = selected
-
-    if options.ldraw_filename_key not in bpy.context.object:
-        return
-    header_text_name = bpy.context.object[options.ldraw_filename_key]
-
-    if header_text_name not in bpy.data.texts:
-        return
+        objects = selected_objects
 
     lines = []
     part_type = None
 
+    if options.ldraw_filename_key not in active_object:
+        return
+    header_text_name = active_object[options.ldraw_filename_key]
+
+    if header_text_name not in bpy.data.texts:
+        return
     header_text = bpy.data.texts[header_text_name]
 
-    for text_line in header_text.lines:
-        lines.append(text_line.body)
+    for part_line in header_text.lines:
+        lines.append(part_line.body)
 
-        line = text_line.body
+        line = part_line.body
 
         params = helpers.parse_line(line, 14)
 
@@ -220,48 +224,55 @@ def do_export(filepath):
 
     is_model = part_type in ldraw_part_types.model_types
 
-    part_lines = []
+    subfile_objects = []
+    polygon_objects = []
+
     for obj in objects:
         if obj.data is None:
             continue
-
-        if options.ldraw_filename_key not in obj:
-            continue
-        name = obj[options.ldraw_filename_key]
 
         do_export_polygons = False
         if options.ldraw_export_polygons_key in obj:
             do_export_polygons = obj[options.ldraw_export_polygons_key] == 1
 
         if do_export_polygons:
-            export_polygons(obj, part_lines)
+            polygon_objects.append(obj)
         else:
-            export_subfiles(obj, name, lines, is_model=is_model)
+            subfile_objects.append(obj)
 
-    part_lines = sorted(part_lines, key=lambda pl: (int(pl[1]), int(pl[0])))
+    for obj in subfile_objects:
+        export_subfiles(obj, lines, is_model=is_model)
+    if len(subfile_objects) > 0:
+        lines.append("\n")
 
-    sorted_part_lines = []
+    part_lines = []
+    for obj in polygon_objects:
+        export_polygons(obj, part_lines)
+
+    sorted_part_lines = sorted(part_lines, key=lambda pl: (int(pl[1]), int(pl[0])))
+
     current_color_code = None
-    for text_line in part_lines:
-        if len(text_line) > 2:
-            new_color_code = int(text_line[1])
+    joined_part_lines = []
+    for part_line in sorted_part_lines:
+        if len(part_line) > 2:
+            new_color_code = int(part_line[1])
             if new_color_code != current_color_code:
+                if current_color_code is not None:
+                    joined_part_lines.append("\n")
                 current_color_code = new_color_code
                 name = ldraw_colors.get_color(current_color_code)['name']
-                sorted_part_lines.append("\n")
-                sorted_part_lines.append(f"0 // {name}")
-        sorted_part_lines.append(" ".join(text_line))
-    lines.extend(sorted_part_lines)
+                joined_part_lines.append(f"0 // {name}")
+        joined_part_lines.append(" ".join(part_line))
+    lines.extend(joined_part_lines)
 
     with open(filepath, 'w') as file:
-        for i, text_line in enumerate(lines):
-            # print(line)
-            if text_line != "\n":
-                file.write(text_line)
-            file.write("\n")
+        for line in lines:
+            file.write(line)
+            if line != "\n":
+                file.write("\n")
 
-    for obj in selected:
+    for obj in selected_objects:
         if not obj.select_get():
             obj.select_set(True)
 
-    bpy.context.view_layer.objects.active = active
+    bpy.context.view_layer.objects.active = active_objects
