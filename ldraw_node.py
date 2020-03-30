@@ -159,6 +159,13 @@ def create_object(mesh, parent_matrix, matrix):
     return obj
 
 
+# https://youtu.be/cQ0qtcSymDI?t=356
+# https://www.youtube.com/watch?v=cQ0qtcSymDI&t=0s
+# https://www.blenderguru.com/articles/cycles-input-encyclopedia
+# https://blenderscripting.blogspot.com/2011/05/blender-25-python-moving-object-origin.html
+# https://blenderartists.org/t/how-to-set-origin-to-center/687111
+# https://blenderartists.org/t/modifying-object-origin-with-python/507305/3
+# https://blender.stackexchange.com/questions/414/how-to-use-bmesh-to-add-verts-faces-and-edges-to-existing-geometry
 # https://devtalk.blender.org/t/bmesh-adding-new-verts/11108/2
 # f1 = Vector((rand(-5, 5),rand(-5, 5),rand(-5, 5)))
 # f2 = Vector((rand(-5, 5),rand(-5, 5),rand(-5, 5)))
