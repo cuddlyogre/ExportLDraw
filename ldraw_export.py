@@ -117,12 +117,10 @@ def export_subfiles(obj, lines, is_model=False):
 
 
 def export_polygons(obj, lines):
-    if not getattr(obj.data, 'polygons', None):
+    if obj.data is None:
         return False
 
-    # so objects that are not linked to the scene don't get exported
-    # objects during a failed export would be such an object
-    if obj.users < 1:
+    if not getattr(obj.data, 'polygons', None):
         return False
 
     mesh = clean_mesh(obj)
@@ -230,7 +228,9 @@ def do_export(filepath):
     polygon_objects = []
 
     for obj in objects:
-        if obj.data is None:
+        # so objects that are not linked to the scene don't get exported
+        # objects during a failed export would be such an object
+        if obj.users < 1:
             continue
 
         do_export_polygons = False
