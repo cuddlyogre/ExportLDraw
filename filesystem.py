@@ -21,7 +21,7 @@ def append_search_path(path):
 
 def locate_ldraw():
     home = str(Path.home())
-    ldraw_path = os.path.join(os.path.join(home, 'ldraw'))
+    ldraw_path = os.path.join(home, 'ldraw')
     if os.path.isdir(ldraw_path):
         return ldraw_path
 
