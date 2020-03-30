@@ -168,10 +168,11 @@ def create_object(mesh, parent_matrix, matrix):
 #     this_vert = bm.verts.new(f)
 def do_create_mesh(key, geometry_vertices, geometry_faces):
     vertices = [v.to_tuple() for v in geometry_vertices]
+    edges = []
     faces = []
-    face_index = 0
 
     # makes indexes sequential
+    face_index = 0
     for f in geometry_faces:
         new_face = []
         for _ in range(f):
@@ -181,9 +182,9 @@ def do_create_mesh(key, geometry_vertices, geometry_faces):
 
     # add materials before doing from_pydata step
     mesh = bpy.data.meshes.new(key)
-    mesh.from_pydata(vertices, [], faces)
+    mesh.from_pydata(vertices, edges, faces)
     mesh.validate()
-    mesh.update()
+    mesh.update(calc_edges=True)
 
     return mesh
 
