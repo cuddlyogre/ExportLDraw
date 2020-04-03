@@ -327,9 +327,28 @@ class LDrawFile:
                                 mathutils.Vector((x3, y3, z3)),
                             ]
 
-                            # TODO: split if there are 2 filenames
-                            filename_args = re.search(r".*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?(.*)", line)
+                            # https://rubular.com/r/6eHatKq0a27Ux2
+                            # repeating groups are slow
+                            # \s?(?:\S+\s+){13}(.*)
+
+                            # https://rubular.com/r/BcU8WokegJopiu
+                            filename_args = re.search(r"\s?\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+(.*)", line)
                             filename = filename_args[1].lower()
+
+                            # TODO: split if there are 2 filenames
+                            # https://rubular.com/r/zAwdSsqbIWTwGw
+                            # ['"]?([^"']+)['"]?\s?(?:['"]?([^"']+)['"]?)?$
+
+                            # image.png image 2.dat =>
+                            # 1. image.png image 2.dat
+                            # 2.
+
+                            # "image.png" image 2.dat =>
+                            # "image.png" "image 2.dat" =>
+                            # image.png "image 2.dat" =>
+                            # image.png" "image 2.dat =>
+                            # 1. image.png
+                            # 2. image 2.dat
 
                             ldraw_node.meta_args['image'] = filename
                             self.child_nodes.append(ldraw_node)
