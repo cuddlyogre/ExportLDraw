@@ -201,10 +201,6 @@ class LDrawFile:
                     if params[2].lower() in ["group_def"]:
                         params = re.search(r".*?\s+.*?\s+.*?\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])", line.strip())
 
-                        # if params is None:
-                        #     print(f"BAD LINE: {line}")
-                        #     continue
-
                         ldraw_node = LDrawNode(None)
                         ldraw_node.meta_command = "group_def"
 
@@ -218,10 +214,6 @@ class LDrawFile:
                     elif params[2].lower() in ["group_nxt"]:
                         params = re.search(r".*\s+.*\s+.*\s+(\[.*\])\s+(\[.*\])", line.strip())
 
-                        # if params is None:
-                        #     print(f"BAD LINE: {line}")
-                        #     continue
-
                         ldraw_node = LDrawNode(None)
                         ldraw_node.meta_command = "group_nxt"
 
@@ -234,10 +226,6 @@ class LDrawFile:
                         if params[3].lower() in ["begin"]:
                             # begin_params = re.search(r"(?:.*\s+){3}begin\s+(.*)", line, re.IGNORECASE)
                             begin_params = re.search(r".*?\s+.*?\s+.*?\s+.*?\s+(.*)", line.strip())
-
-                            # if begin_params is None:
-                            #     print(f"BAD LINE: {line}")
-                            #     continue
 
                             if begin_params is not None:
                                 ldraw_node = LDrawNode(None)
@@ -309,10 +297,6 @@ class LDrawFile:
                             elif params[0] == "NAME":
                                 # camera_name_params = re.search(r"(?:.*\s+){3}name(.*)", line, re.IGNORECASE)
                                 camera_name_params = re.search(r".*?\s+.*?\s+.*?\s+.*?\s+(.*)", line.strip())
-
-                                # if camera_name_params is None:
-                                #     print(f"BAD LINE: {line}")
-                                #     continue
 
                                 camera.name = camera_name_params[1].strip()
 
