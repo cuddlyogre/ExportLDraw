@@ -59,6 +59,7 @@ def build_search_paths():
 
 def append_official(ldraw_path):
     append_search_path(os.path.join(ldraw_path, "parts"))
+    append_search_path(os.path.join(ldraw_path, "parts", "textures"))
     if options.resolution == "High":
         append_search_path(os.path.join(ldraw_path, "p", "48"))
     elif options.resolution == "Low":
@@ -68,6 +69,7 @@ def append_official(ldraw_path):
 
 def append_unofficial(ldraw_path):
     append_search_path(os.path.join(ldraw_path, "unofficial", "parts"))
+    append_search_path(os.path.join(ldraw_path, "unofficial", "parts", "textures"))
     if options.resolution == "High":
         append_search_path(os.path.join(ldraw_path, "unofficial", "p", "48"))
     elif options.resolution == "Low":

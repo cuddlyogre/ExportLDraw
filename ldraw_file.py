@@ -162,6 +162,8 @@ class LDrawFile:
             return
 
         camera = None
+        texmap_start = False
+        texmap_fallback = False
 
         for line in self.lines:
             params = helpers.parse_line(line, 14)
@@ -307,18 +309,48 @@ class LDrawFile:
                                 camera = None
                             else:
                                 params = params[1:]
-                else:
-                    continue
-                    # https://www.ldraw.org/documentation/ldraw-org-file-format-standards/language-extension-for-texture-mapping.html
-                    if params[1].lower() in ["!texmap"]:
-                        ldraw_node = LDrawNode(None)
-                        ldraw_node.meta_command = params[1].lower()
-                        ldraw_node.meta_args = params[2:]
-                        self.child_nodes.append(ldraw_node)
-                    elif params[1].lower() in ["!:"]:
-                        self.parse_geometry_line(params[2:])
+                elif params[1].lower() in ["!texmap"]:  # https://www.ldraw.org/documentation/ldraw-org-file-format-standards/language-extension-for-texture-mapping.html
+                    do_texmaps = True
+                    if do_texmaps:
+                        if params[2].lower() in ["start"]:
+                            texmap_start = True
+                            texmap_fallback = False
+
+                            ldraw_node = LDrawNode(None)
+                            ldraw_node.meta_command = "texmap_start"
+                            ldraw_node.meta_args['method'] = params[3].lower()
+
+                            (x1, y1, z1, x2, y2, z2, x3, y3, z3) = map(float, params[4:13])
+                            ldraw_node.meta_args['parameters'] = [
+                                mathutils.Vector((x1, y1, z1)),
+                                mathutils.Vector((x2, y2, z2)),
+                                mathutils.Vector((x3, y3, z3)),
+                            ]
+
+                            # TODO: split if there are 2 filenames
+                            filename_args = re.search(r".*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?(.*)", line)
+                            filename = filename_args[1].lower()
+
+                            ldraw_node.meta_args['image'] = filename
+                            self.child_nodes.append(ldraw_node)
+                        elif params[2].lower() in ["fallback"]:
+                            texmap_fallback = True
+                        elif params[2].lower() in ["end"]:
+                            texmap_start = False
+                            texmap_fallback = False
+
+                            ldraw_node = LDrawNode(None)
+                            ldraw_node.meta_command = "textmap_end"
+                            self.child_nodes.append(ldraw_node)
+                elif params[1].lower() in ["!:"] and texmap_start:
+                    print(params)
+                    # remove 0 !: from line so that it can be parsed like a normal line
+                    clean_line = re.sub(r"(.*?\s+!:\s+)", "", line)
+                    clean_params = params[2:]
+                    self.parse_geometry_line(clean_line, clean_params)
             else:
-                self.parse_geometry_line(line, params)
+                if not (texmap_start and texmap_fallback):
+                    self.parse_geometry_line(line, params)
 
         if self.name == "":
             self.name = os.path.basename(self.filepath)
