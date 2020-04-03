@@ -88,6 +88,54 @@ def __parse_current_file(ldraw_file):
         mpd_file_cache[ldraw_file.filepath] = ldraw_file
 
 
+def get_child_node(line, params):
+    color_code = params[1]
+
+    (x, y, z, a, b, c, d, e, f, g, h, i) = map(float, params[2:14])
+    matrix = mathutils.Matrix((
+        (a, b, c, x),
+        (d, e, f, y),
+        (g, h, i, z),
+        (0, 0, 0, 1)
+    ))
+
+    # there might be spaces in the filename, so don't just split on whitespace
+    # filename_args = re.search(r"(?:.*\s+){14}(.*)", line.strip())
+    # print(line.strip())
+    filename_args = re.search(r".*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+(.*)", line.strip())
+    filename = filename_args[1].lower()
+    # filename = " ".join(params[14:]).lower()
+
+    if options.display_logo:
+        if filename in special_bricks.studs:
+            parts = filename.split(".")
+            name = parts[0]
+            ext = parts[1]
+            new_filename = f"{name}-{options.chosen_logo}.{ext}"
+            if filesystem.locate(new_filename):
+                filename = new_filename
+    key = []
+    key.append(options.resolution)
+    if options.display_logo:
+        key.append(options.chosen_logo)
+    if options.remove_doubles:
+        key.append("rd")
+    key.append(color_code)
+    key.append(os.path.basename(filename))
+    key = "_".join([k.lower() for k in key])
+    key = re.sub(r"[^a-z0-9._]", "-", key)
+
+    if key not in file_cache:
+        ldraw_file = LDrawFile(filename)
+        ldraw_file.read_file()
+        ldraw_file.parse_file()
+        file_cache[key] = ldraw_file
+    ldraw_file = file_cache[key]
+    ldraw_node = LDrawNode(ldraw_file, color_code=color_code, matrix=matrix)
+
+    return ldraw_node
+
+
 class LDrawFile:
     def __init__(self, filepath):
         self.filepath = filepath
@@ -307,54 +355,6 @@ class LDrawFile:
                 self.part_type = "part"
 
     def parse_child_node(self, line, params):
-        color_code = params[1]
-
-        (x, y, z, a, b, c, d, e, f, g, h, i) = map(float, params[2:14])
-        matrix = mathutils.Matrix((
-            (a, b, c, x),
-            (d, e, f, y),
-            (g, h, i, z),
-            (0, 0, 0, 1)
-        ))
-
-        # there might be spaces in the filename, so don't just split on whitespace
-        # filename_args = re.search(r"(?:.*\s+){14}(.*)", line.strip())
-        # print(line.strip())
-        filename_args = re.search(r".*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+(.*)", line.strip())
-
-        # if filename_args is None:
-        #     print(f"BAD LINE: {line}")
-        #     return
-
-        filename = filename_args[1].lower()
-        # filename = " ".join(params[14:]).lower()
-        if options.display_logo:
-            if filename in special_bricks.studs:
-                parts = filename.split(".")
-                name = parts[0]
-                ext = parts[1]
-                new_filename = f"{name}-{options.chosen_logo}.{ext}"
-                if filesystem.locate(new_filename):
-                    filename = new_filename
-        key = []
-        key.append(options.resolution)
-        if options.display_logo:
-            key.append(options.chosen_logo)
-        if options.remove_doubles:
-            key.append("rd")
-        key.append(color_code)
-        key.append(os.path.basename(filename))
-        key = "_".join([k.lower() for k in key])
-        key = re.sub(r"[^a-z0-9._]", "-", key)
-
-        if key not in file_cache:
-            ldraw_file = LDrawFile(filename)
-            ldraw_file.read_file()
-            ldraw_file.parse_file()
-            file_cache[key] = ldraw_file
-        ldraw_file = file_cache[key]
-
-        ldraw_node = LDrawNode(ldraw_file, color_code=color_code, matrix=matrix)
+        ldraw_node = get_child_node(line, params)
         self.child_nodes.append(ldraw_node)
-
         return ldraw_node
