@@ -97,7 +97,7 @@ def create_object(mesh, parent_matrix, matrix):
     obj = bpy.data.objects.new(mesh.name, mesh)
 
     if top_empty is None:
-        obj.matrix_world = matrices.scaled_matrix(options.scale) @ matrices.rotation @ parent_matrix @ matrix
+        obj.matrix_world = matrices.scaled_matrix(options.import_scale) @ matrices.rotation @ parent_matrix @ matrix
         if options.make_gaps and options.gap_target == "object":
             obj.matrix_world = obj.matrix_world @ matrices.scaled_matrix(options.gap_scale)
     else:
@@ -429,7 +429,7 @@ class LDrawNode:
 
                 if options.parent_to_empty and top_empty is None:
                     top_empty = bpy.data.objects.new(top_collection.name, None)
-                    top_empty.matrix_world = top_empty.matrix_world @ matrices.rotation @ matrices.scaled_matrix(options.scale)
+                    top_empty.matrix_world = top_empty.matrix_world @ matrices.rotation @ matrices.scaled_matrix(options.import_scale)
                     if top_collection is not None:
                         top_collection.objects.link(top_empty)
                     if options.debug_text:

@@ -61,23 +61,23 @@ def create_camera(camera, empty=None, collection=None):
     else:
         blender_camera.type = 'PERSP'
 
-    blender_camera.clip_start = blender_camera.clip_start * options.scale
-    blender_camera.clip_end = blender_camera.clip_end * options.scale
+    blender_camera.clip_start = blender_camera.clip_start * options.import_scale
+    blender_camera.clip_end = blender_camera.clip_end * options.import_scale
 
     location = obj.location.copy()
-    location.x = location.x * options.scale
-    location.y = location.y * options.scale
-    location.z = location.z * options.scale
+    location.x = location.x * options.import_scale
+    location.y = location.y * options.import_scale
+    location.z = location.z * options.import_scale
     obj.location = location
     # bpy.context.view_layer.update()
 
-    camera.target_position.x = camera.target_position.x * options.scale
-    camera.target_position.y = camera.target_position.y * options.scale
-    camera.target_position.z = camera.target_position.z * options.scale
+    camera.target_position.x = camera.target_position.x * options.import_scale
+    camera.target_position.y = camera.target_position.y * options.import_scale
+    camera.target_position.z = camera.target_position.z * options.import_scale
 
-    camera.up_vector.x = camera.up_vector.x * options.scale
-    camera.up_vector.y = camera.up_vector.y * options.scale
-    camera.up_vector.z = camera.up_vector.z * options.scale
+    camera.up_vector.x = camera.up_vector.x * options.import_scale
+    camera.up_vector.y = camera.up_vector.y * options.import_scale
+    camera.up_vector.z = camera.up_vector.z * options.import_scale
 
     if collection is None:
         collection = bpy.context.scene.collection

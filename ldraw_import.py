@@ -46,7 +46,7 @@ def do_import(filename):
         if area.type == 'VIEW_3D':
             for space in area.spaces:
                 if space.type == 'VIEW_3D':
-                    space.clip_end = options.camera_far  # * options.scale
+                    space.clip_end = options.camera_far  # * options.import_scale
 
     for camera in ldraw_camera.cameras:
         blender_camera = ldraw_camera.create_camera(camera, empty=ldraw_node.top_empty, collection=ldraw_node.top_collection)
