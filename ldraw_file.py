@@ -202,7 +202,7 @@ class LDrawFile:
                             self.child_nodes.append(ldraw_node)
                     elif params[2] == "CAMERA":
                         if camera is None:
-                            camera = LDrawCamera()
+                            camera = ldraw_camera.LDrawCamera()
 
                         params = params[3:]
 
