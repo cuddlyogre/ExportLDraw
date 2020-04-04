@@ -97,15 +97,12 @@ def lighten_rgba(color, scale):
 
 
 def is_fluorescent_transparent(col_name):
-    if col_name == "Trans_Neon_Orange":
-        return True
-    if col_name == "Trans_Neon_Green":
-        return True
-    if col_name == "Trans_Neon_Yellow":
-        return True
-    if col_name == "Trans_Bright_Green":
-        return True
-    return False
+    return col_name in [
+        "Trans_Neon_Orange",
+        "Trans_Neon_Green",
+        "Trans_Neon_Yellow",
+        "Trans_Bright_Green",
+    ]
 
 
 def is_dark(color):
@@ -117,9 +114,7 @@ def is_dark(color):
     brightness = math.sqrt(0.299 * r * r + 0.587 * g * g + 0.114 * b * b)
 
     # Dark colors have white lines
-    if brightness < 0.02:
-        return True
-    return False
+    return brightness < 0.02
 
 
 def hex_string_to_linear_rgba(hex_string):
