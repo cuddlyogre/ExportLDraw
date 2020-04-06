@@ -533,6 +533,7 @@ def __create_cycles_milky_white(nodes, links, diff_color):
 
 def __create_group(name, x1, y1, x2, y2, create_shader_output):
     group = bpy.data.node_groups.new(name, 'ShaderNodeTree')
+    group.use_fake_user = True
 
     # create input node
     node_input = group.nodes.new('NodeGroupInput')
