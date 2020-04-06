@@ -400,8 +400,6 @@ class LDrawNode:
             key.append("es")
         if options.use_alt_colors:
             key.append("alt")
-        if options.curved_walls:
-            key.append("c")
         if options.add_subsurface:
             key.append("ss")
         if parent_color_code == "24":

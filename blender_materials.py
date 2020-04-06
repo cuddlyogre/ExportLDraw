@@ -15,10 +15,6 @@ def reset_caches():
 def create_blender_node_groups():
     reset_caches()
 
-    __create_blender_distance_to_center_node_group()
-    __create_blender_vector_element_power_node_group()
-    __create_blender_convert_to_normals_node_group()
-    __create_blender_concave_walls_node_group()
     __create_blender_slope_texture_node_group()
 
     # Originally based on ideas from https://www.youtube.com/watch?v=V3wghbZ-Vh4
@@ -52,8 +48,6 @@ def get_material(color_code, use_edge_color=False, is_slope_material=False):
         key.append("alt")
     if is_slope_material:
         key.append("s")
-    if options.curved_walls:
-        key.append("c")
     if options.add_subsurface:
         key.append("ss")
     if use_edge_color:
@@ -138,8 +132,6 @@ def __create_node_based_material(key, col, use_edge_color=False, is_slope_materi
 
         if is_slope_material:
             __create_cycles_slope_texture(nodes, links, 0.6)
-        elif options.curved_walls:
-            __create_cycles_concave_walls(nodes, links, 0.2)
 
         material["LEGO.isTransparent"] = is_transparent
         return material
@@ -147,14 +139,6 @@ def __create_node_based_material(key, col, use_edge_color=False, is_slope_materi
     __create_cycles_basic(nodes, links, (1.0, 1.0, 0.0, 1.0), 1.0, "")
     material["LEGO.isTransparent"] = False
     return material
-
-
-def __node_concave_walls(nodes, strength, x, y):
-    node = nodes.new('ShaderNodeGroup')
-    node.node_tree = bpy.data.node_groups['Concave Walls']
-    node.location = x, y
-    node.inputs['Strength'].default_value = strength
-    return node
 
 
 def __node_slope_texture(nodes, strength, x, y):
@@ -491,14 +475,6 @@ def __get_group(nodes):
     return None
 
 
-def __create_cycles_concave_walls(nodes, links, strength):
-    """Concave wall normals for Cycles render engine"""
-    node = __node_concave_walls(nodes, strength, -200, 5)
-    out = __get_group(nodes)
-    if out is not None:
-        links.new(node.outputs['Normal'], out.inputs['Normal'])
-
-
 def __create_cycles_slope_texture(nodes, links, strength):
     """Slope face normals for Cycles render engine"""
     node = __node_slope_texture(nodes, strength, -200, 5)
@@ -607,161 +583,6 @@ def __create_group(name, x1, y1, x2, y2, create_shader_output):
     if create_shader_output:
         group.outputs.new('NodeSocketShader', 'Shader')
     return group, node_input, node_output
-
-
-def __create_blender_distance_to_center_node_group():
-    if bpy.data.node_groups.get('Distance-To-Center') is None:
-        if options.debug_text:
-            print("createBlenderDistanceToCenterNodeGroup #create")
-
-        # create a group
-        group, node_input, node_output = __create_group('Distance-To-Center', -930, 0, 240, 0, False)
-        group.outputs.new('NodeSocketVectorDirection', 'Vector')
-
-        # create nodes
-        node_texture_coordinate = __node_tex_coord(group.nodes, -730, 0)
-
-        node_vector_subtraction1 = __node_vector_math(group.nodes, 'SUBTRACT', -535, 0)
-        node_vector_subtraction1.inputs[1].default_value[0] = 0.5
-        node_vector_subtraction1.inputs[1].default_value[1] = 0.5
-        node_vector_subtraction1.inputs[1].default_value[2] = 0.5
-
-        node_normalize = __node_vector_math(group.nodes, 'NORMALIZE', -535, -245)
-        node_dot_product = __node_vector_math(group.nodes, 'DOT_PRODUCT', -340, -125)
-
-        node_multiply = group.nodes.new('ShaderNodeMixRGB')
-        node_multiply.blend_type = 'MULTIPLY'
-        node_multiply.inputs['Fac'].default_value = 1.0
-        node_multiply.location = -145, -125
-
-        node_vector_subtraction2 = __node_vector_math(group.nodes, 'SUBTRACT', 40, 0)
-
-        # link nodes together
-        group.links.new(node_texture_coordinate.outputs['Generated'], node_vector_subtraction1.inputs[0])
-        group.links.new(node_texture_coordinate.outputs['Normal'], node_normalize.inputs[0])
-        group.links.new(node_vector_subtraction1.outputs['Vector'], node_dot_product.inputs[0])
-        group.links.new(node_normalize.outputs['Vector'], node_dot_product.inputs[1])
-        group.links.new(node_dot_product.outputs['Value'], node_multiply.inputs['Color1'])
-        group.links.new(node_normalize.outputs['Vector'], node_multiply.inputs['Color2'])
-        group.links.new(node_vector_subtraction1.outputs['Vector'], node_vector_subtraction2.inputs[0])
-        group.links.new(node_multiply.outputs['Color'], node_vector_subtraction2.inputs[1])
-        group.links.new(node_vector_subtraction2.outputs['Vector'], node_output.inputs['Vector'])
-
-
-def __create_blender_vector_element_power_node_group():
-    if bpy.data.node_groups.get('Vector-Element-Power') is None:
-        if options.debug_text:
-            print("createBlenderVectorElementPowerNodeGroup #create")
-
-        # create a group
-        group, node_input, node_output = __create_group('Vector-Element-Power', -580, 0, 400, 0, False)
-        group.inputs.new('NodeSocketFloat', 'Exponent')
-        group.inputs.new('NodeSocketVectorDirection', 'Vector')
-        group.outputs.new('NodeSocketVectorDirection', 'Vector')
-
-        # create nodes
-        node_separate_xyz = group.nodes.new('ShaderNodeSeparateXYZ')
-        node_separate_xyz.location = -385, -140
-
-        node_abs_x = __node_math(group.nodes, 'ABSOLUTE', -180, 180)
-        node_abs_y = __node_math(group.nodes, 'ABSOLUTE', -180, 0)
-        node_abs_z = __node_math(group.nodes, 'ABSOLUTE', -180, -180)
-
-        node_power_x = __node_math(group.nodes, 'POWER', 20, 180)
-        node_power_y = __node_math(group.nodes, 'POWER', 20, 0)
-        node_power_z = __node_math(group.nodes, 'POWER', 20, -180)
-
-        node_combine_xyz = group.nodes.new('ShaderNodeCombineXYZ')
-        node_combine_xyz.location = 215, 0
-
-        # link nodes together
-        group.links.new(node_input.outputs['Vector'], node_separate_xyz.inputs[0])
-        group.links.new(node_separate_xyz.outputs['X'], node_abs_x.inputs[0])
-        group.links.new(node_separate_xyz.outputs['Y'], node_abs_y.inputs[0])
-        group.links.new(node_separate_xyz.outputs['Z'], node_abs_z.inputs[0])
-        group.links.new(node_abs_x.outputs['Value'], node_power_x.inputs[0])
-        group.links.new(node_input.outputs['Exponent'], node_power_x.inputs[1])
-        group.links.new(node_abs_y.outputs['Value'], node_power_y.inputs[0])
-        group.links.new(node_input.outputs['Exponent'], node_power_y.inputs[1])
-        group.links.new(node_abs_z.outputs['Value'], node_power_z.inputs[0])
-        group.links.new(node_input.outputs['Exponent'], node_power_z.inputs[1])
-        group.links.new(node_power_x.outputs['Value'], node_combine_xyz.inputs['X'])
-        group.links.new(node_power_y.outputs['Value'], node_combine_xyz.inputs['Y'])
-        group.links.new(node_power_z.outputs['Value'], node_combine_xyz.inputs['Z'])
-        group.links.new(node_combine_xyz.outputs['Vector'], node_output.inputs[0])
-
-
-def __create_blender_convert_to_normals_node_group():
-    if bpy.data.node_groups.get('Convert-To-Normals') is None:
-        if options.debug_text:
-            print("createBlenderConvertToNormalsNodeGroup #create")
-
-        # create a group
-        group, node_input, node_output = __create_group('Convert-To-Normals', -490, 0, 400, 0, False)
-        group.inputs.new('NodeSocketFloat', 'Vector Length')
-        group.inputs.new('NodeSocketFloat', 'Smoothing')
-        group.inputs.new('NodeSocketFloat', 'Strength')
-        group.inputs.new('NodeSocketVectorDirection', 'Normal')
-        group.outputs.new('NodeSocketVectorDirection', 'Normal')
-
-        # create nodes
-        node_power = __node_math(group.nodes, 'POWER', -290, 150)
-
-        node_colorramp = group.nodes.new('ShaderNodeValToRGB')
-        node_colorramp.color_ramp.color_mode = 'RGB'
-        node_colorramp.color_ramp.interpolation = 'EASE'
-        node_colorramp.color_ramp.elements[0].color = (1, 1, 1, 1)
-        node_colorramp.color_ramp.elements[1].color = (0, 0, 0, 1)
-        node_colorramp.color_ramp.elements[1].position = 0.45
-        node_colorramp.location = -95, 150
-
-        node_bump = group.nodes.new('ShaderNodeBump')
-        node_bump.inputs['Distance'].default_value = 0.02
-        node_bump.location = 200, 0
-
-        # link nodes together
-        group.links.new(node_input.outputs['Vector Length'], node_power.inputs[0])
-        group.links.new(node_input.outputs['Smoothing'], node_power.inputs[1])
-        group.links.new(node_power.outputs['Value'], node_colorramp.inputs[0])
-        group.links.new(node_input.outputs['Strength'], node_bump.inputs['Strength'])
-        group.links.new(node_colorramp.outputs['Color'], node_bump.inputs['Height'])
-        group.links.new(node_input.outputs['Normal'], node_bump.inputs['Normal'])
-        group.links.new(node_bump.outputs['Normal'], node_output.inputs[0])
-
-
-def __create_blender_concave_walls_node_group():
-    if bpy.data.node_groups.get('Concave Walls') is None:
-        if options.debug_text:
-            print("createBlenderConcaveWallsNodeGroup #create")
-
-        # create a group
-        group, node_input, node_output = __create_group('Concave Walls', -530, 0, 300, 0, False)
-        group.inputs.new('NodeSocketFloat', 'Strength')
-        group.inputs.new('NodeSocketVectorDirection', 'Normal')
-        group.outputs.new('NodeSocketVectorDirection', 'Normal')
-
-        # create nodes
-        node_distance_to_center = group.nodes.new('ShaderNodeGroup')
-        node_distance_to_center.node_tree = bpy.data.node_groups['Distance-To-Center']
-        node_distance_to_center.location = (-340, 105)
-
-        node_vector_elements_power = group.nodes.new('ShaderNodeGroup')
-        node_vector_elements_power.node_tree = bpy.data.node_groups['Vector-Element-Power']
-        node_vector_elements_power.location = (-120, 105)
-        node_vector_elements_power.inputs['Exponent'].default_value = 4.0
-
-        node_convert_to_normals = group.nodes.new('ShaderNodeGroup')
-        node_convert_to_normals.node_tree = bpy.data.node_groups['Convert-To-Normals']
-        node_convert_to_normals.location = (90, 0)
-        node_convert_to_normals.inputs['Strength'].default_value = 0.2
-        node_convert_to_normals.inputs['Smoothing'].default_value = 0.3
-
-        # link nodes together
-        group.links.new(node_distance_to_center.outputs['Vector'], node_vector_elements_power.inputs['Vector'])
-        group.links.new(node_vector_elements_power.outputs['Vector'], node_convert_to_normals.inputs['Vector Length'])
-        group.links.new(node_input.outputs['Strength'], node_convert_to_normals.inputs['Strength'])
-        group.links.new(node_input.outputs['Normal'], node_convert_to_normals.inputs['Normal'])
-        group.links.new(node_convert_to_normals.outputs['Normal'], node_output.inputs['Normal'])
 
 
 def __create_blender_slope_texture_node_group():

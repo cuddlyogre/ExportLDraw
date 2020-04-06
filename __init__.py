@@ -93,12 +93,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         default=True,
     )
 
-    curved_walls: bpy.props.BoolProperty(
-        name="Curved walls",
-        description="Makes surfaces look slightly concave",
-        default=False,
-    )
-
     add_subsurface: bpy.props.BoolProperty(
         name="Add subsurface",
         description="Add subsurface to materials",
@@ -299,7 +293,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         options.meta_save = self.meta_save
         options.set_end_frame = self.set_end_frame
         options.frames_per_step = self.frames_per_step
-        options.curved_walls = self.curved_walls
         options.add_subsurface = self.add_subsurface
         options.smooth_type = self.smooth_type
         options.import_edges = self.import_edges
@@ -360,7 +353,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         box.prop(self, "merge_distance")
         box.prop(self, "debug_text")
         box.prop(self, "no_studs")
-        box.prop(self, "curved_walls")
         box.prop(self, "add_subsurface")
         box.prop(self, "import_edges")
         box.prop(self, "grease_pencil_edges")
