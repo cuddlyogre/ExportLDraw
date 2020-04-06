@@ -594,15 +594,14 @@ def __create_blender_lego_standard_node_group():
         group.inputs.new('NodeSocketVectorDirection', 'Normal')
 
         node_main = __node_principled(group.nodes, 0.05, 0.05, 0.0, 0.1, 0.0, 0.0, 1.45, 0.0, 0, 0)
-        output_name = 'BSDF'
-        color_name = 'Base Color'
+
         if options.add_subsurface:
             group.links.new(node_input.outputs['Color'], node_main.inputs['Subsurface Color'])
 
         # link nodes together
-        group.links.new(node_input.outputs['Color'], node_main.inputs[color_name])
+        group.links.new(node_input.outputs['Color'], node_main.inputs['Base Color'])
         group.links.new(node_input.outputs['Normal'], node_main.inputs['Normal'])
-        group.links.new(node_main.outputs[output_name], node_output.inputs['Shader'])
+        group.links.new(node_main.outputs['BSDF'], node_output.inputs['Shader'])
 
 
 def __create_blender_lego_transparent_node_group():
