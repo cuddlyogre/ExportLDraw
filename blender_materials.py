@@ -24,8 +24,6 @@ def create_blender_node_groups():
 
 
 def get_material(color_code, use_edge_color=False, is_slope_material=False):
-    pure_color_code = color_code
-
     key = []
     key.append(color_code)
     if options.use_alt_colors:
@@ -41,12 +39,14 @@ def get_material(color_code, use_edge_color=False, is_slope_material=False):
     if key in bpy.data.materials:
         return bpy.data.materials[key]
 
-    material = __create_node_based_material(key, col, use_edge_color=use_edge_color, is_slope_material=is_slope_material)
+    material = __create_node_based_material(key, color_code, use_edge_color=use_edge_color, is_slope_material=is_slope_material)
     return material
 
 
-def __create_node_based_material(key, col, use_edge_color=False, is_slope_material=False):
+def __create_node_based_material(key, color_code, use_edge_color=False, is_slope_material=False):
     """Set Cycles Material Values."""
+
+    color = ldraw_colors.get_color(color_code)
 
     # Reuse current material if it exists, otherwise create a new material
     if bpy.data.materials.get(key) is None:
@@ -65,51 +65,59 @@ def __create_node_based_material(key, col, use_edge_color=False, is_slope_materi
     for n in nodes:
         nodes.remove(n)
 
-    if col is not None:
-        if use_edge_color:
-            color = col["edge_color"] + (1.0,)
-            material.diffuse_color = _get_diffuse_color(col["edge_color"])
-            __create_cycles_basic(nodes, links, color, 1.0, "")
-            return material
+    is_transparent = False
 
-        color = col["color"] + (1.0,)
-        material.diffuse_color = _get_diffuse_color(col["color"])
+    if color is None:
+        diffuse_color = (1.0, 1.0, 0.0) + (1.0,)
+        material.diffuse_color = diffuse_color
+        material["LEGO.isTransparent"] = is_transparent
+        material[options.ldraw_color_code_key] = ""
+        __create_cycles_basic(nodes, links, diffuse_color, 1.0, "")
+        return material
 
-        is_transparent = col["alpha"] < 1.0
+    if use_edge_color:
+        diffuse_color = color["edge_color"] + (1.0,)
+        material.diffuse_color = diffuse_color
+        material["LEGO.isTransparent"] = is_transparent
+        material[options.ldraw_color_code_key] = ""
+        __create_cycles_basic(nodes, links, diffuse_color, 1.0, "")
+        return material
 
-        if is_transparent:
-            material.blend_method = 'BLEND'
-            material.refraction_depth = 0.1
-            material.use_screen_refraction = True
+    is_transparent = color["alpha"] < 1.0
 
-        if col["name"] == "Milky_White":
-            __create_cycles_milky_white(nodes, links, color)
-        elif col["luminance"] > 0:
-            __create_cycles_emission(nodes, links, color, col["alpha"], col["luminance"])
-        elif col["material"] == "CHROME":
-            __create_cycles_chrome(nodes, links, color)
-        elif col["material"] == "PEARLESCENT":
-            __create_cycles_pearlescent(nodes, links, color)
-        elif col["material"] == "METAL":
-            __create_cycles_metal(nodes, links, color)
-        elif col["material"] == "GLITTER":
-            __create_cycles_glitter(nodes, links, color, col["secondary_color"])
-        elif col["material"] == "SPECKLE":
-            __create_cycles_speckle(nodes, links, color, col["secondary_color"])
-        elif col["material"] == "RUBBER":
-            __create_cycles_rubber(nodes, links, color, col["alpha"])
-        else:
-            __create_cycles_basic(nodes, links, color, col["alpha"], col["name"])
+    diffuse_color = color["color"] + (1.0,)
+    material.diffuse_color = diffuse_color
+    material["LEGO.isTransparent"] = is_transparent
+    material[options.ldraw_color_code_key] = color["code"]
+
+    if is_transparent:
+        material.blend_method = 'BLEND'
+        material.refraction_depth = 0.1
+        material.use_screen_refraction = True
+
+    if color["name"] == "Milky_White":
+        __create_cycles_milky_white(nodes, links, diffuse_color)
+    elif color["luminance"] > 0:
+        __create_cycles_emission(nodes, links, diffuse_color, color["alpha"], color["luminance"])
+    elif color["material"] == "CHROME":
+        __create_cycles_chrome(nodes, links, diffuse_color)
+    elif color["material"] == "PEARLESCENT":
+        __create_cycles_pearlescent(nodes, links, diffuse_color)
+    elif color["material"] == "METAL":
+        __create_cycles_metal(nodes, links, diffuse_color)
+    elif color["material"] == "GLITTER":
+        __create_cycles_glitter(nodes, links, diffuse_color, color["secondary_color"])
+    elif color["material"] == "SPECKLE":
+        __create_cycles_speckle(nodes, links, diffuse_color, color["secondary_color"])
+    elif color["material"] == "RUBBER":
+        __create_cycles_rubber(nodes, links, diffuse_color, color["alpha"])
+    else:
+        __create_cycles_basic(nodes, links, diffuse_color, color["alpha"], color["name"])
 
     if is_slope_material:
         # TODO: slight variation in strength for each material
         __create_cycles_slope_texture(nodes, links)
 
-        material["LEGO.isTransparent"] = is_transparent
-        return material
-
-    __create_cycles_basic(nodes, links, (1.0, 1.0, 0.0, 1.0), 1.0, "")
-    material["LEGO.isTransparent"] = False
     return material
 
 
