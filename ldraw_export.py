@@ -69,7 +69,7 @@ def export_subfiles(obj, lines, is_model=False):
 
         color = ldraw_colors.get_color(color_code)
         if color is not None:
-            color_code = color["code"]
+            color_code = color.code
 
     precision = 3
     if options.ldraw_export_precision_key in obj:
@@ -144,14 +144,14 @@ def export_polygons(obj, lines):
         if p.material_index + 1 <= len(mesh.materials):
             material = mesh.materials[p.material_index]
             if options.ldraw_color_code_key in material:
-                color_code = material[options.ldraw_color_code_key]
+                color_code = str(material[options.ldraw_color_code_key])
 
         color = ldraw_colors.get_color(color_code)
         color_code = "16"
         if color is not None:
-            color_code = color["code"]
+            color_code = color.code
 
-        line = [str(line_type), str(color_code)]
+        line = [str(line_type), color_code]
 
         for v in p.vertices:
             for vv in mesh.vertices[v].co:
@@ -257,13 +257,13 @@ def do_export(filepath):
     joined_part_lines = []
     for part_line in sorted_part_lines:
         if len(part_line) > 2:
-            new_color_code = int(part_line[1])
+            new_color_code = part_line[1]
             if new_color_code != current_color_code:
                 if current_color_code is not None:
                     joined_part_lines.append("\n")
                 current_color_code = new_color_code
-                name = ldraw_colors.get_color(current_color_code)['name']
-                joined_part_lines.append(f"0 // {name}")
+                color = ldraw_colors.get_color(current_color_code)
+                joined_part_lines.append(f"0 // {color.name}")
         joined_part_lines.append(" ".join(part_line))
     lines.extend(joined_part_lines)
 

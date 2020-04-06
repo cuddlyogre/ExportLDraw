@@ -74,43 +74,43 @@ def __create_node_based_material(key, color_code, use_edge_color=False, is_slope
         return material
 
     if use_edge_color:
-        diffuse_color = color["edge_color"] + (1.0,)
+        diffuse_color = color.edge_color + (1.0,)
         material.diffuse_color = diffuse_color
         material["LEGO.isTransparent"] = is_transparent
         material[options.ldraw_color_code_key] = ""
         __create_cycles_basic(nodes, links, diffuse_color, 1.0, "")
         return material
 
-    is_transparent = color["alpha"] < 1.0
+    is_transparent = color.alpha < 1.0
 
-    diffuse_color = color["color"] + (1.0,)
+    diffuse_color = color.color + (1.0,)
     material.diffuse_color = diffuse_color
     material["LEGO.isTransparent"] = is_transparent
-    material[options.ldraw_color_code_key] = color["code"]
+    material[options.ldraw_color_code_key] = color.code
 
     if is_transparent:
         material.blend_method = 'BLEND'
         material.refraction_depth = 0.1
         material.use_screen_refraction = True
 
-    if color["name"] == "Milky_White":
+    if color.name == "Milky_White":
         __create_cycles_milky_white(nodes, links, diffuse_color)
-    elif color["luminance"] > 0:
-        __create_cycles_emission(nodes, links, diffuse_color, color["alpha"], color["luminance"])
-    elif color["material"] == "CHROME":
+    elif color.luminance > 0:
+        __create_cycles_emission(nodes, links, diffuse_color, color.alpha, color.luminance)
+    elif color.material == "CHROME":
         __create_cycles_chrome(nodes, links, diffuse_color)
-    elif color["material"] == "PEARLESCENT":
+    elif color.material == "PEARLESCENT":
         __create_cycles_pearlescent(nodes, links, diffuse_color)
-    elif color["material"] == "METAL":
+    elif color.material == "METAL":
         __create_cycles_metal(nodes, links, diffuse_color)
-    elif color["material"] == "GLITTER":
-        __create_cycles_glitter(nodes, links, diffuse_color, color["secondary_color"])
-    elif color["material"] == "SPECKLE":
-        __create_cycles_speckle(nodes, links, diffuse_color, color["secondary_color"])
-    elif color["material"] == "RUBBER":
-        __create_cycles_rubber(nodes, links, diffuse_color, color["alpha"])
+    elif color.material == "GLITTER":
+        __create_cycles_glitter(nodes, links, diffuse_color, color.secondary_color)
+    elif color.material == "SPECKLE":
+        __create_cycles_speckle(nodes, links, diffuse_color, color.secondary_color)
+    elif color.material == "RUBBER":
+        __create_cycles_rubber(nodes, links, diffuse_color, color.alpha)
     else:
-        __create_cycles_basic(nodes, links, diffuse_color, color["alpha"], color["name"])
+        __create_cycles_basic(nodes, links, diffuse_color, color.alpha, color.name)
 
     if is_slope_material:
         # TODO: slight variation in strength for each material

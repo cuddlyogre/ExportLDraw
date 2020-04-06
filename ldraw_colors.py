@@ -18,66 +18,15 @@ def get_color(color_code):
     if options.debug_text:
         print(len(colors))
 
-    if __is_int(color_code):
-        color_int = int(color_code)
-        if color_int in colors:
-            return colors[color_int]
+    if color_code in colors:
+        return colors[color_code]
 
     return None
 
 
 def parse_color(params):
-    name = params[2]
-    color_code = int(params[4])
-
-    linear_rgba = __hex_digits_to_linear_rgba(params[6][1:], 1.0)
-    alpha = linear_rgba[3]
-    linear_rgba = __srgb_to_linear_rgb(linear_rgba[0:3])
-
-    lineaer_rgba_edge = __hex_digits_to_linear_rgba(params[8][1:], 1.0)
-    lineaer_rgba_edge = __srgb_to_linear_rgb(lineaer_rgba_edge[0:3])
-
-    color = {
-        "name": name,
-        "code": color_code,
-        "color": linear_rgba,
-        "alpha": alpha,
-        "edge_color": lineaer_rgba_edge,
-        "luminance": 0.0,
-        "material": "BASIC"
-    }
-
-    if "ALPHA" in params:
-        color["alpha"] = int(__get_value(params, "ALPHA")) / 256.0
-
-    if "LUMINANCE" in params:
-        color["luminance"] = int(__get_value(params, "LUMINANCE"))
-
-    if "CHROME" in params:
-        color["material"] = "CHROME"
-
-    if "PEARLESCENT" in params:
-        color["material"] = "PEARLESCENT"
-
-    if "RUBBER" in params:
-        color["material"] = "RUBBER"
-
-    if "METAL" in params:
-        color["material"] = "METAL"
-
-    if "MATERIAL" in params:
-        subline = params[params.index("MATERIAL"):]
-
-        color["material"] = __get_value(subline, "MATERIAL")
-        hex_digits = __get_value(subline, "VALUE")[1:]
-        color["secondary_color"] = __hex_digits_to_linear_rgba(hex_digits, 1.0)
-        color["fraction"] = __get_value(subline, "FRACTION")
-        color["vfraction"] = __get_value(subline, "VFRACTION")
-        color["size"] = __get_value(subline, "SIZE")
-        color["minsize"] = __get_value(subline, "MINSIZE")
-        color["maxsize"] = __get_value(subline, "MAXSIZE")
-
-    colors[color_code] = color
+    color = LdrawColor(params)
+    colors[color.code] = color
 
 
 def lighten_rgba(color, scale):
@@ -153,17 +102,17 @@ def hex_string_to_linear_rgba(hex_string):
             r = float(int(rgb_str[0], 16)) / 15
             g = float(int(rgb_str[1], 16)) / 15
             b = float(int(rgb_str[2], 16)) / 15
-            color1 = __srgb_to_linear_rgb((r, g, b))
+            color1 = srgb_to_linear_rgb((r, g, b))
             r = float(int(rgb_str[3], 16)) / 15
             g = float(int(rgb_str[4], 16)) / 15
             b = float(int(rgb_str[5], 16)) / 15
-            color2 = __srgb_to_linear_rgb((r, g, b))
+            color2 = srgb_to_linear_rgb((r, g, b))
             return (0.5 * (color1[0] + color2[0]),
                     0.5 * (color1[1] + color2[1]),
                     0.5 * (color1[2] + color2[2]), alpha)
 
         # String is "RRGGBB" format
-        return __hex_digits_to_linear_rgba(rgb_str, alpha)
+        return hex_digits_to_linear_rgba(rgb_str, alpha)
     return None
 
 
@@ -175,7 +124,7 @@ def __is_int(s):
         return False
 
 
-def __get_value(line, value):
+def get_value(line, value):
     """Parses a color value from the ldConfig.ldr file"""
     if value in line:
         n = line.index(value)
@@ -189,7 +138,7 @@ def __srgb_to_rgb_value(value):
     return ((value + 0.055) / 1.055) ** 2.4
 
 
-def __srgb_to_linear_rgb(srgb_color):
+def srgb_to_linear_rgb(srgb_color):
     # See https://en.wikipedia.org/wiki/SRGB#The_reverse_transformation
     (sr, sg, sb) = srgb_color
     r = __srgb_to_rgb_value(sr)
@@ -198,13 +147,81 @@ def __srgb_to_linear_rgb(srgb_color):
     return r, g, b
 
 
-def __hex_digits_to_linear_rgba(hex_digits, alpha):
+def hex_digits_to_linear_rgba(hex_digits, alpha):
     # String is "RRGGBB" format
     int_tuple = struct.unpack('BBB', bytes.fromhex(hex_digits))
     srgb = tuple([val / 255 for val in int_tuple])
-    linear_rgb = __srgb_to_linear_rgb(srgb)
+    linear_rgb = srgb_to_linear_rgb(srgb)
     return linear_rgb[0], linear_rgb[1], linear_rgb[2], alpha
 
 
 def __clamp(value):
     return max(min(value, 1.0), 0.0)
+
+
+class LdrawColor:
+    def __init__(self, params):
+        self.name = None
+        self.code = None
+        self.color = None
+        self.edge_color = None
+        self.alpha = None
+        self.luminance = None
+        self.material = None
+        self.secondary_color = None
+        self.fraction = None
+        self.vfraction = None
+        self.size = None
+        self.minsize = None
+        self.maxsize = None
+
+        self.__parse_color(params)
+
+    def __parse_color(self, params):
+        name = params[2]
+        color_code = params[4]
+
+        linear_rgba = hex_digits_to_linear_rgba(params[6][1:], 1.0)
+        alpha = linear_rgba[3]
+        linear_rgba = srgb_to_linear_rgb(linear_rgba[0:3])
+
+        lineaer_rgba_edge = hex_digits_to_linear_rgba(params[8][1:], 1.0)
+        lineaer_rgba_edge = srgb_to_linear_rgb(lineaer_rgba_edge[0:3])
+
+        self.name = name
+        self.code = color_code
+        self.color = linear_rgba
+        self.alpha = alpha
+        self.edge_color = lineaer_rgba_edge
+        self.luminance = 0.0
+        self.material = "BASIC"
+
+        if "ALPHA" in params:
+            self.alpha = int(get_value(params, "ALPHA")) / 256.0
+
+        if "LUMINANCE" in params:
+            self.luminance = int(get_value(params, "LUMINANCE"))
+
+        if "CHROME" in params:
+            self.material = "CHROME"
+
+        if "PEARLESCENT" in params:
+            self.material = "PEARLESCENT"
+
+        if "RUBBER" in params:
+            self.material = "RUBBER"
+
+        if "METAL" in params:
+            self.material = "METAL"
+
+        if "MATERIAL" in params:
+            subline = params[params.index("MATERIAL"):]
+
+            self.material = get_value(subline, "MATERIAL")
+            hex_digits = get_value(subline, "VALUE")[1:]
+            self.secondary_color = hex_digits_to_linear_rgba(hex_digits, 1.0)
+            self.fraction = get_value(subline, "FRACTION")
+            self.vfraction = get_value(subline, "VFRACTION")
+            self.size = get_value(subline, "SIZE")
+            self.minsize = get_value(subline, "MINSIZE")
+            self.maxsize = get_value(subline, "MAXSIZE")
