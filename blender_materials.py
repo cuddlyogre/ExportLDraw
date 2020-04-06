@@ -453,12 +453,14 @@ def __create_cycles_slope_texture(nodes, links, strength=0.6):
 def __create_cycles_basic(nodes, links, diff_color, alpha, col_name):
     """Basic Material for Cycles render engine."""
 
+    use_glass = True
     if alpha < 1:
         if ldraw_colors.is_fluorescent_transparent(col_name):
             node = __node_lego_transparent_fluorescent(nodes, diff_color, 0, 5)
+        elif use_glass:
+            node = __node_lego_glass(nodes, diff_color, 0, 5)
         else:
             node = __node_lego_transparent(nodes, diff_color, 0, 5)
-            # node = __node_lego_glass(nodes, diff_color, 0, 5)
     else:
         node = __node_lego_standard(nodes, diff_color, 0, 5)
 
