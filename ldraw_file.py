@@ -335,9 +335,11 @@ class LDrawFile:
                             filename_args = re.search(r"\s?\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+(.*)", line)
                             filename = filename_args[1].lower()
 
-                            # TODO: split if there are 2 filenames
                             # https://rubular.com/r/zAwdSsqbIWTwGw
                             # ['"]?([^"']+)['"]?\s?(?:['"]?([^"']+)['"]?)?$
+                            filenames = re.split(r"[\'\"]?([^\"\']+)[\'\"]?\s?(?:[\'\"]?([^\"\']+)[\'\"]?)?$", filename)
+                            texmap = filenames[1]
+                            glossmap = filenames[2]
 
                             # image.png image 2.dat =>
                             # 1. image.png image 2.dat
@@ -350,7 +352,8 @@ class LDrawFile:
                             # 1. image.png
                             # 2. image 2.dat
 
-                            ldraw_node.meta_args['image'] = filename
+                            ldraw_node.meta_args['texmap'] = texmap
+                            ldraw_node.meta_args['glossmap'] = glossmap
                             self.child_nodes.append(ldraw_node)
                         elif params[2].lower() in ["fallback"]:
                             texmap_fallback = True
