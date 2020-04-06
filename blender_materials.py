@@ -575,13 +575,12 @@ def __create_blender_slope_texture_node_group():
 
 
 def __create_blender_lego_standard_node_group():
-    group_name = 'LEGO Standard'
-    if bpy.data.node_groups.get(group_name) is None:
+    if bpy.data.node_groups.get('LEGO Standard') is None:
         if options.debug_text:
             print("createBlenderLEGOStandardNodeGroup #create")
 
         # create a group
-        group, node_input, node_output = __create_group(group_name, -250, 0, 250, 0, True)
+        group, node_input, node_output = __create_group('LEGO Standard', -250, 0, 250, 0, True)
         group.inputs.new('NodeSocketColor', 'Color')
         group.inputs.new('NodeSocketVectorDirection', 'Normal')
 
@@ -598,13 +597,12 @@ def __create_blender_lego_standard_node_group():
 
 
 def __create_blender_lego_transparent_node_group():
-    group_name = 'LEGO Transparent'
-    if bpy.data.node_groups.get(group_name) is None:
+    if bpy.data.node_groups.get('LEGO Transparent') is None:
         if options.debug_text:
             print("createBlenderLEGOTransparentNodeGroup #create")
 
         # create a group
-        group, node_input, node_output = __create_group(group_name, -250, 0, 250, 0, True)
+        group, node_input, node_output = __create_group('LEGO Transparent', -250, 0, 250, 0, True)
         group.inputs.new('NodeSocketColor', 'Color')
         group.inputs.new('NodeSocketVectorDirection', 'Normal')
 
@@ -709,13 +707,12 @@ def __create_blender_lego_glass_node_group():
 
 
 def __create_blender_lego_transparent_fluorescent_node_group():
-    group_name = 'LEGO Transparent Fluorescent'
-    if bpy.data.node_groups.get(group_name) is None:
+    if bpy.data.node_groups.get('LEGO Transparent Fluorescent') is None:
         if options.debug_text:
             print("createBlenderLEGOTransparentFluorescentNodeGroup #create")
 
         # create a group
-        group, node_input, node_output = __create_group(group_name, -250, 0, 250, 0, True)
+        group, node_input, node_output = __create_group('LEGO Transparent Fluorescent', -250, 0, 250, 0, True)
         group.inputs.new('NodeSocketColor', 'Color')
         group.inputs.new('NodeSocketVectorDirection', 'Normal')
 
@@ -735,14 +732,12 @@ def __create_blender_lego_transparent_fluorescent_node_group():
 
 
 def __create_blender_lego_rubber_node_group():
-    group_name = 'LEGO Rubber Solid'
-    if bpy.data.node_groups.get(group_name) is None:
+    if bpy.data.node_groups.get('LEGO Rubber Solid') is None:
         if options.debug_text:
             print("createBlenderLEGORubberNodeGroup #create")
 
         # create a group
-        group, node_input, node_output = __create_group(group_name, 45 - 950, 340 - 50, 45 + 200,
-                                                        340 - 5, True)
+        group, node_input, node_output = __create_group('LEGO Rubber Solid', 45 - 950, 340 - 50, 45 + 200, 340 - 5, True)
         group.inputs.new('NodeSocketColor', 'Color')
         group.inputs.new('NodeSocketVectorDirection', 'Normal')
 
@@ -763,13 +758,12 @@ def __create_blender_lego_rubber_node_group():
 
 
 def __create_blender_lego_rubber_translucent_node_group():
-    group_name = 'LEGO Rubber Translucent'
-    if bpy.data.node_groups.get(group_name) is None:
+    if bpy.data.node_groups.get('LEGO Rubber Translucent') is None:
         if options.debug_text:
             print("createBlenderLEGORubberTranslucentNodeGroup #create")
 
         # create a group
-        group, node_input, node_output = __create_group(group_name, -250, 0, 250, 0, True)
+        group, node_input, node_output = __create_group('LEGO Rubber Translucent', -250, 0, 250, 0, True)
         group.inputs.new('NodeSocketColor', 'Color')
         group.inputs.new('NodeSocketVectorDirection', 'Normal')
 
@@ -798,13 +792,12 @@ def __create_blender_lego_rubber_translucent_node_group():
 
 
 def __create_blender_lego_emission_node_group():
-    group_name = 'LEGO Emission'
-    if bpy.data.node_groups.get(group_name) is None:
+    if bpy.data.node_groups.get('LEGO Emission') is None:
         if options.debug_text:
             print("createBlenderLEGOEmissionNodeGroup #create")
 
         # create a group
-        group, node_input, node_output = __create_group(group_name, -450, 90, 250, 0, True)
+        group, node_input, node_output = __create_group('LEGO Emission', -450, 90, 250, 0, True)
         group.inputs.new('NodeSocketColor', 'Color')
         group.inputs.new('NodeSocketFloatFactor', 'Luminance')
         group.inputs.new('NodeSocketVectorDirection', 'Normal')
@@ -828,13 +821,12 @@ def __create_blender_lego_emission_node_group():
 
 
 def __create_blender_lego_chrome_node_group():
-    group_name = 'LEGO Chrome'
-    if bpy.data.node_groups.get(group_name) is None:
+    if bpy.data.node_groups.get('LEGO Chrome') is None:
         if options.debug_text:
             print("createBlenderLEGOChromeNodeGroup #create")
 
         # create a group
-        group, node_input, node_output = __create_group(group_name, -450, 90, 250, 0, True)
+        group, node_input, node_output = __create_group('LEGO Chrome', -450, 90, 250, 0, True)
         group.inputs.new('NodeSocketColor', 'Color')
         group.inputs.new('NodeSocketVectorDirection', 'Normal')
 
@@ -851,13 +843,12 @@ def __create_blender_lego_chrome_node_group():
 
 
 def __create_blender_lego_pearlescent_node_group():
-    group_name = 'LEGO Pearlescent'
-    if bpy.data.node_groups.get(group_name) is None:
+    if bpy.data.node_groups.get('LEGO Pearlescent') is None:
         if options.debug_text:
             print("createBlenderLEGOPearlescentNodeGroup #create")
 
         # create a group
-        group, node_input, node_output = __create_group(group_name, -450, 90, 630, 95, True)
+        group, node_input, node_output = __create_group('LEGO Pearlescent', -450, 90, 630, 95, True)
         group.inputs.new('NodeSocketColor', 'Color')
         group.inputs.new('NodeSocketVectorDirection', 'Normal')
 
@@ -889,13 +880,12 @@ def __create_blender_lego_pearlescent_node_group():
 
 
 def __create_blender_lego_metal_node_group():
-    group_name = 'LEGO Metal'
-    if bpy.data.node_groups.get(group_name) is None:
+    if bpy.data.node_groups.get('LEGO Metal') is None:
         if options.debug_text:
             print("createBlenderLEGOMetalNodeGroup #create")
 
         # create a group
-        group, node_input, node_output = __create_group(group_name, -450, 90, 250, 0, True)
+        group, node_input, node_output = __create_group('LEGO Metal', -450, 90, 250, 0, True)
         group.inputs.new('NodeSocketColor', 'Color')
         group.inputs.new('NodeSocketVectorDirection', 'Normal')
 
@@ -907,13 +897,12 @@ def __create_blender_lego_metal_node_group():
 
 
 def __create_blender_lego_glitter_node_group():
-    group_name = 'LEGO Glitter'
-    if bpy.data.node_groups.get(group_name) is None:
+    if bpy.data.node_groups.get('LEGO Glitter') is None:
         if options.debug_text:
             print("createBlenderLEGOGlitterNodeGroup #create")
 
         # create a group
-        group, node_input, node_output = __create_group(group_name, -450, 0, 410, 0, True)
+        group, node_input, node_output = __create_group('LEGO Glitter', -450, 0, 410, 0, True)
         group.inputs.new('NodeSocketColor', 'Color')
         group.inputs.new('NodeSocketColor', 'Glitter Color')
         group.inputs.new('NodeSocketVectorDirection', 'Normal')
@@ -936,13 +925,12 @@ def __create_blender_lego_glitter_node_group():
 
 
 def __create_blender_lego_speckle_node_group():
-    group_name = 'LEGO Speckle'
-    if bpy.data.node_groups.get(group_name) is None:
+    if bpy.data.node_groups.get('LEGO Speckle') is None:
         if options.debug_text:
             print("createBlenderLEGOSpeckleNodeGroup #create")
 
         # create a group
-        group, node_input, node_output = __create_group(group_name, -450, 0, 410, 0, True)
+        group, node_input, node_output = __create_group('LEGO Speckle', -450, 0, 410, 0, True)
         group.inputs.new('NodeSocketColor', 'Color')
         group.inputs.new('NodeSocketColor', 'Speckle Color')
         group.inputs.new('NodeSocketVectorDirection', 'Normal')
@@ -965,13 +953,12 @@ def __create_blender_lego_speckle_node_group():
 
 
 def __create_blender_lego_milky_white_node_group():
-    group_name = 'LEGO Milky White'
-    if bpy.data.node_groups.get(group_name) is None:
+    if bpy.data.node_groups.get('LEGO Milky White') is None:
         if options.debug_text:
             print("createBlenderLEGOMilkyWhiteNodeGroup #create")
 
         # create a group
-        group, node_input, node_output = __create_group(group_name, -450, 0, 350, 0, True)
+        group, node_input, node_output = __create_group('LEGO Milky White', -450, 0, 350, 0, True)
         group.inputs.new('NodeSocketColor', 'Color')
         group.inputs.new('NodeSocketVectorDirection', 'Normal')
 
