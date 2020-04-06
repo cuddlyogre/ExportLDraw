@@ -50,10 +50,8 @@ def __create_node_based_material(key, color_code, use_edge_color=False, is_slope
 
     # Reuse current material if it exists, otherwise create a new material
     if bpy.data.materials.get(key) is None:
-        material = bpy.data.materials.new(key)
-        material[options.ldraw_color_code_key] = col["code"]
-    else:
-        material = bpy.data.materials[key]
+        bpy.data.materials.new(key)
+    material = bpy.data.materials[key]
 
     # Use nodes
     material.use_nodes = True
