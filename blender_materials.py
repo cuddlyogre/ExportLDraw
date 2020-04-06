@@ -617,93 +617,77 @@ def __create_blender_lego_transparent_node_group():
 # https://blender.stackexchange.com/a/137791
 # https://blenderartists.org/t/realistic-glass-in-eevee/1149937/19
 def __create_blender_lego_glass_node_group():
-    group_name = 'LEGO Glass'
-    if bpy.data.node_groups.get(group_name) is None:
-        if options.debug_text:
-            print("createBlenderLEGOGlassNodeGroup #create")
+    if 'LEGO Glass' in bpy.data.node_groups:
+        return
 
-        group = bpy.data.node_groups.new(group_name, 'ShaderNodeTree')
+    if options.debug_text:
+        print("createBlenderLEGOGlassNodeGroup #create")
 
-        i1 = group.nodes.new("NodeGroupInput")
-        i1.location = (-465.2269, 27.7136)
-        # i1.label = "i1"
+    group = bpy.data.node_groups.new('LEGO Glass', 'ShaderNodeTree')
 
-        if "Color" not in group.inputs:
-            group.inputs.new('NodeSocketColor', "Color")
-        is1 = group.inputs["Color"]
+    group_input = group.nodes.new("NodeGroupInput")
+    group_input.location = (-900.0, -140.0)
 
-        if "Normal" not in group.inputs:
-            group.inputs.new('NodeSocketVectorDirection', "Normal")
-        is2 = group.inputs["Normal"]
+    group.inputs.new('NodeSocketColor', "Color")
+    group.inputs.new('NodeSocketVectorDirection', "Normal")
 
-        s1 = group.nodes.new("ShaderNodeBsdfGlass")
-        s1.location = (-94.0096, -123.3116)
-        s1.inputs[1].default_value = 0.0
-        s1.inputs[2].default_value = 1.45
-        # s1.label = "s1"
+    bsdf_glass = group.nodes.new("ShaderNodeBsdfGlass")
+    bsdf_glass.location = (-700.0, -60.0)
+    bsdf_glass.inputs[1].default_value = 0.0
+    bsdf_glass.inputs[2].default_value = 1.45
 
-        s2 = group.nodes.new("ShaderNodeBsdfGlossy")
-        s2.location = (295.1122, -79.7802)
-        s2.inputs[1].default_value = 0.5
-        # s2.label = "s2"
+    bsdf_glossy = group.nodes.new("ShaderNodeBsdfGlossy")
+    bsdf_glossy.location = (-700.0, -300.0)
+    bsdf_glossy.inputs[1].default_value = 0.5
 
-        s3 = group.nodes.new("ShaderNodeFresnel")
-        s3.location = (-487.2804, 202.5795)
-        s3.inputs[0].default_value = 1.4
-        # s3.label = "s3"
+    fresnel = group.nodes.new("ShaderNodeFresnel")
+    fresnel.location = (-900.0, 100.0)
+    fresnel.inputs[0].default_value = 1.4
 
-        s8 = group.nodes.new("ShaderNodeBsdfGlossy")
-        s8.location = (-94.9641, -396.0273)
-        s8.inputs[1].default_value = 0.5
-        # s8.label = "s8"
+    bsdf_glossy_0 = group.nodes.new("ShaderNodeBsdfGlossy")
+    bsdf_glossy_0.location = (-400.0, -220.0)
+    bsdf_glossy_0.inputs[1].default_value = 0.5
 
-        s4 = group.nodes.new("ShaderNodeRGBCurve")
-        s4.location = (-137.4662, 390.0757)
-        s4.inputs[0].default_value = 0.5
-        # s4.label = "s4"
-        c = 3
-        r = 0
-        g = 1
-        b = 2
-        c = s4.mapping.curves[c]
-        c.points.new(0.0000, 0.0000)
-        c.points.new(0.6227, 0.2438)
-        c.points.new(1.0000, 1.0000)
+    rgb_curve = group.nodes.new("ShaderNodeRGBCurve")
+    rgb_curve.location = (-700.0, 340.0)
+    rgb_curve.inputs[0].default_value = 0.5
+    curves = 3
+    r = 0
+    g = 1
+    b = 2
+    curves = rgb_curve.mapping.curves[curves]
+    curves.points.new(0.0000, 0.0000)
+    curves.points.new(0.6227, 0.2438)
+    curves.points.new(1.0000, 1.0000)
 
-        s5 = group.nodes.new("ShaderNodeMixShader")
-        s5.location = (293.4988, 100.1442)
-        s5.inputs[0].default_value = 0.25
-        # s5.label = "s5"
+    mix = group.nodes.new("ShaderNodeMixShader")
+    mix.location = (-400.0, -40.0)
+    mix.inputs[0].default_value = 0.25
 
-        s6 = group.nodes.new("ShaderNodeFresnel")
-        s6.location = (289.9015, 280.8444)
-        s6.inputs[0].default_value = 1.4
-        # s6.label = "s6"
+    fresnel_0 = group.nodes.new("ShaderNodeFresnel")
+    fresnel_0.location = (-400.0, 120.0)
+    fresnel_0.inputs[0].default_value = 1.4
 
-        s7 = group.nodes.new("ShaderNodeMixShader")
-        s7.location = (583.3330, 104.1106)
-        s7.inputs[0].default_value = 0.5
-        # s7.label = "s7"
+    mix_0 = group.nodes.new("ShaderNodeMixShader")
+    mix_0.location = (-200.0, 0.0)
+    mix_0.inputs[0].default_value = 0.5
 
-        o1 = group.nodes.new("NodeGroupOutput")
-        o1.location = (783.3330, 0.0000)
-        # o1.label = "o1"
+    group_output = group.nodes.new("NodeGroupOutput")
+    group_output.location = (0.0, 0.0)
 
-        if "Shader" not in group.outputs:
-            group.outputs.new('NodeSocketShader', "Shader")
-        os1 = group.outputs["Shader"]
+    group.outputs.new('NodeSocketShader', "Shader")
 
-        group.links.new(i1.outputs[0], s1.inputs[0])
-        group.links.new(i1.outputs[1], s1.inputs[3])
-        group.links.new(i1.outputs[0], s2.inputs[0])
-        group.links.new(s1.outputs[0], s5.inputs[1])
-        group.links.new(s8.outputs[0], s5.inputs[2])
-        group.links.new(s2.outputs[0], s7.inputs[2])
-        group.links.new(s5.outputs[0], s7.inputs[1])
-        group.links.new(s7.outputs[0], o1.inputs[0])
-        group.links.new(s3.outputs[0], s4.inputs[1])
-        group.links.new(s4.outputs[0], s5.inputs[0])
-        group.links.new(s6.outputs[0], s7.inputs[0])
+    group.links.new(group_input.outputs[0], bsdf_glass.inputs[0])
+    group.links.new(group_input.outputs[1], bsdf_glass.inputs[3])
+    group.links.new(group_input.outputs[0], bsdf_glossy_0.inputs[0])
+    group.links.new(bsdf_glass.outputs[0], mix.inputs[1])
+    group.links.new(bsdf_glossy.outputs[0], mix.inputs[2])
+    group.links.new(bsdf_glossy_0.outputs[0], mix_0.inputs[2])
+    group.links.new(mix.outputs[0], mix_0.inputs[1])
+    group.links.new(mix_0.outputs[0], group_output.inputs[0])
+    group.links.new(fresnel.outputs[0], rgb_curve.inputs[1])
+    group.links.new(rgb_curve.outputs[0], mix.inputs[0])
+    group.links.new(fresnel_0.outputs[0], mix_0.inputs[0])
 
 
 def __create_blender_lego_transparent_fluorescent_node_group():
