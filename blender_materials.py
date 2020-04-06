@@ -8,13 +8,6 @@ from . import ldraw_colors
 def create_blender_node_groups():
     __create_blender_slope_texture_node_group()
 
-    # Originally based on ideas from https://www.youtube.com/watch?v=V3wghbZ-Vh4
-    # "Create your own PBR Material [Fixed!]" by BlenderGuru
-    # Updated with Principled Shader, if available
-    __create_blender_fresnel_node_group()
-    __create_blender_reflection_node_group()
-    __create_blender_dielectric_node_group()
-
     __create_blender_lego_standard_node_group()
     __create_blender_lego_transparent_node_group()
     __create_blender_lego_glass_node_group()
@@ -248,17 +241,6 @@ def __node_mix(nodes, factor, x, y):
 def __node_output(nodes, x, y):
     node = nodes.new('ShaderNodeOutputMaterial')
     node.location = x, y
-    return node
-
-
-def __node_dielectric(nodes, roughness, reflection, transparency, ior, x, y):
-    node = nodes.new('ShaderNodeGroup')
-    node.node_tree = bpy.data.node_groups['PBR-Dielectric']
-    node.location = x, y
-    node.inputs['Roughness'].default_value = roughness
-    node.inputs['Reflection'].default_value = reflection
-    node.inputs['Transparency'].default_value = transparency
-    node.inputs['IOR'].default_value = ior
     return node
 
 
@@ -590,147 +572,6 @@ def __create_blender_slope_texture_node_group():
         group.links.new(node_input.outputs['Strength'], node_bump.inputs['Strength'])
         group.links.new(node_input.outputs['Normal'], node_bump.inputs['Normal'])
         group.links.new(node_bump.outputs['Normal'], node_output.inputs['Normal'])
-
-
-def __create_blender_fresnel_node_group():
-    if bpy.data.node_groups.get('PBR-Fresnel-Roughness') is None:
-        if options.debug_text:
-            print("createBlenderFresnelNodeGroup #create")
-
-        # create a group
-        group, node_input, node_output = __create_group('PBR-Fresnel-Roughness', -530, 0, 300, 0, False)
-        group.inputs.new('NodeSocketFloatFactor', 'Roughness')
-        group.inputs.new('NodeSocketFloat', 'IOR')
-        group.inputs.new('NodeSocketVectorDirection', 'Normal')
-        group.outputs.new('NodeSocketFloatFactor', 'Fresnel Factor')
-
-        # create nodes
-        node_fres = group.nodes.new('ShaderNodeFresnel')
-        node_fres.location = (110, 0)
-
-        node_mix = group.nodes.new('ShaderNodeMixRGB')
-        node_mix.location = (-80, -75)
-
-        node_bump = group.nodes.new('ShaderNodeBump')
-        node_bump.location = (-320, -172)
-        # node_bump.hide = True
-
-        node_geom = group.nodes.new('ShaderNodeNewGeometry')
-        node_geom.location = (-320, -360)
-        # node_geom.hide = True
-
-        # link nodes together
-        group.links.new(node_input.outputs['Roughness'], node_mix.inputs['Fac'])  # Input Roughness -> Mix Fac
-        group.links.new(node_input.outputs['IOR'], node_fres.inputs['IOR'])  # Input IOR -> Fres IOR
-        group.links.new(node_input.outputs['Normal'], node_bump.inputs['Normal'])  # Input Normal -> Bump Normal
-        group.links.new(node_bump.outputs['Normal'], node_mix.inputs['Color1'])  # Bump Normal -> Mix Color1
-        group.links.new(node_geom.outputs['Incoming'], node_mix.inputs['Color2'])  # Geom Incoming -> Mix color2
-        group.links.new(node_mix.outputs['Color'], node_fres.inputs['Normal'])  # Mix Color -> Fres Normal
-        group.links.new(node_fres.outputs['Fac'], node_output.inputs['Fresnel Factor'])  # Fres Fac -> Group Output Fresnel Factor
-
-
-def __create_blender_reflection_node_group():
-    if bpy.data.node_groups.get('PBR-Reflection') is None:
-        if options.debug_text:
-            print("createBlenderReflectionNodeGroup #create")
-
-        # create a group
-        group, node_input, node_output = __create_group('PBR-Reflection', -530, 0, 300, 0, True)
-        group.inputs.new('NodeSocketShader', 'Shader')
-        group.inputs.new('NodeSocketFloatFactor', 'Roughness')
-        group.inputs.new('NodeSocketFloatFactor', 'Reflection')
-        group.inputs.new('NodeSocketFloat', 'IOR')
-        group.inputs.new('NodeSocketVectorDirection', 'Normal')
-
-        node_fresnel_roughness = group.nodes.new('ShaderNodeGroup')
-        node_fresnel_roughness.node_tree = bpy.data.node_groups['PBR-Fresnel-Roughness']
-        node_fresnel_roughness.location = (-290, 145)
-
-        node_mixrgb = group.nodes.new('ShaderNodeMixRGB')
-        node_mixrgb.location = (-80, 115)
-        node_mixrgb.inputs['Color2'].default_value = (0.0, 0.0, 0.0, 1.0)
-
-        node_mix_shader = group.nodes.new('ShaderNodeMixShader')
-        node_mix_shader.location = (100, 0)
-
-        node_glossy = group.nodes.new('ShaderNodeBsdfGlossy')
-        node_glossy.inputs['Color'].default_value = (1.0, 1.0, 1.0, 1.0)
-        node_glossy.location = (-290, -95)
-
-        # link nodes together
-        group.links.new(node_input.outputs['Shader'], node_mix_shader.inputs[1])
-        group.links.new(node_input.outputs['Roughness'], node_fresnel_roughness.inputs['Roughness'])
-        group.links.new(node_input.outputs['Roughness'], node_glossy.inputs['Roughness'])
-        group.links.new(node_input.outputs['Reflection'], node_mixrgb.inputs['Color1'])
-        group.links.new(node_input.outputs['IOR'], node_fresnel_roughness.inputs['IOR'])
-        group.links.new(node_input.outputs['Normal'], node_fresnel_roughness.inputs['Normal'])
-        group.links.new(node_input.outputs['Normal'], node_glossy.inputs['Normal'])
-        group.links.new(node_fresnel_roughness.outputs[0], node_mixrgb.inputs[0])
-        group.links.new(node_mixrgb.outputs[0], node_mix_shader.inputs[0])
-        group.links.new(node_glossy.outputs[0], node_mix_shader.inputs[2])
-        group.links.new(node_mix_shader.outputs[0], node_output.inputs['Shader'])
-
-
-def __create_blender_dielectric_node_group():
-    if bpy.data.node_groups.get('PBR-Dielectric') is None:
-        if options.debug_text:
-            print("createBlenderDielectricNodeGroup #create")
-
-        # create a group
-        group, node_input, node_output = __create_group('PBR-Dielectric', -530, 70, 500, 0, True)
-        group.inputs.new('NodeSocketColor', 'Color')
-        group.inputs.new('NodeSocketFloatFactor', 'Roughness')
-        group.inputs.new('NodeSocketFloatFactor', 'Reflection')
-        group.inputs.new('NodeSocketFloatFactor', 'Transparency')
-        group.inputs.new('NodeSocketFloat', 'IOR')
-        group.inputs.new('NodeSocketVectorDirection', 'Normal')
-        group.inputs['IOR'].default_value = 1.46
-        group.inputs['IOR'].min_value = 0.0
-        group.inputs['IOR'].max_value = 100.0
-        group.inputs['Roughness'].default_value = 0.2
-        group.inputs['Roughness'].min_value = 0.0
-        group.inputs['Roughness'].max_value = 1.0
-        group.inputs['Reflection'].default_value = 0.1
-        group.inputs['Reflection'].min_value = 0.0
-        group.inputs['Reflection'].max_value = 1.0
-        group.inputs['Transparency'].default_value = 0.0
-        group.inputs['Transparency'].min_value = 0.0
-        group.inputs['Transparency'].max_value = 1.0
-
-        node_diffuse = group.nodes.new('ShaderNodeBsdfDiffuse')
-        node_diffuse.location = (-110, 145)
-
-        node_reflection = group.nodes.new('ShaderNodeGroup')
-        node_reflection.node_tree = bpy.data.node_groups['PBR-Reflection']
-        node_reflection.location = (100, 115)
-
-        node_power = __node_math(group.nodes, 'POWER', -330, -105)
-        node_power.inputs[1].default_value = 2.0
-
-        node_glass = group.nodes.new('ShaderNodeBsdfGlass')
-        node_glass.location = (100, -105)
-
-        node_mix_shader = group.nodes.new('ShaderNodeMixShader')
-        node_mix_shader.location = (300, 5)
-
-        # link nodes together
-        group.links.new(node_input.outputs['Color'], node_diffuse.inputs['Color'])
-        group.links.new(node_input.outputs['Roughness'], node_power.inputs[0])
-        group.links.new(node_input.outputs['Reflection'], node_reflection.inputs['Reflection'])
-        group.links.new(node_input.outputs['IOR'], node_reflection.inputs['IOR'])
-        group.links.new(node_input.outputs['Normal'], node_diffuse.inputs['Normal'])
-        group.links.new(node_input.outputs['Normal'], node_reflection.inputs['Normal'])
-        group.links.new(node_power.outputs[0], node_diffuse.inputs['Roughness'])
-        group.links.new(node_power.outputs[0], node_reflection.inputs['Roughness'])
-        group.links.new(node_diffuse.outputs[0], node_reflection.inputs['Shader'])
-        group.links.new(node_reflection.outputs['Shader'], node_mix_shader.inputs['Shader'])
-        group.links.new(node_input.outputs['Color'], node_glass.inputs['Color'])
-        group.links.new(node_input.outputs['IOR'], node_glass.inputs['IOR'])
-        group.links.new(node_input.outputs['Normal'], node_glass.inputs['Normal'])
-        group.links.new(node_power.outputs[0], node_glass.inputs['Roughness'])
-        group.links.new(node_input.outputs['Transparency'], node_mix_shader.inputs[0])
-        group.links.new(node_glass.outputs[0], node_mix_shader.inputs[2])
-        group.links.new(node_mix_shader.outputs['Shader'], node_output.inputs['Shader'])
 
 
 def __create_blender_lego_standard_node_group():
