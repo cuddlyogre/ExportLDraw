@@ -105,8 +105,9 @@ def __create_node_based_material(key, col, use_edge_color=False, is_slope_materi
         else:
             __create_cycles_basic(nodes, links, color, col["alpha"], col["name"])
 
-        if is_slope_material:
-            __create_cycles_slope_texture(nodes, links, 0.6)
+    if is_slope_material:
+        # TODO: slight variation in strength for each material
+        __create_cycles_slope_texture(nodes, links)
 
         material["LEGO.isTransparent"] = is_transparent
         return material
@@ -439,12 +440,12 @@ def __get_group(nodes):
     return None
 
 
-def __create_cycles_slope_texture(nodes, links, strength):
+def __create_cycles_slope_texture(nodes, links, strength=0.6):
     """Slope face normals for Cycles render engine"""
-    node = __node_slope_texture(nodes, strength, -200, 5)
-    out = __get_group(nodes)
-    if out is not None:
-        links.new(node.outputs['Normal'], out.inputs['Normal'])
+    slope_texture = __node_slope_texture(nodes, strength, -200, 5)
+    target = __get_group(nodes)
+    if target is not None:
+        links.new(slope_texture.outputs['Normal'], target.inputs['Normal'])
 
 
 def __create_cycles_basic(nodes, links, diff_color, alpha, col_name):
@@ -556,7 +557,10 @@ def __create_blender_slope_texture_node_group():
 
         # create a group
         group, node_input, node_output = __create_group('Slope Texture', -530, 0, 300, 0, False)
-        group.inputs.new('NodeSocketFloat', 'Strength')
+
+        strength_socket = group.inputs.new('NodeSocketFloat', 'Strength')
+        strength_socket.default_value = 0.6
+
         group.inputs.new('NodeSocketVectorDirection', 'Normal')
         group.outputs.new('NodeSocketVectorDirection', 'Normal')
 
