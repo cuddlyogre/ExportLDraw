@@ -45,10 +45,6 @@ def get_material(color_code, use_edge_color=False, is_slope_material=False):
     return material
 
 
-def _get_diffuse_color(color):
-    return color + (1.0,)
-
-
 def __create_node_based_material(key, col, use_edge_color=False, is_slope_material=False):
     """Set Cycles Material Values."""
 
