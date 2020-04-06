@@ -4,17 +4,8 @@ import mathutils
 from . import options
 from . import ldraw_colors
 
-material_cache = {}
-
-
-def reset_caches():
-    global material_cache
-    material_cache = {}
-
 
 def create_blender_node_groups():
-    reset_caches()
-
     __create_blender_slope_texture_node_group()
 
     # Originally based on ideas from https://www.youtube.com/watch?v=V3wghbZ-Vh4
@@ -54,19 +45,10 @@ def get_material(color_code, use_edge_color=False, is_slope_material=False):
         key.append("edge")
     key = "_".join([k.lower() for k in key])
 
-    # If it's already in the cache, use that
-    if key in material_cache:
-        return material_cache[key]
-
-    # Create new material
-    col = ldraw_colors.get_color(pure_color_code)
-    if col is None:
-        return
+    if key in bpy.data.materials:
+        return bpy.data.materials[key]
 
     material = __create_node_based_material(key, col, use_edge_color=use_edge_color, is_slope_material=is_slope_material)
-
-    # Add material to cache
-    material_cache[key] = material
     return material
 
 
