@@ -54,6 +54,8 @@ def is_fluorescent_transparent(col_name):
     ]
 
 
+# wp-content/plugins/woocommerce/includes/wc-formatting-functions.php
+# line 779
 def is_dark(color):
     r = color[0]
     g = color[1]

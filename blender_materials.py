@@ -5,6 +5,7 @@ from . import options
 from . import ldraw_colors
 
 
+# https://github.com/bblanimation/abs-plastic-materials
 def create_blender_node_groups():
     __create_blender_slope_texture_node_group()
 
