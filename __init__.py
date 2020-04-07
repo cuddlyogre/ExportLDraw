@@ -96,7 +96,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
     add_subsurface: bpy.props.BoolProperty(
         name="Add subsurface",
         description="Add subsurface to materials",
-        default=False,
+        default=True,
     )
 
     bevel_edges: bpy.props.BoolProperty(
@@ -346,6 +346,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         box.prop(self, "set_timelime_markers")
 
         box.label(text="Extras")
+        box.prop(self, "add_subsurface")
         box.prop(self, "bevel_edges")
         box.prop(self, "shade_smooth")
         box.prop(self, "smooth_type")
@@ -353,7 +354,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         box.prop(self, "merge_distance")
         box.prop(self, "debug_text")
         box.prop(self, "no_studs")
-        box.prop(self, "add_subsurface")
         box.prop(self, "import_edges")
         box.prop(self, "grease_pencil_edges")
 
