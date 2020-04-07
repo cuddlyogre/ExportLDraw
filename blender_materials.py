@@ -548,430 +548,535 @@ def __create_cycles_milky_white(nodes, links, diff_color):
     links.new(node.outputs['Shader'], out.inputs[0])
 
 
-def __create_group(name, x1, y1, x2, y2, create_shader_output):
-    group = bpy.data.node_groups.new(name, 'ShaderNodeTree')
-    group.use_fake_user = True
-
-    # create input node
-    node_input = group.nodes.new('NodeGroupInput')
-    node_input.location = (x1, y1)
-
-    # create output node
-    node_output = group.nodes.new('NodeGroupOutput')
-    node_output.location = (x2, y2)
-    if create_shader_output:
-        group.outputs.new('NodeSocketShader', 'Shader')
-    return group, node_input, node_output
-
-
 def __create_blender_slope_texture_node_group():
-    if bpy.data.node_groups.get('Slope Texture') is None:
-        if options.debug_text:
-            print("createBlenderSlopeTextureNodeGroup #create")
+    group_name = 'Slope Texture'
 
-        # create a group
-        group, node_input, node_output = __create_group('Slope Texture', -530, 0, 300, 0, False)
+    if group_name in bpy.data.node_groups:
+        return
 
-        strength_socket = group.inputs.new('NodeSocketFloat', 'Strength')
-        strength_socket.default_value = 0.6
+    node_group = bpy.data.node_groups.new(group_name, 'ShaderNodeTree')
+    node_group.use_fake_user = True
 
-        group.inputs.new('NodeSocketVectorDirection', 'Normal')
-        group.outputs.new('NodeSocketVectorDirection', 'Normal')
+    group_input = node_group.nodes.new('NodeGroupInput')
+    group_input.location = (-530, 0)
 
-        # create nodes
-        node_texture_coordinate = __node_tex_coord(group.nodes, -300, 240)
-        node_voronoi = __node_voronoi(group.nodes, 6.2, -100, 155)
-        node_bump = __node_bump_shader(group.nodes, 0.3, 1.0, 90, 50)
-        node_bump.invert = True
+    group_output = node_group.nodes.new('NodeGroupOutput')
+    group_output.location = (300, 0)
 
-        # link nodes together
-        group.links.new(node_texture_coordinate.outputs['Object'], node_voronoi.inputs['Vector'])
-        group.links.new(node_voronoi.outputs['Distance'], node_bump.inputs['Height'])
-        group.links.new(node_input.outputs['Strength'], node_bump.inputs['Strength'])
-        group.links.new(node_input.outputs['Normal'], node_bump.inputs['Normal'])
-        group.links.new(node_bump.outputs['Normal'], node_output.inputs['Normal'])
+    node_group.inputs.new('NodeSocketFloat', 'Strength')
+    node_group.inputs.new('NodeSocketVectorDirection', 'Normal')
+
+    node_group.inputs[0].default_value = 0.6
+
+    node_group.outputs.new('NodeSocketVectorDirection', 'Normal')
+
+    node_texture_coordinate = __node_tex_coord(node_group.nodes, -300, 240)
+    node_voronoi = __node_voronoi(node_group.nodes, 6.2, -100, 155)
+    node_bump = __node_bump_shader(node_group.nodes, 0.3, 1.0, 90, 50)
+    node_bump.invert = True
+
+    node_group.links.new(node_texture_coordinate.outputs['Object'], node_voronoi.inputs['Vector'])
+    node_group.links.new(node_voronoi.outputs['Distance'], node_bump.inputs['Height'])
+    node_group.links.new(group_input.outputs['Strength'], node_bump.inputs['Strength'])
+    node_group.links.new(group_input.outputs['Normal'], node_bump.inputs['Normal'])
+    node_group.links.new(node_bump.outputs['Normal'], group_output.inputs['Normal'])
 
 
 def __create_blender_lego_standard_node_group():
-    if bpy.data.node_groups.get('LEGO Standard') is None:
-        if options.debug_text:
-            print("createBlenderLEGOStandardNodeGroup #create")
+    group_name = 'LEGO Standard'
 
-        # create a group
-        group, node_input, node_output = __create_group('LEGO Standard', -250, 0, 250, 0, True)
-        group.inputs.new('NodeSocketColor', 'Color')
-        group.inputs.new('NodeSocketVectorDirection', 'Normal')
+    if group_name in bpy.data.node_groups:
+        return
 
-        node_main = __node_principled(group.nodes, 0.05, 0.05, 0.0, 0.1, 0.0, 0.0, 1.45, 0.0, 0, 0)
+    node_group = bpy.data.node_groups.new(group_name, 'ShaderNodeTree')
+    node_group.use_fake_user = True
 
-        if options.add_subsurface:
-            group.links.new(node_input.outputs['Color'], node_main.inputs['Subsurface Color'])
+    group_input = node_group.nodes.new('NodeGroupInput')
+    group_input.location = (-250, 0)
 
-        # link nodes together
-        group.links.new(node_input.outputs['Color'], node_main.inputs['Base Color'])
-        group.links.new(node_input.outputs['Normal'], node_main.inputs['Normal'])
-        group.links.new(node_main.outputs['BSDF'], node_output.inputs['Shader'])
+    group_output = node_group.nodes.new('NodeGroupOutput')
+    group_output.location = (250, 0)
+
+    node_group.inputs.new('NodeSocketColor', 'Color')
+    node_group.inputs.new('NodeSocketVectorDirection', 'Normal')
+
+    node_group.outputs.new('NodeSocketShader', 'Shader')
+
+    node_main = __node_principled(node_group.nodes, 0.05, 0.05, 0.0, 0.1, 0.0, 0.0, 1.45, 0.0, 0, 0)
+
+    if options.add_subsurface:
+        node_group.links.new(group_input.outputs['Color'], node_main.inputs['Subsurface Color'])
+    node_group.links.new(group_input.outputs['Color'], node_main.inputs['Base Color'])
+    node_group.links.new(group_input.outputs['Normal'], node_main.inputs['Normal'])
+    node_group.links.new(node_main.outputs['BSDF'], group_output.inputs['Shader'])
 
 
 def __create_blender_lego_transparent_node_group():
-    if bpy.data.node_groups.get('LEGO Transparent') is None:
-        if options.debug_text:
-            print("createBlenderLEGOTransparentNodeGroup #create")
+    group_name = 'LEGO Transparent'
 
-        # create a group
-        group, node_input, node_output = __create_group('LEGO Transparent', -250, 0, 250, 0, True)
-        group.inputs.new('NodeSocketColor', 'Color')
-        group.inputs.new('NodeSocketVectorDirection', 'Normal')
+    if group_name in bpy.data.node_groups:
+        return
 
-        node_principled = __node_principled(group.nodes, 0.0, 0.0, 0.0, 0.05, 0.0, 0.0, 1.585, 1.0, 45, 340)
+    node_group = bpy.data.node_groups.new(group_name, 'ShaderNodeTree')
+    node_group.use_fake_user = True
 
-        # link nodes together
-        group.links.new(node_input.outputs['Color'], node_principled.inputs['Base Color'])
-        group.links.new(node_input.outputs['Normal'], node_principled.inputs['Normal'])
-        group.links.new(node_principled.outputs['BSDF'], node_output.inputs['Shader'])
+    group_input = node_group.nodes.new('NodeGroupInput')
+    group_input.location = (-250, 0)
+
+    group_output = node_group.nodes.new('NodeGroupOutput')
+    group_output.location = (250, 0)
+
+    node_group.inputs.new('NodeSocketColor', 'Color')
+    node_group.inputs.new('NodeSocketVectorDirection', 'Normal')
+
+    node_group.outputs.new('NodeSocketShader', 'Shader')
+
+    node_principled = __node_principled(node_group.nodes, 0.0, 0.0, 0.0, 0.05, 0.0, 0.0, 1.585, 1.0, 45, 340)
+
+    node_group.links.new(group_input.outputs['Color'], node_principled.inputs['Base Color'])
+    node_group.links.new(group_input.outputs['Normal'], node_principled.inputs['Normal'])
+    node_group.links.new(node_principled.outputs['BSDF'], group_output.inputs['Shader'])
 
 
 # https://blender.stackexchange.com/a/137791
 # https://blenderartists.org/t/realistic-glass-in-eevee/1149937/19
 def __create_blender_lego_glass_node_group():
-    if 'LEGO Glass' in bpy.data.node_groups:
+    group_name = 'LEGO Glass'
+
+    if group_name in bpy.data.node_groups:
         return
 
-    if options.debug_text:
-        print("createBlenderLEGOGlassNodeGroup #create")
+    node_group = bpy.data.node_groups.new(group_name, 'ShaderNodeTree')
+    node_group.use_fake_user = True
 
-    group = bpy.data.node_groups.new('LEGO Glass', 'ShaderNodeTree')
-
-    group_input = group.nodes.new("NodeGroupInput")
+    group_input = node_group.nodes.new('NodeGroupInput')
     group_input.location = (-900.0, -140.0)
 
-    group.inputs.new('NodeSocketColor', "Color")
-    group.inputs.new('NodeSocketVectorDirection', "Normal")
+    group_output = node_group.nodes.new('NodeGroupOutput')
+    group_output.location = (0.0, 0.0)
 
-    bsdf_glass = group.nodes.new("ShaderNodeBsdfGlass")
+    node_group.inputs.new('NodeSocketColor', "Color")
+    node_group.inputs.new('NodeSocketVectorDirection', "Normal")
+
+    node_group.outputs.new('NodeSocketShader', 'Shader')
+
+    bsdf_glass = node_group.nodes.new("ShaderNodeBsdfGlass")
     bsdf_glass.location = (-700.0, -60.0)
     bsdf_glass.inputs[1].default_value = 0.0
     bsdf_glass.inputs[2].default_value = 1.45
 
-    bsdf_glossy = group.nodes.new("ShaderNodeBsdfGlossy")
+    bsdf_glossy = node_group.nodes.new("ShaderNodeBsdfGlossy")
     bsdf_glossy.location = (-700.0, -300.0)
     bsdf_glossy.inputs[1].default_value = 0.5
 
-    fresnel = group.nodes.new("ShaderNodeFresnel")
+    fresnel = node_group.nodes.new("ShaderNodeFresnel")
     fresnel.location = (-900.0, 100.0)
     fresnel.inputs[0].default_value = 1.4
 
-    bsdf_glossy_0 = group.nodes.new("ShaderNodeBsdfGlossy")
+    bsdf_glossy_0 = node_group.nodes.new("ShaderNodeBsdfGlossy")
     bsdf_glossy_0.location = (-400.0, -220.0)
     bsdf_glossy_0.inputs[1].default_value = 0.5
 
-    rgb_curve = group.nodes.new("ShaderNodeRGBCurve")
+    rgb_curve = node_group.nodes.new("ShaderNodeRGBCurve")
     rgb_curve.location = (-700.0, 340.0)
     rgb_curve.inputs[0].default_value = 0.5
-    curves = 3
     r = 0
     g = 1
     b = 2
-    curves = rgb_curve.mapping.curves[curves]
+    c = 3
+    curves = rgb_curve.mapping.curves[c]
     curves.points.new(0.0000, 0.0000)
     curves.points.new(0.6227, 0.2438)
     curves.points.new(1.0000, 1.0000)
 
-    mix = group.nodes.new("ShaderNodeMixShader")
+    mix = node_group.nodes.new("ShaderNodeMixShader")
     mix.location = (-400.0, -40.0)
     mix.inputs[0].default_value = 0.25
 
-    fresnel_0 = group.nodes.new("ShaderNodeFresnel")
+    fresnel_0 = node_group.nodes.new("ShaderNodeFresnel")
     fresnel_0.location = (-400.0, 120.0)
     fresnel_0.inputs[0].default_value = 1.4
 
-    mix_0 = group.nodes.new("ShaderNodeMixShader")
+    mix_0 = node_group.nodes.new("ShaderNodeMixShader")
     mix_0.location = (-200.0, 0.0)
     mix_0.inputs[0].default_value = 0.5
 
-    group_output = group.nodes.new("NodeGroupOutput")
-    group_output.location = (0.0, 0.0)
-
-    group.outputs.new('NodeSocketShader', "Shader")
-
-    group.links.new(group_input.outputs[0], bsdf_glass.inputs[0])
-    group.links.new(group_input.outputs[1], bsdf_glass.inputs[3])
-    group.links.new(group_input.outputs[0], bsdf_glossy_0.inputs[0])
-    group.links.new(bsdf_glass.outputs[0], mix.inputs[1])
-    group.links.new(bsdf_glossy.outputs[0], mix.inputs[2])
-    group.links.new(bsdf_glossy_0.outputs[0], mix_0.inputs[2])
-    group.links.new(mix.outputs[0], mix_0.inputs[1])
-    group.links.new(mix_0.outputs[0], group_output.inputs[0])
-    group.links.new(fresnel.outputs[0], rgb_curve.inputs[1])
-    group.links.new(rgb_curve.outputs[0], mix.inputs[0])
-    group.links.new(fresnel_0.outputs[0], mix_0.inputs[0])
+    node_group.links.new(group_input.outputs[0], bsdf_glass.inputs[0])
+    node_group.links.new(group_input.outputs[1], bsdf_glass.inputs[3])
+    node_group.links.new(group_input.outputs[0], bsdf_glossy_0.inputs[0])
+    node_group.links.new(bsdf_glass.outputs[0], mix.inputs[1])
+    node_group.links.new(bsdf_glossy.outputs[0], mix.inputs[2])
+    node_group.links.new(bsdf_glossy_0.outputs[0], mix_0.inputs[2])
+    node_group.links.new(mix.outputs[0], mix_0.inputs[1])
+    node_group.links.new(mix_0.outputs[0], group_output.inputs[0])
+    node_group.links.new(fresnel.outputs[0], rgb_curve.inputs[1])
+    node_group.links.new(rgb_curve.outputs[0], mix.inputs[0])
+    node_group.links.new(fresnel_0.outputs[0], mix_0.inputs[0])
 
 
 def __create_blender_lego_transparent_fluorescent_node_group():
-    if bpy.data.node_groups.get('LEGO Transparent Fluorescent') is None:
-        if options.debug_text:
-            print("createBlenderLEGOTransparentFluorescentNodeGroup #create")
+    group_name = 'LEGO Transparent Fluorescent'
 
-        # create a group
-        group, node_input, node_output = __create_group('LEGO Transparent Fluorescent', -250, 0, 250, 0, True)
-        group.inputs.new('NodeSocketColor', 'Color')
-        group.inputs.new('NodeSocketVectorDirection', 'Normal')
+    if group_name in bpy.data.node_groups:
+        return
 
-        node_principled = __node_principled(group.nodes, 0.0, 0.0, 0.0, 0.05, 0.0, 0.0, 1.585, 1.0, 45, 340)
-        node_emission = __node_emission(group.nodes, 45, -160)
-        node_mix = __node_mix(group.nodes, 0.03, 300, 290)
+    node_group = bpy.data.node_groups.new(group_name, 'ShaderNodeTree')
+    node_group.use_fake_user = True
 
-        node_output.location = 500, 290
+    group_input = node_group.nodes.new('NodeGroupInput')
+    group_input.location = (-250, 0)
 
-        # link nodes together
-        group.links.new(node_input.outputs['Color'], node_principled.inputs['Base Color'])
-        group.links.new(node_input.outputs['Color'], node_emission.inputs['Color'])
-        group.links.new(node_input.outputs['Normal'], node_principled.inputs['Normal'])
-        group.links.new(node_principled.outputs['BSDF'], node_mix.inputs[1])
-        group.links.new(node_emission.outputs['Emission'], node_mix.inputs[2])
-        group.links.new(node_mix.outputs[0], node_output.inputs['Shader'])
+    group_output = node_group.nodes.new('NodeGroupOutput')
+    group_output.location = (250, 0)
+
+    node_group.inputs.new('NodeSocketColor', 'Color')
+    node_group.inputs.new('NodeSocketVectorDirection', 'Normal')
+
+    node_group.outputs.new('NodeSocketShader', 'Shader')
+
+    node_principled = __node_principled(node_group.nodes, 0.0, 0.0, 0.0, 0.05, 0.0, 0.0, 1.585, 1.0, 45, 340)
+    node_emission = __node_emission(node_group.nodes, 45, -160)
+    node_mix = __node_mix(node_group.nodes, 0.03, 300, 290)
+
+    group_output.location = 500, 290
+
+    node_group.links.new(group_input.outputs['Color'], node_principled.inputs['Base Color'])
+    node_group.links.new(group_input.outputs['Color'], node_emission.inputs['Color'])
+    node_group.links.new(group_input.outputs['Normal'], node_principled.inputs['Normal'])
+    node_group.links.new(node_principled.outputs['BSDF'], node_mix.inputs[1])
+    node_group.links.new(node_emission.outputs['Emission'], node_mix.inputs[2])
+    node_group.links.new(node_mix.outputs[0], group_output.inputs['Shader'])
 
 
 def __create_blender_lego_rubber_node_group():
-    if bpy.data.node_groups.get('LEGO Rubber Solid') is None:
-        if options.debug_text:
-            print("createBlenderLEGORubberNodeGroup #create")
+    group_name = 'LEGO Rubber Solid'
 
-        # create a group
-        group, node_input, node_output = __create_group('LEGO Rubber Solid', 45 - 950, 340 - 50, 45 + 200, 340 - 5, True)
-        group.inputs.new('NodeSocketColor', 'Color')
-        group.inputs.new('NodeSocketVectorDirection', 'Normal')
+    if group_name in bpy.data.node_groups:
+        return
 
-        node_noise = __node_noise_texture(group.nodes, 250, 2, 0.0, 45 - 770, 340 - 200)
-        node_bump1 = __node_bump_shader(group.nodes, 1.0, 0.3, 45 - 366, 340 - 200)
-        node_bump2 = __node_bump_shader(group.nodes, 1.0, 0.1, 45 - 184, 340 - 115)
-        node_subtract = __node_math(group.nodes, 'SUBTRACT', 45 - 570, 340 - 216)
-        node_principled = __node_principled(group.nodes, 0.0, 0.0, 0.0, 0.4, 0.03, 0.0, 1.45, 0.0, 45, 340)
+    node_group = bpy.data.node_groups.new(group_name, 'ShaderNodeTree')
+    node_group.use_fake_user = True
 
-        node_subtract.inputs[1].default_value = 0.4
+    group_input = node_group.nodes.new('NodeGroupInput')
+    group_input.location = (45 - 950, 340 - 50)
 
-        group.links.new(node_input.outputs['Color'], node_principled.inputs['Base Color'])
-        group.links.new(node_principled.outputs['BSDF'], node_output.inputs[0])
-        group.links.new(node_noise.outputs['Color'], node_subtract.inputs[0])
-        group.links.new(node_subtract.outputs[0], node_bump1.inputs['Height'])
-        group.links.new(node_bump1.outputs['Normal'], node_bump2.inputs['Normal'])
-        group.links.new(node_bump2.outputs['Normal'], node_principled.inputs['Normal'])
+    group_output = node_group.nodes.new('NodeGroupOutput')
+    group_output.location = (45 + 200, 340 - 5)
+
+    node_group.inputs.new('NodeSocketColor', 'Color')
+    node_group.inputs.new('NodeSocketVectorDirection', 'Normal')
+
+    node_group.outputs.new('NodeSocketShader', 'Shader')
+
+    node_noise = __node_noise_texture(node_group.nodes, 250, 2, 0.0, 45 - 770, 340 - 200)
+    node_bump1 = __node_bump_shader(node_group.nodes, 1.0, 0.3, 45 - 366, 340 - 200)
+    node_bump2 = __node_bump_shader(node_group.nodes, 1.0, 0.1, 45 - 184, 340 - 115)
+    node_subtract = __node_math(node_group.nodes, 'SUBTRACT', 45 - 570, 340 - 216)
+    node_principled = __node_principled(node_group.nodes, 0.0, 0.0, 0.0, 0.4, 0.03, 0.0, 1.45, 0.0, 45, 340)
+
+    node_subtract.inputs[1].default_value = 0.4
+
+    node_group.links.new(group_input.outputs['Color'], node_principled.inputs['Base Color'])
+    node_group.links.new(node_principled.outputs['BSDF'], group_output.inputs[0])
+    node_group.links.new(node_noise.outputs['Color'], node_subtract.inputs[0])
+    node_group.links.new(node_subtract.outputs[0], node_bump1.inputs['Height'])
+    node_group.links.new(node_bump1.outputs['Normal'], node_bump2.inputs['Normal'])
+    node_group.links.new(node_bump2.outputs['Normal'], node_principled.inputs['Normal'])
 
 
 def __create_blender_lego_rubber_translucent_node_group():
-    if bpy.data.node_groups.get('LEGO Rubber Translucent') is None:
-        if options.debug_text:
-            print("createBlenderLEGORubberTranslucentNodeGroup #create")
+    group_name = 'LEGO Rubber Translucent'
 
-        # create a group
-        group, node_input, node_output = __create_group('LEGO Rubber Translucent', -250, 0, 250, 0, True)
-        group.inputs.new('NodeSocketColor', 'Color')
-        group.inputs.new('NodeSocketVectorDirection', 'Normal')
+    if group_name in bpy.data.node_groups:
+        return
 
-        node_noise = __node_noise_texture(group.nodes, 250, 2, 0.0, 45 - 770, 340 - 200)
-        node_bump1 = __node_bump_shader(group.nodes, 1.0, 0.3, 45 - 366, 340 - 200)
-        node_bump2 = __node_bump_shader(group.nodes, 1.0, 0.1, 45 - 184, 340 - 115)
-        node_subtract = __node_math(group.nodes, 'SUBTRACT', 45 - 570, 340 - 216)
-        node_principled = __node_principled(group.nodes, 0.0, 0.0, 0.0, 0.4, 0.03, 0.0, 1.45, 0.0, 45, 340)
-        node_mix = __node_mix(group.nodes, 0.8, 300, 290)
-        node_refraction = __node_refraction(group.nodes, 0.0, 1.45, 290 - 242, 154 - 330)
-        node_input.location = -320, 290
-        node_output.location = 530, 285
+    node_group = bpy.data.node_groups.new(group_name, 'ShaderNodeTree')
+    node_group.use_fake_user = True
 
-        node_subtract.inputs[1].default_value = 0.4
+    group_input = node_group.nodes.new('NodeGroupInput')
+    group_input.location = (-250, 0)
 
-        group.links.new(node_input.outputs['Normal'], node_refraction.inputs['Normal'])
-        group.links.new(node_refraction.outputs[0], node_mix.inputs[2])
-        group.links.new(node_principled.outputs[0], node_mix.inputs[1])
-        group.links.new(node_mix.outputs[0], node_output.inputs[0])
-        group.links.new(node_input.outputs['Color'], node_principled.inputs['Base Color'])
-        group.links.new(node_noise.outputs['Color'], node_subtract.inputs[0])
-        group.links.new(node_subtract.outputs[0], node_bump1.inputs['Height'])
-        group.links.new(node_bump1.outputs['Normal'], node_bump2.inputs['Normal'])
-        group.links.new(node_bump2.outputs['Normal'], node_principled.inputs['Normal'])
-        group.links.new(node_mix.outputs[0], node_output.inputs[0])
+    group_output = node_group.nodes.new('NodeGroupOutput')
+    group_output.location = (250, 0)
+
+    node_group.inputs.new('NodeSocketColor', 'Color')
+    node_group.inputs.new('NodeSocketVectorDirection', 'Normal')
+
+    node_group.outputs.new('NodeSocketShader', 'Shader')
+
+    node_noise = __node_noise_texture(node_group.nodes, 250, 2, 0.0, 45 - 770, 340 - 200)
+    node_bump1 = __node_bump_shader(node_group.nodes, 1.0, 0.3, 45 - 366, 340 - 200)
+    node_bump2 = __node_bump_shader(node_group.nodes, 1.0, 0.1, 45 - 184, 340 - 115)
+    node_subtract = __node_math(node_group.nodes, 'SUBTRACT', 45 - 570, 340 - 216)
+    node_principled = __node_principled(node_group.nodes, 0.0, 0.0, 0.0, 0.4, 0.03, 0.0, 1.45, 0.0, 45, 340)
+    node_mix = __node_mix(node_group.nodes, 0.8, 300, 290)
+    node_refraction = __node_refraction(node_group.nodes, 0.0, 1.45, 290 - 242, 154 - 330)
+    group_input.location = -320, 290
+    group_output.location = 530, 285
+
+    node_subtract.inputs[1].default_value = 0.4
+
+    node_group.links.new(group_input.outputs['Normal'], node_refraction.inputs['Normal'])
+    node_group.links.new(node_refraction.outputs[0], node_mix.inputs[2])
+    node_group.links.new(node_principled.outputs[0], node_mix.inputs[1])
+    node_group.links.new(node_mix.outputs[0], group_output.inputs[0])
+    node_group.links.new(group_input.outputs['Color'], node_principled.inputs['Base Color'])
+    node_group.links.new(node_noise.outputs['Color'], node_subtract.inputs[0])
+    node_group.links.new(node_subtract.outputs[0], node_bump1.inputs['Height'])
+    node_group.links.new(node_bump1.outputs['Normal'], node_bump2.inputs['Normal'])
+    node_group.links.new(node_bump2.outputs['Normal'], node_principled.inputs['Normal'])
+    node_group.links.new(node_mix.outputs[0], group_output.inputs[0])
 
 
 def __create_blender_lego_emission_node_group():
-    if bpy.data.node_groups.get('LEGO Emission') is None:
-        if options.debug_text:
-            print("createBlenderLEGOEmissionNodeGroup #create")
+    group_name = 'LEGO Emission'
 
-        # create a group
-        group, node_input, node_output = __create_group('LEGO Emission', -450, 90, 250, 0, True)
-        group.inputs.new('NodeSocketColor', 'Color')
-        group.inputs.new('NodeSocketFloatFactor', 'Luminance')
-        group.inputs.new('NodeSocketVectorDirection', 'Normal')
+    if group_name in bpy.data.node_groups:
+        return
 
-        node_emit = __node_emission(group.nodes, -242, -123)
-        node_mix = __node_mix(group.nodes, 0.5, 0, 90)
+    node_group = bpy.data.node_groups.new(group_name, 'ShaderNodeTree')
+    node_group.use_fake_user = True
 
-        node_main = __node_principled(group.nodes, 1.0, 0.05, 0.0, 0.5, 0.0, 0.03, 1.45, 0.0, -242, 154 + 240)
-        if options.add_subsurface:
-            group.links.new(node_input.outputs['Color'], node_main.inputs['Subsurface Color'])
-        group.links.new(node_input.outputs['Color'], node_emit.inputs['Color'])
-        main_color = 'Base Color'
+    group_input = node_group.nodes.new('NodeGroupInput')
+    group_input.location = (-450, 90)
 
-        # link nodes together
-        group.links.new(node_input.outputs['Color'], node_main.inputs[main_color])
-        group.links.new(node_input.outputs['Normal'], node_main.inputs['Normal'])
-        group.links.new(node_input.outputs['Luminance'], node_mix.inputs[0])
-        group.links.new(node_main.outputs[0], node_mix.inputs[1])
-        group.links.new(node_emit.outputs[0], node_mix.inputs[2])
-        group.links.new(node_mix.outputs[0], node_output.inputs[0])
+    group_output = node_group.nodes.new('NodeGroupOutput')
+    group_output.location = (250, 0)
+
+    node_group.inputs.new('NodeSocketColor', 'Color')
+    node_group.inputs.new('NodeSocketFloatFactor', 'Luminance')
+    node_group.inputs.new('NodeSocketVectorDirection', 'Normal')
+
+    node_group.outputs.new('NodeSocketShader', 'Shader')
+
+    node_emit = __node_emission(node_group.nodes, -242, -123)
+    node_mix = __node_mix(node_group.nodes, 0.5, 0, 90)
+
+    node_main = __node_principled(node_group.nodes, 1.0, 0.05, 0.0, 0.5, 0.0, 0.03, 1.45, 0.0, -242, 154 + 240)
+
+    if options.add_subsurface:
+        node_group.links.new(group_input.outputs['Color'], node_main.inputs['Subsurface Color'])
+
+    node_group.links.new(group_input.outputs['Color'], node_emit.inputs['Color'])
+    node_group.links.new(group_input.outputs['Color'], node_main.inputs['Base Color'])
+    node_group.links.new(group_input.outputs['Normal'], node_main.inputs['Normal'])
+    node_group.links.new(group_input.outputs['Luminance'], node_mix.inputs[0])
+    node_group.links.new(node_main.outputs[0], node_mix.inputs[1])
+    node_group.links.new(node_emit.outputs[0], node_mix.inputs[2])
+    node_group.links.new(node_mix.outputs[0], group_output.inputs[0])
 
 
 def __create_blender_lego_chrome_node_group():
-    if bpy.data.node_groups.get('LEGO Chrome') is None:
-        if options.debug_text:
-            print("createBlenderLEGOChromeNodeGroup #create")
+    group_name = 'LEGO Chrome'
 
-        # create a group
-        group, node_input, node_output = __create_group('LEGO Chrome', -450, 90, 250, 0, True)
-        group.inputs.new('NodeSocketColor', 'Color')
-        group.inputs.new('NodeSocketVectorDirection', 'Normal')
+    if group_name in bpy.data.node_groups:
+        return
 
-        node_hsv = __node_hsv(group.nodes, 0.5, 0.9, 2.0, -90, 0)
-        node_principled = __node_principled(group.nodes, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 2.4, 0.0, 100, 0)
+    node_group = bpy.data.node_groups.new(group_name, 'ShaderNodeTree')
+    node_group.use_fake_user = True
 
-        node_output.location = (575, -140)
+    group_input = node_group.nodes.new('NodeGroupInput')
+    group_input.location = (-450, 90)
 
-        # link nodes together
-        group.links.new(node_input.outputs['Color'], node_hsv.inputs['Color'])
-        group.links.new(node_input.outputs['Normal'], node_principled.inputs['Normal'])
-        group.links.new(node_hsv.outputs['Color'], node_principled.inputs['Base Color'])
-        group.links.new(node_principled.outputs['BSDF'], node_output.inputs[0])
+    group_output = node_group.nodes.new('NodeGroupOutput')
+    group_output.location = (250, 0)
+
+    node_group.inputs.new('NodeSocketColor', 'Color')
+    node_group.inputs.new('NodeSocketVectorDirection', 'Normal')
+
+    node_group.outputs.new('NodeSocketShader', 'Shader')
+
+    node_hsv = __node_hsv(node_group.nodes, 0.5, 0.9, 2.0, -90, 0)
+    node_principled = __node_principled(node_group.nodes, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 2.4, 0.0, 100, 0)
+
+    group_output.location = (575, -140)
+
+    node_group.links.new(group_input.outputs['Color'], node_hsv.inputs['Color'])
+    node_group.links.new(group_input.outputs['Normal'], node_principled.inputs['Normal'])
+    node_group.links.new(node_hsv.outputs['Color'], node_principled.inputs['Base Color'])
+    node_group.links.new(node_principled.outputs['BSDF'], group_output.inputs[0])
 
 
 def __create_blender_lego_pearlescent_node_group():
-    if bpy.data.node_groups.get('LEGO Pearlescent') is None:
-        if options.debug_text:
-            print("createBlenderLEGOPearlescentNodeGroup #create")
+    group_name = 'LEGO Pearlescent'
 
-        # create a group
-        group, node_input, node_output = __create_group('LEGO Pearlescent', -450, 90, 630, 95, True)
-        group.inputs.new('NodeSocketColor', 'Color')
-        group.inputs.new('NodeSocketVectorDirection', 'Normal')
+    if group_name in bpy.data.node_groups:
+        return
 
-        node_principled = __node_principled(group.nodes, 1.0, 0.25, 0.5, 0.2, 1.0, 0.2, 1.6,
-                                            0.0, 310, 95)
-        node_sep_hsv = __node_separate_hsv(group.nodes, -240, 75)
-        node_multiply = __node_math(group.nodes, 'MULTIPLY', -60, 0)
-        node_com_hsv = __node_combine_hsv(group.nodes, 110, 95)
-        node_tex_coord = __node_tex_coord(group.nodes, -730, -223)
-        node_tex_wave = __node_tex_wave(group.nodes, 'BANDS', 'SIN', 0.5, 40, 1, 1.5, -520, -190)
-        node_color_ramp = __node_color_ramp(group.nodes, 0.329, (0.89, 0.89, 0.89, 1), 0.820, (1, 1, 1, 1), -340, -70)
-        element = node_color_ramp.color_ramp.elements.new(1.0)
-        element.color = (1.118, 1.118, 1.118, 1)
+    node_group = bpy.data.node_groups.new(group_name, 'ShaderNodeTree')
+    node_group.use_fake_user = True
 
-        # link nodes together
-        group.links.new(node_input.outputs['Color'], node_sep_hsv.inputs['Color'])
-        group.links.new(node_input.outputs['Normal'], node_principled.inputs['Normal'])
-        group.links.new(node_sep_hsv.outputs['H'], node_com_hsv.inputs['H'])
-        group.links.new(node_sep_hsv.outputs['S'], node_com_hsv.inputs['S'])
-        group.links.new(node_sep_hsv.outputs['V'], node_multiply.inputs[0])
-        group.links.new(node_com_hsv.outputs['Color'], node_principled.inputs['Base Color'])
-        if options.add_subsurface:
-            group.links.new(node_com_hsv.outputs['Color'], node_principled.inputs['Subsurface Color'])
-        group.links.new(node_tex_coord.outputs['Object'], node_tex_wave.inputs['Vector'])
-        group.links.new(node_tex_wave.outputs['Fac'], node_color_ramp.inputs['Fac'])
-        group.links.new(node_color_ramp.outputs['Color'], node_multiply.inputs[1])
-        group.links.new(node_multiply.outputs[0], node_com_hsv.inputs['V'])
-        group.links.new(node_principled.outputs['BSDF'], node_output.inputs[0])
+    group_input = node_group.nodes.new('NodeGroupInput')
+    group_input.location = (-450, 90)
+
+    group_output = node_group.nodes.new('NodeGroupOutput')
+    group_output.location = (630, 95)
+
+    node_group.inputs.new('NodeSocketColor', 'Color')
+    node_group.inputs.new('NodeSocketVectorDirection', 'Normal')
+
+    node_group.outputs.new('NodeSocketShader', 'Shader')
+
+    node_principled = __node_principled(node_group.nodes, 1.0, 0.25, 0.5, 0.2, 1.0, 0.2, 1.6,
+                                        0.0, 310, 95)
+    node_sep_hsv = __node_separate_hsv(node_group.nodes, -240, 75)
+    node_multiply = __node_math(node_group.nodes, 'MULTIPLY', -60, 0)
+    node_com_hsv = __node_combine_hsv(node_group.nodes, 110, 95)
+    node_tex_coord = __node_tex_coord(node_group.nodes, -730, -223)
+    node_tex_wave = __node_tex_wave(node_group.nodes, 'BANDS', 'SIN', 0.5, 40, 1, 1.5, -520, -190)
+    node_color_ramp = __node_color_ramp(node_group.nodes, 0.329, (0.89, 0.89, 0.89, 1), 0.820, (1, 1, 1, 1), -340, -70)
+    element = node_color_ramp.color_ramp.elements.new(1.0)
+    element.color = (1.118, 1.118, 1.118, 1)
+
+    node_group.links.new(group_input.outputs['Color'], node_sep_hsv.inputs['Color'])
+    node_group.links.new(group_input.outputs['Normal'], node_principled.inputs['Normal'])
+    node_group.links.new(node_sep_hsv.outputs['H'], node_com_hsv.inputs['H'])
+    node_group.links.new(node_sep_hsv.outputs['S'], node_com_hsv.inputs['S'])
+    node_group.links.new(node_sep_hsv.outputs['V'], node_multiply.inputs[0])
+    node_group.links.new(node_com_hsv.outputs['Color'], node_principled.inputs['Base Color'])
+
+    if options.add_subsurface:
+        node_group.links.new(node_com_hsv.outputs['Color'], node_principled.inputs['Subsurface Color'])
+
+    node_group.links.new(node_tex_coord.outputs['Object'], node_tex_wave.inputs['Vector'])
+    node_group.links.new(node_tex_wave.outputs['Fac'], node_color_ramp.inputs['Fac'])
+    node_group.links.new(node_color_ramp.outputs['Color'], node_multiply.inputs[1])
+    node_group.links.new(node_multiply.outputs[0], node_com_hsv.inputs['V'])
+    node_group.links.new(node_principled.outputs['BSDF'], group_output.inputs[0])
 
 
 def __create_blender_lego_metal_node_group():
-    if bpy.data.node_groups.get('LEGO Metal') is None:
-        if options.debug_text:
-            print("createBlenderLEGOMetalNodeGroup #create")
+    group_name = 'LEGO Metal'
 
-        # create a group
-        group, node_input, node_output = __create_group('LEGO Metal', -450, 90, 250, 0, True)
-        group.inputs.new('NodeSocketColor', 'Color')
-        group.inputs.new('NodeSocketVectorDirection', 'Normal')
+    if group_name in bpy.data.node_groups:
+        return
 
-        node_principled = __node_principled(group.nodes, 0.0, 0.0, 0.8, 0.2, 0.0, 0.03, 1.45, 0.0, 310, 95)
+    node_group = bpy.data.node_groups.new(group_name, 'ShaderNodeTree')
+    node_group.use_fake_user = True
 
-        group.links.new(node_input.outputs['Color'], node_principled.inputs['Base Color'])
-        group.links.new(node_input.outputs['Normal'], node_principled.inputs['Normal'])
-        group.links.new(node_principled.outputs[0], node_output.inputs['Shader'])
+    group_input = node_group.nodes.new('NodeGroupInput')
+    group_input.location = (-450, 90)
+
+    group_output = node_group.nodes.new('NodeGroupOutput')
+    group_output.location = (250, 0)
+
+    node_group.inputs.new('NodeSocketColor', 'Color')
+    node_group.inputs.new('NodeSocketVectorDirection', 'Normal')
+
+    node_group.outputs.new('NodeSocketShader', 'Shader')
+
+    node_principled = __node_principled(node_group.nodes, 0.0, 0.0, 0.8, 0.2, 0.0, 0.03, 1.45, 0.0, 310, 95)
+
+    node_group.links.new(group_input.outputs['Color'], node_principled.inputs['Base Color'])
+    node_group.links.new(group_input.outputs['Normal'], node_principled.inputs['Normal'])
+    node_group.links.new(node_principled.outputs[0], group_output.inputs['Shader'])
 
 
 def __create_blender_lego_glitter_node_group():
-    if bpy.data.node_groups.get('LEGO Glitter') is None:
-        if options.debug_text:
-            print("createBlenderLEGOGlitterNodeGroup #create")
+    group_name = 'LEGO Glitter'
 
-        # create a group
-        group, node_input, node_output = __create_group('LEGO Glitter', -450, 0, 410, 0, True)
-        group.inputs.new('NodeSocketColor', 'Color')
-        group.inputs.new('NodeSocketColor', 'Glitter Color')
-        group.inputs.new('NodeSocketVectorDirection', 'Normal')
+    if group_name in bpy.data.node_groups:
+        return
 
-        node_voronoi = __node_voronoi(group.nodes, 100, -222, 310)
-        node_gamma = __node_gamma(group.nodes, 50, 0, 200)
-        node_mix = __node_mix(group.nodes, 0.05, 210, 90 + 25)
-        node_principled1 = __node_principled(group.nodes, 0.0, 0.0, 0.0, 0.2, 0.0, 0.03, 1.585, 1.0, 45 - 270, 340 - 210)
-        node_principled2 = __node_principled(group.nodes, 0.0, 0.0, 0.0, 0.5, 0.0, 0.03, 1.45, 0.0, 45 - 270, 340 - 750)
+    node_group = bpy.data.node_groups.new(group_name, 'ShaderNodeTree')
+    node_group.use_fake_user = True
 
-        group.links.new(node_input.outputs['Color'], node_principled1.inputs['Base Color'])
-        group.links.new(node_input.outputs['Glitter Color'], node_principled2.inputs['Base Color'])
-        group.links.new(node_input.outputs['Normal'], node_principled1.inputs['Normal'])
-        group.links.new(node_input.outputs['Normal'], node_principled2.inputs['Normal'])
-        group.links.new(node_voronoi.outputs['Color'], node_gamma.inputs['Color'])
-        group.links.new(node_gamma.outputs[0], node_mix.inputs[0])
-        group.links.new(node_principled1.outputs['BSDF'], node_mix.inputs[1])
-        group.links.new(node_principled2.outputs['BSDF'], node_mix.inputs[2])
-        group.links.new(node_mix.outputs[0], node_output.inputs[0])
+    group_input = node_group.nodes.new('NodeGroupInput')
+    group_input.location = (-450, 0)
+
+    group_output = node_group.nodes.new('NodeGroupOutput')
+    group_output.location = (410, 0)
+
+    node_group.inputs.new('NodeSocketColor', 'Color')
+    node_group.inputs.new('NodeSocketColor', 'Glitter Color')
+    node_group.inputs.new('NodeSocketVectorDirection', 'Normal')
+
+    node_group.outputs.new('NodeSocketShader', 'Shader')
+
+    node_voronoi = __node_voronoi(node_group.nodes, 100, -222, 310)
+    node_gamma = __node_gamma(node_group.nodes, 50, 0, 200)
+    node_mix = __node_mix(node_group.nodes, 0.05, 210, 90 + 25)
+    node_principled1 = __node_principled(node_group.nodes, 0.0, 0.0, 0.0, 0.2, 0.0, 0.03, 1.585, 1.0, 45 - 270, 340 - 210)
+    node_principled2 = __node_principled(node_group.nodes, 0.0, 0.0, 0.0, 0.5, 0.0, 0.03, 1.45, 0.0, 45 - 270, 340 - 750)
+
+    node_group.links.new(group_input.outputs['Color'], node_principled1.inputs['Base Color'])
+    node_group.links.new(group_input.outputs['Glitter Color'], node_principled2.inputs['Base Color'])
+    node_group.links.new(group_input.outputs['Normal'], node_principled1.inputs['Normal'])
+    node_group.links.new(group_input.outputs['Normal'], node_principled2.inputs['Normal'])
+    node_group.links.new(node_voronoi.outputs['Color'], node_gamma.inputs['Color'])
+    node_group.links.new(node_gamma.outputs[0], node_mix.inputs[0])
+    node_group.links.new(node_principled1.outputs['BSDF'], node_mix.inputs[1])
+    node_group.links.new(node_principled2.outputs['BSDF'], node_mix.inputs[2])
+    node_group.links.new(node_mix.outputs[0], group_output.inputs[0])
 
 
 def __create_blender_lego_speckle_node_group():
-    if bpy.data.node_groups.get('LEGO Speckle') is None:
-        if options.debug_text:
-            print("createBlenderLEGOSpeckleNodeGroup #create")
+    group_name = 'LEGO Speckle'
 
-        # create a group
-        group, node_input, node_output = __create_group('LEGO Speckle', -450, 0, 410, 0, True)
-        group.inputs.new('NodeSocketColor', 'Color')
-        group.inputs.new('NodeSocketColor', 'Speckle Color')
-        group.inputs.new('NodeSocketVectorDirection', 'Normal')
+    if group_name in bpy.data.node_groups:
+        return
 
-        node_voronoi = __node_voronoi(group.nodes, 50, -222, 310)
-        node_gamma = __node_gamma(group.nodes, 3.5, 0, 200)
-        node_mix = __node_mix(group.nodes, 0.05, 210, 90 + 25)
-        node_principled1 = __node_principled(group.nodes, 0.0, 0.0, 0.0, 0.1, 0.0, 0.03, 1.45, 0.0, 45 - 270, 340 - 210)
-        node_principled2 = __node_principled(group.nodes, 0.0, 0.0, 1.0, 0.5, 0.0, 0.03, 1.45, 0.0, 45 - 270, 340 - 750)
+    node_group = bpy.data.node_groups.new(group_name, 'ShaderNodeTree')
+    node_group.use_fake_user = True
 
-        group.links.new(node_input.outputs['Color'], node_principled1.inputs['Base Color'])
-        group.links.new(node_input.outputs['Speckle Color'], node_principled2.inputs['Base Color'])
-        group.links.new(node_input.outputs['Normal'], node_principled1.inputs['Normal'])
-        group.links.new(node_input.outputs['Normal'], node_principled2.inputs['Normal'])
-        group.links.new(node_voronoi.outputs['Color'], node_gamma.inputs['Color'])
-        group.links.new(node_gamma.outputs[0], node_mix.inputs[0])
-        group.links.new(node_principled1.outputs['BSDF'], node_mix.inputs[1])
-        group.links.new(node_principled2.outputs['BSDF'], node_mix.inputs[2])
-        group.links.new(node_mix.outputs[0], node_output.inputs[0])
+    group_input = node_group.nodes.new('NodeGroupInput')
+    group_input.location = (-450, 0)
+
+    group_output = node_group.nodes.new('NodeGroupOutput')
+    group_output.location = (410, 0)
+
+    node_group.inputs.new('NodeSocketColor', 'Color')
+    node_group.inputs.new('NodeSocketColor', 'Speckle Color')
+    node_group.inputs.new('NodeSocketVectorDirection', 'Normal')
+
+    node_group.outputs.new('NodeSocketShader', 'Shader')
+
+    node_voronoi = __node_voronoi(node_group.nodes, 50, -222, 310)
+    node_gamma = __node_gamma(node_group.nodes, 3.5, 0, 200)
+    node_mix = __node_mix(node_group.nodes, 0.05, 210, 90 + 25)
+    node_principled1 = __node_principled(node_group.nodes, 0.0, 0.0, 0.0, 0.1, 0.0, 0.03, 1.45, 0.0, 45 - 270, 340 - 210)
+    node_principled2 = __node_principled(node_group.nodes, 0.0, 0.0, 1.0, 0.5, 0.0, 0.03, 1.45, 0.0, 45 - 270, 340 - 750)
+
+    node_group.links.new(group_input.outputs['Color'], node_principled1.inputs['Base Color'])
+    node_group.links.new(group_input.outputs['Speckle Color'], node_principled2.inputs['Base Color'])
+    node_group.links.new(group_input.outputs['Normal'], node_principled1.inputs['Normal'])
+    node_group.links.new(group_input.outputs['Normal'], node_principled2.inputs['Normal'])
+    node_group.links.new(node_voronoi.outputs['Color'], node_gamma.inputs['Color'])
+    node_group.links.new(node_gamma.outputs[0], node_mix.inputs[0])
+    node_group.links.new(node_principled1.outputs['BSDF'], node_mix.inputs[1])
+    node_group.links.new(node_principled2.outputs['BSDF'], node_mix.inputs[2])
+    node_group.links.new(node_mix.outputs[0], group_output.inputs[0])
 
 
 def __create_blender_lego_milky_white_node_group():
-    if bpy.data.node_groups.get('LEGO Milky White') is None:
-        if options.debug_text:
-            print("createBlenderLEGOMilkyWhiteNodeGroup #create")
+    group_name = 'LEGO Milky White'
 
-        # create a group
-        group, node_input, node_output = __create_group('LEGO Milky White', -450, 0, 350, 0, True)
-        group.inputs.new('NodeSocketColor', 'Color')
-        group.inputs.new('NodeSocketVectorDirection', 'Normal')
+    if group_name in bpy.data.node_groups:
+        return
 
-        node_principled = __node_principled(group.nodes, 1.0, 0.05, 0.0, 0.5, 0.0, 0.03, 1.45, 0.0, 45 - 270, 340 - 210)
-        node_translucent = __node_translucent(group.nodes, -225, -382)
-        node_mix = __node_mix(group.nodes, 0.5, 65, -40)
+    node_group = bpy.data.node_groups.new(group_name, 'ShaderNodeTree')
+    node_group.use_fake_user = True
 
-        group.links.new(node_input.outputs['Color'], node_principled.inputs['Base Color'])
-        if options.add_subsurface:
-            group.links.new(node_input.outputs['Color'], node_principled.inputs['Subsurface Color'])
-        group.links.new(node_input.outputs['Normal'], node_principled.inputs['Normal'])
-        group.links.new(node_input.outputs['Normal'], node_translucent.inputs['Normal'])
-        group.links.new(node_principled.outputs[0], node_mix.inputs[1])
-        group.links.new(node_translucent.outputs[0], node_mix.inputs[2])
-        group.links.new(node_mix.outputs[0], node_output.inputs[0])
+    group_input = node_group.nodes.new('NodeGroupInput')
+    group_input.location = (-450, 0)
+
+    group_output = node_group.nodes.new('NodeGroupOutput')
+    group_output.location = (350, 0)
+
+    node_group.inputs.new('NodeSocketColor', 'Color')
+    node_group.inputs.new('NodeSocketVectorDirection', 'Normal')
+
+    node_group.outputs.new('NodeSocketShader', 'Shader')
+
+    node_principled = __node_principled(node_group.nodes, 1.0, 0.05, 0.0, 0.5, 0.0, 0.03, 1.45, 0.0, 45 - 270, 340 - 210)
+    node_translucent = __node_translucent(node_group.nodes, -225, -382)
+    node_mix = __node_mix(node_group.nodes, 0.5, 65, -40)
+
+    node_group.links.new(group_input.outputs['Color'], node_principled.inputs['Base Color'])
+    if options.add_subsurface:
+        node_group.links.new(group_input.outputs['Color'], node_principled.inputs['Subsurface Color'])
+    node_group.links.new(group_input.outputs['Normal'], node_principled.inputs['Normal'])
+    node_group.links.new(group_input.outputs['Normal'], node_translucent.inputs['Normal'])
+    node_group.links.new(node_principled.outputs[0], node_mix.inputs[1])
+    node_group.links.new(node_translucent.outputs[0], node_mix.inputs[2])
+    node_group.links.new(node_mix.outputs[0], group_output.inputs[0])
