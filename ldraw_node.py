@@ -11,6 +11,7 @@ from . import ldraw_part_types
 from .ldraw_geometry import LDrawGeometry
 from .face_info import FaceInfo
 from . import blender_materials
+from . import ldraw_colors
 from . import special_bricks
 
 part_count = 0
@@ -81,10 +82,12 @@ def apply_slope_materials(mesh, filename):
 
             if options.ldraw_color_code_key not in face_material:
                 continue
+
             color_code = str(face_material[options.ldraw_color_code_key])
+            color = ldraw_colors.get_color(color_code)
 
             is_slope_material = special_bricks.is_slope_face(filename, f)
-            material = blender_materials.get_material(color_code, is_slope_material=is_slope_material)
+            material = blender_materials.get_material(color, is_slope_material=is_slope_material)
             if material is None:
                 continue
 
@@ -220,7 +223,11 @@ def apply_materials(mesh, geometry):
 
         grain_slope_allowed = face_info.grain_slope_allowed
 
-        material = blender_materials.get_material(face_info.color_code, use_edge_color=face_info.use_edge_color)
+        color_code = face_info.color_code
+        color = ldraw_colors.get_color(color_code)
+
+        use_edge_color = face_info.use_edge_color
+        material = blender_materials.get_material(color, use_edge_color=use_edge_color)
         if material is None:
             continue
 
@@ -316,7 +323,11 @@ def create_gp_mesh(key, mesh):
 
 
 def apply_gp_materials(gp_mesh):
-    base_material = blender_materials.get_material('0', use_edge_color=True)
+    color_code = "0"
+    color = ldraw_colors.get_color(color_code)
+
+    use_edge_color = True
+    base_material = blender_materials.get_material(color, use_edge_color=use_edge_color)
     if base_material is None:
         return
 

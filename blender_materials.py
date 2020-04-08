@@ -24,30 +24,33 @@ def create_blender_node_groups():
     __create_blender_lego_milky_white_node_group()
 
 
-def get_material(color_code, use_edge_color=False, is_slope_material=False):
+def get_material(color, use_edge_color=False, is_slope_material=False):
     key = []
-    key.append(color_code)
+    key.append(f"LDraw Material {color.name} ")
+
+    suffix = []
     if options.use_alt_colors:
-        key.append("alt")
+        suffix.append("alt")
     if is_slope_material:
-        key.append("s")
+        suffix.append("s")
     if options.add_subsurface:
-        key.append("ss")
+        suffix.append("ss")
     if use_edge_color:
-        key.append("edge")
-    key = "_".join([k.lower() for k in key])
+        suffix.append("edge")
+    suffix = "_".join([k.lower() for k in suffix])
+
+    key.append(suffix)
+    key = " ".join(key)
 
     if key in bpy.data.materials:
         return bpy.data.materials[key]
 
-    material = __create_node_based_material(key, color_code, use_edge_color=use_edge_color, is_slope_material=is_slope_material)
+    material = __create_node_based_material(key, color, use_edge_color=use_edge_color, is_slope_material=is_slope_material)
     return material
 
 
-def __create_node_based_material(key, color_code, use_edge_color=False, is_slope_material=False):
+def __create_node_based_material(key, color, use_edge_color=False, is_slope_material=False):
     """Set Cycles Material Values."""
-
-    color = ldraw_colors.get_color(color_code)
 
     # Reuse current material if it exists, otherwise create a new material
     if bpy.data.materials.get(key) is None:

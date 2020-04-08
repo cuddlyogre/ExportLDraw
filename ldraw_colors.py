@@ -21,7 +21,9 @@ def get_color(color_code):
     if color_code in colors:
         return colors[color_code]
 
-    return None
+    print(f"Bad color code: {color_code}")
+    color_code = "16"
+    return colors[color_code]
 
 
 def parse_color(params):
