@@ -63,9 +63,7 @@ def __create_node_based_material(key, color, use_edge_color=False, is_slope_mate
     nodes = material.node_tree.nodes
     links = material.node_tree.links
 
-    # Remove any existing nodes
-    for n in nodes:
-        nodes.remove(n)
+    nodes.clear()
 
     is_transparent = False
 
