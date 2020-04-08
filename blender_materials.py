@@ -90,7 +90,7 @@ def __create_node_based_material(key, color_code, use_edge_color=False, is_slope
     material[options.ldraw_color_code_key] = color.code
 
     if is_transparent:
-        material.blend_method = 'BLEND'
+        material.blend_method = "BLEND"
         material.refraction_depth = 0.1
         material.use_screen_refraction = True
 
@@ -447,7 +447,7 @@ def __node_refraction(nodes, roughness, ior, x, y):
 
 def __get_group(nodes):
     for x in nodes:
-        if x.type == 'GROUP':
+        if x.type == "GROUP":
             return x
     return None
 
@@ -550,7 +550,7 @@ def __create_cycles_milky_white(nodes, links, diff_color):
 
 
 def __create_blender_slope_texture_node_group():
-    group_name = 'Slope Texture'
+    group_name = "Slope Texture"
 
     if group_name in bpy.data.node_groups:
         return
@@ -584,7 +584,7 @@ def __create_blender_slope_texture_node_group():
 
 
 def __create_blender_lego_standard_node_group():
-    group_name = 'LEGO Standard'
+    group_name = "LEGO Standard"
 
     if group_name in bpy.data.node_groups:
         return
@@ -613,7 +613,7 @@ def __create_blender_lego_standard_node_group():
 
 
 def __create_blender_lego_transparent_node_group():
-    group_name = 'LEGO Transparent'
+    group_name = "LEGO Transparent"
 
     if group_name in bpy.data.node_groups:
         return
@@ -642,7 +642,7 @@ def __create_blender_lego_transparent_node_group():
 # https://blender.stackexchange.com/a/137791
 # https://blenderartists.org/t/realistic-glass-in-eevee/1149937/19
 def __create_blender_lego_glass_node_group():
-    group_name = 'LEGO Glass'
+    group_name = "LEGO Glass"
 
     if group_name in bpy.data.node_groups:
         return
@@ -716,7 +716,7 @@ def __create_blender_lego_glass_node_group():
 
 
 def __create_blender_lego_transparent_fluorescent_node_group():
-    group_name = 'LEGO Transparent Fluorescent'
+    group_name = "LEGO Transparent Fluorescent"
 
     if group_name in bpy.data.node_groups:
         return
@@ -750,7 +750,7 @@ def __create_blender_lego_transparent_fluorescent_node_group():
 
 
 def __create_blender_lego_rubber_node_group():
-    group_name = 'LEGO Rubber Solid'
+    group_name = "LEGO Rubber Solid"
 
     if group_name in bpy.data.node_groups:
         return
@@ -786,7 +786,7 @@ def __create_blender_lego_rubber_node_group():
 
 
 def __create_blender_lego_rubber_translucent_node_group():
-    group_name = 'LEGO Rubber Translucent'
+    group_name = "LEGO Rubber Translucent"
 
     if group_name in bpy.data.node_groups:
         return
@@ -830,7 +830,7 @@ def __create_blender_lego_rubber_translucent_node_group():
 
 
 def __create_blender_lego_emission_node_group():
-    group_name = 'LEGO Emission'
+    group_name = "LEGO Emission"
 
     if group_name in bpy.data.node_groups:
         return
@@ -868,7 +868,7 @@ def __create_blender_lego_emission_node_group():
 
 
 def __create_blender_lego_chrome_node_group():
-    group_name = 'LEGO Chrome'
+    group_name = "LEGO Chrome"
 
     if group_name in bpy.data.node_groups:
         return
@@ -899,7 +899,7 @@ def __create_blender_lego_chrome_node_group():
 
 
 def __create_blender_lego_pearlescent_node_group():
-    group_name = 'LEGO Pearlescent'
+    group_name = "LEGO Pearlescent"
 
     if group_name in bpy.data.node_groups:
         return
@@ -947,7 +947,7 @@ def __create_blender_lego_pearlescent_node_group():
 
 
 def __create_blender_lego_metal_node_group():
-    group_name = 'LEGO Metal'
+    group_name = "LEGO Metal"
 
     if group_name in bpy.data.node_groups:
         return
@@ -974,7 +974,7 @@ def __create_blender_lego_metal_node_group():
 
 
 def __create_blender_lego_glitter_node_group():
-    group_name = 'LEGO Glitter'
+    group_name = "LEGO Glitter"
 
     if group_name in bpy.data.node_groups:
         return
@@ -1012,7 +1012,7 @@ def __create_blender_lego_glitter_node_group():
 
 
 def __create_blender_lego_speckle_node_group():
-    group_name = 'LEGO Speckle'
+    group_name = "LEGO Speckle"
 
     if group_name in bpy.data.node_groups:
         return
@@ -1050,7 +1050,7 @@ def __create_blender_lego_speckle_node_group():
 
 
 def __create_blender_lego_milky_white_node_group():
-    group_name = 'LEGO Milky White'
+    group_name = "LEGO Milky White"
 
     if group_name in bpy.data.node_groups:
         return

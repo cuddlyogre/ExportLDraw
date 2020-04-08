@@ -47,9 +47,9 @@ def create_camera(camera, empty=None, collection=None):
     obj.hide_viewport = camera.hidden
     obj.hide_render = camera.hidden
 
-    blender_camera.sensor_fit = 'VERTICAL'
+    blender_camera.sensor_fit = "VERTICAL"
     # camera.sensor_height = self.fov
-    blender_camera.lens_unit = 'FOV'
+    blender_camera.lens_unit = "FOV"
     blender_camera.angle = math.radians(camera.fov)  # self.fov * 3.1415926 / 180.0
     blender_camera.clip_start = camera.z_near
     blender_camera.clip_end = camera.z_far
@@ -57,9 +57,9 @@ def create_camera(camera, empty=None, collection=None):
     if camera.orthographic:
         dist_target_to_camera = (camera.position - camera.target_position).length
         blender_camera.ortho_scale = dist_target_to_camera / 1.92
-        blender_camera.type = 'ORTHO'
+        blender_camera.type = "ORTHO"
     else:
-        blender_camera.type = 'PERSP'
+        blender_camera.type = "PERSP"
 
     blender_camera.clip_start = blender_camera.clip_start * options.import_scale
     blender_camera.clip_end = blender_camera.clip_end * options.import_scale

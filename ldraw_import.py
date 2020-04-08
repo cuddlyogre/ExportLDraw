@@ -43,9 +43,9 @@ def do_import(filename):
             bpy.context.scene.frame_set(bpy.context.scene.frame_end)
 
     for area in bpy.context.screen.areas:
-        if area.type == 'VIEW_3D':
+        if area.type == "VIEW_3D":
             for space in area.spaces:
-                if space.type == 'VIEW_3D':
+                if space.type == "VIEW_3D":
                     space.clip_end = options.camera_far  # * options.import_scale
 
     for camera in ldraw_camera.cameras:

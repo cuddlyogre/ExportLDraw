@@ -108,13 +108,13 @@ def _path_insensitive(path):
     Recursive part of path_insensitive to do the work.
     """
 
-    if path == '' or os.path.exists(path):
+    if path == "" or os.path.exists(path):
         return path
 
     base = os.path.basename(path)  # may be a directory or a file
     dirname = os.path.dirname(path)
 
-    suffix = ''
+    suffix = ""
     if not base:  # dir ends with a slash?
         if len(dirname) < len(path):
             suffix = path[:len(path) - len(dirname)]

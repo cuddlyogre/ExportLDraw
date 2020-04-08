@@ -153,7 +153,7 @@ def create_object(mesh, parent_matrix, matrix):
         bevel_modifier.width = 0.10
         bevel_modifier.segments = 4
         bevel_modifier.profile = 0.5
-        bevel_modifier.limit_method = 'WEIGHT'
+        bevel_modifier.limit_method = "WEIGHT"
         bevel_modifier.use_clamp_overlap = True
 
     return obj
@@ -296,7 +296,7 @@ def create_gp_mesh(key, mesh):
     gp_mesh = bpy.data.grease_pencils.new(key)
 
     gp_mesh.pixel_factor = 5.0
-    gp_mesh.stroke_depth_order = '3D'
+    gp_mesh.stroke_depth_order = "3D"
 
     gp_layer = gp_mesh.layers.new('gpl')
     gp_frame = gp_layer.frames.new(1)
