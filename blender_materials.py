@@ -57,7 +57,7 @@ def __create_node_based_material(key, color, use_edge_color=False, is_slope_mate
         bpy.data.materials.new(key)
     material = bpy.data.materials[key]
 
-    # Use nodes
+    material.use_fake_user = True
     material.use_nodes = True
 
     nodes = material.node_tree.nodes
