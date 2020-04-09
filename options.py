@@ -1,10 +1,4 @@
-ldraw_path = None
-ldraw_edge_key = "ldraw_edge"
-ldraw_filename_key = "ldraw_filename"
-ldraw_color_code_key = "ldraw_color_code"
-ldraw_export_polygons_key = "ldraw_export_polygons"
-ldraw_export_precision_key = "ldraw_export_precision"
-
+ldraw_path = ""
 meta_group = True
 meta_print_write = False
 meta_step = False
@@ -39,3 +33,9 @@ camera_fov = 30.0
 camera_near = 1.0
 camera_far = 10000.0
 parent_to_empty = True
+all_materials = True
+selection_only = True
+export_precision = 2
+recalculate_normals = True
+triangulate = False
+ngon_handling = "triangulate"

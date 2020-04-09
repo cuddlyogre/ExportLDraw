@@ -1,19 +1,14 @@
 import bpy
 import bmesh
 
+from . import strings
+from . import options
 from . import ldraw_file
 from . import ldraw_colors
 from . import filesystem
 from . import matrices
-from . import options
 from . import helpers
 from . import ldraw_part_types
-
-remove_doubles = None
-triangulate = None
-recalculate_normals = None
-selection_only = None
-ngon_handling = None
 
 
 # https://devtalk.blender.org/t/to-mesh-and-creating-new-object-issues/8557/4
@@ -24,15 +19,20 @@ def clean_mesh(obj):
 
     bm.transform(matrices.reverse_rotation @ obj.matrix_world)
 
-    if ngon_handling == "triangulate":
+    if options.triangulate:
+        bmesh.ops.triangulate(bm, faces=bm.faces[:], quad_method='BEAUTY', ngon_method='BEAUTY')
+    elif options.ngon_handling == "triangulate":
         faces = []
         for f in bm.faces:
             if len(f.verts) > 4:
                 faces.append(f)
         bmesh.ops.triangulate(bm, faces=faces, quad_method='BEAUTY', ngon_method='BEAUTY')
 
-    if remove_doubles:
+    if options.remove_doubles:
         bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=options.merge_distance)
+
+    if options.recalculate_normals:
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
 
     mesh = obj.data.copy()
     bm.to_mesh(mesh)
@@ -57,24 +57,24 @@ def fix_round(number, places=3):
 # TODO: if obj["section_label"] then:
 #  0 // f{obj["section_label"]}
 def export_subfiles(obj, lines, is_model=False):
-    if options.ldraw_filename_key not in obj:
+    if strings.ldraw_filename_key not in obj:
         return False
-    name = obj[options.ldraw_filename_key]
+    name = obj[strings.ldraw_filename_key]
 
     color_code = "16"
     color = ldraw_colors.get_color(color_code)
 
     if len(obj.data.materials) > 0:
         material = obj.data.materials[0]
-        if options.ldraw_color_code_key in material:
-            color_code = str(material[options.ldraw_color_code_key])
+        if strings.ldraw_color_code_key in material:
+            color_code = str(material[strings.ldraw_color_code_key])
             color = ldraw_colors.get_color(color_code)
 
     color_code = color.code
 
-    precision = 3
-    if options.ldraw_export_precision_key in obj:
-        precision = obj[options.ldraw_export_precision_key]
+    precision = options.export_precision
+    if strings.ldraw_export_precision_key in obj:
+        precision = obj[strings.ldraw_export_precision_key]
 
     if is_model:
         aa = matrices.reverse_rotation @ obj.matrix_world
@@ -126,9 +126,9 @@ def export_polygons(obj, lines):
 
     mesh = clean_mesh(obj)
 
-    precision = 3
-    if options.ldraw_export_precision_key in obj:
-        precision = obj[options.ldraw_export_precision_key]
+    precision = options.export_precision
+    if strings.ldraw_export_precision_key in obj:
+        precision = obj[strings.ldraw_export_precision_key]
 
     for p in mesh.polygons:
         length = len(p.vertices)
@@ -146,8 +146,8 @@ def export_polygons(obj, lines):
 
         if p.material_index + 1 <= len(mesh.materials):
             material = mesh.materials[p.material_index]
-            if options.ldraw_color_code_key in material:
-                color_code = str(material[options.ldraw_color_code_key])
+            if strings.ldraw_color_code_key in material:
+                color_code = str(material[strings.ldraw_color_code_key])
                 color = ldraw_colors.get_color(color_code)
 
         color_code = color.code
@@ -179,8 +179,8 @@ def export_polygons(obj, lines):
 # tris => line type 3
 # quads => line type 4
 # conditional lines => line type 5 and ngons, aren't handled
-# header file is determined by options.ldraw_filename_key of active object
-# if options.ldraw_export_polygons_key == 1 current object being iterated will be exported as line type 2,3,4
+# header file is determined by strings.ldraw_filename_key of active object
+# if strings.ldraw_export_polygons_key == 1 current object being iterated will be exported as line type 2,3,4
 # otherwise line type 2
 def do_export(filepath):
     filesystem.build_search_paths()
@@ -192,36 +192,34 @@ def do_export(filepath):
     active_objects = bpy.context.view_layer.objects.active
 
     objects = all_objects
-    if selection_only:
+    if options.selection_only:
         objects = selected_objects
 
     lines = []
     part_type = None
 
-    if options.ldraw_filename_key not in active_object:
-        return
-    header_text_name = active_object[options.ldraw_filename_key]
+    if strings.ldraw_filename_key in active_object:
+        header_text_name = active_object[strings.ldraw_filename_key]
 
-    if header_text_name not in bpy.data.texts:
-        return
-    header_text = bpy.data.texts[header_text_name]
+        if header_text_name in bpy.data.texts:
+            header_text = bpy.data.texts[header_text_name]
 
-    for part_line in header_text.lines:
-        lines.append(part_line.body)
+            for part_line in header_text.lines:
+                lines.append(part_line.body)
 
-        line = part_line.body
+                line = part_line.body
 
-        params = helpers.parse_line(line, 14)
+                params = helpers.parse_line(line, 14)
 
-        if params is None:
-            continue
+                if params is None:
+                    continue
 
-        if params[0] == "0":
-            if params[1].lower() in ["!ldraw_org"]:
-                if params[2].lower() in ["lcad"]:
-                    part_type = params[3].lower()
-                else:
-                    part_type = params[2].lower()
+                if params[0] == "0":
+                    if params[1].lower() in ["!ldraw_org"]:
+                        if params[2].lower() in ["lcad"]:
+                            part_type = params[3].lower()
+                        else:
+                            part_type = params[2].lower()
 
     is_model = part_type in ldraw_part_types.model_types
 
@@ -235,8 +233,8 @@ def do_export(filepath):
             continue
 
         do_export_polygons = False
-        if options.ldraw_export_polygons_key in obj:
-            do_export_polygons = obj[options.ldraw_export_polygons_key] == 1
+        if strings.ldraw_export_polygons_key in obj:
+            do_export_polygons = obj[strings.ldraw_export_polygons_key] == 1
 
         if do_export_polygons:
             polygon_objects.append(obj)

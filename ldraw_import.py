@@ -23,6 +23,9 @@ def do_import(filename):
     ldraw_file.read_color_table()
     blender_materials.create_blender_node_groups()
 
+    if options.all_materials:
+        blender_materials.create_ldraw_materials()
+
     filename = ldraw_file.handle_mpd(filename)
     if filename is None:
         return

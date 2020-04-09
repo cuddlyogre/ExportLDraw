@@ -4,7 +4,9 @@ import math
 import mathutils
 import bmesh
 
+from . import strings
 from . import options
+from . import filesystem
 from . import matrices
 from . import ldraw_part_types
 
@@ -80,10 +82,10 @@ def apply_slope_materials(mesh, filename):
         for f in mesh.polygons:
             face_material = mesh.materials[f.material_index]
 
-            if options.ldraw_color_code_key not in face_material:
+            if strings.ldraw_color_code_key not in face_material:
                 continue
 
-            color_code = str(face_material[options.ldraw_color_code_key])
+            color_code = str(face_material[strings.ldraw_color_code_key])
             color = ldraw_colors.get_color(color_code)
 
             is_slope_material = special_bricks.is_slope_face(filename, f)
@@ -258,7 +260,8 @@ def bmesh_ops(mesh, geometry):
         if 'BevelWeight' in bm.edges.layers.bevel_weight:
             bevel_weight_layer = bm.edges.layers.bevel_weight['BevelWeight']
 
-    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+    if options.recalculate_normals:
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
 
     # Create kd tree for fast "find nearest points" calculation
     kd = mathutils.kdtree.KDTree(len(bm.verts))
@@ -534,14 +537,14 @@ class LDrawNode:
                     mesh.auto_smooth_angle = math.radians(89.9)  # 1.56905 - 89.9 so 90 degrees and up are affected
                 if options.make_gaps and options.gap_target == "mesh":
                     mesh.transform(matrices.scaled_matrix(options.gap_scale))
-                mesh[options.ldraw_filename_key] = self.file.name
+                mesh[strings.ldraw_filename_key] = self.file.name
             mesh = bpy.data.meshes[key]
 
             if options.import_edges:
                 e_key = f"e_{key}"
                 if e_key not in bpy.data.meshes:
                     edge_mesh = create_edge_mesh(e_key, geometry)
-                    edge_mesh[options.ldraw_edge_key] = self.file.name
+                    edge_mesh[strings.ldraw_edge_key] = self.file.name
                     if options.make_gaps and options.gap_target == "mesh":
                         edge_mesh.transform(matrices.scaled_matrix(options.gap_scale))
                 edge_mesh = bpy.data.meshes[e_key]
@@ -560,7 +563,7 @@ class LDrawNode:
                     collection.objects.link(gp_object)
 
             obj = create_object(mesh, parent_matrix, self.matrix)
-            obj[options.ldraw_filename_key] = self.file.name
+            obj[strings.ldraw_filename_key] = self.file.name
 
             if file_collection is not None:
                 file_collection.objects.link(obj)

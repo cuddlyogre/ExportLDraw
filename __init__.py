@@ -68,8 +68,8 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
     )
 
     use_alt_colors: bpy.props.BoolProperty(
-        name="Use alt colors",
-        description="Use alternate color settings",
+        name="Use alternate colors",
+        description="Use LDCfgalt.ldr",
         default=True,
     )
 
@@ -268,6 +268,24 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         default=False
     )
 
+    all_materials: bpy.props.BoolProperty(
+        name="Import all materials",
+        description="Import all materials from chosen LDConfig.ldr file",
+        default=False
+    )
+
+    prefer_unofficial: bpy.props.BoolProperty(
+        name="Prefer unofficial parts",
+        description="Search for unofficial parts first",
+        default=False
+    )
+
+    recalculate_normals: bpy.props.BoolProperty(
+        name="Recalculate normals",
+        description="Recalculate normals",
+        default=True
+    )
+
     def execute(self, context):
         start = time.monotonic()
 
@@ -301,6 +319,9 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         options.parent_to_empty = self.parent_to_empty
         options.gap_target = self.gap_target
         options.gap_scale_strategy = self.gap_scale_strategy
+        options.prefer_unofficial = self.prefer_unofficial
+        options.all_materials = self.all_materials
+        options.recalculate_normals = self.recalculate_normals
 
         ldraw_import.do_import(bpy.path.abspath(self.filepath))
 
@@ -320,19 +341,32 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
+
         box = layout.box()
+
         box.label(text="LDraw filepath:", icon='FILEBROWSER')
         box.prop(self, "ldraw_path")
+
+        box.label(text="Import Options")
         box.prop(self, "use_alt_colors")
         box.prop(self, "resolution", expand=True)
+        box.prop(self, "display_logo")
+        box.prop(self, "chosen_logo")
+
+        box.label(text="Scaling Options")
         box.prop(self, "import_scale")
         box.prop(self, "parent_to_empty")
         box.prop(self, "make_gaps")
         box.prop(self, "gap_scale")
         box.prop(self, "gap_target")
         box.prop(self, "gap_scale_strategy")
-        box.prop(self, "display_logo")
-        box.prop(self, "chosen_logo")
+
+        box.label(text="Cleanup Options")
+        box.prop(self, "remove_doubles")
+        box.prop(self, "merge_distance")
+        box.prop(self, "smooth_type")
+        box.prop(self, "shade_smooth")
+        box.prop(self, "recalculate_normals")
 
         box.label(text="Meta Commands")
         box.prop(self, "meta_group")
@@ -346,12 +380,10 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         box.prop(self, "set_timelime_markers")
 
         box.label(text="Extras")
+        box.prop(self, "prefer_unofficial")
+        box.prop(self, "all_materials")
         box.prop(self, "add_subsurface")
         box.prop(self, "bevel_edges")
-        box.prop(self, "shade_smooth")
-        box.prop(self, "smooth_type")
-        box.prop(self, "remove_doubles")
-        box.prop(self, "merge_distance")
         box.prop(self, "debug_text")
         box.prop(self, "no_studs")
         box.prop(self, "import_edges")
@@ -372,19 +404,19 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
     ldraw_path: bpy.props.StringProperty(
         name="",
         description="Full filepath to the LDraw Parts Library (download from http://www.ldraw.org)",
-        default="d:\\ldraw"
+        default=filesystem.locate_ldraw()
+    )
+
+    use_alt_colors: bpy.props.BoolProperty(
+        name="Use alternate colors",
+        description="Use LDCfgalt.ldr",
+        default=True,
     )
 
     selection_only: bpy.props.BoolProperty(
         name="Selection only",
         description="Export selected objects only",
         default=True
-    )
-
-    remove_doubles: bpy.props.BoolProperty(
-        name="Remove doubles",
-        description="Merge overlapping verices",
-        default=True,
     )
 
     recalculate_normals: bpy.props.BoolProperty(
@@ -399,6 +431,20 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
         default=False
     )
 
+    remove_doubles: bpy.props.BoolProperty(
+        name="Remove doubles",
+        description="Merge overlapping verices",
+        default=True,
+    )
+
+    merge_distance: bpy.props.FloatProperty(
+        name="Merge Distance",
+        description="Maximum distance between elements to merge",
+        default=0.05,
+        precision=3,
+        min=0.0,
+    )
+
     ngon_handling: bpy.props.EnumProperty(
         name="Ngon handling",
         description="What to do with ngons",
@@ -409,16 +455,26 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
         default="triangulate",
     )
 
+    export_precision: bpy.props.IntProperty(
+        name="Export precision",
+        description="Round vertex coordinates to this number of places",
+        default=2,
+        min=0,
+    )
+
     def execute(self, context):
         start = time.monotonic()
 
         options.ldraw_path = self.ldraw_path
+        options.use_alt_colors = self.use_alt_colors
+        options.selection_only = self.selection_only
+        options.export_precision = self.export_precision
+        options.remove_doubles = self.remove_doubles
+        options.merge_distance = self.merge_distance
+        options.recalculate_normals = self.recalculate_normals
+        options.triangulate = self.triangulate
+        options.ngon_handling = self.ngon_handling
 
-        ldraw_export.triangulate = self.triangulate
-        ldraw_export.selection_only = self.selection_only
-        ldraw_export.remove_doubles = self.remove_doubles
-        ldraw_export.recalculate_normals = self.recalculate_normals
-        ldraw_export.ngon_handling = self.ngon_handling
         ldraw_export.do_export(bpy.path.abspath(self.filepath))
 
         print("")
@@ -431,6 +487,27 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
         print("")
 
         return {'FINISHED'}
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+
+        box = layout.box()
+
+        box.label(text="LDraw filepath:", icon='FILEBROWSER')
+        box.prop(self, "ldraw_path")
+
+        box.label(text="Export Options")
+        box.prop(self, "selection_only")
+        box.prop(self, "use_alt_colors")
+        box.prop(self, "export_precision")
+
+        box.label(text="Cleanup Options")
+        box.prop(self, "remove_doubles")
+        box.prop(self, "merge_distance")
+        box.prop(self, "recalculate_normals")
+        box.prop(self, "triangulate")
+        box.prop(self, "ngon_handling")
 
 
 def build_import_menu(self, context):

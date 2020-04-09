@@ -1,6 +1,7 @@
 import bpy
 import mathutils
 
+from . import strings
 from . import options
 from . import ldraw_colors
 
@@ -24,11 +25,21 @@ def create_blender_node_groups():
     __create_blender_lego_milky_white_node_group()
 
 
+def create_ldraw_materials():
+    for color_code in ldraw_colors.colors:
+        color = ldraw_colors.colors[color_code]
+        is_slope_material = False
+        use_edge_color = False
+        get_material(color, is_slope_material=is_slope_material, use_edge_color=use_edge_color)
+
+
 def get_material(color, use_edge_color=False, is_slope_material=False):
     key = []
-    key.append(f"LDraw Material {color.name} ")
+    key.append("LDraw Material")
+    key.append(color.name)
 
     suffix = []
+    suffix.append(color.code)
     if options.use_alt_colors:
         suffix.append("alt")
     if is_slope_material:
@@ -71,7 +82,7 @@ def __create_node_based_material(key, color, use_edge_color=False, is_slope_mate
         diffuse_color = (1.0, 1.0, 0.0) + (1.0,)
         material.diffuse_color = diffuse_color
         material["LEGO.isTransparent"] = is_transparent
-        material[options.ldraw_color_code_key] = ""
+        material[strings.ldraw_color_code_key] = "16"
         __create_cycles_basic(nodes, links, diffuse_color, 1.0, "")
         return material
 
@@ -79,7 +90,7 @@ def __create_node_based_material(key, color, use_edge_color=False, is_slope_mate
         diffuse_color = color.edge_color + (1.0,)
         material.diffuse_color = diffuse_color
         material["LEGO.isTransparent"] = is_transparent
-        material[options.ldraw_color_code_key] = ""
+        material[strings.ldraw_color_code_key] = "24"
         __create_cycles_basic(nodes, links, diffuse_color, 1.0, "")
         return material
 
@@ -88,7 +99,7 @@ def __create_node_based_material(key, color, use_edge_color=False, is_slope_mate
     diffuse_color = color.color + (1.0,)
     material.diffuse_color = diffuse_color
     material["LEGO.isTransparent"] = is_transparent
-    material[options.ldraw_color_code_key] = color.code
+    material[strings.ldraw_color_code_key] = color.code
 
     if is_transparent:
         material.blend_method = "BLEND"
@@ -858,7 +869,6 @@ def __create_blender_lego_emission_node_group():
 
     if options.add_subsurface:
         node_group.links.new(group_input.outputs['Color'], node_main.inputs['Subsurface Color'])
-
     node_group.links.new(group_input.outputs['Color'], node_emit.inputs['Color'])
     node_group.links.new(group_input.outputs['Color'], node_main.inputs['Base Color'])
     node_group.links.new(group_input.outputs['Normal'], node_main.inputs['Normal'])
@@ -936,10 +946,8 @@ def __create_blender_lego_pearlescent_node_group():
     node_group.links.new(node_sep_hsv.outputs['S'], node_com_hsv.inputs['S'])
     node_group.links.new(node_sep_hsv.outputs['V'], node_multiply.inputs[0])
     node_group.links.new(node_com_hsv.outputs['Color'], node_principled.inputs['Base Color'])
-
     if options.add_subsurface:
         node_group.links.new(node_com_hsv.outputs['Color'], node_principled.inputs['Subsurface Color'])
-
     node_group.links.new(node_tex_coord.outputs['Object'], node_tex_wave.inputs['Vector'])
     node_group.links.new(node_tex_wave.outputs['Fac'], node_color_ramp.inputs['Fac'])
     node_group.links.new(node_color_ramp.outputs['Color'], node_multiply.inputs[1])
