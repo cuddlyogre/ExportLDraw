@@ -6,7 +6,6 @@ import bmesh
 
 from . import strings
 from . import options
-from . import filesystem
 from . import matrices
 from . import ldraw_part_types
 
