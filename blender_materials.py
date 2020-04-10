@@ -5,6 +5,8 @@ from . import strings
 from . import options
 from . import ldraw_colors
 
+slope_texture_strength = 0.6
+
 
 # https://github.com/bblanimation/abs-plastic-materials
 def create_blender_node_groups():
@@ -36,10 +38,10 @@ def create_ldraw_materials():
 def get_material(color, use_edge_color=False, is_slope_material=False):
     key = []
     key.append("LDraw Material")
+    key.append(color.code)
     key.append(color.name)
 
     suffix = []
-    suffix.append(color.code)
     if options.use_alt_colors:
         suffix.append("alt")
     if is_slope_material:
@@ -464,8 +466,12 @@ def __get_group(nodes):
     return None
 
 
-def __create_cycles_slope_texture(nodes, links, strength=0.6):
+def __create_cycles_slope_texture(nodes, links, strength=None):
     """Slope face normals for Cycles render engine"""
+
+    if strength is None:
+        strength = slope_texture_strength
+
     slope_texture = __node_slope_texture(nodes, strength, -200, 5)
     target = __get_group(nodes)
     if target is not None:
@@ -579,13 +585,13 @@ def __create_blender_slope_texture_node_group():
     node_group.inputs.new('NodeSocketFloat', 'Strength')
     node_group.inputs.new('NodeSocketVectorDirection', 'Normal')
 
-    node_group.inputs[0].default_value = 0.6
+    node_group.inputs[0].default_value = slope_texture_strength
 
     node_group.outputs.new('NodeSocketVectorDirection', 'Normal')
 
     node_texture_coordinate = __node_tex_coord(node_group.nodes, -300, 240)
     node_voronoi = __node_voronoi(node_group.nodes, 6.2, -100, 155)
-    node_bump = __node_bump_shader(node_group.nodes, 0.3, 1.0, 90, 50)
+    node_bump = __node_bump_shader(node_group.nodes, slope_texture_strength, 1.0, 90, 50)
     node_bump.invert = True
 
     node_group.links.new(node_texture_coordinate.outputs['Object'], node_voronoi.inputs['Vector'])
