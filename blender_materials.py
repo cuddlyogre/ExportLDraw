@@ -142,64 +142,64 @@ def __create_node_based_material(key, color, use_edge_color=False, is_slope_mate
 
 
 def __node_slope_texture(nodes, strength, x, y):
-    node = nodes.new('ShaderNodeGroup')
-    node.node_tree = bpy.data.node_groups['Slope Texture']
+    node = nodes.new("ShaderNodeGroup")
+    node.node_tree = bpy.data.node_groups["Slope Texture"]
     node.location = x, y
     node.inputs['Strength'].default_value = strength
     return node
 
 
 def __node_lego_standard(nodes, color, x, y):
-    node = nodes.new('ShaderNodeGroup')
-    node.node_tree = bpy.data.node_groups['LEGO Standard']
+    node = nodes.new("ShaderNodeGroup")
+    node.node_tree = bpy.data.node_groups["LEGO Standard"]
     node.location = x, y
     node.inputs['Color'].default_value = color
     return node
 
 
 def __node_lego_transparent_fluorescent(nodes, color, x, y):
-    node = nodes.new('ShaderNodeGroup')
-    node.node_tree = bpy.data.node_groups['LEGO Transparent Fluorescent']
+    node = nodes.new("ShaderNodeGroup")
+    node.node_tree = bpy.data.node_groups["LEGO Transparent Fluorescent"]
     node.location = x, y
     node.inputs['Color'].default_value = color
     return node
 
 
 def __node_lego_transparent(nodes, color, x, y):
-    node = nodes.new('ShaderNodeGroup')
-    node.node_tree = bpy.data.node_groups['LEGO Transparent']
+    node = nodes.new("ShaderNodeGroup")
+    node.node_tree = bpy.data.node_groups["LEGO Transparent"]
     node.location = x, y
     node.inputs['Color'].default_value = color
     return node
 
 
 def __node_lego_glass(nodes, color, x, y):
-    node = nodes.new('ShaderNodeGroup')
-    node.node_tree = bpy.data.node_groups['LEGO Glass']
+    node = nodes.new("ShaderNodeGroup")
+    node.node_tree = bpy.data.node_groups["LEGO Glass"]
     node.location = x, y
     node.inputs['Color'].default_value = color
     return node
 
 
 def __node_lego_rubber_solid(nodes, color, x, y):
-    node = nodes.new('ShaderNodeGroup')
-    node.node_tree = bpy.data.node_groups['LEGO Rubber Solid']
+    node = nodes.new("ShaderNodeGroup")
+    node.node_tree = bpy.data.node_groups["LEGO Rubber Solid"]
     node.location = x, y
     node.inputs['Color'].default_value = color
     return node
 
 
 def __node_lego_rubber_translucent(nodes, color, x, y):
-    node = nodes.new('ShaderNodeGroup')
-    node.node_tree = bpy.data.node_groups['LEGO Rubber Translucent']
+    node = nodes.new("ShaderNodeGroup")
+    node.node_tree = bpy.data.node_groups["LEGO Rubber Translucent"]
     node.location = x, y
     node.inputs['Color'].default_value = color
     return node
 
 
 def __node_lego_emission(nodes, color, luminance, x, y):
-    node = nodes.new('ShaderNodeGroup')
-    node.node_tree = bpy.data.node_groups['LEGO Emission']
+    node = nodes.new("ShaderNodeGroup")
+    node.node_tree = bpy.data.node_groups["LEGO Emission"]
     node.location = x, y
     node.inputs['Color'].default_value = color
     node.inputs['Luminance'].default_value = luminance
@@ -207,32 +207,32 @@ def __node_lego_emission(nodes, color, luminance, x, y):
 
 
 def __node_lego_chrome(nodes, color, x, y):
-    node = nodes.new('ShaderNodeGroup')
-    node.node_tree = bpy.data.node_groups['LEGO Chrome']
+    node = nodes.new("ShaderNodeGroup")
+    node.node_tree = bpy.data.node_groups["LEGO Chrome"]
     node.location = x, y
     node.inputs['Color'].default_value = color
     return node
 
 
 def __node_lego_pearlescent(nodes, color, x, y):
-    node = nodes.new('ShaderNodeGroup')
-    node.node_tree = bpy.data.node_groups['LEGO Pearlescent']
+    node = nodes.new("ShaderNodeGroup")
+    node.node_tree = bpy.data.node_groups["LEGO Pearlescent"]
     node.location = x, y
     node.inputs['Color'].default_value = color
     return node
 
 
 def __node_lego_metal(nodes, color, x, y):
-    node = nodes.new('ShaderNodeGroup')
-    node.node_tree = bpy.data.node_groups['LEGO Metal']
+    node = nodes.new("ShaderNodeGroup")
+    node.node_tree = bpy.data.node_groups["LEGO Metal"]
     node.location = x, y
     node.inputs['Color'].default_value = color
     return node
 
 
 def __node_lego_glitter(nodes, color, glittercolor, x, y):
-    node = nodes.new('ShaderNodeGroup')
-    node.node_tree = bpy.data.node_groups['LEGO Glitter']
+    node = nodes.new("ShaderNodeGroup")
+    node.node_tree = bpy.data.node_groups["LEGO Glitter"]
     node.location = x, y
     node.inputs['Color'].default_value = color
     node.inputs['Glitter Color'].default_value = glittercolor
@@ -240,8 +240,8 @@ def __node_lego_glitter(nodes, color, glittercolor, x, y):
 
 
 def __node_lego_speckle(nodes, color, specklecolor, x, y):
-    node = nodes.new('ShaderNodeGroup')
-    node.node_tree = bpy.data.node_groups['LEGO Speckle']
+    node = nodes.new("ShaderNodeGroup")
+    node.node_tree = bpy.data.node_groups["LEGO Speckle"]
     node.location = x, y
     node.inputs['Color'].default_value = color
     node.inputs['Speckle Color'].default_value = specklecolor
@@ -249,28 +249,28 @@ def __node_lego_speckle(nodes, color, specklecolor, x, y):
 
 
 def __node_lego_milky_white(nodes, color, x, y):
-    node = nodes.new('ShaderNodeGroup')
-    node.node_tree = bpy.data.node_groups['LEGO Milky White']
+    node = nodes.new("ShaderNodeGroup")
+    node.node_tree = bpy.data.node_groups["LEGO Milky White"]
     node.location = x, y
     node.inputs['Color'].default_value = color
     return node
 
 
 def __node_mix(nodes, factor, x, y):
-    node = nodes.new('ShaderNodeMixShader')
+    node = nodes.new("ShaderNodeMixShader")
     node.location = x, y
     node.inputs['Fac'].default_value = factor
     return node
 
 
 def __node_output(nodes, x, y):
-    node = nodes.new('ShaderNodeOutputMaterial')
+    node = nodes.new("ShaderNodeOutputMaterial")
     node.location = x, y
     return node
 
 
 def __node_principled(nodes, subsurface, sub_rad, metallic, roughness, clearcoat, clearcoat_roughness, ior, transmission, x, y):
-    node = nodes.new('ShaderNodeBsdfPrincipled')
+    node = nodes.new("ShaderNodeBsdfPrincipled")
     node.location = x, y
     if options.add_subsurface:
         node.inputs['Subsurface'].default_value = subsurface
@@ -285,7 +285,7 @@ def __node_principled(nodes, subsurface, sub_rad, metallic, roughness, clearcoat
 
 
 def __node_hsv(nodes, h, s, v, x, y):
-    node = nodes.new('ShaderNodeHueSaturation')
+    node = nodes.new("ShaderNodeHueSaturation")
     node.location = x, y
     node.inputs[0].default_value = h
     node.inputs[1].default_value = s
@@ -294,25 +294,25 @@ def __node_hsv(nodes, h, s, v, x, y):
 
 
 def __node_separate_hsv(nodes, x, y):
-    node = nodes.new('ShaderNodeSeparateHSV')
+    node = nodes.new("ShaderNodeSeparateHSV")
     node.location = x, y
     return node
 
 
 def __node_combine_hsv(nodes, x, y):
-    node = nodes.new('ShaderNodeCombineHSV')
+    node = nodes.new("ShaderNodeCombineHSV")
     node.location = x, y
     return node
 
 
 def __node_tex_coord(nodes, x, y):
-    node = nodes.new('ShaderNodeTexCoord')
+    node = nodes.new("ShaderNodeTexCoord")
     node.location = x, y
     return node
 
 
 def __node_tex_wave(nodes, wave_type, wave_profile, scale, distortion, detail, detail_scale, x, y):
-    node = nodes.new('ShaderNodeTexWave')
+    node = nodes.new("ShaderNodeTexWave")
     node.wave_type = wave_type
     node.wave_profile = wave_profile
     node.inputs[1].default_value = scale
@@ -324,7 +324,7 @@ def __node_tex_wave(nodes, wave_type, wave_profile, scale, distortion, detail, d
 
 
 def __node_diffuse(nodes, roughness, x, y):
-    node = nodes.new('ShaderNodeBsdfDiffuse')
+    node = nodes.new("ShaderNodeBsdfDiffuse")
     node.location = x, y
     node.inputs['Color'].default_value = (1, 1, 1, 1)
     node.inputs['Roughness'].default_value = roughness
@@ -332,7 +332,7 @@ def __node_diffuse(nodes, roughness, x, y):
 
 
 def __node_glass(nodes, roughness, ior, distribution, x, y):
-    node = nodes.new('ShaderNodeBsdfGlass')
+    node = nodes.new("ShaderNodeBsdfGlass")
     node.location = x, y
     node.distribution = distribution
     node.inputs['Color'].default_value = (1, 1, 1, 1)
@@ -342,14 +342,14 @@ def __node_glass(nodes, roughness, ior, distribution, x, y):
 
 
 def __node_fresnel(nodes, ior, x, y):
-    node = nodes.new('ShaderNodeFresnel')
+    node = nodes.new("ShaderNodeFresnel")
     node.location = x, y
     node.inputs['IOR'].default_value = ior
     return node
 
 
 def __node_glossy(nodes, color, roughness, distribution, x, y):
-    node = nodes.new('ShaderNodeBsdfGlossy')
+    node = nodes.new("ShaderNodeBsdfGlossy")
     node.location = x, y
     node.distribution = distribution
     node.inputs['Color'].default_value = color
@@ -358,72 +358,72 @@ def __node_glossy(nodes, color, roughness, distribution, x, y):
 
 
 def __node_translucent(nodes, x, y):
-    node = nodes.new('ShaderNodeBsdfTranslucent')
+    node = nodes.new("ShaderNodeBsdfTranslucent")
     node.location = x, y
     return node
 
 
 def __node_transparent(nodes, x, y):
-    node = nodes.new('ShaderNodeBsdfTransparent')
+    node = nodes.new("ShaderNodeBsdfTransparent")
     node.location = x, y
     return node
 
 
 def __node_add_shader(nodes, x, y):
-    node = nodes.new('ShaderNodeAddShader')
+    node = nodes.new("ShaderNodeAddShader")
     node.location = x, y
     return node
 
 
 def __node_volume(nodes, density, x, y):
-    node = nodes.new('ShaderNodeVolumeAbsorption')
+    node = nodes.new("ShaderNodeVolumeAbsorption")
     node.inputs['Density'].default_value = density
     node.location = x, y
     return node
 
 
 def __node_light_path(nodes, x, y):
-    node = nodes.new('ShaderNodeLightPath')
+    node = nodes.new("ShaderNodeLightPath")
     node.location = x, y
     return node
 
 
 def __node_math(nodes, operation, x, y):
-    node = nodes.new('ShaderNodeMath')
+    node = nodes.new("ShaderNodeMath")
     node.operation = operation
     node.location = x, y
     return node
 
 
 def __node_vector_math(nodes, operation, x, y):
-    node = nodes.new('ShaderNodeVectorMath')
+    node = nodes.new("ShaderNodeVectorMath")
     node.operation = operation
     node.location = x, y
     return node
 
 
 def __node_emission(nodes, x, y):
-    node = nodes.new('ShaderNodeEmission')
+    node = nodes.new("ShaderNodeEmission")
     node.location = x, y
     return node
 
 
 def __node_voronoi(nodes, scale, x, y):
-    node = nodes.new('ShaderNodeTexVoronoi')
+    node = nodes.new("ShaderNodeTexVoronoi")
     node.location = x, y
     node.inputs['Scale'].default_value = scale
     return node
 
 
 def __node_gamma(nodes, gamma, x, y):
-    node = nodes.new('ShaderNodeGamma')
+    node = nodes.new("ShaderNodeGamma")
     node.location = x, y
     node.inputs['Gamma'].default_value = gamma
     return node
 
 
 def __node_color_ramp(nodes, pos1, color1, pos2, color2, x, y):
-    node = nodes.new('ShaderNodeValToRGB')
+    node = nodes.new("ShaderNodeValToRGB")
     node.location = x, y
     node.color_ramp.elements[0].position = pos1
     node.color_ramp.elements[0].color = color1
@@ -433,7 +433,7 @@ def __node_color_ramp(nodes, pos1, color1, pos2, color2, x, y):
 
 
 def __node_noise_texture(nodes, scale, detail, distortion, x, y):
-    node = nodes.new('ShaderNodeTexNoise')
+    node = nodes.new("ShaderNodeTexNoise")
     node.location = x, y
     node.inputs['Scale'].default_value = scale
     node.inputs['Detail'].default_value = detail
@@ -442,7 +442,7 @@ def __node_noise_texture(nodes, scale, detail, distortion, x, y):
 
 
 def __node_bump_shader(nodes, strength, distance, x, y):
-    node = nodes.new('ShaderNodeBump')
+    node = nodes.new("ShaderNodeBump")
     node.location = x, y
     node.inputs[0].default_value = strength
     node.inputs[1].default_value = distance
@@ -450,7 +450,7 @@ def __node_bump_shader(nodes, strength, distance, x, y):
 
 
 def __node_refraction(nodes, roughness, ior, x, y):
-    node = nodes.new('ShaderNodeBsdfRefraction')
+    node = nodes.new("ShaderNodeBsdfRefraction")
     node.inputs['Roughness'].default_value = roughness
     node.inputs['IOR'].default_value = ior
     node.location = x, y
@@ -570,10 +570,10 @@ def __create_blender_slope_texture_node_group():
     node_group = bpy.data.node_groups.new(group_name, 'ShaderNodeTree')
     node_group.use_fake_user = True
 
-    group_input = node_group.nodes.new('NodeGroupInput')
+    group_input = node_group.nodes.new("NodeGroupInput")
     group_input.location = (-530, 0)
 
-    group_output = node_group.nodes.new('NodeGroupOutput')
+    group_output = node_group.nodes.new("NodeGroupOutput")
     group_output.location = (300, 0)
 
     node_group.inputs.new('NodeSocketFloat', 'Strength')
@@ -604,10 +604,10 @@ def __create_blender_lego_standard_node_group():
     node_group = bpy.data.node_groups.new(group_name, 'ShaderNodeTree')
     node_group.use_fake_user = True
 
-    group_input = node_group.nodes.new('NodeGroupInput')
+    group_input = node_group.nodes.new("NodeGroupInput")
     group_input.location = (-250, 0)
 
-    group_output = node_group.nodes.new('NodeGroupOutput')
+    group_output = node_group.nodes.new("NodeGroupOutput")
     group_output.location = (250, 0)
 
     node_group.inputs.new('NodeSocketColor', 'Color')
@@ -633,10 +633,10 @@ def __create_blender_lego_transparent_node_group():
     node_group = bpy.data.node_groups.new(group_name, 'ShaderNodeTree')
     node_group.use_fake_user = True
 
-    group_input = node_group.nodes.new('NodeGroupInput')
+    group_input = node_group.nodes.new("NodeGroupInput")
     group_input.location = (-250, 0)
 
-    group_output = node_group.nodes.new('NodeGroupOutput')
+    group_output = node_group.nodes.new("NodeGroupOutput")
     group_output.location = (250, 0)
 
     node_group.inputs.new('NodeSocketColor', 'Color')
@@ -736,10 +736,10 @@ def __create_blender_lego_transparent_fluorescent_node_group():
     node_group = bpy.data.node_groups.new(group_name, 'ShaderNodeTree')
     node_group.use_fake_user = True
 
-    group_input = node_group.nodes.new('NodeGroupInput')
+    group_input = node_group.nodes.new("NodeGroupInput")
     group_input.location = (-250, 0)
 
-    group_output = node_group.nodes.new('NodeGroupOutput')
+    group_output = node_group.nodes.new("NodeGroupOutput")
     group_output.location = (250, 0)
 
     node_group.inputs.new('NodeSocketColor', 'Color')
@@ -770,10 +770,10 @@ def __create_blender_lego_rubber_node_group():
     node_group = bpy.data.node_groups.new(group_name, 'ShaderNodeTree')
     node_group.use_fake_user = True
 
-    group_input = node_group.nodes.new('NodeGroupInput')
+    group_input = node_group.nodes.new("NodeGroupInput")
     group_input.location = (45 - 950, 340 - 50)
 
-    group_output = node_group.nodes.new('NodeGroupOutput')
+    group_output = node_group.nodes.new("NodeGroupOutput")
     group_output.location = (45 + 200, 340 - 5)
 
     node_group.inputs.new('NodeSocketColor', 'Color')
@@ -806,10 +806,10 @@ def __create_blender_lego_rubber_translucent_node_group():
     node_group = bpy.data.node_groups.new(group_name, 'ShaderNodeTree')
     node_group.use_fake_user = True
 
-    group_input = node_group.nodes.new('NodeGroupInput')
+    group_input = node_group.nodes.new("NodeGroupInput")
     group_input.location = (-250, 0)
 
-    group_output = node_group.nodes.new('NodeGroupOutput')
+    group_output = node_group.nodes.new("NodeGroupOutput")
     group_output.location = (250, 0)
 
     node_group.inputs.new('NodeSocketColor', 'Color')
@@ -850,10 +850,10 @@ def __create_blender_lego_emission_node_group():
     node_group = bpy.data.node_groups.new(group_name, 'ShaderNodeTree')
     node_group.use_fake_user = True
 
-    group_input = node_group.nodes.new('NodeGroupInput')
+    group_input = node_group.nodes.new("NodeGroupInput")
     group_input.location = (-450, 90)
 
-    group_output = node_group.nodes.new('NodeGroupOutput')
+    group_output = node_group.nodes.new("NodeGroupOutput")
     group_output.location = (250, 0)
 
     node_group.inputs.new('NodeSocketColor', 'Color')
@@ -887,10 +887,10 @@ def __create_blender_lego_chrome_node_group():
     node_group = bpy.data.node_groups.new(group_name, 'ShaderNodeTree')
     node_group.use_fake_user = True
 
-    group_input = node_group.nodes.new('NodeGroupInput')
+    group_input = node_group.nodes.new("NodeGroupInput")
     group_input.location = (-450, 90)
 
-    group_output = node_group.nodes.new('NodeGroupOutput')
+    group_output = node_group.nodes.new("NodeGroupOutput")
     group_output.location = (250, 0)
 
     node_group.inputs.new('NodeSocketColor', 'Color')
@@ -918,10 +918,10 @@ def __create_blender_lego_pearlescent_node_group():
     node_group = bpy.data.node_groups.new(group_name, 'ShaderNodeTree')
     node_group.use_fake_user = True
 
-    group_input = node_group.nodes.new('NodeGroupInput')
+    group_input = node_group.nodes.new("NodeGroupInput")
     group_input.location = (-450, 90)
 
-    group_output = node_group.nodes.new('NodeGroupOutput')
+    group_output = node_group.nodes.new("NodeGroupOutput")
     group_output.location = (630, 95)
 
     node_group.inputs.new('NodeSocketColor', 'Color')
@@ -964,10 +964,10 @@ def __create_blender_lego_metal_node_group():
     node_group = bpy.data.node_groups.new(group_name, 'ShaderNodeTree')
     node_group.use_fake_user = True
 
-    group_input = node_group.nodes.new('NodeGroupInput')
+    group_input = node_group.nodes.new("NodeGroupInput")
     group_input.location = (-450, 90)
 
-    group_output = node_group.nodes.new('NodeGroupOutput')
+    group_output = node_group.nodes.new("NodeGroupOutput")
     group_output.location = (250, 0)
 
     node_group.inputs.new('NodeSocketColor', 'Color')
@@ -991,10 +991,10 @@ def __create_blender_lego_glitter_node_group():
     node_group = bpy.data.node_groups.new(group_name, 'ShaderNodeTree')
     node_group.use_fake_user = True
 
-    group_input = node_group.nodes.new('NodeGroupInput')
+    group_input = node_group.nodes.new("NodeGroupInput")
     group_input.location = (-450, 0)
 
-    group_output = node_group.nodes.new('NodeGroupOutput')
+    group_output = node_group.nodes.new("NodeGroupOutput")
     group_output.location = (410, 0)
 
     node_group.inputs.new('NodeSocketColor', 'Color')
@@ -1029,10 +1029,10 @@ def __create_blender_lego_speckle_node_group():
     node_group = bpy.data.node_groups.new(group_name, 'ShaderNodeTree')
     node_group.use_fake_user = True
 
-    group_input = node_group.nodes.new('NodeGroupInput')
+    group_input = node_group.nodes.new("NodeGroupInput")
     group_input.location = (-450, 0)
 
-    group_output = node_group.nodes.new('NodeGroupOutput')
+    group_output = node_group.nodes.new("NodeGroupOutput")
     group_output.location = (410, 0)
 
     node_group.inputs.new('NodeSocketColor', 'Color')
@@ -1067,10 +1067,10 @@ def __create_blender_lego_milky_white_node_group():
     node_group = bpy.data.node_groups.new(group_name, 'ShaderNodeTree')
     node_group.use_fake_user = True
 
-    group_input = node_group.nodes.new('NodeGroupInput')
+    group_input = node_group.nodes.new("NodeGroupInput")
     group_input.location = (-450, 0)
 
-    group_output = node_group.nodes.new('NodeGroupOutput')
+    group_output = node_group.nodes.new("NodeGroupOutput")
     group_output.location = (350, 0)
 
     node_group.inputs.new('NodeSocketColor', 'Color')
