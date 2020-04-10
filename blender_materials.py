@@ -662,36 +662,50 @@ def __create_blender_lego_glass_node_group():
     node_group = bpy.data.node_groups.new(group_name, 'ShaderNodeTree')
     node_group.use_fake_user = True
 
-    group_input = node_group.nodes.new('NodeGroupInput')
-    group_input.location = (-900.0, -140.0)
+    group_input = node_group.nodes.new("NodeGroupInput")
+    group_input.name = "group_input"
+    group_input.location = (-1120.0, -40.0)
 
-    group_output = node_group.nodes.new('NodeGroupOutput')
+    group_output = node_group.nodes.new("NodeGroupOutput")
+    group_output.name = "group_output"
     group_output.location = (0.0, 0.0)
 
     node_group.inputs.new('NodeSocketColor', "Color")
+    node_group.inputs.new('NodeSocketFloatFactor', "Roughness")
+    node_group.inputs.new('NodeSocketFloat', "IOR")
     node_group.inputs.new('NodeSocketVectorDirection', "Normal")
+
+    node_group.inputs[0].default_value = (0.0, 0.0, 0.0, 1.0)
+    node_group.inputs[1].default_value = 0.06
+    node_group.inputs[2].default_value = 1.58
+    node_group.inputs[3].default_value = (0.0, 0.0, 0.0)
 
     node_group.outputs.new('NodeSocketShader', 'Shader')
 
     bsdf_glass = node_group.nodes.new("ShaderNodeBsdfGlass")
-    bsdf_glass.location = (-700.0, -60.0)
+    bsdf_glass.name = "bsdf_glass"
+    bsdf_glass.location = (-620.0, 20.0)
     bsdf_glass.inputs[1].default_value = 0.0
     bsdf_glass.inputs[2].default_value = 1.45
 
     bsdf_glossy = node_group.nodes.new("ShaderNodeBsdfGlossy")
-    bsdf_glossy.location = (-700.0, -300.0)
+    bsdf_glossy.name = "bsdf_glossy"
+    bsdf_glossy.location = (-620.0, -180.0)
     bsdf_glossy.inputs[1].default_value = 0.5
 
     fresnel = node_group.nodes.new("ShaderNodeFresnel")
-    fresnel.location = (-900.0, 100.0)
+    fresnel.name = "fresnel"
+    fresnel.location = (-900.0, 140.0)
     fresnel.inputs[0].default_value = 1.4
 
     bsdf_glossy_0 = node_group.nodes.new("ShaderNodeBsdfGlossy")
-    bsdf_glossy_0.location = (-400.0, -220.0)
+    bsdf_glossy_0.name = "bsdf_glossy_0"
+    bsdf_glossy_0.location = (-400.0, -200.0)
     bsdf_glossy_0.inputs[1].default_value = 0.5
 
     rgb_curve = node_group.nodes.new("ShaderNodeRGBCurve")
-    rgb_curve.location = (-700.0, 340.0)
+    rgb_curve.name = "rgb_curve"
+    rgb_curve.location = (-700.0, 420.0)
     rgb_curve.inputs[0].default_value = 0.5
     r = 0
     g = 1
@@ -703,20 +717,37 @@ def __create_blender_lego_glass_node_group():
     curves.points.new(1.0000, 1.0000)
 
     mix = node_group.nodes.new("ShaderNodeMixShader")
-    mix.location = (-400.0, -40.0)
+    mix.name = "mix"
+    mix.location = (-400.0, -20.0)
     mix.inputs[0].default_value = 0.25
 
     fresnel_0 = node_group.nodes.new("ShaderNodeFresnel")
-    fresnel_0.location = (-400.0, 120.0)
+    fresnel_0.name = "fresnel_0"
+    fresnel_0.location = (-400.0, 140.0)
     fresnel_0.inputs[0].default_value = 1.4
 
     mix_0 = node_group.nodes.new("ShaderNodeMixShader")
-    mix_0.location = (-200.0, 0.0)
+    mix_0.name = "mix_0"
+    mix_0.location = (-200.0, 20.0)
     mix_0.inputs[0].default_value = 0.5
 
+    # color
     node_group.links.new(group_input.outputs[0], bsdf_glass.inputs[0])
-    node_group.links.new(group_input.outputs[1], bsdf_glass.inputs[3])
     node_group.links.new(group_input.outputs[0], bsdf_glossy_0.inputs[0])
+
+    # roughness
+    node_group.links.new(group_input.outputs[1], bsdf_glass.inputs[1])
+    node_group.links.new(group_input.outputs[1], bsdf_glossy.inputs[1])
+    node_group.links.new(group_input.outputs[1], bsdf_glossy_0.inputs[1])
+
+    # ior
+    node_group.links.new(group_input.outputs[2], bsdf_glass.inputs[2])
+    node_group.links.new(group_input.outputs[2], fresnel.inputs[0])
+    node_group.links.new(group_input.outputs[2], fresnel_0.inputs[0])
+
+    # normal
+    node_group.links.new(group_input.outputs[3], bsdf_glass.inputs[3])
+
     node_group.links.new(bsdf_glass.outputs[0], mix.inputs[1])
     node_group.links.new(bsdf_glossy.outputs[0], mix.inputs[2])
     node_group.links.new(bsdf_glossy_0.outputs[0], mix_0.inputs[2])
