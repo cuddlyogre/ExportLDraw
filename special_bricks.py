@@ -1,7 +1,7 @@
 import math
 
 studs = ["stud.dat", "stud2.dat"]
-logos = ['logo', 'logo2', 'logo3', 'logo4', 'logo5', 'high-contrast']
+logos = ["logo", "logo2", "logo3", "logo4", "logo5", "high-contrast"]
 slopes = {
     '962.dat': {45},
     '2341.dat': {-45},

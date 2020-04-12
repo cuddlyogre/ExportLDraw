@@ -113,6 +113,7 @@ def get_child_node(line, params):
             new_filename = f"{name}-{options.chosen_logo}.{ext}"
             if filesystem.locate(new_filename):
                 filename = new_filename
+
     key = []
     key.append(options.resolution)
     if options.display_logo:
@@ -180,22 +181,22 @@ class LDrawFile:
                         self.part_type = params[2].lower()
                 elif params[1].lower() == "name:":
                     self.name = line[7:].lower().strip()
-                elif params[1].lower() in ['step']:
+                elif params[1].lower() in ["step"]:
                     if options.meta_step:
                         ldraw_node = LDrawNode(None)
                         ldraw_node.meta_command = params[1].lower()
                         self.child_nodes.append(ldraw_node)
-                elif params[1].lower() in ['save']:
+                elif params[1].lower() in ["save"]:
                     if options.meta_save:
                         ldraw_node = LDrawNode(None)
                         ldraw_node.meta_command = params[1].lower()
                         self.child_nodes.append(ldraw_node)
-                elif params[1].lower() in ['clear']:
+                elif params[1].lower() in ["clear"]:
                     if options.meta_clear:
                         ldraw_node = LDrawNode(None)
                         ldraw_node.meta_command = params[1].lower()
                         self.child_nodes.append(ldraw_node)
-                elif params[1].lower() in ['print', 'write']:
+                elif params[1].lower() in ["print", "write"]:
                     if options.meta_print_write:
                         print(line[7:].strip())
                 elif params[1].lower() in ["!ldcad"]:  # http://www.melkert.net/LDCad/tech/meta
@@ -206,10 +207,10 @@ class LDrawFile:
                         ldraw_node.meta_command = "group_def"
 
                         id_args = re.search(r"\[(.*)=(.*)\]", params[2])
-                        ldraw_node.meta_args['id'] = id_args[2]
+                        ldraw_node.meta_args["id"] = id_args[2]
 
                         name_args = re.search(r"\[(.*)=(.*)\]", params[4])
-                        ldraw_node.meta_args['name'] = name_args[2]
+                        ldraw_node.meta_args["name"] = name_args[2]
 
                         self.child_nodes.append(ldraw_node)
                     elif params[2].lower() in ["group_nxt"]:
@@ -219,7 +220,7 @@ class LDrawFile:
                         ldraw_node.meta_command = "group_nxt"
 
                         id_args = re.search(r"\[(.*)=(.*)\]", params[1])
-                        ldraw_node.meta_args['id'] = id_args[2]
+                        ldraw_node.meta_args["id"] = id_args[2]
 
                         self.child_nodes.append(ldraw_node)
                 elif params[1].lower() in ["!leocad"]:  # https://www.leocad.org/docs/meta.html
@@ -231,7 +232,7 @@ class LDrawFile:
                             if begin_params is not None:
                                 ldraw_node = LDrawNode(None)
                                 ldraw_node.meta_command = "group_begin"
-                                ldraw_node.meta_args['name'] = begin_params[1]
+                                ldraw_node.meta_args["name"] = begin_params[1]
                                 self.child_nodes.append(ldraw_node)
                         elif params[3].lower() in ["end"]:
                             ldraw_node = LDrawNode(None)
@@ -316,11 +317,12 @@ class LDrawFile:
                             texmap_fallback = False
 
                             ldraw_node = LDrawNode(None)
+                            ldraw_node.meta_args["filename"] = filename
                             ldraw_node.meta_command = "texmap_start"
-                            ldraw_node.meta_args['method'] = params[3].lower()
+                            ldraw_node.meta_args["method"] = params[3].lower()
 
                             (x1, y1, z1, x2, y2, z2, x3, y3, z3) = map(float, params[4:13])
-                            ldraw_node.meta_args['parameters'] = [
+                            ldraw_node.meta_args["parameters"] = [
                                 mathutils.Vector((x1, y1, z1)),
                                 mathutils.Vector((x2, y2, z2)),
                                 mathutils.Vector((x3, y3, z3)),
@@ -351,8 +353,8 @@ class LDrawFile:
                             # 1. image.png
                             # 2. image 2.dat
 
-                            ldraw_node.meta_args['texmap'] = texmap
-                            ldraw_node.meta_args['glossmap'] = glossmap
+                            ldraw_node.meta_args["texmap"] = texmap
+                            ldraw_node.meta_args["glossmap"] = glossmap
                             self.child_nodes.append(ldraw_node)
                         elif params[2].lower() in ["fallback"]:
                             texmap_fallback = True

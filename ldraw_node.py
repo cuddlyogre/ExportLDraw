@@ -257,7 +257,7 @@ def bmesh_ops(mesh, geometry):
     bevel_weight_layer = None
     if options.bevel_edges:
         if 'BevelWeight' in bm.edges.layers.bevel_weight:
-            bevel_weight_layer = bm.edges.layers.bevel_weight['BevelWeight']
+            bevel_weight_layer = bm.edges.layers.bevel_weight["BevelWeight"]
 
     if options.recalculate_normals:
         bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
@@ -363,19 +363,19 @@ class LDrawNode:
                 current_step += 1
                 set_step()
             elif self.meta_command == "group_begin":
-                create_meta_group(self.meta_args['name'], parent_collection)
+                create_meta_group(self.meta_args["name"], parent_collection)
                 end_next_collection = False
-                if self.meta_args['name'] in bpy.data.collections:
-                    next_collection = bpy.data.collections[self.meta_args['name']]
+                if self.meta_args["name"] in bpy.data.collections:
+                    next_collection = bpy.data.collections[self.meta_args["name"]]
             elif self.meta_command == "group_end":
                 end_next_collection = True
             elif self.meta_command == "group_def":
-                if self.meta_args['id'] not in collection_id_map:
-                    collection_id_map[self.meta_args['id']] = self.meta_args['name']
-                create_meta_group(self.meta_args['name'], parent_collection)
+                if self.meta_args["id"] not in collection_id_map:
+                    collection_id_map[self.meta_args["id"]] = self.meta_args["name"]
+                create_meta_group(self.meta_args["name"], parent_collection)
             elif self.meta_command == "group_nxt":
-                if self.meta_args['id'] in collection_id_map:
-                    key = collection_id_map[self.meta_args['id']]
+                if self.meta_args["id"] in collection_id_map:
+                    key = collection_id_map[self.meta_args["id"]]
                     if key in bpy.data.collections:
                         next_collection = bpy.data.collections[key]
                 end_next_collection = True
