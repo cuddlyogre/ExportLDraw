@@ -127,7 +127,8 @@ def get_child_node(line, params):
 
     if key not in file_cache:
         ldraw_file = LDrawFile(filename)
-        ldraw_file.read_file()
+        if not ldraw_file.read_file():
+            return None
         ldraw_file.parse_file()
         file_cache[key] = ldraw_file
     ldraw_file = file_cache[key]
@@ -154,8 +155,9 @@ class LDrawFile:
             filepath = filesystem.locate(self.filepath)
             if filepath is None:
                 print(f"missing {self.filepath}")
-                return
+                return False
             self.lines = filesystem.read_file(filepath)
+        return True
 
     def parse_file(self):
         if len(self.lines) < 1:
@@ -380,7 +382,10 @@ class LDrawFile:
 
     def parse_geometry_line(self, line, params):
         if params[0] == "1":
-            child_node = self.parse_child_node(line, params)
+            child_node = get_child_node(line, params)
+            if child_node is None:
+                return False
+            self.child_nodes.append(child_node)
             if self.part_type in ldraw_part_types.model_types:
                 if child_node.file.part_type in ldraw_part_types.subpart_types:
                     self.part_type = "part"
@@ -392,8 +397,3 @@ class LDrawFile:
             self.geometry.parse_face(params)
             if self.part_type in ldraw_part_types.model_types:
                 self.part_type = "part"
-
-    def parse_child_node(self, line, params):
-        ldraw_node = get_child_node(line, params)
-        self.child_nodes.append(ldraw_node)
-        return ldraw_node
