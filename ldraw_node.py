@@ -63,7 +63,7 @@ def set_step():
     global last_frame
     last_frame = (start_frame + frame_length) + (frame_length * current_step)
     if options.set_timelime_markers:
-        bpy.context.scene.timeline_markers.new('STEP', frame=last_frame)
+        bpy.context.scene.timeline_markers.new("STEP", frame=last_frame)
 
 
 def create_meta_group(key, parent_collection):
@@ -307,7 +307,7 @@ def create_gp_mesh(key, mesh):
     gp_mesh.pixel_factor = 5.0
     gp_mesh.stroke_depth_order = "3D"
 
-    gp_layer = gp_mesh.layers.new('gpl')
+    gp_layer = gp_mesh.layers.new("gpl")
     gp_frame = gp_layer.frames.new(1)
     gp_layer.active_frame = gp_frame
 
@@ -381,10 +381,10 @@ class LDrawNode:
                 end_next_collection = True
             elif self.meta_command == "save":
                 if options.set_timelime_markers:
-                    bpy.context.scene.timeline_markers.new('SAVE', frame=last_frame)
+                    bpy.context.scene.timeline_markers.new("SAVE", frame=last_frame)
             elif self.meta_command == "clear":
                 if options.set_timelime_markers:
-                    bpy.context.scene.timeline_markers.new('CLEAR', frame=last_frame)
+                    bpy.context.scene.timeline_markers.new("CLEAR", frame=last_frame)
                 if top_collection is not None:
                     for ob in top_collection.all_objects:
                         bpy.context.scene.frame_set(last_frame)

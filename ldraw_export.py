@@ -45,7 +45,7 @@ def clean_mesh(obj):
 # https://www.ldraw.org/article/512.html#precision
 def fix_round(number, places=3):
     x = round(number, places)
-    value = ('%f' % x).rstrip('0').rstrip('.')
+    value = ("%f" % x).rstrip("0").rstrip(".")
 
     # remove -0
     if value == "-0":

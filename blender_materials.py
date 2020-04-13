@@ -736,10 +736,10 @@ def __create_blender_lego_glass_node_group():
     group_output.name = "group_output"
     group_output.location = (0.0, 0.0)
 
-    node_group.inputs.new('NodeSocketColor', "Color")
-    node_group.inputs.new('NodeSocketFloatFactor', "Roughness")
-    node_group.inputs.new('NodeSocketFloat', "IOR")
-    node_group.inputs.new('NodeSocketVectorDirection', "Normal")
+    node_group.inputs.new("NodeSocketColor", "Color")
+    node_group.inputs.new("NodeSocketFloatFactor", "Roughness")
+    node_group.inputs.new("NodeSocketFloat", "IOR")
+    node_group.inputs.new("NodeSocketVectorDirection", "Normal")
 
     node_group.inputs[0].default_value = (0.0, 0.0, 0.0, 1.0)
     node_group.inputs[1].default_value = 0.06

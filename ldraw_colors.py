@@ -153,7 +153,7 @@ def srgb_to_linear_rgb(srgb_color):
 
 def hex_digits_to_linear_rgba(hex_digits, alpha):
     # String is "RRGGBB" format
-    int_tuple = struct.unpack('BBB', bytes.fromhex(hex_digits))
+    int_tuple = struct.unpack("BBB", bytes.fromhex(hex_digits))
     srgb = tuple([val / 255 for val in int_tuple])
     linear_rgb = srgb_to_linear_rgb(srgb)
     return linear_rgb[0], linear_rgb[1], linear_rgb[2], alpha

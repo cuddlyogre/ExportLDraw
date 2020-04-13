@@ -151,7 +151,7 @@ def read_file(filepath):
         for c in [codecs.BOM_UTF8, codecs.BOM_UTF16, codecs.BOM_UTF32]:
             string = string.replace(c, b'')
         # print(string)
-        return string.decode('utf-8').strip().splitlines()
+        return string.decode("utf-8").strip().splitlines()
 
 
 def locate(filename):
