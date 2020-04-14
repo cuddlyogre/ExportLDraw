@@ -1,9 +1,11 @@
 import bpy
 import mathutils
+import os
 
 from . import strings
 from . import options
 from . import ldraw_colors
+from . import filesystem
 
 slope_texture_strength = 0.6
 use_glass = True
@@ -145,7 +147,7 @@ def __create_node_based_material(key, color, use_edge_color=False, is_slope_mate
     # https://blender.stackexchange.com/questions/157531/blender-2-8-python-add-texture-image
     texmap_material = True
     if texmap_material:
-        pass
+        __create_texmap_texture(nodes, links, diff_color)
 
     glossmap_material = True
     if glossmap_material:
@@ -507,6 +509,33 @@ def __get_group(nodes):
         if x.type == "GROUP":
             return x
     return None
+
+
+def __create_texmap_texture(nodes, links, diff_color):
+    node_texture_coordinate = __node_tex_coord(nodes, -880, 200.0)
+    node_mapping = __node_mapping(nodes, -680.0, 200.0)
+    tex_image = __node_tex_image(nodes, -480.0, 120.0)
+    mix_rgb = __node_mix_rgb(nodes, -200, 200)
+
+    node_mapping.vector_type = "TEXTURE"
+    tex_image.interpolation = "Closest"
+    tex_image.extension = "CLIP"
+    mix_rgb.inputs["Color1"].default_value = diff_color
+
+    links.new(node_texture_coordinate.outputs["Object"], node_mapping.inputs["Vector"])
+    links.new(node_mapping.outputs["Vector"], tex_image.inputs["Vector"])
+    links.new(tex_image.outputs["Color"], mix_rgb.inputs["Color2"])
+    links.new(tex_image.outputs["Alpha"], mix_rgb.inputs["Fac"])
+
+    if False:
+        image_name = "3817bpaz.png"
+        image_path = os.path.join(filesystem.locate_ldraw(), "unofficial", "parts", "textures", image_name)
+        bpy.data.images.load(image_path)
+        tex_image.image = bpy.data.images[image_name]
+
+    target = __get_group(nodes)
+    if target is not None:
+        links.new(mix_rgb.outputs["Color"], target.inputs["Color"])
 
 
 def __create_cycles_slope_texture(nodes, links, strength=None):

@@ -9,6 +9,7 @@ from . import ldraw_part_types
 
 from .ldraw_node import LDrawNode
 from .ldraw_geometry import LDrawGeometry
+from .texmap import TexMap
 from . import special_bricks
 from . import ldraw_colors
 from . import ldraw_camera
@@ -165,10 +166,11 @@ class LDrawFile:
 
         camera = None
         texmap_start = False
+        texmap_next = False
         texmap_fallback = False
 
         for line in self.lines:
-            params = helpers.parse_line(line, 14)
+            params = helpers.parse_line(line, 15)
 
             if params is None:
                 continue
@@ -188,6 +190,7 @@ class LDrawFile:
                         ldraw_node = LDrawNode(None)
                         ldraw_node.meta_command = params[1].lower()
                         self.child_nodes.append(ldraw_node)
+                        texmap_start, texmap_next, texmap_fallback = self.set_texmap_end()
                 elif params[1].lower() in ["save"]:
                     if options.meta_save:
                         ldraw_node = LDrawNode(None)
@@ -203,7 +206,7 @@ class LDrawFile:
                         print(line[7:].strip())
                 elif params[1].lower() in ["!ldcad"]:  # http://www.melkert.net/LDCad/tech/meta
                     if params[2].lower() in ["group_def"]:
-                        params = re.search(r".*?\s+.*?\s+.*?\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])", line.strip())
+                        params = re.search(r"\S+\s+\S+\s+\S+\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])", line.strip())
 
                         ldraw_node = LDrawNode(None)
                         ldraw_node.meta_command = "group_def"
@@ -216,7 +219,7 @@ class LDrawFile:
 
                         self.child_nodes.append(ldraw_node)
                     elif params[2].lower() in ["group_nxt"]:
-                        params = re.search(r".*\s+.*\s+.*\s+(\[.*\])\s+(\[.*\])", line.strip())
+                        params = re.search(r"\S+\s+\S+\s+\S+\s+(\[.*\])\s+(\[.*\])", line.strip())
 
                         ldraw_node = LDrawNode(None)
                         ldraw_node.meta_command = "group_nxt"
@@ -229,7 +232,7 @@ class LDrawFile:
                     if params[2].lower() in ["group"]:
                         if params[3].lower() in ["begin"]:
                             # begin_params = re.search(r"(?:.*\s+){3}begin\s+(.*)", line, re.IGNORECASE)
-                            begin_params = re.search(r".*?\s+.*?\s+.*?\s+.*?\s+(.*)", line.strip())
+                            begin_params = re.search(r"\S+\s+\S+\s+\S+\s+\S+\s+(.*)", line.strip())
 
                             if begin_params is not None:
                                 ldraw_node = LDrawNode(None)
@@ -299,8 +302,7 @@ class LDrawFile:
                                 camera.hidden = True
                                 params = params[1:]
                             elif params[0] == "NAME":
-                                # camera_name_params = re.search(r"(?:.*\s+){3}name(.*)", line, re.IGNORECASE)
-                                camera_name_params = re.search(r".*?\s+.*?\s+.*?\s+.*?\s+(.*)", line.strip())
+                                camera_name_params = re.search(r"\S+\s+\S+\s+\S+\s+\S+\s+(.*)", line.strip())
 
                                 camera.name = camera_name_params[1].strip()
 
@@ -311,74 +313,65 @@ class LDrawFile:
                                 camera = None
                             else:
                                 params = params[1:]
+                elif texmap_next:
+                    texmap_start, texmap_next, texmap_fallback = self.set_texmap_end()
+                    # also error
                 elif params[1].lower() in ["!texmap"]:  # https://www.ldraw.org/documentation/ldraw-org-file-format-standards/language-extension-for-texture-mapping.html
                     do_texmaps = True
-                    if do_texmaps:
-                        if params[2].lower() in ["start"]:
+                    if not do_texmaps:
+                        continue
+                    if params[2].lower() in ["start", "next"]:
+                        ldraw_node = LDrawNode(None)
+                        if params[2].lower() == "start":
                             texmap_start = True
-                            texmap_fallback = False
-
-                            ldraw_node = LDrawNode(None)
-                            ldraw_node.meta_args["filename"] = filename
                             ldraw_node.meta_command = "texmap_start"
-                            ldraw_node.meta_args["method"] = params[3].lower()
+                        elif params[2].lower() == "next":
+                            texmap_next = True
+                            ldraw_node.meta_command = "texmap_next"
+                        texmap_fallback = False
 
-                            (x1, y1, z1, x2, y2, z2, x3, y3, z3) = map(float, params[4:13])
-                            ldraw_node.meta_args["parameters"] = [
+                        (x1, y1, z1, x2, y2, z2, x3, y3, z3) = map(float, params[4:13])
+
+                        ldraw_node.meta_args["texmap"] = TexMap({
+                            "method": params[3].lower(),
+                            "parameters": [
                                 mathutils.Vector((x1, y1, z1)),
                                 mathutils.Vector((x2, y2, z2)),
                                 mathutils.Vector((x3, y3, z3)),
-                            ]
+                            ],
+                            "texmap": params[13],
+                            "glossmap": params[14],
+                        })
 
-                            # https://rubular.com/r/6eHatKq0a27Ux2
-                            # repeating groups are slow
-                            # \s?(?:\S+\s+){13}(.*)
-
-                            # https://rubular.com/r/BcU8WokegJopiu
-                            filename_args = re.search(r"\s?\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+(.*)", line)
-                            filename = filename_args[1].lower()
-
-                            # https://rubular.com/r/zAwdSsqbIWTwGw
-                            # ['"]?([^"']+)['"]?\s?(?:['"]?([^"']+)['"]?)?$
-                            filenames = re.split(r"[\'\"]?([^\"\']+)[\'\"]?\s?(?:[\'\"]?([^\"\']+)[\'\"]?)?$", filename)
-                            texmap = filenames[1]
-                            glossmap = filenames[2]
-
-                            # image.png image 2.dat =>
-                            # 1. image.png image 2.dat
-                            # 2.
-
-                            # "image.png" image 2.dat =>
-                            # "image.png" "image 2.dat" =>
-                            # image.png "image 2.dat" =>
-                            # image.png" "image 2.dat =>
-                            # 1. image.png
-                            # 2. image 2.dat
-
-                            ldraw_node.meta_args["texmap"] = texmap
-                            ldraw_node.meta_args["glossmap"] = glossmap
-                            self.child_nodes.append(ldraw_node)
-                        elif params[2].lower() in ["fallback"]:
+                        self.child_nodes.append(ldraw_node)
+                    elif texmap_start:
+                        if params[2].lower() in ["fallback"]:
                             texmap_fallback = True
                         elif params[2].lower() in ["end"]:
-                            texmap_start = False
-                            texmap_fallback = False
-
-                            ldraw_node = LDrawNode(None)
-                            ldraw_node.meta_command = "textmap_end"
-                            self.child_nodes.append(ldraw_node)
+                            texmap_start, texmap_next, texmap_fallback = self.set_texmap_end()
                 elif params[1].lower() in ["!:"] and texmap_start:
-                    print(params)
                     # remove 0 !: from line so that it can be parsed like a normal line
                     clean_line = re.sub(r"(.*?\s+!:\s+)", "", line)
                     clean_params = params[2:]
                     self.parse_geometry_line(clean_line, clean_params)
+                    if texmap_next:
+                        texmap_start, texmap_next, texmap_fallback = self.set_texmap_end()
             else:
                 if not (texmap_start and texmap_fallback):
                     self.parse_geometry_line(line, params)
 
         if self.name == "":
             self.name = os.path.basename(self.filepath)
+
+    def set_texmap_end(self):
+        ldraw_node = LDrawNode(None)
+        ldraw_node.meta_command = "texmap_end"
+        self.child_nodes.append(ldraw_node)
+
+        texmap_start = False
+        texmap_next = False
+        texmap_fallback = False
+        return texmap_start, texmap_next, texmap_fallback
 
     def parse_geometry_line(self, line, params):
         if params[0] == "1":

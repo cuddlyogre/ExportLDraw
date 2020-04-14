@@ -26,6 +26,8 @@ gap_scale_empty = None
 collection_id_map = {}
 next_collection = None
 end_next_collection = False
+texmaps = []
+current_texmap = None
 
 
 def reset_caches():
@@ -40,6 +42,7 @@ def reset_caches():
     global collection_id_map
     global next_collection
     global end_next_collection
+    global texmaps
 
     part_count = 0
     current_step = 0
@@ -52,6 +55,7 @@ def reset_caches():
     collection_id_map = {}
     next_collection = None
     end_next_collection = False
+    texmaps = []
 
     if options.meta_step:
         set_step()
@@ -392,6 +396,11 @@ class LDrawNode:
                         ob.hide_render = True
                         ob.keyframe_insert(data_path="hide_render")
                         ob.keyframe_insert(data_path="hide_viewport")
+            elif self.meta_command == "texmap_start":
+                global current_texmap
+                if current_texmap is not None:
+                    texmaps.append(current_texmap)
+                current_texmap = self.meta_args["texmap"]
             return
 
         if options.no_studs and self.file.name.startswith("stud"):
