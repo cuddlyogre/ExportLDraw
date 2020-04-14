@@ -390,23 +390,24 @@ def build_slope_angles():
         slope_angles[part] = slope_angle
 
 
+def normal_to_angle(normal):
+    # Clamp value to range -1 to 1 (ensure we are in the strict range of the acos function, taking account of rounding errors)
+    normal = normal.normalized()
+
+    # Calculate angle of face normal to the ground (-90 to 90 degrees)
+    cosine = min(max(normal.y, -1.0), 1.0)
+
+    angle_to_ground_degrees = math.degrees(math.acos(cosine)) - 90
+    return angle_to_ground_degrees
+
+
 def is_slope_face(part_number, face):
     if part_number not in slope_angles:
         return
 
-    # Step 2: Calculate angle of face normal to the ground
-    face_normal = face.normal.normalized()
+    angle_to_ground_degrees = normal_to_angle(face.normal)
 
-    # Clamp value to range -1 to 1 (ensure we are in the strict range of the acos function, taking account of rounding errors)
-    cosine = min(max(face_normal.y, -1.0), 1.0)
-
-    # Calculate angle of face normal to the ground (-90 to 90 degrees)
-    angle_to_ground_degrees = math.degrees(math.acos(cosine)) - 90
-
-    # print(f"{face_normal} --  {angle_to_ground_degrees}")
-    # debugPrint("Angle to ground {0}".format(angleToGroundDegrees))
-
-    # Step 3: Check angle of normal to ground is within one of the acceptable ranges for this part
+    # Check angle of normal to ground is within one of the acceptable ranges for this part
     for c in slope_angles[part_number]:
         if c[0] <= angle_to_ground_degrees <= c[1]:
             return True
