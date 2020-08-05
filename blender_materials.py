@@ -144,14 +144,15 @@ def __create_node_based_material(key, color, use_edge_color=False, is_slope_mate
         # TODO: slight variation in strength for each material
         __create_cycles_slope_texture(nodes, links)
 
-    # https://blender.stackexchange.com/questions/157531/blender-2-8-python-add-texture-image
-    texmap_material = True
-    if texmap_material:
-        __create_texmap_texture(nodes, links, diff_color)
+    if False:
+        # https://blender.stackexchange.com/questions/157531/blender-2-8-python-add-texture-image
+        texmap_material = True
+        if texmap_material:
+            __create_texmap_texture(nodes, links, diff_color)
 
-    glossmap_material = True
-    if glossmap_material:
-        pass
+        glossmap_material = True
+        if glossmap_material:
+            pass
 
     return material
 
