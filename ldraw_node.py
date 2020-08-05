@@ -561,6 +561,7 @@ class LDrawNode:
                     gp_mesh = create_gp_mesh(key, edge_mesh)
                     apply_gp_materials(gp_mesh)
                     gp_object = bpy.data.objects.new(key, gp_mesh)
+                    gp_object.matrix_world = parent_matrix @ self.matrix
                     gp_object.active_material_index = len(gp_mesh.materials)
 
                     collection_name = "Grease Pencil Edges"
