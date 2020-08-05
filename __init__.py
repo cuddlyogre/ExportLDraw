@@ -53,7 +53,7 @@ import bpy
 
 
 def build_import_menu(self, context):
-    self.layout.operator(operator_import.IMPORT_OT_do_ldraw_import.bl_idname, text="Basic LDraw (.mpd/.ldr/.l3b/.dat)")
+    self.layout.operator(operator_import.IMPORT_OT_do_ldraw_import.bl_idname, text="LDraw (.mpd/.ldr/.l3b/.dat)")
 
 
 def build_export_menu(self, context):
