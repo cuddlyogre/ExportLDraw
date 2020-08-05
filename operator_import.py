@@ -81,11 +81,13 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         default=False
     )
 
+    # cast items as list or "EnumProperty(..., default='logo3'): not found in enum members"
+    # and a messed up menu
     chosen_logo: bpy.props.EnumProperty(
         name="Chosen logo",
         description="Use this logo on studs",
         default=special_bricks.logos[2],
-        items=((l, l, l) for l in special_bricks.logos)
+        items=list(((l, l, l) for l in special_bricks.logos))
     )
 
     smooth_type: bpy.props.EnumProperty(
