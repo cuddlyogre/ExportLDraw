@@ -55,7 +55,7 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
     )
 
     merge_distance: bpy.props.FloatProperty(
-        name="Merge Distance",
+        name="Merge distance",
         description="Maximum distance between elements to merge",
         default=0.05,
         precision=3,
