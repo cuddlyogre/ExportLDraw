@@ -346,6 +346,33 @@ def apply_gp_materials(gp_mesh):
     gp_mesh.materials.append(material)
 
 
+def get_collection(collection_name):
+    scene_collection = bpy.context.scene.collection
+    parent_collection = scene_collection
+
+    do_parts_collection = True
+    if do_parts_collection:
+        parent_collection_name = 'Parts'
+        if 'Parts' not in scene_collection.children:
+            parent_collection = bpy.data.collections.new(parent_collection_name)
+            parent_collection.hide_viewport = True
+            parent_collection.hide_render = True
+            scene_collection.children.link(parent_collection)
+        parent_collection = bpy.data.collections[parent_collection_name]
+
+    if collection_name not in parent_collection.children:
+        collection = bpy.data.collections.new(collection_name)
+        parent_collection.children.link(collection)
+    collection = parent_collection.children[collection_name]
+    return collection
+
+
+def add_obj_to_collection(collection_name, obj):
+    collection = get_collection(collection_name)
+    collection.objects.link(obj)
+    return collection
+
+
 class LDrawNode:
     def __init__(self, file, color_code="16", matrix=matrices.identity):
         self.file = file
@@ -563,18 +590,4 @@ class LDrawNode:
                     gp_object = bpy.data.objects.new(key, gp_mesh)
                     gp_object.matrix_world = parent_matrix @ self.matrix
                     gp_object.active_material_index = len(gp_mesh.materials)
-
-                    collection_name = "Grease Pencil Edges"
-                    if collection_name not in bpy.context.scene.collection.children:
-                        collection = bpy.data.collections.new(collection_name)
-                        bpy.context.scene.collection.children.link(collection)
-                    collection = bpy.context.scene.collection.children[collection_name]
-                    collection.objects.link(gp_object)
-
-            obj = create_object(mesh, parent_matrix, self.matrix)
-            obj[strings.ldraw_filename_key] = self.file.name
-
-            if file_collection is not None:
-                file_collection.objects.link(obj)
-            else:
-                bpy.context.scene.collection.objects.link(obj)
+                    add_obj_to_collection("Grease Pencil Edges", gp_object)
