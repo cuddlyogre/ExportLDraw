@@ -568,6 +568,9 @@ class LDrawNode:
                 geometry_cache[key] = geometry
 
         if self.top:
+            if options.debug_text:
+                print(key)
+
             if key not in bpy.data.meshes:
                 mesh = create_mesh(key, geometry)
 
