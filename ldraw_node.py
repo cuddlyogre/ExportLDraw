@@ -223,7 +223,7 @@ def create_edge_mesh(key, geometry):
 
 
 def create_mesh(key, geometry):
-    return do_create_mesh(key, geometry.vertices, geometry.faces)
+    return do_create_mesh(key, geometry.vertices, geometry.vert_counts)
 
 
 # https://blender.stackexchange.com/a/91687
@@ -541,7 +541,7 @@ class LDrawNode:
                     geometry.edge_vertices.extend(vertices)
 
                 geometry.edges.extend(self.file.geometry.edges)
-                geometry.faces.extend(self.file.geometry.faces)
+                geometry.vert_counts.extend(self.file.geometry.vert_counts)
 
                 if key not in face_info_cache:
                     new_face_info = []

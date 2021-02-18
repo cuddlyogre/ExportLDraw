@@ -7,7 +7,7 @@ class LDrawGeometry:
         self.edge_vertices = []
         self.edges = []
         self.vertices = []
-        self.faces = []
+        self.vert_counts = []
         self.face_info = []
 
     def parse_edge(self, params):
@@ -42,5 +42,5 @@ class LDrawGeometry:
                 vertices[2], vertices[1] = vertices[1], vertices[2]
 
         self.vertices.extend(vertices)
-        self.faces.append(vert_count)
+        self.vert_counts.append(vert_count)
         self.face_info.append(FaceInfo(color_code))
