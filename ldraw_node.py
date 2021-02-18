@@ -580,7 +580,7 @@ class LDrawNode:
                 # this order is important because bmesh_ops causes
                 # mesh.polygons to get out of sync geometry.face_info
                 # which causes materials and slop materials to be applied incorrectly
-                apply_materials(mesh, geometry)  # combine with create_mesh
+                apply_materials(mesh, geometry)
                 bmesh_ops(mesh, geometry)
                 apply_slope_materials(mesh, self.file.name)
 
