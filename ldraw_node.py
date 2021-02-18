@@ -595,6 +595,14 @@ class LDrawNode:
                 mesh[strings.ldraw_filename_key] = self.file.name
             mesh = bpy.data.meshes[key]
 
+            obj = create_object(mesh, parent_matrix, self.matrix)
+            obj[strings.ldraw_filename_key] = self.file.name
+
+            if file_collection is not None:
+                file_collection.objects.link(obj)
+            else:
+                bpy.context.scene.collection.objects.link(obj)
+
             if options.import_edges:
                 e_key = f"e_{key}"
                 if e_key not in bpy.data.meshes:
