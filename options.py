@@ -9,6 +9,7 @@ display_logo = False
 chosen_logo = None
 use_alt_colors = True
 remove_doubles = True
+remove_doubles_strategy = "bmesh_ops"
 merge_distance = 0.05
 shade_smooth = True
 make_gaps = True

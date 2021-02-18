@@ -38,6 +38,16 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         default=True,
     )
 
+    remove_doubles_strategy: bpy.props.EnumProperty(
+        name="Remove doubles strategy",
+        description="Use this strategy to remove doubles",
+        default="bmesh_ops",
+        items=(
+            ("bmesh_ops", "bmesh_ops", "Use bmesh_ops - much faster"),
+            ("dictionary", "dictionary", "Use a dictionary - slower but portable logic"),
+        )
+    )
+
     merge_distance: bpy.props.FloatProperty(
         name="Merge distance",
         description="Maximum distance between elements to merge",
@@ -254,6 +264,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         options.resolution = self.resolution
         options.use_alt_colors = self.use_alt_colors
         options.remove_doubles = self.remove_doubles
+        options.remove_doubles_strategy = self.remove_doubles_strategy
         options.merge_distance = self.merge_distance
         options.shade_smooth = self.shade_smooth
         options.display_logo = self.display_logo
@@ -344,6 +355,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         box.prop(self, "prefer_unofficial")
         box.prop(self, "all_materials")
         box.prop(self, "add_subsurface")
+        box.prop(self, "remove_doubles_strategy")
         box.prop(self, "bevel_edges")
         box.prop(self, "debug_text")
         box.prop(self, "no_studs")

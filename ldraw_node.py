@@ -195,14 +195,29 @@ def create_object(mesh, parent_matrix, matrix):
 # f = [f1, f2, f3]
 # for f in enumerate(faces):
 #     this_vert = bm.verts.new(f)
-def do_create_mesh(key, geometry_vertices, geometry_faces):
+# used_indexes = list(indexes.values())
+# bigger = []
+# smaller = []
+# remaining = (collections.Counter(bigger) - collections.Counter(smaller)).elements()
+# unused_indexes = list(remaining)
+# print(list(indexes.values()))
+# print(len(used_vertices))
+# if index is not referenced in vertices. remove from vertices
+def do_create_mesh(key, geometry_vertices, geometry_vert_counts):
+    if not options.remove_doubles or options.remove_doubles_strategy == "bmesh_ops":
+        return easy_do_create_mesh(key, geometry_vertices, geometry_vert_counts)
+    else:
+        return hard_do_create_mesh(key, geometry_vertices, geometry_vert_counts)
+
+
+def easy_do_create_mesh(key, geometry_vertices, geometry_vert_counts):
     vertices = [v.to_tuple() for v in geometry_vertices]
     edges = []
     faces = []
 
     # makes indexes sequential
     face_index = 0
-    for f in geometry_faces:
+    for f in geometry_vert_counts:
         new_face = []
         for _ in range(f):
             new_face.append(face_index)
@@ -212,8 +227,50 @@ def do_create_mesh(key, geometry_vertices, geometry_faces):
     # add materials before doing from_pydata step
     mesh = bpy.data.meshes.new(key)
     mesh.from_pydata(vertices, edges, faces)
-    mesh.validate()
-    mesh.update(calc_edges=True)
+
+    return mesh
+
+
+# apply_materials
+# len(geometry_vert_counts) always matches len(faces)
+# len(faces) do not always match len(mesh.polygons)
+# print(len(geometry_vert_counts))
+# print(len(faces))
+# print(len(mesh.polygons))
+# if you validate here, the polygon count changes,
+# which causes polygon count and geometry.face_info count to get out of sync, causing missing face colors
+# mesh.validate()
+# mesh.update(calc_edges=True)
+# print(len(mesh.polygons))
+# slower than bmesh.ops.remove_doubles but necessary if importing to a system without a remove doubles function
+def hard_do_create_mesh(key, geometry_vertices, geometry_vert_counts):
+    vertices = []
+    edges = []
+    faces = []
+
+    # determine indexes to prevent doubles
+    face_index = 0
+    indexes = {}
+    for vert_count in geometry_vert_counts:
+        new_face = []
+        for _ in range(vert_count):
+            v = geometry_vertices[face_index]
+            if v not in vertices:
+                vertices.append(v)
+
+            k = ",".join([str(v.x), str(v.y), str(v.z)])
+            if k not in indexes:
+                indexes[k] = vertices.index(v)
+
+            new_face.append(indexes[k])
+            face_index += 1
+
+        faces.append(new_face)
+
+    vertices = [v.to_tuple() for v in vertices]
+
+    mesh = bpy.data.meshes.new(key)
+    mesh.from_pydata(vertices, edges, faces)
 
     return mesh
 
@@ -268,7 +325,7 @@ def bmesh_ops(mesh, geometry):
     bm.verts.ensure_lookup_table()
     bm.edges.ensure_lookup_table()
 
-    if options.remove_doubles:
+    if options.remove_doubles and options.remove_doubles_strategy == "bmesh_ops":
         bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=options.merge_distance)
 
     # Find layer for bevel weights
@@ -593,6 +650,8 @@ class LDrawNode:
                 if options.make_gaps and options.gap_target == "mesh":
                     mesh.transform(matrices.scaled_matrix(options.gap_scale))
                 mesh[strings.ldraw_filename_key] = self.file.name
+                mesh.validate()
+                mesh.update(calc_edges=True)
             mesh = bpy.data.meshes[key]
 
             obj = create_object(mesh, parent_matrix, self.matrix)
