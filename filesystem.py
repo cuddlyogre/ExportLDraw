@@ -144,14 +144,19 @@ def _path_insensitive(path):
         return
 
 
+def fix_string(string):
+    new_string = string
+    for codec in [codecs.BOM_UTF8, codecs.BOM_UTF16, codecs.BOM_UTF32]:
+        new_string = new_string.replace(codec, b'')
+    new_string = new_string.decode("utf-8")
+    return new_string
+
+
 def read_file(filepath):
     filepath = path_insensitive(filepath)
     with open(filepath, 'rb') as file:
-        string = file.read()
-        for c in [codecs.BOM_UTF8, codecs.BOM_UTF16, codecs.BOM_UTF32]:
-            string = string.replace(c, b'')
-        # print(string)
-        return string.decode("utf-8").strip().splitlines()
+        string = fix_string(file.read())
+        return string.strip().splitlines()
 
 
 def locate(filename):
