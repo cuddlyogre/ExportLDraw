@@ -101,8 +101,22 @@ def apply_slope_materials(mesh, filename):
             f.material_index = mesh.materials.find(material.name)
 
 
+def do_create_object(mesh):
+    instancing = False
+    if instancing:
+        if mesh.name not in bpy.data.objects:
+            instanced_obj = bpy.data.objects.new(mesh.name, mesh)
+            add_obj_to_collection(mesh.name, instanced_obj)
+        obj = bpy.data.objects.new(mesh.name, None)
+        obj.instance_type = 'COLLECTION'
+        obj.instance_collection = bpy.data.collections[mesh.name]
+    else:
+        obj = bpy.data.objects.new(mesh.name, mesh)
+    return obj
+
+
 def create_object(mesh, parent_matrix, matrix):
-    obj = bpy.data.objects.new(mesh.name, mesh)
+    obj = do_create_object(mesh)
 
     if top_empty is None:
         obj.matrix_world = matrices.scaled_matrix(options.import_scale) @ matrices.rotation @ parent_matrix @ matrix
