@@ -56,27 +56,27 @@ def build_search_paths():
 
 
 def append_official():
-    ldraw_path = options.ldraw_path
-    append_search_path(os.path.join(ldraw_path, "models"))
-    append_search_path(os.path.join(ldraw_path, "parts"))
-    append_search_path(os.path.join(ldraw_path, "parts", "textures"))
-    if options.resolution == "High":
-        append_search_path(os.path.join(ldraw_path, "p", "48"))
-    elif options.resolution == "Low":
-        append_search_path(os.path.join(ldraw_path, "p", "8"))
-    append_search_path(os.path.join(ldraw_path, "p"))
+    for ldraw_path in [mpd_cache_path(), options.ldraw_path]:
+        append_search_path(os.path.join(ldraw_path, "models"))
+        append_search_path(os.path.join(ldraw_path, "parts"))
+        append_search_path(os.path.join(ldraw_path, "parts", "textures"))
+        if options.resolution == "High":
+            append_search_path(os.path.join(ldraw_path, "p", "48"))
+        elif options.resolution == "Low":
+            append_search_path(os.path.join(ldraw_path, "p", "8"))
+        append_search_path(os.path.join(ldraw_path, "p"))
 
 
 def append_unofficial():
-    ldraw_path = options.ldraw_path
-    append_search_path(os.path.join(ldraw_path, "unofficial", "models"))
-    append_search_path(os.path.join(ldraw_path, "unofficial", "parts"))
-    append_search_path(os.path.join(ldraw_path, "unofficial", "parts", "textures"))
-    if options.resolution == "High":
-        append_search_path(os.path.join(ldraw_path, "unofficial", "p", "48"))
-    elif options.resolution == "Low":
-        append_search_path(os.path.join(ldraw_path, "unofficial", "p", "8"))
-    append_search_path(os.path.join(ldraw_path, "unofficial", "p"))
+    for ldraw_path in [mpd_cache_path(), options.ldraw_path]:
+        append_search_path(os.path.join(ldraw_path, "unofficial", "models"))
+        append_search_path(os.path.join(ldraw_path, "unofficial", "parts"))
+        append_search_path(os.path.join(ldraw_path, "unofficial", "parts", "textures"))
+        if options.resolution == "High":
+            append_search_path(os.path.join(ldraw_path, "unofficial", "p", "48"))
+        elif options.resolution == "Low":
+            append_search_path(os.path.join(ldraw_path, "unofficial", "p", "8"))
+        append_search_path(os.path.join(ldraw_path, "unofficial", "p"))
 
 
 # https://stackoverflow.com/a/8462613
@@ -161,6 +161,14 @@ def read_file(filepath):
     with open(filepath, 'rb') as file:
         string = fix_string(file.read())
         return string.strip().splitlines()
+
+
+def mpd_cache_path():
+    # if bpy.path.abspath("//") == "": #blender file not saved
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    path = os.path.join(dir_path, ".mpd_cache")
+    Path(path).mkdir(parents=True, exist_ok=True)
+    return path
 
 
 def locate(filename):

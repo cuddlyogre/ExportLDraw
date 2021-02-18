@@ -1,6 +1,7 @@
 import os
 import mathutils
 import re
+from pathlib import Path
 
 from . import options
 from . import filesystem
@@ -63,29 +64,69 @@ def handle_mpd(filepath):
             continue
 
         if params[0] == "0" and params[1].lower() == "file":
-            __parse_current_file(current_file)
+            __parse_current_mpd_file(current_file)
             current_file = LDrawFile(line[7:].lower())
 
             if root_file is None:
                 root_file = line[7:].lower()
 
         elif params[0] == "0" and params[1].lower() == "nofile":
-            __parse_current_file(current_file)
+            __parse_current_mpd_file(current_file)
             current_file = None
 
         elif current_file is not None:
             current_file.lines.append(line)
 
-    __parse_current_file(current_file)
+    __parse_current_mpd_file(current_file)
 
     if root_file is not None:
         return root_file
     return filepath
 
 
-def __parse_current_file(ldraw_file):
+def __save_current_mpd_file(ldraw_file):
+    clean_path = filesystem.fix_string(bytes(ldraw_file.filepath, 'utf-8'))
+
+    parts = os.path.split(clean_path)
+
+    file_part = "\\".join(parts[1:])
+    file_parts = file_part.split(".")
+    ext = None
+    if len(file_parts) > 0:
+        ext = ".".join(file_parts[1:])
+
+    path_dir = parts[0]
+    if path_dir in ["s"]:
+        file = "\\".join(["parts", "s", file_part])
+    elif path_dir in ["8", "48"]:
+        file = "\\".join(["p", path_dir, file_part])
+    elif ext in ["ldr"]:
+        file = "\\".join(["models", file_part])
+    else:
+        file = "\\".join(["parts", file_part])
+
+    # if bpy.path.abspath("//") == "": #blender file not saved
+    destination = os.path.expanduser(os.path.join(filesystem.mpd_cache_path(), file))
+    Path(os.path.dirname(destination)).mkdir(parents=True, exist_ok=True)
+    with open(destination, 'w') as file:
+        for line in ldraw_file.lines:
+            contents = bytes(line, 'utf-8')
+            fixed_contents = filesystem.fix_string(contents)  # .encode('utf-8')
+            file.write(fixed_contents)
+            file.write("\n")
+
+
+def __parse_current_mpd_file(ldraw_file):
     if ldraw_file is not None:
-        mpd_file_cache[ldraw_file.filepath] = ldraw_file
+        split_mpd = True
+        if split_mpd:
+            __save_current_mpd_file(ldraw_file)
+
+            use_dictionary_mpd_cache = False
+            if use_dictionary_mpd_cache:
+                mpd_file_cache[ldraw_file.filepath] = ldraw_file
+        else:
+            mpd_file_cache[ldraw_file.filepath] = ldraw_file
 
 
 def get_child_node(line, params):
