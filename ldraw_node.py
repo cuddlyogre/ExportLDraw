@@ -237,7 +237,7 @@ def create_mesh(key, geometry):
 # bpy.context.object.active_material.use_backface_culling = True
 # bpy.context.object.active_material.use_screen_refraction = True
 def apply_materials(mesh, geometry):
-    for i, f in enumerate(mesh.polygons):
+    for i, polygon in enumerate(mesh.polygons):
         face_info = geometry.face_info[i]
 
         grain_slope_allowed = face_info.grain_slope_allowed
@@ -252,9 +252,9 @@ def apply_materials(mesh, geometry):
 
         if material.name not in mesh.materials:
             mesh.materials.append(material)
-        f.material_index = mesh.materials.find(material.name)
+        polygon.material_index = mesh.materials.find(material.name)
 
-        f.use_smooth = options.shade_smooth
+        polygon.use_smooth = options.shade_smooth
 
 
 def bmesh_ops(mesh, geometry):
