@@ -56,23 +56,25 @@ def build_search_paths():
 
 
 def append_official():
-    append_search_path(os.path.join(options.ldraw_path, "parts"))
-    append_search_path(os.path.join(options.ldraw_path, "parts", "textures"))
+    ldraw_path = options.ldraw_path
+    append_search_path(os.path.join(ldraw_path, "parts"))
+    append_search_path(os.path.join(ldraw_path, "parts", "textures"))
     if options.resolution == "High":
-        append_search_path(os.path.join(options.ldraw_path, "p", "48"))
+        append_search_path(os.path.join(ldraw_path, "p", "48"))
     elif options.resolution == "Low":
-        append_search_path(os.path.join(options.ldraw_path, "p", "8"))
-    append_search_path(os.path.join(options.ldraw_path, "p"))
+        append_search_path(os.path.join(ldraw_path, "p", "8"))
+    append_search_path(os.path.join(ldraw_path, "p"))
 
 
 def append_unofficial():
-    append_search_path(os.path.join(options.ldraw_path, "unofficial", "parts"))
-    append_search_path(os.path.join(options.ldraw_path, "unofficial", "parts", "textures"))
+    ldraw_path = options.ldraw_path
+    append_search_path(os.path.join(ldraw_path, "unofficial", "parts"))
+    append_search_path(os.path.join(ldraw_path, "unofficial", "parts", "textures"))
     if options.resolution == "High":
-        append_search_path(os.path.join(options.ldraw_path, "unofficial", "p", "48"))
+        append_search_path(os.path.join(ldraw_path, "unofficial", "p", "48"))
     elif options.resolution == "Low":
-        append_search_path(os.path.join(options.ldraw_path, "unofficial", "p", "8"))
-    append_search_path(os.path.join(options.ldraw_path, "unofficial", "p"))
+        append_search_path(os.path.join(ldraw_path, "unofficial", "p", "8"))
+    append_search_path(os.path.join(ldraw_path, "unofficial", "p"))
 
 
 # https://stackoverflow.com/a/8462613
