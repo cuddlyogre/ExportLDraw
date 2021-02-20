@@ -163,7 +163,7 @@ def read_file(filepath):
         return string.strip().splitlines()
 
 
-def locate(filename):
+def locate(filename, parent_filepath=None):
     part_path = filename.replace("\\", os.path.sep)
     part_path = os.path.expanduser(part_path)
 
@@ -173,10 +173,14 @@ def locate(filename):
 
     # ldraw spec says to search in the current file's directory
     # a path relative to anything in search_paths
-    filename_folder = os.path.dirname(part_path)
-    file_search_paths = [filename_folder]
+    file_search_paths = []
+    file_search_paths.append(os.path.dirname(part_path))
+    if options.debug_text:
+        print(parent_filepath)
+    if parent_filepath is not None:
+        file_search_paths.append(os.path.dirname(parent_filepath))
 
-    for path in search_paths + file_search_paths:
+    for path in file_search_paths + search_paths:
         full_path = os.path.join(path, part_path)
         if options.debug_text:
             print(full_path)

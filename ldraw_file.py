@@ -63,32 +63,32 @@ def handle_mpd(filepath):
             continue
 
         if params[0] == "0" and params[1].lower() == "file":
-            __parse_current_file(current_file)
+            __parse_current_mpd_file(current_file)
             current_file = LDrawFile(line[7:].lower())
 
             if root_file is None:
                 root_file = line[7:].lower()
 
         elif params[0] == "0" and params[1].lower() == "nofile":
-            __parse_current_file(current_file)
+            __parse_current_mpd_file(current_file)
             current_file = None
 
         elif current_file is not None:
             current_file.lines.append(line)
 
-    __parse_current_file(current_file)
+    __parse_current_mpd_file(current_file)
 
     if root_file is not None:
         return root_file
     return filepath
 
 
-def __parse_current_file(ldraw_file):
+def __parse_current_mpd_file(ldraw_file):
     if ldraw_file is not None:
-        mpd_file_cache[ldraw_file.filepath] = ldraw_file
+        mpd_file_cache[ldraw_file.filename] = ldraw_file
 
 
-def get_child_node(line, params):
+def get_child_node(line, params, parent_filepath=None):
     color_code = params[1]
 
     (x, y, z, a, b, c, d, e, f, g, h, i) = map(float, params[2:14])
@@ -128,7 +128,7 @@ def get_child_node(line, params):
 
     if key not in file_cache:
         ldraw_file = LDrawFile(filename)
-        if not ldraw_file.read_file():
+        if not ldraw_file.read_file(parent_filepath):
             return None
         ldraw_file.parse_file()
         file_cache[key] = ldraw_file
@@ -139,25 +139,25 @@ def get_child_node(line, params):
 
 
 class LDrawFile:
-    def __init__(self, filepath):
-        self.filepath = filepath
+    def __init__(self, filename):
+        self.filename = filename
+        self.filepath = None
         self.name = ""
         self.child_nodes = []
         self.geometry = LDrawGeometry()
         self.part_type = None
         self.lines = []
 
-    def read_file(self):
-        if self.filepath in mpd_file_cache:
-            self.lines = mpd_file_cache[self.filepath].lines
+    def read_file(self, parent_filepath=None):
+        if self.filename in mpd_file_cache:
+            self.lines = mpd_file_cache[self.filename].lines
         else:
-            # if missing, use a,b,c etc parts if available
-            # TODO: look in this file's directory and directories relative to this file's directory
-            filepath = filesystem.locate(self.filepath)
-            if filepath is None:
-                print(f"missing {self.filepath}")
+            # TODO: if missing, use a,b,c etc parts if available
+            self.filepath = filesystem.locate(self.filename, parent_filepath)
+            if self.filepath is None:
+                print(f"missing {self.filename}")
                 return False
-            self.lines = filesystem.read_file(filepath)
+            self.lines = filesystem.read_file(self.filepath)
         return True
 
     def parse_file(self):
@@ -361,7 +361,7 @@ class LDrawFile:
                     self.parse_geometry_line(line, params)
 
         if self.name == "":
-            self.name = os.path.basename(self.filepath)
+            self.name = os.path.basename(self.filename)
 
     def set_texmap_end(self):
         ldraw_node = LDrawNode(None)
@@ -375,7 +375,7 @@ class LDrawFile:
 
     def parse_geometry_line(self, line, params):
         if params[0] == "1":
-            child_node = get_child_node(line, params)
+            child_node = get_child_node(line, params, self.filepath)
             if child_node is None:
                 return False
             self.child_nodes.append(child_node)
