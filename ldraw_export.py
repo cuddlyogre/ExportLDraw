@@ -195,6 +195,7 @@ def do_export(filepath):
     if options.selection_only:
         objects = selected_objects
 
+    # TODO: use LDrawFile
     lines = []
     part_type = None
 
