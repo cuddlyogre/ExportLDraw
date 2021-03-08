@@ -133,7 +133,7 @@ class LDrawFile:
                         self.part_type = params[3].lower()
                     else:
                         self.part_type = params[2].lower()
-                elif params[1].lower() == "name:":
+                elif params[1].lower() in ["name:"]:
                     self.name = line[7:].lower().strip()
                 elif params[1].lower() in ["step"]:
                     if options.meta_step:
