@@ -73,6 +73,7 @@ def create_meta_group(key, parent_collection):
         parent_collection = bpy.context.scene.collection
     if collection.name not in parent_collection.children:
         parent_collection.children.link(collection)
+    return collection
 
 
 def apply_slope_materials(mesh, filename):
