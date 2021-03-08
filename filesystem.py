@@ -150,15 +150,17 @@ def _path_insensitive(path):
 
 def fix_string(string):
     new_string = string
+    if type(string) is str:
+        new_string = bytes(string.encode())
     for codec in [codecs.BOM_UTF8, codecs.BOM_UTF16, codecs.BOM_UTF32]:
         new_string = new_string.replace(codec, b'')
-    new_string = new_string.decode("utf-8")
+    new_string = new_string.decode()
     return new_string
 
 
 def read_file(filepath):
     filepath = path_insensitive(filepath)
-    with open(filepath, 'rb') as file:
+    with open(filepath, 'r') as file:
         string = fix_string(file.read())
         return string.strip().splitlines()
 
