@@ -7,9 +7,6 @@ from . import options
 from . import ldraw_colors
 from . import filesystem
 
-slope_texture_strength = 0.6
-use_glass = True
-
 
 # https://github.com/bblanimation/abs-plastic-materials
 def create_blender_node_groups():
@@ -133,10 +130,11 @@ def __create_node_based_material(key, color, use_edge_color=False, is_slope_mate
     elif is_transparent:
         if ldraw_colors.is_fluorescent_transparent(color.name):
             __create_cycles_fluorescent_transparent(nodes, links, diff_color)
-        elif use_glass:
-            __create_cycles_glass(nodes, links, diff_color)
         else:
-            __create_cycles_transparent(nodes, links, diff_color)
+            if options.use_glass:
+                __create_cycles_glass(nodes, links, diff_color)
+            else:
+                __create_cycles_transparent(nodes, links, diff_color)
     else:
         __create_cycles_standard(nodes, links, diff_color)
 
@@ -543,7 +541,7 @@ def __create_cycles_slope_texture(nodes, links, strength=None):
     """Slope face normals for Cycles render engine"""
 
     if strength is None:
-        strength = slope_texture_strength
+        strength = options.slope_texture_strength
 
     slope_texture = __node_slope_texture(nodes, strength, -200, 0)
     target = __get_group(nodes)
@@ -675,13 +673,13 @@ def __create_blender_slope_texture_node_group():
     node_group.inputs.new("NodeSocketFloat", "Strength")
     node_group.inputs.new("NodeSocketVectorDirection", "Normal")
 
-    node_group.inputs[0].default_value = slope_texture_strength
+    node_group.inputs[0].default_value = options.slope_texture_strength
 
     node_group.outputs.new("NodeSocketVectorDirection", "Normal")
 
     node_texture_coordinate = __node_tex_coord(node_group.nodes, -300, 240)
     node_voronoi = __node_voronoi(node_group.nodes, 6.2, -100, 155)
-    node_bump = __node_bump_shader(node_group.nodes, slope_texture_strength, 1.0, 90, 50)
+    node_bump = __node_bump_shader(node_group.nodes, options.slope_texture_strength, 1.0, 90, 50)
     node_bump.invert = True
 
     node_group.links.new(node_texture_coordinate.outputs["Object"], node_voronoi.inputs["Vector"])

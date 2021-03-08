@@ -43,3 +43,5 @@ ngon_handling = "triangulate"
 
 # options without a ui
 do_texmaps = False
+use_glass = True
+slope_texture_strength = 0.6
