@@ -43,7 +43,7 @@ ngon_handling = "triangulate"
 
 # options without a ui
 instancing = False
-treat_shortcut_as_model = True
+treat_shortcut_as_model = False
 do_texmaps = False
 use_glass = True
 slope_texture_strength = 0.6
