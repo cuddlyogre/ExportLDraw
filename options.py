@@ -40,3 +40,6 @@ export_precision = 2
 recalculate_normals = True
 triangulate = False
 ngon_handling = "triangulate"
+
+# options without a ui
+do_texmaps = False
