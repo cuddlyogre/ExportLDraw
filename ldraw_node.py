@@ -294,7 +294,7 @@ def hard_do_create_mesh(key, geometry_vertices, geometry_vert_counts):
 
 
 def create_edge_mesh(key, geometry):
-    return do_create_mesh(key, geometry.edge_vertices, geometry.edges)
+    return do_create_mesh(key, geometry.edge_vertices, geometry.edge_vert_counts)
 
 
 def create_mesh(key, geometry):
@@ -404,7 +404,7 @@ def create_gp_mesh(key, mesh):
     gp_frame = gp_layer.frames.new(1)
     gp_layer.active_frame = gp_frame
 
-    for e in mesh.edges:
+    for e in mesh.edge_vert_counts:
         gp_stroke = gp_frame.strokes.new()
         gp_stroke.material_index = 0
         gp_stroke.line_width = 10.0
@@ -591,13 +591,12 @@ class LDrawNode:
 
                 vertices = [matrix @ v for v in self.file.geometry.vertices]
                 geometry.vertices.extend(vertices)
+                geometry.vert_counts.extend(self.file.geometry.vert_counts)
 
                 if (not is_edge_logo) or (is_edge_logo and options.display_logo):
                     vertices = [matrix @ v for v in self.file.geometry.edge_vertices]
                     geometry.edge_vertices.extend(vertices)
-
-                geometry.edges.extend(self.file.geometry.edges)
-                geometry.vert_counts.extend(self.file.geometry.vert_counts)
+                    geometry.edge_vert_counts.extend(self.file.geometry.edge_vert_counts)
 
                 if key not in face_info_cache:
                     new_face_info = []

@@ -161,7 +161,7 @@ def export_polygons(obj, lines):
         lines.append(line)
 
     # export edges
-    for e in mesh.edges:
+    for e in mesh.edge_vert_counts:
         if e.use_edge_sharp:
             line = ["2", "24"]
             for v in e.vertices:
