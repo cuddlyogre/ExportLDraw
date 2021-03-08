@@ -144,7 +144,7 @@ def __create_node_based_material(key, color, use_edge_color=False, is_slope_mate
         # TODO: slight variation in strength for each material
         __create_cycles_slope_texture(nodes, links)
 
-    if False:
+    if options.do_texmaps:
         # https://blender.stackexchange.com/questions/157531/blender-2-8-python-add-texture-image
         texmap_material = True
         if texmap_material:
@@ -528,7 +528,7 @@ def __create_texmap_texture(nodes, links, diff_color):
     links.new(tex_image.outputs["Color"], mix_rgb.inputs["Color2"])
     links.new(tex_image.outputs["Alpha"], mix_rgb.inputs["Fac"])
 
-    if False:
+    if options.do_texmaps:
         image_name = "3817bpaz.png"
         image_path = os.path.join(filesystem.locate_ldraw(), "unofficial", "parts", "textures", image_name)
         bpy.data.images.load(image_path)
