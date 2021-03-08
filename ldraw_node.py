@@ -611,13 +611,13 @@ class LDrawNode:
                 new_face_info = face_info_cache[key]
                 geometry.face_info.extend(new_face_info)
 
-            for child in self.file.child_nodes:
-                child.load(parent_matrix=matrix,
-                           parent_color_code=parent_color_code,
-                           geometry=geometry,
-                           is_stud=is_stud,
-                           is_edge_logo=is_edge_logo,
-                           parent_collection=file_collection)
+            for child_node in self.file.child_nodes:
+                child_node.load(parent_matrix=matrix,
+                                parent_color_code=parent_color_code,
+                                geometry=geometry,
+                                is_stud=is_stud,
+                                is_edge_logo=is_edge_logo,
+                                parent_collection=file_collection)
 
             if self.top:
                 geometry_cache[key] = geometry
