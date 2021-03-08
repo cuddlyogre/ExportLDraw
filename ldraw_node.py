@@ -98,14 +98,31 @@ def apply_slope_materials(mesh, filename):
 
 
 def do_create_object(mesh):
-    instancing = False
-    if instancing:
+    if options.instancing:
         if mesh.name not in bpy.data.objects:
-            instanced_obj = bpy.data.objects.new(mesh.name, mesh)
-            add_obj_to_collection(mesh.name, instanced_obj)
+            bpy.data.objects.new(mesh.name, mesh)
+        instanced_obj = bpy.data.objects[mesh.name]
+
+        parts_collection_name = 'Parts'
+        if parts_collection_name not in bpy.data.collections:
+            parts_collection = bpy.data.collections.new(parts_collection_name)
+            parts_collection.hide_viewport = True
+            parts_collection.hide_render = True
+            bpy.context.scene.collection.children.link(parts_collection)
+        parts_collection = bpy.data.collections[parts_collection_name]
+
+        part_collection_name = mesh.name
+        if part_collection_name not in bpy.data.collections:
+            part_collection = bpy.data.collections.new(part_collection_name)
+            parts_collection.children.link(part_collection)
+        part_collection = bpy.data.collections[part_collection_name]
+
+        if instanced_obj.name not in part_collection.objects:
+            part_collection.objects.link(instanced_obj)
+
         obj = bpy.data.objects.new(mesh.name, None)
         obj.instance_type = 'COLLECTION'
-        obj.instance_collection = bpy.data.collections[mesh.name]
+        obj.instance_collection = part_collection
     else:
         obj = bpy.data.objects.new(mesh.name, mesh)
     return obj
@@ -414,23 +431,10 @@ def apply_gp_materials(gp_mesh):
 
 
 def get_collection(collection_name):
-    scene_collection = bpy.context.scene.collection
-    parent_collection = scene_collection
-
-    do_parts_collection = True
-    if do_parts_collection:
-        parent_collection_name = 'Parts'
-        if 'Parts' not in scene_collection.children:
-            parent_collection = bpy.data.collections.new(parent_collection_name)
-            parent_collection.hide_viewport = True
-            parent_collection.hide_render = True
-            scene_collection.children.link(parent_collection)
-        parent_collection = bpy.data.collections[parent_collection_name]
-
-    if collection_name not in parent_collection.children:
+    if collection_name not in bpy.context.scene.collection.children:
         collection = bpy.data.collections.new(collection_name)
-        parent_collection.children.link(collection)
-    collection = parent_collection.children[collection_name]
+        bpy.context.scene.collection.children.link(collection)
+    collection = bpy.context.scene.collection.children[collection_name]
     return collection
 
 
