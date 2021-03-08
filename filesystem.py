@@ -1,6 +1,7 @@
 import os
 import codecs
 import string
+import glob
 from sys import platform
 from pathlib import Path
 
@@ -146,6 +147,24 @@ def _path_insensitive(path):
         return os.path.join(dirname, basefinal) + suffix
     else:
         return
+
+
+def test_fix_string():
+    build_search_paths()
+    errors = {}
+    for path in search_paths:
+        paths = glob.glob(os.path.join(path, '**', '*'), recursive=True)
+        for path in paths:
+            if not os.path.isfile(path):
+                continue
+            with open(path, 'r') as file:
+                try:
+                    print(fix_string(file.read()))
+                except UnicodeDecodeError as e:
+                    errors[path] = e
+                    # print(e)
+                    # print(path)
+    print(errors)
 
 
 def fix_string(string):
