@@ -190,6 +190,7 @@ class LDrawFile:
                         ldraw_node = LDrawNode(None)
                         ldraw_node.meta_command = params[1].lower()
                         self.child_nodes.append(ldraw_node)
+                    if options.do_texmaps:
                         texmap_start, texmap_next, texmap_fallback = self.set_texmap_end()
                 elif params[1].lower() in ["save"]:
                     if options.meta_save:
@@ -314,48 +315,48 @@ class LDrawFile:
                             else:
                                 params = params[1:]
                 elif texmap_next:
-                    texmap_start, texmap_next, texmap_fallback = self.set_texmap_end()
-                    # also error
-                elif params[1].lower() in ["!texmap"]:  # https://www.ldraw.org/documentation/ldraw-org-file-format-standards/language-extension-for-texture-mapping.html
-                    do_texmaps = True
-                    if not do_texmaps:
-                        continue
-                    if params[2].lower() in ["start", "next"]:
-                        ldraw_node = LDrawNode(None)
-                        if params[2].lower() == "start":
-                            texmap_start = True
-                            ldraw_node.meta_command = "texmap_start"
-                        elif params[2].lower() == "next":
-                            texmap_next = True
-                            ldraw_node.meta_command = "texmap_next"
-                        texmap_fallback = False
-
-                        (x1, y1, z1, x2, y2, z2, x3, y3, z3) = map(float, params[4:13])
-
-                        ldraw_node.meta_args["texmap"] = TexMap({
-                            "method": params[3].lower(),
-                            "parameters": [
-                                mathutils.Vector((x1, y1, z1)),
-                                mathutils.Vector((x2, y2, z2)),
-                                mathutils.Vector((x3, y3, z3)),
-                            ],
-                            "texmap": params[13],
-                            "glossmap": params[14],
-                        })
-
-                        self.child_nodes.append(ldraw_node)
-                    elif texmap_start:
-                        if params[2].lower() in ["fallback"]:
-                            texmap_fallback = True
-                        elif params[2].lower() in ["end"]:
-                            texmap_start, texmap_next, texmap_fallback = self.set_texmap_end()
-                elif params[1].lower() in ["!:"] and texmap_start:
-                    # remove 0 !: from line so that it can be parsed like a normal line
-                    clean_line = re.sub(r"(.*?\s+!:\s+)", "", line)
-                    clean_params = params[2:]
-                    self.parse_geometry_line(clean_line, clean_params)
-                    if texmap_next:
+                    if options.do_texmaps:
                         texmap_start, texmap_next, texmap_fallback = self.set_texmap_end()
+                        # also error
+                elif params[1].lower() in ["!texmap"]:  # https://www.ldraw.org/documentation/ldraw-org-file-format-standards/language-extension-for-texture-mapping.html
+                    if options.do_texmaps:
+                        if params[2].lower() in ["start", "next"]:
+                            ldraw_node = LDrawNode(None)
+                            if params[2].lower() == "start":
+                                texmap_start = True
+                                ldraw_node.meta_command = "texmap_start"
+                            elif params[2].lower() == "next":
+                                texmap_next = True
+                                ldraw_node.meta_command = "texmap_next"
+                            texmap_fallback = False
+
+                            (x1, y1, z1, x2, y2, z2, x3, y3, z3) = map(float, params[4:13])
+
+                            ldraw_node.meta_args["texmap"] = TexMap({
+                                "method": params[3].lower(),
+                                "parameters": [
+                                    mathutils.Vector((x1, y1, z1)),
+                                    mathutils.Vector((x2, y2, z2)),
+                                    mathutils.Vector((x3, y3, z3)),
+                                ],
+                                "texmap": params[13],
+                                "glossmap": params[14],
+                            })
+
+                            self.child_nodes.append(ldraw_node)
+                        elif texmap_start:
+                            if params[2].lower() in ["fallback"]:
+                                texmap_fallback = True
+                            elif params[2].lower() in ["end"]:
+                                texmap_start, texmap_next, texmap_fallback = self.set_texmap_end()
+                elif params[1].lower() in ["!:"] and texmap_start:
+                    if options.do_texmaps:
+                        # remove 0 !: from line so that it can be parsed like a normal line
+                        clean_line = re.sub(r"(.*?\s+!:\s+)", "", line)
+                        clean_params = params[2:]
+                        self.parse_geometry_line(clean_line, clean_params)
+                        if texmap_next:
+                            texmap_start, texmap_next, texmap_fallback = self.set_texmap_end()
             else:
                 if not (texmap_start and texmap_fallback):
                     self.parse_geometry_line(line, params)
@@ -364,13 +365,12 @@ class LDrawFile:
             self.name = os.path.basename(self.filename)
 
     def set_texmap_end(self):
-        ldraw_node = LDrawNode(None)
-        ldraw_node.meta_command = "texmap_end"
-        self.child_nodes.append(ldraw_node)
-
         texmap_start = False
         texmap_next = False
         texmap_fallback = False
+        ldraw_node = LDrawNode(None)
+        ldraw_node.meta_command = "texmap_end"
+        self.child_nodes.append(ldraw_node)
         return texmap_start, texmap_next, texmap_fallback
 
     def parse_geometry_line(self, line, params):
