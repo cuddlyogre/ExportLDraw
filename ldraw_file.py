@@ -88,56 +88,6 @@ def __parse_current_mpd_file(ldraw_file):
         mpd_file_cache[ldraw_file.filename] = ldraw_file
 
 
-def get_child_node(line, params, parent_filepath=None):
-    color_code = params[1]
-
-    (x, y, z, a, b, c, d, e, f, g, h, i) = map(float, params[2:14])
-    matrix = mathutils.Matrix((
-        (a, b, c, x),
-        (d, e, f, y),
-        (g, h, i, z),
-        (0, 0, 0, 1)
-    ))
-
-    # there might be spaces in the filename, so don't just split on whitespace
-    # filename_args = re.search(r"(?:.*\s+){14}(.*)", line.strip())
-    # print(line.strip())
-    filename_args = re.search(r".*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+(.*)", line.strip())
-    filename = filename_args[1].lower()
-    # filename = " ".join(params[14:]).lower()
-
-    if options.display_logo:
-        if filename in special_bricks.studs:
-            parts = filename.split(".")
-            name = parts[0]
-            ext = parts[1]
-            new_filename = f"{name}-{options.chosen_logo}.{ext}"
-            if filesystem.locate(new_filename):
-                filename = new_filename
-
-    key = []
-    key.append(options.resolution)
-    if options.display_logo:
-        key.append(options.chosen_logo)
-    if options.remove_doubles:
-        key.append("rd")
-    key.append(color_code)
-    key.append(os.path.basename(filename))
-    key = "_".join([k.lower() for k in key])
-    key = re.sub(r"[^a-z0-9._]", "-", key)
-
-    if key not in file_cache:
-        ldraw_file = LDrawFile(filename)
-        if not ldraw_file.read_file(parent_filepath):
-            return None
-        ldraw_file.parse_file()
-        file_cache[key] = ldraw_file
-    ldraw_file = file_cache[key]
-    ldraw_node = LDrawNode(ldraw_file, color_code=color_code, matrix=matrix)
-
-    return ldraw_node
-
-
 class LDrawFile:
     def __init__(self, filename):
         self.filename = filename
@@ -373,17 +323,55 @@ class LDrawFile:
         self.child_nodes.append(ldraw_node)
         return texmap_start, texmap_next, texmap_fallback
 
+    # if any line in a model file is a subpart, treat that model as a part
+    # otherwise subparts are not parsed correctly
+    # if subpart found, create new file with those subparts and add that to this parent's children
     def parse_geometry_line(self, line, params):
         if params[0] == "1":
-            child_node = get_child_node(line, params, self.filepath)
-            if child_node is None:
-                return False
-            self.child_nodes.append(child_node)
-            if self.part_type in ldraw_part_types.model_types:
-                if child_node.file.part_type in ldraw_part_types.subpart_types:
-                    self.part_type = "part"
-        elif params[0] in ["2"]:
-            self.geometry.parse_edge(params)
+            color_code = params[1]
+
+            (x, y, z, a, b, c, d, e, f, g, h, i) = map(float, params[2:14])
+            matrix = mathutils.Matrix((
+                (a, b, c, x),
+                (d, e, f, y),
+                (g, h, i, z),
+                (0, 0, 0, 1)
+            ))
+
+            # there might be spaces in the filename, so don't just split on whitespace
+            # filename_args = re.search(r"(?:.*\s+){14}(.*)", line.strip())
+            # print(line.strip())
+            filename_args = re.search(r".*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+(.*)", line.strip())
+            filename = filename_args[1].lower()
+            # filename = " ".join(params[14:]).lower()
+
+            if options.display_logo and filename in special_bricks.studs:
+                parts = filename.split(".")
+                name = parts[0]
+                ext = parts[1]
+                filename = f"{name}-{options.chosen_logo}.{ext}"
+
+            key = []
+            key.append(options.resolution)
+            if options.display_logo:
+                key.append(options.chosen_logo)
+            if options.remove_doubles:
+                key.append("rd")
+            key.append(color_code)
+            key.append(os.path.basename(filename))
+            key = "_".join([k.lower() for k in key])
+            key = re.sub(r"[^a-z0-9._]", "-", key)
+
+            if key not in file_cache:
+                ldraw_file = LDrawFile(filename)
+                if not ldraw_file.read_file(self.filepath):
+                    return None
+                ldraw_file.parse_file()
+                file_cache[key] = ldraw_file
+            ldraw_file = file_cache[key]
+
+            ldraw_node = LDrawNode(ldraw_file, color_code=color_code, matrix=matrix)
+
             if self.is_like_model() and ldraw_node.file.is_subpart():
                 self.part_type = "part"
             self.child_nodes.append(ldraw_node)
