@@ -2,7 +2,7 @@ import csv
 import io
 
 
-def parse_line(line, padding=0):
+def parse_line(line, min_params=0):
     line = line.strip().replace("\t", " ")
     rows = list(csv.reader(io.StringIO(line), delimiter=' ', quotechar='"', skipinitialspace=True))
 
@@ -14,7 +14,7 @@ def parse_line(line, padding=0):
     if len(params) == 0:
         return None
 
-    while len(params) < padding:
+    while len(params) < min_params:
         params.append("")
 
     return params
