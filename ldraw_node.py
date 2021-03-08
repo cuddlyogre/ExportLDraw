@@ -267,14 +267,19 @@ def hard_do_create_mesh(key, geometry_vertices, geometry_vert_counts):
         new_face = []
         for _ in range(vert_count):
             v = geometry_vertices[face_index]
-            if v not in vertices:
-                vertices.append(v)
+            r = 1
+            vv = mathutils.Vector((round(v.x, r), round(v.y, r), round(v.z, r)))
+            vv = v
+            if vv not in vertices:
+                vertices.append(vv)
 
-            k = ",".join([str(v.x), str(v.y), str(v.z)])
+            k = ",".join([str(vv.x), str(vv.y), str(vv.z)])
+            k = str(vv[:])
             if k not in indexes:
-                indexes[k] = vertices.index(v)
+                indexes[k] = vertices.index(vv)
+            index = indexes[k]
+            new_face.append(index)
 
-            new_face.append(indexes[k])
             face_index += 1
 
         faces.append(new_face)
