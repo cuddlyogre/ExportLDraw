@@ -459,6 +459,7 @@ class LDrawNode:
         self.meta_args = {}
 
     def load(self, parent_matrix=matrices.identity, parent_color_code="16", geometry=None, is_stud=False, is_edge_logo=False, parent_collection=None):
+        global part_count
         global current_step
         global top_collection
         global top_empty
@@ -556,7 +557,6 @@ class LDrawNode:
             geometry = LDrawGeometry()
             matrix = matrices.identity
             self.top = True
-            global part_count
             part_count += 1
 
         if options.meta_group and next_collection is not None:
