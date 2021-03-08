@@ -7,7 +7,6 @@ import bmesh
 from . import strings
 from . import options
 from . import matrices
-from . import ldraw_part_types
 
 from .ldraw_geometry import LDrawGeometry
 from .face_info import FaceInfo
@@ -496,7 +495,7 @@ class LDrawNode:
                         ob.keyframe_insert(data_path="hide_viewport")
             return
 
-        if options.no_studs and self.file.name.startswith("stud"):
+        if options.no_studs and self.file.is_like_stud():
             return
 
         if self.color_code != "16":
@@ -522,10 +521,10 @@ class LDrawNode:
         key.append(self.file.name)
         key = "_".join([k.lower() for k in key])
 
-        is_model = self.file.part_type in ldraw_part_types.model_types
-        is_part = self.file.part_type in ldraw_part_types.part_types
-        is_shortcut = self.file.part_type in ldraw_part_types.shortcut_types
-        is_subpart = self.file.part_type in ldraw_part_types.subpart_types
+        is_model = self.file.is_like_model()
+        is_shortcut = self.file.is_shortcut()
+        is_part = self.file.is_part()
+        is_subpart = self.file.is_subpart()
 
         matrix = parent_matrix @ self.matrix
         file_collection = parent_collection
@@ -578,11 +577,10 @@ class LDrawNode:
             geometry = geometry_cache[key]
         else:
             if geometry is not None:
-                if self.file.name in ["stud.dat", "stud2.dat"]:
+                if self.file.is_stud():
                     is_stud = True
 
-                # ["logo.dat", "logo2.dat", "logo3.dat", "logo4.dat", "logo5.dat"]
-                if self.file.name in ["logo.dat", "logo2.dat"]:
+                if self.file.is_edge_logo():
                     is_edge_logo = True
 
                 vertices = [matrix @ v for v in self.file.geometry.vertices]

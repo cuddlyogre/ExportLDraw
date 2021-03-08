@@ -2,3 +2,6 @@ model_types = ["model", "unofficial_model", "un-official model", "submodel", Non
 part_types = ["part", "unofficial_part", "un-official part"]
 shortcut_types = ["shortcut", "unofficial_shortcut", "un-official shortcut"]
 subpart_types = ["primitive", "subpart", "un-official primitive", "un-official subpart"]
+stud_names = ["stud.dat", "stud2.dat"]
+edge_logo_names = ["logo.dat", "logo2.dat"]
+logo_names = ["logo3.dat", "logo4.dat", "logo5.dat"]

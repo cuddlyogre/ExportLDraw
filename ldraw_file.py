@@ -384,9 +384,38 @@ class LDrawFile:
                     self.part_type = "part"
         elif params[0] in ["2"]:
             self.geometry.parse_edge(params)
-            if self.part_type in ldraw_part_types.model_types:
+            if self.is_like_model() and ldraw_node.file.is_subpart():
                 self.part_type = "part"
-        elif params[0] in ["3", "4"]:
+            self.child_nodes.append(ldraw_node)
+        elif params[0] in ["2", "3", "4"]:
             self.geometry.parse_face(params)
-            if self.part_type in ldraw_part_types.model_types:
+            if self.is_like_model():
                 self.part_type = "part"
+
+    # this allows shortcuts to be split into their individual parts if desired
+    def is_like_model(self):
+        return self.is_model() or (options.treat_shortcut_as_model and self.is_shortcut())
+
+    def is_model(self):
+        return self.part_type in ldraw_part_types.model_types
+
+    def is_shortcut(self):
+        return self.part_type in ldraw_part_types.shortcut_types
+
+    def is_part(self):
+        return self.part_type in ldraw_part_types.part_types
+
+    def is_subpart(self):
+        return self.part_type in ldraw_part_types.subpart_types
+
+    def is_like_stud(self):
+        return self.name.startswith("stud")
+
+    def is_stud(self):
+        return self.name in ldraw_part_types.stud_names
+
+    def is_edge_logo(self):
+        return self.name in ldraw_part_types.edge_logo_names
+
+    def is_logo(self):
+        return self.name in ldraw_part_types.logo_names
