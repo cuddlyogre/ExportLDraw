@@ -536,7 +536,7 @@ class LDrawNode:
         file_collection = parent_collection
 
         if is_model:
-            file_collection = bpy.data.collections.new(os.path.basename(self.file.filepath))
+            file_collection = bpy.data.collections.new(os.path.basename(self.file.filename))
             if parent_collection is not None:
                 parent_collection.children.link(file_collection)
 
