@@ -1,6 +1,7 @@
 import os
 import mathutils
 import re
+import uuid
 
 from . import options
 from . import filesystem
@@ -97,7 +98,6 @@ class LDrawFile:
         self.geometry = LDrawGeometry()
         self.part_type = None
         self.lines = []
-        self.extra_file = None
         self.extra_child_nodes = []
         self.extra_geometry = LDrawGeometry()
 
@@ -318,11 +318,16 @@ class LDrawFile:
             self.name = os.path.basename(self.filename)
 
         if len(self.extra_child_nodes) > 0:
-            self.extra_file = LDrawFile("_".join(['extra', self.name]))
-            self.extra_file.part_type = "part"
-            self.extra_file.child_nodes = self.extra_child_nodes
-            self.extra_file.geometry = self.extra_geometry
-            ldraw_node = LDrawNode(self.extra_file)
+            key = str(uuid.uuid4()).split('-')[0]  # mesh/object names have a max length of 63 characters
+            if key not in file_cache:
+                file = LDrawFile(key)
+                file.name = key
+                file.part_type = "part"
+                file.child_nodes = self.extra_child_nodes
+                file.geometry = self.extra_geometry
+                file_cache[key] = file
+            file = file_cache[key]
+            ldraw_node = LDrawNode(file)
             self.child_nodes.append(ldraw_node)
 
     def set_texmap_end(self):
