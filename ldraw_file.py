@@ -97,6 +97,9 @@ class LDrawFile:
         self.geometry = LDrawGeometry()
         self.part_type = None
         self.lines = []
+        self.extra_file = None
+        self.extra_child_nodes = []
+        self.extra_geometry = LDrawGeometry()
 
     def read_file(self, parent_filepath=None):
         if self.filename in mpd_file_cache:
@@ -314,6 +317,14 @@ class LDrawFile:
         if self.name == "":
             self.name = os.path.basename(self.filename)
 
+        if len(self.extra_child_nodes) > 0:
+            self.extra_file = LDrawFile("_".join(['extra', self.name]))
+            self.extra_file.part_type = "part"
+            self.extra_file.child_nodes = self.extra_child_nodes
+            self.extra_file.geometry = self.extra_geometry
+            ldraw_node = LDrawNode(self.extra_file)
+            self.child_nodes.append(ldraw_node)
+
     def set_texmap_end(self):
         texmap_start = False
         texmap_next = False
@@ -323,9 +334,6 @@ class LDrawFile:
         self.child_nodes.append(ldraw_node)
         return texmap_start, texmap_next, texmap_fallback
 
-    # if any line in a model file is a subpart, treat that model as a part
-    # otherwise subparts are not parsed correctly
-    # if subpart found, create new file with those subparts and add that to this parent's children
     def parse_geometry_line(self, line, params):
         if params[0] == "1":
             color_code = params[1]
@@ -372,13 +380,17 @@ class LDrawFile:
 
             ldraw_node = LDrawNode(ldraw_file, color_code=color_code, matrix=matrix)
 
+            # if any line in a model file is a subpart, treat that model as a part otherwise subparts are not parsed correctly
+            # if subpart found, create new LDrawNode with those subparts and add that to child_nodes
             if self.is_like_model() and ldraw_node.file.is_subpart():
-                self.part_type = "part"
-            self.child_nodes.append(ldraw_node)
+                self.extra_child_nodes.append(ldraw_node)
+            else:
+                self.child_nodes.append(ldraw_node)
         elif params[0] in ["2", "3", "4"]:
-            self.geometry.parse_face(params)
             if self.is_like_model():
-                self.part_type = "part"
+                self.extra_geometry.parse_face(params)
+            else:
+                self.geometry.parse_face(params)
 
     # this allows shortcuts to be split into their individual parts if desired
     def is_like_model(self):
