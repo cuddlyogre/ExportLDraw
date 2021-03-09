@@ -553,7 +553,7 @@ class LDrawNode:
                         top_collection.objects.link(top_empty)
                     if options.debug_text:
                         print(top_empty.name)
-        elif geometry is None:
+        elif geometry is None:  # top-level part
             geometry = LDrawGeometry()
             matrix = matrices.identity
             self.top = True
