@@ -8,6 +8,7 @@ from . import ldraw_file
 from . import ldraw_camera
 from . import blender_materials
 from . import special_bricks
+from . import texmap
 
 
 def do_import(filename):
@@ -19,6 +20,7 @@ def do_import(filename):
     ldraw_file.reset_caches()
     ldraw_node.reset_caches()
     ldraw_camera.reset_caches()
+    texmap.TexMap.reset_caches()
     filesystem.build_search_paths()
     ldraw_file.read_color_table()
     blender_materials.create_blender_node_groups()

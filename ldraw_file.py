@@ -90,6 +90,9 @@ def __parse_current_mpd_file(ldraw_file):
 
 
 class LDrawFile:
+    texmaps = []
+    texmap = None
+
     def __init__(self, filename):
         self.filename = filename
         self.filepath = None
@@ -100,6 +103,9 @@ class LDrawFile:
         self.lines = []
         self.extra_child_nodes = []
         self.extra_geometry = LDrawGeometry()
+        self.texmap_start = False
+        self.texmap_next = False
+        self.texmap_fallback = False
 
     def read_file(self, parent_filepath=None):
         if self.filename in mpd_file_cache:
@@ -118,9 +124,6 @@ class LDrawFile:
             return
 
         camera = None
-        texmap_start = False
-        texmap_next = False
-        texmap_fallback = False
 
         for line in self.lines:
             params = helpers.parse_line(line, 15)
@@ -144,7 +147,7 @@ class LDrawFile:
                         ldraw_node.meta_command = params[1].lower()
                         self.child_nodes.append(ldraw_node)
                     if options.do_texmaps:
-                        texmap_start, texmap_next, texmap_fallback = self.set_texmap_end()
+                        self.set_texmap_end()
                 elif params[1].lower() in ["save"]:
                     if options.meta_save:
                         ldraw_node = LDrawNode(None)
@@ -267,51 +270,81 @@ class LDrawFile:
                                 camera = None
                             else:
                                 params = params[1:]
-                elif texmap_next:
-                    if options.do_texmaps:
-                        texmap_start, texmap_next, texmap_fallback = self.set_texmap_end()
-                        # also error
+                elif self.texmap_next:
+                    pass
+                    # if 0 line and texmap next, error
+                    # also error
                 elif params[1].lower() in ["!texmap"]:  # https://www.ldraw.org/documentation/ldraw-org-file-format-standards/language-extension-for-texture-mapping.html
                     if options.do_texmaps:
                         if params[2].lower() in ["start", "next"]:
-                            ldraw_node = LDrawNode(None)
+                            # print('texmap_start')
                             if params[2].lower() == "start":
-                                texmap_start = True
-                                ldraw_node.meta_command = "texmap_start"
+                                self.texmap_start = True
                             elif params[2].lower() == "next":
-                                texmap_next = True
-                                ldraw_node.meta_command = "texmap_next"
-                            texmap_fallback = False
+                                self.texmap_next = True
+                            self.texmap_fallback = False
 
-                            (x1, y1, z1, x2, y2, z2, x3, y3, z3) = map(float, params[4:13])
+                            new_texmap = None
+                            if params[3].lower() in ['planar']:
+                                (x1, y1, z1, x2, y2, z2, x3, y3, z3) = map(float, params[4:13])
+                                new_texmap = TexMap({
+                                    "method": params[3].lower(),
+                                    "parameters": [
+                                        mathutils.Vector((x1, y1, z1)),
+                                        mathutils.Vector((x2, y2, z2)),
+                                        mathutils.Vector((x3, y3, z3)),
+                                    ],
+                                    "texture": params[13],
+                                    "glossmap": params[14],
+                                })
+                            elif params[3].lower() in ['cylindrical']:
+                                (x1, y1, z1, x2, y2, z2, x3, y3, z3, a) = map(float, params[4:14])
+                                new_texmap = TexMap({
+                                    "method": params[3].lower(),
+                                    "parameters": [
+                                        mathutils.Vector((x1, y1, z1)),
+                                        mathutils.Vector((x2, y2, z2)),
+                                        mathutils.Vector((x3, y3, z3)),
+                                        a,
+                                    ],
+                                    "texture": params[14],
+                                    "glossmap": params[15],
+                                })
+                            elif params[3].lower() in ['spherical']:
+                                (x1, y1, z1, x2, y2, z2, x3, y3, z3, a, b) = map(float, params[4:15])
+                                new_texmap = TexMap({
+                                    "method": params[3].lower(),
+                                    "parameters": [
+                                        mathutils.Vector((x1, y1, z1)),
+                                        mathutils.Vector((x2, y2, z2)),
+                                        mathutils.Vector((x3, y3, z3)),
+                                        a,
+                                        b,
+                                    ],
+                                    "texture": params[15],
+                                    "glossmap": params[16],
+                                })
 
-                            ldraw_node.meta_args["texmap"] = TexMap({
-                                "method": params[3].lower(),
-                                "parameters": [
-                                    mathutils.Vector((x1, y1, z1)),
-                                    mathutils.Vector((x2, y2, z2)),
-                                    mathutils.Vector((x3, y3, z3)),
-                                ],
-                                "texmap": params[13],
-                                "glossmap": params[14],
-                            })
-
-                            self.child_nodes.append(ldraw_node)
-                        elif texmap_start:
+                            if new_texmap is not None:
+                                if LDrawFile.texmap is not None:
+                                    LDrawFile.texmaps.append(LDrawFile.texmap)
+                                LDrawFile.texmap = new_texmap
+                                TexMap.texmaps[new_texmap.id] = new_texmap
+                        elif self.texmap_start:
                             if params[2].lower() in ["fallback"]:
-                                texmap_fallback = True
+                                self.texmap_fallback = True
                             elif params[2].lower() in ["end"]:
-                                texmap_start, texmap_next, texmap_fallback = self.set_texmap_end()
-                elif params[1].lower() in ["!:"] and texmap_start:
+                                self.set_texmap_end()
+                elif params[1].lower() in ["!:"] and self.texmap_start:
                     if options.do_texmaps:
                         # remove 0 !: from line so that it can be parsed like a normal line
                         clean_line = re.sub(r"(.*?\s+!:\s+)", "", line)
                         clean_params = params[2:]
                         self.parse_geometry_line(clean_line, clean_params)
-                        if texmap_next:
-                            texmap_start, texmap_next, texmap_fallback = self.set_texmap_end()
+                        if self.texmap_next:
+                            self.set_texmap_end()
             else:
-                if not (texmap_start and texmap_fallback):
+                if not self.texmap_start and not self.texmap_fallback:
                     self.parse_geometry_line(line, params)
 
         if self.name == "":
@@ -331,13 +364,14 @@ class LDrawFile:
             self.child_nodes.append(ldraw_node)
 
     def set_texmap_end(self):
-        texmap_start = False
-        texmap_next = False
-        texmap_fallback = False
-        ldraw_node = LDrawNode(None)
-        ldraw_node.meta_command = "texmap_end"
-        self.child_nodes.append(ldraw_node)
-        return texmap_start, texmap_next, texmap_fallback
+        if len(LDrawFile.texmaps) < 1:
+            LDrawFile.texmap = None
+        else:
+            LDrawFile.texmap = LDrawFile.texmaps.pop()
+        self.texmap_start = False
+        self.texmap_next = False
+        self.texmap_fallback = False
+        # print('texmap_end')
 
     def parse_geometry_line(self, line, params):
         if params[0] == "1":
@@ -393,9 +427,9 @@ class LDrawFile:
                 self.child_nodes.append(ldraw_node)
         elif params[0] in ["2", "3", "4"]:
             if self.is_like_model():
-                self.extra_geometry.parse_face(params)
+                self.extra_geometry.parse_face(params, LDrawFile.texmap)
             else:
-                self.geometry.parse_face(params)
+                self.geometry.parse_face(params, LDrawFile.texmap)
 
     # this allows shortcuts to be split into their individual parts if desired
     def is_like_model(self):

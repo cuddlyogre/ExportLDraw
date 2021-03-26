@@ -10,7 +10,7 @@ class LDrawGeometry:
         self.vert_counts = []
         self.face_info = []
 
-    def parse_face(self, params):
+    def parse_face(self, params, texmap=None):
         vert_count = int(params[0])
 
         vertices = []
@@ -42,4 +42,4 @@ class LDrawGeometry:
             self.vertices.extend(vertices)
 
             color_code = params[1]
-            self.face_info.append(FaceInfo(color_code))
+            self.face_info.append(FaceInfo(color_code, texmap=texmap))

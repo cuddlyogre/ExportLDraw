@@ -315,20 +315,19 @@ def apply_materials(mesh, geometry):
     for i, polygon in enumerate(mesh.polygons):
         face_info = geometry.face_info[i]
 
-        grain_slope_allowed = face_info.grain_slope_allowed
-
         color_code = face_info.color_code
         color = ldraw_colors.get_color(color_code)
-
         use_edge_color = face_info.use_edge_color
-        material = blender_materials.get_material(color, use_edge_color=use_edge_color)
+        texmap = face_info.texmap
+        material = blender_materials.get_material(color, use_edge_color=use_edge_color, texmap=texmap)
         if material is None:
             continue
+
+        # TODO: UV PROJECT HERE
 
         if material.name not in mesh.materials:
             mesh.materials.append(material)
         polygon.material_index = mesh.materials.find(material.name)
-
         polygon.use_smooth = options.shade_smooth
 
 
@@ -606,6 +605,7 @@ class LDrawNode:
                             copy.use_edge_color = True
                         if face_info.color_code != "16":
                             copy.color_code = face_info.color_code
+                        copy.texmap = face_info.texmap
                         new_face_info.append(copy)
                     face_info_cache[key] = new_face_info
                 new_face_info = face_info_cache[key]

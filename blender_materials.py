@@ -35,7 +35,7 @@ def create_ldraw_materials():
         get_material(color, is_slope_material=is_slope_material, use_edge_color=use_edge_color)
 
 
-def get_material(color, use_edge_color=False, is_slope_material=False):
+def get_material(color, use_edge_color=False, is_slope_material=False, texmap=None):
     key = []
     key.append("LDraw Material")
     key.append(color.code)
@@ -50,6 +50,8 @@ def get_material(color, use_edge_color=False, is_slope_material=False):
         suffix.append("ss")
     if use_edge_color:
         suffix.append("edge")
+    if texmap is not None:
+        suffix.append("_".join([x for x in [texmap.method, texmap.texture, texmap.glossmap] if x != '']))
     suffix = "_".join([k.lower() for k in suffix])
 
     key.append(suffix)
@@ -59,6 +61,10 @@ def get_material(color, use_edge_color=False, is_slope_material=False):
         return bpy.data.materials[key]
 
     material = __create_node_based_material(key, color, use_edge_color=use_edge_color, is_slope_material=is_slope_material)
+
+    if texmap is not None:
+        material['ldraw_texmap_id'] = texmap.id
+
     return material
 
 
