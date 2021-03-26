@@ -331,28 +331,30 @@ def apply_materials(mesh, geometry):
         polygon.use_smooth = options.shade_smooth
 
 
-def bmesh_ops(mesh, geometry):
-    if options.bevel_edges:
-        mesh.use_customdata_edge_bevel = True
+def apply_slope_materials(mesh, filename):
+    if not special_bricks.is_slope_part(filename):
+        return
 
-    bm = bmesh.new()
-    bm.from_mesh(mesh)
+    if len(mesh.materials) < 1:
+        return
 
-    bm.faces.ensure_lookup_table()
-    bm.verts.ensure_lookup_table()
-    bm.edges.ensure_lookup_table()
+    for polygon in mesh.polygons:
+        face_material = mesh.materials[polygon.material_index]
 
-    if options.remove_doubles and options.remove_doubles_strategy == "bmesh_ops":
-        bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=options.merge_distance)
+        if strings.ldraw_color_code_key not in face_material:
+            continue
 
-    # Find layer for bevel weights
-    bevel_weight_layer = None
-    if options.bevel_edges:
-        if 'BevelWeight' in bm.edges.layers.bevel_weight:
-            bevel_weight_layer = bm.edges.layers.bevel_weight["BevelWeight"]
+        color_code = str(face_material[strings.ldraw_color_code_key])
+        color = ldraw_colors.get_color(color_code)
 
-    if options.recalculate_normals:
-        bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+        is_slope_material = special_bricks.is_slope_face(filename, polygon)
+        material = blender_materials.get_material(color, is_slope_material=is_slope_material)
+        if material is None:
+            continue
+
+        if material.name not in mesh.materials:
+            mesh.materials.append(material)
+        polygon.material_index = mesh.materials.find(material.name)
 
     # Create kd tree for fast "find nearest points" calculation
     kd = mathutils.kdtree.KDTree(len(bm.verts))

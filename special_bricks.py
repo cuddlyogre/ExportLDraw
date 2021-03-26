@@ -401,6 +401,10 @@ def normal_to_angle(normal):
     return angle_to_ground_degrees
 
 
+def is_slope_part(part_number):
+    return part_number in slope_angles
+
+
 def is_slope_face(part_number, face):
     if part_number not in slope_angles:
         return
