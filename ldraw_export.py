@@ -130,8 +130,8 @@ def export_polygons(obj, lines):
     if strings.ldraw_export_precision_key in obj:
         precision = obj[strings.ldraw_export_precision_key]
 
-    for p in mesh.polygons:
-        length = len(p.vertices)
+    for polygon in mesh.polygons:
+        length = len(polygon.vertices)
         line_type = None
         if length == 3:
             line_type = 3
@@ -144,8 +144,8 @@ def export_polygons(obj, lines):
         color_code = "16"
         color = ldraw_colors.get_color(color_code)
 
-        if p.material_index + 1 <= len(mesh.materials):
-            material = mesh.materials[p.material_index]
+        if polygon.material_index + 1 <= len(mesh.materials):
+            material = mesh.materials[polygon.material_index]
             if strings.ldraw_color_code_key in material:
                 color_code = str(material[strings.ldraw_color_code_key])
                 color = ldraw_colors.get_color(color_code)
@@ -154,14 +154,14 @@ def export_polygons(obj, lines):
 
         line = [str(line_type), color_code]
 
-        for v in p.vertices:
+        for v in polygon.vertices:
             for vv in mesh.vertices[v].co:
                 line.append(fix_round(vv, precision))
 
         lines.append(line)
 
     # export edges
-    for e in mesh.edge_vert_counts:
+    for e in mesh.edges:
         if e.use_edge_sharp:
             line = ["2", "24"]
             for v in e.vertices:
