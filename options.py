@@ -40,10 +40,10 @@ export_precision = 2
 recalculate_normals = True
 triangulate = False
 ngon_handling = "triangulate"
+treat_shortcut_as_model = False
 
 # options without a ui
 instancing = False
-treat_shortcut_as_model = False
 do_texmaps = False
 use_glass = True
 slope_texture_strength = 0.6

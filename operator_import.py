@@ -245,6 +245,12 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         default=False
     )
 
+    treat_shortcut_as_model: bpy.props.BoolProperty(
+        name="Treat shortcuts as models",
+        description="Split shortcut parts into their constituent pieces as if they were models",
+        default=False
+    )
+
     prefer_unofficial: bpy.props.BoolProperty(
         name="Prefer unofficial parts",
         description="Search for unofficial parts first",
@@ -292,6 +298,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         options.gap_target = self.gap_target
         options.gap_scale_strategy = self.gap_scale_strategy
         options.prefer_unofficial = self.prefer_unofficial
+        options.treat_shortcut_as_model = self.treat_shortcut_as_model
         options.all_materials = self.all_materials
         options.recalculate_normals = self.recalculate_normals
 
@@ -352,6 +359,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         box.prop(self, "set_timelime_markers")
 
         box.label(text="Extras")
+        box.prop(self, "treat_shortcut_as_model")
         box.prop(self, "prefer_unofficial")
         box.prop(self, "all_materials")
         box.prop(self, "add_subsurface")
