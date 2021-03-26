@@ -179,9 +179,12 @@ def fix_string(string):
 
 def read_file(filepath):
     filepath = path_insensitive(filepath)
-    with open(filepath, 'r') as file:
-        string = fix_string(file.read())
-        return string.strip().splitlines()
+    if os.path.isfile(filepath):
+        with open(filepath, 'r') as file:
+            string = fix_string(file.read())
+            return string.strip().splitlines()
+    else:
+        return []
 
 
 def locate(filename, parent_filepath=None):
