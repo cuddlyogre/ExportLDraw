@@ -30,6 +30,7 @@ if "bpy" in locals():
     importlib.reload(blender_materials)
     importlib.reload(matrices)
     importlib.reload(special_bricks)
+    importlib.reload(texmap)
 else:
     from . import operator_import
     from . import operator_export
@@ -48,6 +49,7 @@ else:
     from . import blender_materials
     from . import matrices
     from . import special_bricks
+    from . import texmap
 
 import bpy
 
