@@ -43,7 +43,9 @@ def clean_mesh(obj):
 
 # https://stackoverflow.com/a/2440786
 # https://www.ldraw.org/article/512.html#precision
-def fix_round(number, places=3):
+def fix_round(number, places=None):
+    if type(places) is not int:
+        places = 2
     x = round(number, places)
     value = ("%f" % x).rstrip("0").rstrip(".")
 
@@ -63,12 +65,9 @@ def export_subfiles(obj, lines, is_model=False):
 
     color_code = "16"
     color = ldraw_colors.get_color(color_code)
-
-    if len(obj.data.materials) > 0:
-        material = obj.data.materials[0]
-        if strings.ldraw_color_code_key in material:
-            color_code = str(material[strings.ldraw_color_code_key])
-            color = ldraw_colors.get_color(color_code)
+    if strings.ldraw_color_code_key in obj:
+        color_code = str(obj[strings.ldraw_color_code_key])
+        color = ldraw_colors.get_color(color_code)
 
     color_code = color.code
 
@@ -141,6 +140,12 @@ def export_polygons(obj, lines):
         if line_type is None:
             continue
 
+        obj_color_code = "16"
+        obj_color = ldraw_colors.get_color(obj_color_code)
+        if strings.ldraw_color_code_key in obj:
+            color_code = str(obj[strings.ldraw_color_code_key])
+            obj_color = ldraw_colors.get_color(color_code)
+
         color_code = "16"
         color = ldraw_colors.get_color(color_code)
 
@@ -150,7 +155,10 @@ def export_polygons(obj, lines):
                 color_code = str(material[strings.ldraw_color_code_key])
                 color = ldraw_colors.get_color(color_code)
 
-        color_code = color.code
+        if color.code != "16":
+            color_code = color.code
+        else:
+            color_code = obj_color.code
 
         line = [str(line_type), color_code]
 
@@ -199,13 +207,19 @@ def do_export(filepath):
     lines = []
     part_type = None
 
+    if active_object is None:
+        return
+
     if strings.ldraw_filename_key in active_object:
         header_text_name = active_object[strings.ldraw_filename_key]
 
         if header_text_name in bpy.data.texts:
             header_text = bpy.data.texts[header_text_name]
 
-            for part_line in header_text.lines:
+            hlines = header_text.lines
+            if hlines[-1].body == "\n":
+                hlines.pop()
+            for part_line in hlines:
                 lines.append(part_line.body)
 
                 line = part_line.body
@@ -255,9 +269,9 @@ def do_export(filepath):
 
     current_color_code = None
     joined_part_lines = []
-    for part_line in sorted_part_lines:
-        if len(part_line) > 2:
-            new_color_code = part_line[1]
+    for line in sorted_part_lines:
+        if len(line) > 2:
+            new_color_code = line[1]
             if new_color_code != current_color_code:
                 if current_color_code is not None:
                     joined_part_lines.append("\n")
@@ -267,7 +281,7 @@ def do_export(filepath):
 
                 joined_part_lines.append(f"0 // {color.name}")
 
-        joined_part_lines.append(" ".join(part_line))
+        joined_part_lines.append(" ".join(line))
     lines.extend(joined_part_lines)
 
     with open(filepath, 'w') as file:
