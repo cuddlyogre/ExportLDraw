@@ -388,9 +388,8 @@ class LDrawFile:
             # there might be spaces in the filename, so don't just split on whitespace
             # filename_args = re.search(r"(?:.*\s+){14}(.*)", line.strip())
             # print(line.strip())
-            filename_args = re.search(r".*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+.*?\s+(.*)", line.strip())
-            filename = filename_args[1].lower()
-            # filename = " ".join(params[14:]).lower()
+            filename_args = re.search(r"(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)(?:\s+(\S+.*))?", line.strip())
+            filename = filename_args[15].lower()
 
             if options.display_logo and filename in special_bricks.studs:
                 parts = filename.split(".")
