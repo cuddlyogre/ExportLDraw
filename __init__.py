@@ -13,42 +13,48 @@ bl_info = {
 if "bpy" in locals():
     import importlib
 
-    importlib.reload(operator_import)
-    importlib.reload(operator_export)
-    importlib.reload(options)
+    importlib.reload(blender_materials)
+    importlib.reload(blender_mesh)
+    importlib.reload(downloader)
     importlib.reload(face_info)
     importlib.reload(filesystem)
     importlib.reload(helpers)
+    importlib.reload(ldraw_camera)
+    importlib.reload(ldraw_colors)
     importlib.reload(ldraw_export)
     importlib.reload(ldraw_file)
-    importlib.reload(ldraw_node)
     importlib.reload(ldraw_geometry)
     importlib.reload(ldraw_import)
-    importlib.reload(ldraw_colors)
-    importlib.reload(ldraw_camera)
+    importlib.reload(ldraw_node)
     importlib.reload(ldraw_part_types)
-    importlib.reload(blender_materials)
     importlib.reload(matrices)
+    importlib.reload(operator_export)
+    importlib.reload(operator_import)
+    importlib.reload(options)
     importlib.reload(special_bricks)
+    importlib.reload(strings)
     importlib.reload(texmap)
 else:
-    from . import operator_import
-    from . import operator_export
-    from . import options
+    from . import blender_materials
+    from . import blender_mesh
+    from . import downloader
     from . import face_info
     from . import filesystem
     from . import helpers
+    from . import ldraw_camera
+    from . import ldraw_colors
     from . import ldraw_export
     from . import ldraw_file
-    from . import ldraw_node
     from . import ldraw_geometry
     from . import ldraw_import
-    from . import ldraw_colors
-    from . import ldraw_camera
+    from . import ldraw_node
     from . import ldraw_part_types
-    from . import blender_materials
     from . import matrices
+    from . import operator_export
+    from . import operator_import
+    from . import options
     from . import special_bricks
+    from . import strings
     from . import texmap
 
 import bpy
