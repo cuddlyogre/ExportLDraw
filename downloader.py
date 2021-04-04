@@ -61,4 +61,4 @@ def download_texture(filename):
     download_ldraw(path, filename)
 
 
-download_texture("685p04.png")
+# download_texture("685p04.png")
