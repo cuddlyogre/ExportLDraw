@@ -170,8 +170,6 @@ class LdrawColor:
         self.color = None
         self.edge_color = None
         self.alpha = None
-        self.texmap = None
-        self.glossmap = None
         self.luminance = None
         self.material = None
         self.secondary_color = None
