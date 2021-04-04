@@ -61,10 +61,10 @@ def set_step():
         bpy.context.scene.timeline_markers.new("STEP", frame=last_frame)
 
 
-def create_meta_group(key, parent_collection):
-    if key not in bpy.data.collections:
-        bpy.data.collections.new(key)
-    collection = bpy.data.collections[key]
+def create_meta_group(collection_name, parent_collection):
+    if collection_name not in bpy.data.collections:
+        bpy.data.collections.new(collection_name)
+    collection = bpy.data.collections[collection_name]
     if parent_collection is None:
         parent_collection = bpy.context.scene.collection
     if collection.name not in parent_collection.children:
@@ -79,19 +79,19 @@ def do_create_object(mesh):
             bpy.data.objects.new(mesh.name, mesh)
         instanced_obj = bpy.data.objects[mesh.name]
 
-        parts_collection_name = 'Parts'
-        if parts_collection_name not in bpy.data.collections:
-            parts_collection = bpy.data.collections.new(parts_collection_name)
+        collection_name = 'Parts'
+        if collection_name not in bpy.data.collections:
+            parts_collection = bpy.data.collections.new(collection_name)
+            bpy.context.scene.collection.children.link(parts_collection)
             parts_collection.hide_viewport = True
             parts_collection.hide_render = True
-            bpy.context.scene.collection.children.link(parts_collection)
-        parts_collection = bpy.data.collections[parts_collection_name]
+        parts_collection = bpy.data.collections[collection_name]
 
-        part_collection_name = mesh.name
-        if part_collection_name not in bpy.data.collections:
-            part_collection = bpy.data.collections.new(part_collection_name)
+        collection_name = mesh.name
+        if collection_name not in bpy.data.collections:
+            part_collection = bpy.data.collections.new(collection_name)
             parts_collection.children.link(part_collection)
-        part_collection = bpy.data.collections[part_collection_name]
+        part_collection = bpy.data.collections[collection_name]
 
         if instanced_obj.name not in part_collection.objects:
             part_collection.objects.link(instanced_obj)
@@ -258,7 +258,8 @@ class LDrawNode:
         file_collection = parent_collection
 
         if is_model:
-            file_collection = bpy.data.collections.new(os.path.basename(self.file.filename))
+            collection_name = os.path.basename(self.file.filename)
+            file_collection = bpy.data.collections.new(collection_name)
             if parent_collection is not None:
                 parent_collection.children.link(file_collection)
 
