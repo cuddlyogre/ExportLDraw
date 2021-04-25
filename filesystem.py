@@ -20,6 +20,11 @@ def append_search_path(path):
         search_paths.append(path)
 
 
+def append_extra_search_paths(extra_search_paths, path):
+    if path != "" and os.path.exists(path):
+        extra_search_paths.append(path)
+
+
 def locate_ldraw():
     home = str(Path.home())
     ldraw_path = os.path.join(home, 'ldraw')
@@ -45,8 +50,9 @@ def locate_ldraw():
 def build_search_paths():
     reset_caches()
 
-    append_search_path(os.path.join(options.ldraw_path))
-    append_search_path(os.path.join(options.ldraw_path, "models"))
+    ldraw_path = options.ldraw_path
+    append_search_path(os.path.join(ldraw_path))
+    append_search_path(os.path.join(ldraw_path, "models"))
 
     if options.prefer_unofficial:
         append_unofficial()
@@ -60,7 +66,6 @@ def append_official():
     ldraw_path = options.ldraw_path
     append_search_path(os.path.join(ldraw_path, "models"))
     append_search_path(os.path.join(ldraw_path, "parts"))
-    append_search_path(os.path.join(ldraw_path, "parts", "textures"))
     if options.resolution == "High":
         append_search_path(os.path.join(ldraw_path, "p", "48"))
     elif options.resolution == "Low":
@@ -72,12 +77,32 @@ def append_unofficial():
     ldraw_path = options.ldraw_path
     append_search_path(os.path.join(ldraw_path, "unofficial", "models"))
     append_search_path(os.path.join(ldraw_path, "unofficial", "parts"))
-    append_search_path(os.path.join(ldraw_path, "unofficial", "parts", "textures"))
     if options.resolution == "High":
         append_search_path(os.path.join(ldraw_path, "unofficial", "p", "48"))
     elif options.resolution == "Low":
         append_search_path(os.path.join(ldraw_path, "unofficial", "p", "8"))
     append_search_path(os.path.join(ldraw_path, "unofficial", "p"))
+
+
+def build_extra_search_paths(part_path, parent_filepath=None, texture=False):
+    extra_search_paths = []
+
+    if texture:
+        ldraw_path = options.ldraw_path
+        if options.prefer_unofficial:
+            append_extra_search_paths(extra_search_paths, os.path.join(ldraw_path, "unofficial", "parts", "textures"))
+            append_extra_search_paths(extra_search_paths, os.path.join(ldraw_path, "parts", "textures"))
+        else:
+            append_extra_search_paths(extra_search_paths, os.path.join(ldraw_path, "parts", "textures"))
+            append_extra_search_paths(extra_search_paths, os.path.join(ldraw_path, "unofficial", "parts", "textures"))
+
+    # ldraw spec says to search in the current file's directory
+    # a path relative to anything in search_paths
+    append_extra_search_paths(extra_search_paths, os.path.dirname(part_path))
+    if parent_filepath is not None:
+        append_extra_search_paths(extra_search_paths, os.path.dirname(parent_filepath))
+
+    return extra_search_paths
 
 
 # https://stackoverflow.com/a/8462613
@@ -187,28 +212,29 @@ def read_file(filepath):
         return []
 
 
-def locate(filename, parent_filepath=None):
+def locate(filename, parent_filepath=None, texture=False):
     part_path = filename.replace("\\", os.path.sep)
     part_path = os.path.expanduser(part_path)
 
     # full path was specified
-    if os.path.exists(part_path):
+    if os.path.isfile(part_path):
         return part_path
 
-    # ldraw spec says to search in the current file's directory
-    # a path relative to anything in search_paths
-    file_search_paths = []
-    file_search_paths.append(os.path.dirname(part_path))
-    if options.debug_text:
-        print(parent_filepath)
-    if parent_filepath is not None:
-        file_search_paths.append(os.path.dirname(parent_filepath))
+    extra_search_paths = build_extra_search_paths(part_path, parent_filepath, texture)
 
-    for path in file_search_paths + search_paths:
+    full_path = None
+    for path in extra_search_paths + search_paths:
         full_path = os.path.join(path, part_path)
         if options.debug_text:
             print(full_path)
         full_path = path_insensitive(full_path)
-        if os.path.exists(full_path):
+        if os.path.isfile(full_path):
             return full_path
     return None
+
+    if texture and full_path is None:
+        return None
+        # TODO: requests retrieve image from ldraw.org
+        # full_path = downloader.download_texture(part_path)
+
+    return full_path

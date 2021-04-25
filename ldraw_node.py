@@ -123,8 +123,6 @@ def create_object(mesh, parent_matrix, matrix):
                     gap_scale_empty = bpy.data.objects.new("gap_scale", None)
                     gap_scale_empty.matrix_world = gap_scale_empty.matrix_world @ matrices.scaled_matrix(options.gap_scale)
                     top_collection.objects.link(gap_scale_empty)
-                    if options.debug_text:
-                        print(gap_scale_empty.name)
                 copy_constraint = obj.constraints.new("COPY_SCALE")
                 copy_constraint.target = gap_scale_empty
                 copy_constraint.target.parent = top_empty
@@ -135,9 +133,6 @@ def create_object(mesh, parent_matrix, matrix):
     # https://docs.blender.org/api/current/bpy.types.Scene.html?highlight=frame_set#bpy.types.Scene.frame_set
     # https://docs.blender.org/api/current/bpy.types.Object.html?highlight=rotation_quaternion#bpy.types.Object.rotation_quaternion
     if options.meta_step:
-        if options.debug_text:
-            print(current_step)
-
         bpy.context.scene.frame_set(options.starting_step_frame)
         obj.hide_viewport = True
         obj.hide_render = True
@@ -149,9 +144,6 @@ def create_object(mesh, parent_matrix, matrix):
         obj.hide_render = False
         obj.keyframe_insert(data_path="hide_render")
         obj.keyframe_insert(data_path="hide_viewport")
-
-        if options.debug_text:
-            print(last_frame)
 
     if options.smooth_type == "edge_split":
         edge_modifier = obj.modifiers.new("Edge Split", type='EDGE_SPLIT')
@@ -244,9 +236,12 @@ class LDrawNode:
             key.append("alt")
         if options.add_subsurface:
             key.append("ss")
+        if not options.use_glass:
+            key.append("t")
         if parent_color_code == "24":
             key.append("edge")
         key.append(self.file.name)
+        # print(self.file.name)
         key = "_".join([k.lower() for k in key])
 
         is_model = self.file.is_like_model()
@@ -265,16 +260,11 @@ class LDrawNode:
 
             if top_collection is None:
                 top_collection = file_collection
-                if options.debug_text:
-                    print(top_collection.name)
-
                 if options.parent_to_empty and top_empty is None:
                     top_empty = bpy.data.objects.new(top_collection.name, None)
                     top_empty.matrix_world = top_empty.matrix_world @ matrices.rotation @ matrices.scaled_matrix(options.import_scale)
                     if top_collection is not None:
                         top_collection.objects.link(top_empty)
-                    if options.debug_text:
-                        print(top_empty.name)
         elif geometry is None:  # top-level part
             geometry = LDrawGeometry()
             matrix = matrices.identity
@@ -346,9 +336,6 @@ class LDrawNode:
                 geometry_cache[key] = geometry
 
         if self.top:
-            if options.debug_text:
-                print(key)
-
             mesh = blender_mesh.get_mesh(key, self.file.name, geometry)
 
             obj = create_object(mesh, parent_matrix, self.matrix)

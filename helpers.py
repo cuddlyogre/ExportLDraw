@@ -1,5 +1,8 @@
 import csv
 import io
+import pprint
+
+pp = pprint.PrettyPrinter(indent=4, width=120)
 
 
 def parse_line(line, min_params=0):

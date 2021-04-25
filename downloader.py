@@ -32,9 +32,12 @@ def download_file(url, destination, headers=None):
         print(e.reason)
 
 
+# url = "https://www.ldraw.org/library/official/LDCfgalt.ldr"
+# url = "https://www.ldraw.org/library/official/LDConfig.ldr"
 # url = "https://www.ldraw.org/library/official/p/stud3.dat"
 # url = "https://www.ldraw.org/library/official/parts/s/78s01.dat"
-# url = "https://www.ldraw.org/library/official/parts/4515p01.dat"
+# url = "https://www.ldraw.org/library/official/parts/27062p01.dat"
+# url = "https://www.ldraw.org/library/official/parts/textures/27062p01.png"
 # url = "https://www.ldraw.org/library/unofficial/parts/685p04.dat"
 # filename = os.path.basename(url)
 

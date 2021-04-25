@@ -273,7 +273,7 @@ slopes = {
     '6069ps2.dat': {72, 45},
     '6069ps3.dat': {72, 45},
 
-    '48933': {72, 45},
+    '48933.dat': {72, 45},
     '48933ps1.dat': {72, 45},
 
     '6153.dat': {(60, 70), (26, 34)},
@@ -390,23 +390,23 @@ def build_slope_angles():
         slope_angles[part] = slope_angle
 
 
-def normal_to_angle(normal):
-    # Clamp value to range -1 to 1 (ensure we are in the strict range of the acos function, taking account of rounding errors)
-    normal = normal.normalized()
-
-    # Calculate angle of face normal to the ground (-90 to 90 degrees)
-    cosine = min(max(normal.y, -1.0), 1.0)
-
-    angle_to_ground_degrees = math.degrees(math.acos(cosine)) - 90
-    return angle_to_ground_degrees
-
-
 def is_slope_part(part_number):
     return part_number in slope_angles
 
 
+def normal_to_angle(normal):
+    normal = normal.normalized()
+
+    # Clamp value to range -1 to 1 (ensure we are in the strict range of the acos function, taking account of rounding errors)
+    cosine = min(max(normal.y, -1.0), 1.0)
+
+    # Calculate angle of face normal to the ground (-90 to 90 degrees)
+    angle_to_ground_degrees = math.degrees(math.acos(cosine)) - 90
+    return angle_to_ground_degrees
+
+
 def is_slope_face(part_number, face):
-    if part_number not in slope_angles:
+    if not is_slope_part(part_number):
         return
 
     angle_to_ground_degrees = normal_to_angle(face.normal)

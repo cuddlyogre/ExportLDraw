@@ -1,23 +1,74 @@
-import bpy
-import os
+import math
+import mathutils
 import uuid
 
 
+# https://github.com/trevorsandy/lpub3d/blob/e7c39cd3df518cf16521dc2c057a9f125cc3b5c3/lclib/common/lc_meshloader.h#L56
+# https://github.com/trevorsandy/lpub3d/blob/e7c39cd3df518cf16521dc2c057a9f125cc3b5c3/lclib/common/lc_meshloader.cpp#L12
+# https://github.com/trevorsandy/lpub3d/blob/e7c39cd3df518cf16521dc2c057a9f125cc3b5c3/lclib/common/lc_meshloader.cpp#L1486
+# https://stackoverflow.com/questions/53970131/how-to-find-the-clockwise-angle-between-two-vectors-in-python#53970746
 class TexMap:
-    texmaps = {}
-
-    @classmethod
-    def reset_caches(cls):
-        cls.texmaps.clear()
-
-    def __init__(self, options):
+    def __init__(self, method, parameters, texture, glossmap):
         self.id = str(uuid.uuid4())
-        self.method = options["method"]
-        self.parameters = options["parameters"]
-        self.texture = options["texture"]
-        self.glossmap = options["glossmap"]
+        self.method = method
+        self.parameters = parameters
+        self.texture = texture
+        self.glossmap = glossmap
 
-    def map_planar(self):
+    # TexMap.parse_params(params)
+    @staticmethod
+    def parse_params(params):
+        new_texmap = None
+        if params[3].lower() in ['planar']:
+            (x1, y1, z1, x2, y2, z2, x3, y3, z3) = map(float, params[4:13])
+            new_texmap = TexMap(
+                method=params[3].lower(),
+                parameters=[
+                    mathutils.Vector((x1, y1, z1)),
+                    mathutils.Vector((x2, y2, z2)),
+                    mathutils.Vector((x3, y3, z3)),
+                ],
+                texture=params[13],
+                glossmap=params[14],
+            )
+        elif params[3].lower() in ['cylindrical']:
+            (x1, y1, z1, x2, y2, z2, x3, y3, z3, a) = map(float, params[4:14])
+            new_texmap = TexMap(
+                method=params[3].lower(),
+                parameters=[
+                    mathutils.Vector((x1, y1, z1)),
+                    mathutils.Vector((x2, y2, z2)),
+                    mathutils.Vector((x3, y3, z3)),
+                    a,
+                ],
+                texture=params[14],
+                glossmap=params[15],
+            )
+        elif params[3].lower() in ['spherical']:
+            (x1, y1, z1, x2, y2, z2, x3, y3, z3, a, b) = map(float, params[4:15])
+            new_texmap = TexMap(
+                method=params[3].lower(),
+                parameters=[
+                    mathutils.Vector((x1, y1, z1)),
+                    mathutils.Vector((x2, y2, z2)),
+                    mathutils.Vector((x3, y3, z3)),
+                    a,
+                    b,
+                ],
+                texture=params[15],
+                glossmap=params[16],
+            )
+        return new_texmap
+
+    def uv_unwrap_face(self, bm, face):
+        if self.method in ['planar']:
+            self.map_planar(bm, face)
+        elif self.method in ['cylindrical']:
+            self.map_cylindrical(bm, face)
+        elif self.method in ['spherical']:
+            self.map_spherical(bm, face)
+
+    def map_planar(self, bm, face):
         a = self.parameters[0]
         b = self.parameters[1]
         c = self.parameters[2]
@@ -35,125 +86,89 @@ class TexMap:
         p2_length = ac.length
         p2_normal = ac / ac.length
 
-        obj = bpy.data.objects['standard_16_rd_as_alt_ss_13710g.dat']
-        mesh = obj.data
+        # https://blender.stackexchange.com/a/53808
+        # https://blender.stackexchange.com/questions/53709/bmesh-how-to-map-vertex-based-uv-coordinates-to-loops
+        # https://blenderartists.org/t/solved-how-to-uv-unwrap-and-scale-uvs-with-python-while-in-object-mode/1115953/2
 
-        name = 'uv'
-        if name in mesh.uv_layers:
-            uv = mesh.uv_layers[name]
-            mesh.uv_layers.remove(layer=uv)
-        if name not in mesh.uv_layers:
-            mesh.uv_layers.new(name=name)
-        uv_layer = mesh.uv_layers[name]
+        # DISTANCE BETWEEN POINT AND PLANE
+        # https://stackoverflow.com/a/3863777
+        # float dist = dotProduct(p.normal, (vectorSubtract(point, p.point)));
+        # https://mathinsight.org/distance_point_plane
+        # absolute value of the dot product of the normal and
+        # the length between the point and a point on the plane
+        # TODO: UV PROJECT HERE
+        uv_layer = bm.loops.layers.uv.verify()
+        for loop in face.loops:
+            p = loop.vert.co
+            du = p1_normal.dot(p - a) / p1_length
+            dv = p2_normal.dot(p - c) / p2_length  # negative u because blender uv starts at bottom left of image, LDraw orientation of up=-y so use top left
+            uv = [du, -dv]
+            loop[uv_layer].uv = uv
 
-        # norm = [float(i)/max(raw) for i in raw]
-        # m = max(raw); norm = [float(i)/m for i in raw]
-        # https://blenderartists.org/t/i-want-to-get-a-selected-uv-vertex-index/598023/2
-        vert_uv_map = {}
-        for polygon in mesh.polygons:
-            for li in polygon.loop_indices:
-                vi = mesh.loops[li].vertex_index
-                uv = uv_layer.data[li]
-                vert_uv_map.setdefault(vi, []).append(uv)
-                print(vi)
+    def map_cylindrical(self, bm, face):
+        a = self.parameters[0]
+        b = self.parameters[1]
+        c = self.parameters[2]
+        angle1 = self.parameters[3]
 
-        max_du = 0
-        max_dv = 0
+        up = a - b
+        up_length = up.length
+        front = (c - b).normalized()
+        plane_1_normal = up / up_length
+        plane_2_normal = front.cross(up).normalized()
+        front_plane = mathutils.Vector(front.to_tuple() + (-front.dot(b),))
+        up_length = up_length
+        plane_1 = mathutils.Vector(plane_1_normal.to_tuple() + (-plane_1_normal.dot(b),))
+        plane_2 = mathutils.Vector(plane_2_normal.to_tuple() + (-plane_2_normal.dot(b),))
+        angle_1 = 360.0 / angle1
 
-        uv = {}
-        print("")
-        for index, uvs in vert_uv_map.items():
-            p = mesh.vertices[index].co
-            du = abs(p1_normal.dot(p - a)) / p1_length
-            dv = abs(p2_normal.dot(p - c)) / p2_length
-            distance = [du, dv]
-            uv[index] = distance
-            for u in uvs:
-                u.uv = distance
-            if du > max_du:
-                max_du = du
-            if dv > max_dv:
-                max_dv = dv
+        uv_layer = bm.loops.layers.uv.verify()
+        for loop in face.loops:
+            p = loop.vert.co
+            dot_plane_1 = mathutils.Vector((p.x, p.y - up_length, p.z,) + (1.0,)).dot(plane_1)
+            point_in_plane_1 = p - mathutils.Vector((plane_1.x, plane_1.y, plane_1.z,)) * dot_plane_1
+            dot_front_plane = mathutils.Vector((point_in_plane_1.x, point_in_plane_1.y, point_in_plane_1.z,) + (1.0,)).dot(front_plane)
+            dot_plane_2 = mathutils.Vector(point_in_plane_1.to_tuple() + (1.0,)).dot(plane_2)
 
-        print(max_du)
-        print(max_dv)
-        for index, uvs in vert_uv_map.items():
-            distance = uv[index]
-            u = distance[0] / max_du
-            v = distance[1] / max_dv
+            _angle_1 = math.atan2(dot_plane_2, dot_front_plane) / math.pi * angle_1
+            du = self.clamp(0.5 + 0.5 * _angle_1, 0, 1)
+            dv = dot_plane_1 / up_length
+            uv = [du, -dv]
+            loop[uv_layer].uv = uv
 
-            print([u, v])
-            for uu in uvs:
-                uu.uv = [u, v]
+    def map_spherical(self, bm, face):
+        a = self.parameters[0]
+        b = self.parameters[1]
+        c = self.parameters[2]
+        angle1 = self.parameters[3]
+        angle2 = self.parameters[4]
 
-        print("")
-        print("")
+        front = (b - a).normalized()
+        plane_1_normal = front.cross(c - a).normalized()
+        plane_2_normal = plane_1_normal.cross(front).normalized()
+        front_plane = mathutils.Vector(front.to_tuple() + (-front.dot(a),))
+        center = a
+        plane_1 = mathutils.Vector(plane_1_normal.to_tuple() + (-plane_1_normal.dot(a),))
+        plane_2 = mathutils.Vector(plane_2_normal.to_tuple() + (-plane_2_normal.dot(a),))
+        angle_1 = 360.0 / angle1
+        angle_2 = 360.0 / angle2
 
-        # raise KeyboardInterrupt()
-        if name in mesh.materials:
-            material = mesh.materials[name]
-            mesh.materials.pop(index=list(mesh.materials).index(material))
+        uv_layer = bm.loops.layers.uv.verify()
+        for loop in face.loops:
+            p = loop.vert.co
+            vertex_direction = p - center
 
-        if name in bpy.data.materials:
-            material = bpy.data.materials[name]
-            bpy.data.materials.remove(material)
+            dot_plane_1 = mathutils.Vector((p.x, p.y, p.z,) + (1.0,)).dot(plane_1)
+            point_in_plane_1 = p - mathutils.Vector((plane_1.x, plane_1.y, plane_1.z,)) * dot_plane_1
+            dot_front_plane = mathutils.Vector((point_in_plane_1.x, point_in_plane_1.y, point_in_plane_1.z,) + (1.0,)).dot(front_plane)
+            dot_plane_2 = mathutils.Vector(point_in_plane_1.to_tuple() + (1.0,)).dot(plane_2)
 
-        if name not in bpy.data.materials:
-            material = bpy.data.materials.new(name)
-            material.use_nodes = True
-        material = bpy.data.materials[name]
+            _angle_1 = math.atan2(dot_plane_2, dot_front_plane) / math.pi * angle_1
+            du = 0.5 + 0.5 * _angle_1
+            _angle_2 = math.asin(dot_plane_1 / vertex_direction.length) / math.pi * angle_2
+            dv = 0.5 - _angle_2
+            uv = [du, dv]
+            loop[uv_layer].uv = uv
 
-        nodes = material.node_tree.nodes
-        links = material.node_tree.links
-        nodes.clear()
-
-        tex_image = nodes.new("ShaderNodeTexImage")
-        tex_image.location = -300.0, 100.0
-        tex_image.interpolation = "Closest"
-        tex_image.extension = "CLIP"
-
-        image_name = "13710g.png"
-        image_path = os.path.join("d:\\ldraw", "unofficial", "parts", "textures", image_name)
-
-        image_name = "19204p01.png"
-        image_path = os.path.join("d:\\ldraw", "parts", "textures", image_name)
-
-        if image_name not in bpy.data.images:
-            bpy.data.images.load(image_path)
-        tex_image.image = bpy.data.images[image_name]
-
-        reroute = nodes.new("NodeReroute")
-        reroute.name = "LDRAW MATERIAL POSITION"
-        reroute.location = 0.0, 0.0
-
-        principled = nodes.new("ShaderNodeBsdfPrincipled")
-        principled.name = "REPLACE WITH LDRAW MATERIAL"
-        principled.location = 0.0, -220.0
-        diff_color = (0.346704, 0.004025, 1.0) + (1.0,)
-        principled.inputs["Base Color"].default_value = diff_color
-        principled.inputs["Metallic"].default_value = 0.0
-        principled.inputs["Roughness"].default_value = 0.1
-        principled.inputs["Clearcoat"].default_value = 0.0
-        principled.inputs["Clearcoat Roughness"].default_value = 0.0
-        principled.inputs["IOR"].default_value = 1.45
-        principled.inputs["Transmission"].default_value = 0.0
-
-        mix = nodes.new("ShaderNodeMixShader")
-        mix.location = 100.0, 180.0
-
-        out = nodes.new("ShaderNodeOutputMaterial")
-        out.location = 200.0, 0.0
-
-        links.new(tex_image.outputs["Color"], mix.inputs[2])
-        links.new(tex_image.outputs["Alpha"], mix.inputs[0])
-        links.new(principled.outputs["BSDF"], mix.inputs[1])
-        links.new(mix.outputs["Shader"], out.inputs[0])
-
-        # pmesh.materials.append(material)
-        mesh.materials.append(material)
-        # obj.active_material = material
-        # obj.active_material_index = list(mesh.materials).index(material)
-
-        # obj.active_material = mat
-        # obj.active_material_index
-        # obj.material_slots[idx].material = mat
+    def clamp(self, num, min_value, max_value):
+        return max(min(num, max_value), min_value)

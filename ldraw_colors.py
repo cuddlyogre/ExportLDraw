@@ -15,9 +15,6 @@ def reset_caches():
 
 
 def get_color(color_code):
-    if options.debug_text:
-        print(len(colors))
-
     if color_code in colors:
         return colors[color_code]
 

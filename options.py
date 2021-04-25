@@ -44,6 +44,7 @@ treat_shortcut_as_model = False
 
 # options without a ui
 instancing = False
-do_texmaps = False
-use_glass = True
+do_texmaps = True
+use_glass = False
+do_slope_texture = True
 slope_texture_strength = 0.6

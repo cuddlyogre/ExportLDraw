@@ -28,11 +28,12 @@ def create_blender_node_groups():
 
 
 def create_ldraw_materials():
-    for color_code in ldraw_colors.colors:
-        color = ldraw_colors.colors[color_code]
-        is_slope_material = False
-        use_edge_color = False
-        get_material(color, is_slope_material=is_slope_material, use_edge_color=use_edge_color)
+    for is_slope_material in (False, True):
+        for color_code in ldraw_colors.colors:
+            color = ldraw_colors.colors[color_code]
+            # is_slope_material = False
+            use_edge_color = False
+            get_material(color, is_slope_material=is_slope_material, use_edge_color=use_edge_color)
 
 
 def get_material(color, use_edge_color=False, is_slope_material=False, texmap=None):
@@ -48,10 +49,13 @@ def get_material(color, use_edge_color=False, is_slope_material=False, texmap=No
         suffix.append("s")
     if options.add_subsurface:
         suffix.append("ss")
+    if not options.use_glass:
+        suffix.append("t")
     if use_edge_color:
         suffix.append("edge")
     if texmap is not None:
-        suffix.append("_".join([x for x in [texmap.method, texmap.texture, texmap.glossmap] if x != '']))
+        texmap_suffix = "_".join([x for x in [texmap.method, texmap.texture, texmap.glossmap] if x != ''])
+        suffix.append(texmap_suffix)
     suffix = "_".join([k.lower() for k in suffix])
 
     key.append(suffix)
@@ -60,15 +64,12 @@ def get_material(color, use_edge_color=False, is_slope_material=False, texmap=No
     if key in bpy.data.materials:
         return bpy.data.materials[key]
 
-    material = __create_node_based_material(key, color, use_edge_color=use_edge_color, is_slope_material=is_slope_material)
-
-    if texmap is not None:
-        material['ldraw_texmap_id'] = texmap.id
+    material = __create_node_based_material(key, color, use_edge_color=use_edge_color, is_slope_material=is_slope_material, texmap=texmap)
 
     return material
 
 
-def __create_node_based_material(key, color, use_edge_color=False, is_slope_material=False):
+def __create_node_based_material(key, color, use_edge_color=False, is_slope_material=False, texmap=None):
     """Set Cycles Material Values."""
 
     # Reuse current material if it exists, otherwise create a new material
@@ -144,27 +145,23 @@ def __create_node_based_material(key, color, use_edge_color=False, is_slope_mate
     else:
         __create_cycles_standard(nodes, links, diff_color)
 
+    if texmap is not None:
+        __create_texmap_texture(nodes, links, diff_color, texmap)
+
     if is_slope_material:
-        # TODO: slight variation in strength for each material
         __create_cycles_slope_texture(nodes, links)
 
-    if options.do_texmaps:
-        # https://blender.stackexchange.com/questions/157531/blender-2-8-python-add-texture-image
-        texmap_material = True
-        if texmap_material:
-            __create_texmap_texture(nodes, links, diff_color)
-
-        glossmap_material = True
-        if glossmap_material:
-            pass
-
     return material
+
+
+def __node_texmap_texture():
+    pass
 
 
 def __node_slope_texture(nodes, strength, x, y):
     node = nodes.new("ShaderNodeGroup")
     node.name = "slope_texture"
-    node.node_tree = bpy.data.node_groups["Slope Texture"]
+    node.node_tree = bpy.data.node_groups["LEGO Slope Bump"]
     node.location = x, y
     node.inputs["Strength"].default_value = strength
     return node
@@ -516,33 +513,63 @@ def __get_group(nodes):
     return None
 
 
-def __create_texmap_texture(nodes, links, diff_color):
-    node_texture_coordinate = __node_tex_coord(nodes, -880, 200.0)
-    node_mapping = __node_mapping(nodes, -680.0, 200.0)
-    tex_image = __node_tex_image(nodes, -480.0, 120.0)
-    mix_rgb = __node_mix_rgb(nodes, -200, 200)
-
-    node_mapping.vector_type = "TEXTURE"
-    tex_image.interpolation = "Closest"
-    tex_image.extension = "CLIP"
-    mix_rgb.inputs["Color1"].default_value = diff_color
-
-    links.new(node_texture_coordinate.outputs["Object"], node_mapping.inputs["Vector"])
-    links.new(node_mapping.outputs["Vector"], tex_image.inputs["Vector"])
-    links.new(tex_image.outputs["Color"], mix_rgb.inputs["Color2"])
-    links.new(tex_image.outputs["Alpha"], mix_rgb.inputs["Fac"])
-
-    if options.do_texmaps:
-        image_name = "3817bpaz.png"
-        image_path = os.path.join(filesystem.locate_ldraw(), "unofficial", "parts", "textures", image_name)
-        bpy.data.images.load(image_path)
-        tex_image.image = bpy.data.images[image_name]
-
+def __create_texmap_texture(nodes, links, diff_color, texmap):
+    # node_tree.nodes.active
     target = __get_group(nodes)
-    if target is not None:
+    if target is None:
+        return
+
+    image_name = texmap.texture
+    if image_name is not None:
+        texmap_image = __node_tex_image(nodes, -500.0, 0.0)
+        texmap_image.name = 'ldraw_texmap_image'
+        texmap_image.interpolation = "Closest"
+        texmap_image.extension = "CLIP"
+
+        if image_name not in bpy.data.images:
+            # TODO: requests retrieve image from ldraw.org
+            image_path = filesystem.locate(image_name, texture=True)
+
+            if image_path is not None:
+                # https://blender.stackexchange.com/questions/157531/blender-2-8-python-add-texture-image
+                image = bpy.data.images.load(image_path)
+                image.name = image_name
+                image[strings.ldraw_filename_key] = image_name
+
+        if image_name in bpy.data.images:
+            image = bpy.data.images[image_name]
+            texmap_image.image = image
+
+        mix_rgb = __node_mix_rgb(nodes, -200, 0.0)
+        mix_rgb.inputs["Color1"].default_value = diff_color
+
+        links.new(texmap_image.outputs["Color"], mix_rgb.inputs["Color2"])
+        links.new(texmap_image.outputs["Alpha"], mix_rgb.inputs["Fac"])
         links.new(mix_rgb.outputs["Color"], target.inputs["Color"])
 
+    image_name = texmap.glossmap
+    if image_name != '':
+        glossmap_image = __node_tex_image(nodes, -360.0, -280.0)
+        glossmap_image.name = 'ldraw_glossmap_image'
+        glossmap_image.interpolation = "Closest"
+        glossmap_image.extension = "CLIP"
 
+        if image_name not in bpy.data.images:
+            image_path = filesystem.locate(image_name, texture=True)
+            if image_path is not None:
+                image = bpy.data.images.load(image_path)
+                image.name = image_name
+                image[strings.ldraw_filename_key] = image_name
+                image.colorspace_settings.name = 'Non-Color'
+
+        if image_name in bpy.data.images:
+            image = bpy.data.images[image_name]
+            glossmap_image.image = image
+
+        links.new(glossmap_image.outputs["Color"], target.inputs["Specular"])
+
+
+# TODO: slight variation in strength for each material
 def __create_cycles_slope_texture(nodes, links, strength=None):
     """Slope face normals for Cycles render engine"""
 
@@ -662,7 +689,7 @@ def __create_cycles_milky_white(nodes, links, diff_color):
 
 
 def __create_blender_slope_texture_node_group():
-    group_name = "Slope Texture"
+    group_name = "LEGO Slope Bump"
 
     if group_name in bpy.data.node_groups:
         return
@@ -711,17 +738,21 @@ def __create_blender_lego_standard_node_group():
     group_output.location = (250, 0)
 
     node_group.inputs.new("NodeSocketColor", "Color")
+    node_group.inputs.new("NodeSocketFloatFactor", "Specular")
     node_group.inputs.new("NodeSocketVectorDirection", "Normal")
+
+    node_group.inputs["Specular"].default_value = 0.5
 
     node_group.outputs.new("NodeSocketShader", "Shader")
 
-    node_main = __node_principled(node_group.nodes, 0.05, 0.05, 0.0, 0.1, 0.0, 0.0, 1.45, 0.0, 0, 0)
+    node_principled = __node_principled(node_group.nodes, 0.05, 0.05, 0.0, 0.1, 0.0, 0.0, 1.45, 0.0, 0, 0)
 
+    node_group.links.new(group_input.outputs["Color"], node_principled.inputs["Base Color"])
+    node_group.links.new(group_input.outputs["Specular"], node_principled.inputs["Specular"])
     if options.add_subsurface:
-        node_group.links.new(group_input.outputs["Color"], node_main.inputs["Subsurface Color"])
-    node_group.links.new(group_input.outputs["Color"], node_main.inputs["Base Color"])
-    node_group.links.new(group_input.outputs["Normal"], node_main.inputs["Normal"])
-    node_group.links.new(node_main.outputs["BSDF"], group_output.inputs["Shader"])
+        node_group.links.new(group_input.outputs["Color"], node_principled.inputs["Subsurface Color"])
+    node_group.links.new(group_input.outputs["Normal"], node_principled.inputs["Normal"])
+    node_group.links.new(node_principled.outputs["BSDF"], group_output.inputs["Shader"])
 
 
 def __create_blender_lego_transparent_node_group():
@@ -740,13 +771,17 @@ def __create_blender_lego_transparent_node_group():
     group_output.location = (250, 0)
 
     node_group.inputs.new("NodeSocketColor", "Color")
+    node_group.inputs.new("NodeSocketFloatFactor", "Specular")
     node_group.inputs.new("NodeSocketVectorDirection", "Normal")
+
+    node_group.inputs["Specular"].default_value = 0.5
 
     node_group.outputs.new("NodeSocketShader", "Shader")
 
     node_principled = __node_principled(node_group.nodes, 0.0, 0.0, 0.0, 0.05, 0.0, 0.0, 1.585, 1.0, 45, 340)
 
     node_group.links.new(group_input.outputs["Color"], node_principled.inputs["Base Color"])
+    node_group.links.new(group_input.outputs["Specular"], node_principled.inputs["Specular"])
     node_group.links.new(group_input.outputs["Normal"], node_principled.inputs["Normal"])
     node_group.links.new(node_principled.outputs["BSDF"], group_output.inputs["Shader"])
 
@@ -764,33 +799,33 @@ def __create_blender_lego_glass_node_group():
 
     group_input = node_group.nodes.new("NodeGroupInput")
     group_input.name = "group_input"
-    group_input.location = (-1120.0, -40.0)
+    group_input.location = (-1100.0, 0.0)
 
     group_output = node_group.nodes.new("NodeGroupOutput")
     group_output.name = "group_output"
-    group_output.location = (0.0, 0.0)
+    group_output.location = (0.0, 40.0)
 
     node_group.inputs.new("NodeSocketColor", "Color")
     node_group.inputs.new("NodeSocketFloatFactor", "Roughness")
     node_group.inputs.new("NodeSocketFloat", "IOR")
     node_group.inputs.new("NodeSocketVectorDirection", "Normal")
 
-    node_group.inputs[0].default_value = (0.0, 0.0, 0.0, 1.0)
-    node_group.inputs[1].default_value = 0.06
-    node_group.inputs[2].default_value = 1.58
-    node_group.inputs[3].default_value = (0.0, 0.0, 0.0)
+    node_group.inputs["Color"].default_value = (0.0, 0.0, 0.0, 1.0)
+    node_group.inputs["Roughness"].default_value = 0.06
+    node_group.inputs["IOR"].default_value = 1.58
+    node_group.inputs["Normal"].default_value = (0.0, 0.0, 0.0)
 
     node_group.outputs.new("NodeSocketShader", "Shader")
 
     bsdf_glass = node_group.nodes.new("ShaderNodeBsdfGlass")
     bsdf_glass.name = "bsdf_glass"
-    bsdf_glass.location = (-620.0, 20.0)
+    bsdf_glass.location = (-620.0, 40.0)
     bsdf_glass.inputs[1].default_value = 0.0
     bsdf_glass.inputs[2].default_value = 1.45
 
     bsdf_glossy = node_group.nodes.new("ShaderNodeBsdfGlossy")
     bsdf_glossy.name = "bsdf_glossy"
-    bsdf_glossy.location = (-620.0, -180.0)
+    bsdf_glossy.location = (-620.0, -260.0)
     bsdf_glossy.inputs[1].default_value = 0.5
 
     fresnel = node_group.nodes.new("ShaderNodeFresnel")
@@ -800,7 +835,7 @@ def __create_blender_lego_glass_node_group():
 
     bsdf_glossy_0 = node_group.nodes.new("ShaderNodeBsdfGlossy")
     bsdf_glossy_0.name = "bsdf_glossy_0"
-    bsdf_glossy_0.location = (-400.0, -200.0)
+    bsdf_glossy_0.location = (-400.0, -120.0)
     bsdf_glossy_0.inputs[1].default_value = 0.5
 
     rgb_curve = node_group.nodes.new("ShaderNodeRGBCurve")
@@ -818,35 +853,35 @@ def __create_blender_lego_glass_node_group():
 
     mix = node_group.nodes.new("ShaderNodeMixShader")
     mix.name = "mix"
-    mix.location = (-400.0, -20.0)
+    mix.location = (-400.0, 40.0)
     mix.inputs[0].default_value = 0.25
 
     fresnel_0 = node_group.nodes.new("ShaderNodeFresnel")
     fresnel_0.name = "fresnel_0"
-    fresnel_0.location = (-400.0, 140.0)
+    fresnel_0.location = (-400.0, 180.0)
     fresnel_0.inputs[0].default_value = 1.4
 
     mix_0 = node_group.nodes.new("ShaderNodeMixShader")
     mix_0.name = "mix_0"
-    mix_0.location = (-200.0, 20.0)
+    mix_0.location = (-200.0, 40.0)
     mix_0.inputs[0].default_value = 0.5
 
     # color
-    node_group.links.new(group_input.outputs[0], bsdf_glass.inputs[0])
-    node_group.links.new(group_input.outputs[0], bsdf_glossy_0.inputs[0])
+    node_group.links.new(group_input.outputs["Color"], bsdf_glass.inputs[0])
+    node_group.links.new(group_input.outputs["Color"], bsdf_glossy_0.inputs[0])
 
     # roughness
-    node_group.links.new(group_input.outputs[1], bsdf_glass.inputs[1])
-    node_group.links.new(group_input.outputs[1], bsdf_glossy.inputs[1])
-    node_group.links.new(group_input.outputs[1], bsdf_glossy_0.inputs[1])
+    node_group.links.new(group_input.outputs["Roughness"], bsdf_glass.inputs[1])
+    node_group.links.new(group_input.outputs["Roughness"], bsdf_glossy.inputs[1])
+    node_group.links.new(group_input.outputs["Roughness"], bsdf_glossy_0.inputs[1])
 
     # ior
-    node_group.links.new(group_input.outputs[2], bsdf_glass.inputs[2])
-    node_group.links.new(group_input.outputs[2], fresnel.inputs[0])
-    node_group.links.new(group_input.outputs[2], fresnel_0.inputs[0])
+    node_group.links.new(group_input.outputs["IOR"], bsdf_glass.inputs[2])
+    node_group.links.new(group_input.outputs["IOR"], fresnel.inputs[0])
+    node_group.links.new(group_input.outputs["IOR"], fresnel_0.inputs[0])
 
     # normal
-    node_group.links.new(group_input.outputs[3], bsdf_glass.inputs[3])
+    node_group.links.new(group_input.outputs["Normal"], bsdf_glass.inputs[3])
 
     node_group.links.new(bsdf_glass.outputs[0], mix.inputs[1])
     node_group.links.new(bsdf_glossy.outputs[0], mix.inputs[2])
@@ -868,24 +903,27 @@ def __create_blender_lego_transparent_fluorescent_node_group():
     node_group.use_fake_user = True
 
     group_input = node_group.nodes.new("NodeGroupInput")
-    group_input.location = (-250, 0)
+    group_input.location = (-160, 220)
 
     group_output = node_group.nodes.new("NodeGroupOutput")
     group_output.location = (250, 0)
+    group_output.location = 540, 460
 
     node_group.inputs.new("NodeSocketColor", "Color")
+    node_group.inputs.new("NodeSocketFloatFactor", "Specular")
     node_group.inputs.new("NodeSocketVectorDirection", "Normal")
+
+    node_group.inputs["Specular"].default_value = 0.5
 
     node_group.outputs.new("NodeSocketShader", "Shader")
 
     node_principled = __node_principled(node_group.nodes, 0.0, 0.0, 0.0, 0.05, 0.0, 0.0, 1.585, 1.0, 45, 340)
-    node_emission = __node_emission(node_group.nodes, 45, -160)
-    node_mix = __node_mix(node_group.nodes, 0.03, 300, 290)
-
-    group_output.location = 500, 290
+    node_emission = __node_emission(node_group.nodes, 40, 460)
+    node_mix = __node_mix(node_group.nodes, 0.03, 340, 460)
 
     node_group.links.new(group_input.outputs["Color"], node_principled.inputs["Base Color"])
     node_group.links.new(group_input.outputs["Color"], node_emission.inputs["Color"])
+    node_group.links.new(group_input.outputs["Specular"], node_principled.inputs["Specular"])
     node_group.links.new(group_input.outputs["Normal"], node_principled.inputs["Normal"])
     node_group.links.new(node_principled.outputs["BSDF"], node_mix.inputs[1])
     node_group.links.new(node_emission.outputs["Emission"], node_mix.inputs[2])
@@ -908,6 +946,8 @@ def __create_blender_lego_rubber_node_group():
     group_output.location = (45 + 200, 340 - 5)
 
     node_group.inputs.new("NodeSocketColor", "Color")
+    node_group.inputs.new("NodeSocketFloatFactor", "Specular")
+    node_group.inputs["Specular"].default_value = 0.5
     node_group.inputs.new("NodeSocketVectorDirection", "Normal")
 
     node_group.outputs.new("NodeSocketShader", "Shader")
@@ -939,11 +979,15 @@ def __create_blender_lego_rubber_translucent_node_group():
 
     group_input = node_group.nodes.new("NodeGroupInput")
     group_input.location = (-250, 0)
+    group_input.location = -320, 290
 
     group_output = node_group.nodes.new("NodeGroupOutput")
     group_output.location = (250, 0)
+    group_output.location = 530, 285
 
     node_group.inputs.new("NodeSocketColor", "Color")
+    node_group.inputs.new("NodeSocketFloatFactor", "Specular")
+    node_group.inputs["Specular"].default_value = 0.5
     node_group.inputs.new("NodeSocketVectorDirection", "Normal")
 
     node_group.outputs.new("NodeSocketShader", "Shader")
@@ -955,8 +999,6 @@ def __create_blender_lego_rubber_translucent_node_group():
     node_principled = __node_principled(node_group.nodes, 0.0, 0.0, 0.0, 0.4, 0.03, 0.0, 1.45, 0.0, 45, 340)
     node_mix = __node_mix(node_group.nodes, 0.8, 300, 290)
     node_refraction = __node_refraction(node_group.nodes, 0.0, 1.45, 290 - 242, 154 - 330)
-    group_input.location = -320, 290
-    group_output.location = 530, 285
 
     node_subtract.inputs[1].default_value = 0.4
 
@@ -988,6 +1030,8 @@ def __create_blender_lego_emission_node_group():
     group_output.location = (250, 0)
 
     node_group.inputs.new("NodeSocketColor", "Color")
+    node_group.inputs.new("NodeSocketFloatFactor", "Specular")
+    node_group.inputs["Specular"].default_value = 0.5
     node_group.inputs.new("NodeSocketFloatFactor", "Luminance")
     node_group.inputs.new("NodeSocketVectorDirection", "Normal")
 
@@ -1023,16 +1067,17 @@ def __create_blender_lego_chrome_node_group():
 
     group_output = node_group.nodes.new("NodeGroupOutput")
     group_output.location = (250, 0)
+    group_output.location = (575, -140)
 
     node_group.inputs.new("NodeSocketColor", "Color")
+    node_group.inputs.new("NodeSocketFloatFactor", "Specular")
+    node_group.inputs["Specular"].default_value = 0.5
     node_group.inputs.new("NodeSocketVectorDirection", "Normal")
 
     node_group.outputs.new("NodeSocketShader", "Shader")
 
     node_hsv = __node_hsv(node_group.nodes, 0.5, 0.9, 2.0, -90, 0)
     node_principled = __node_principled(node_group.nodes, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 2.4, 0.0, 100, 0)
-
-    group_output.location = (575, -140)
 
     node_group.links.new(group_input.outputs["Color"], node_hsv.inputs["Color"])
     node_group.links.new(group_input.outputs["Normal"], node_principled.inputs["Normal"])
@@ -1056,6 +1101,8 @@ def __create_blender_lego_pearlescent_node_group():
     group_output.location = (630, 95)
 
     node_group.inputs.new("NodeSocketColor", "Color")
+    node_group.inputs.new("NodeSocketFloatFactor", "Specular")
+    node_group.inputs["Specular"].default_value = 0.5
     node_group.inputs.new("NodeSocketVectorDirection", "Normal")
 
     node_group.outputs.new("NodeSocketShader", "Shader")
@@ -1101,6 +1148,8 @@ def __create_blender_lego_metal_node_group():
     group_output.location = (250, 0)
 
     node_group.inputs.new("NodeSocketColor", "Color")
+    node_group.inputs.new("NodeSocketFloatFactor", "Specular")
+    node_group.inputs["Specular"].default_value = 0.5
     node_group.inputs.new("NodeSocketVectorDirection", "Normal")
 
     node_group.outputs.new("NodeSocketShader", "Shader")
@@ -1128,6 +1177,8 @@ def __create_blender_lego_glitter_node_group():
     group_output.location = (410, 0)
 
     node_group.inputs.new("NodeSocketColor", "Color")
+    node_group.inputs.new("NodeSocketFloatFactor", "Specular")
+    node_group.inputs["Specular"].default_value = 0.5
     node_group.inputs.new("NodeSocketColor", "Glitter Color")
     node_group.inputs.new("NodeSocketVectorDirection", "Normal")
 
@@ -1166,6 +1217,8 @@ def __create_blender_lego_speckle_node_group():
     group_output.location = (410, 0)
 
     node_group.inputs.new("NodeSocketColor", "Color")
+    node_group.inputs.new("NodeSocketFloatFactor", "Specular")
+    node_group.inputs["Specular"].default_value = 0.5
     node_group.inputs.new("NodeSocketColor", "Speckle Color")
     node_group.inputs.new("NodeSocketVectorDirection", "Normal")
 
@@ -1204,6 +1257,8 @@ def __create_blender_lego_milky_white_node_group():
     group_output.location = (350, 0)
 
     node_group.inputs.new("NodeSocketColor", "Color")
+    node_group.inputs.new("NodeSocketFloatFactor", "Specular")
+    node_group.inputs["Specular"].default_value = 0.5
     node_group.inputs.new("NodeSocketVectorDirection", "Normal")
 
     node_group.outputs.new("NodeSocketShader", "Shader")

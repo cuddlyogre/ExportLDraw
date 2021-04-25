@@ -126,7 +126,7 @@ class LDrawFile:
         camera = None
 
         for line in self.lines:
-            params = helpers.parse_line(line, 15)
+            params = helpers.parse_line(line, 17)
 
             if params is None:
                 continue
@@ -275,76 +275,38 @@ class LDrawFile:
                     # if 0 line and texmap next, error
                     # also error
                 elif params[1].lower() in ["!texmap"]:  # https://www.ldraw.org/documentation/ldraw-org-file-format-standards/language-extension-for-texture-mapping.html
-                    if options.do_texmaps:
-                        if params[2].lower() in ["start", "next"]:
-                            # print('texmap_start')
-                            if params[2].lower() == "start":
-                                self.texmap_start = True
-                            elif params[2].lower() == "next":
-                                self.texmap_next = True
-                            self.texmap_fallback = False
+                    if not options.do_texmaps:
+                        continue
+                    if params[2].lower() in ["start", "next"]:
+                        if params[2].lower() == "start":
+                            print(params[2].lower())
+                            self.texmap_start = True
+                        elif params[2].lower() == "next":
+                            self.texmap_next = True
+                        self.texmap_fallback = False
 
-                            new_texmap = None
-                            if params[3].lower() in ['planar']:
-                                (x1, y1, z1, x2, y2, z2, x3, y3, z3) = map(float, params[4:13])
-                                new_texmap = TexMap({
-                                    "method": params[3].lower(),
-                                    "parameters": [
-                                        mathutils.Vector((x1, y1, z1)),
-                                        mathutils.Vector((x2, y2, z2)),
-                                        mathutils.Vector((x3, y3, z3)),
-                                    ],
-                                    "texture": params[13],
-                                    "glossmap": params[14],
-                                })
-                            elif params[3].lower() in ['cylindrical']:
-                                (x1, y1, z1, x2, y2, z2, x3, y3, z3, a) = map(float, params[4:14])
-                                new_texmap = TexMap({
-                                    "method": params[3].lower(),
-                                    "parameters": [
-                                        mathutils.Vector((x1, y1, z1)),
-                                        mathutils.Vector((x2, y2, z2)),
-                                        mathutils.Vector((x3, y3, z3)),
-                                        a,
-                                    ],
-                                    "texture": params[14],
-                                    "glossmap": params[15],
-                                })
-                            elif params[3].lower() in ['spherical']:
-                                (x1, y1, z1, x2, y2, z2, x3, y3, z3, a, b) = map(float, params[4:15])
-                                new_texmap = TexMap({
-                                    "method": params[3].lower(),
-                                    "parameters": [
-                                        mathutils.Vector((x1, y1, z1)),
-                                        mathutils.Vector((x2, y2, z2)),
-                                        mathutils.Vector((x3, y3, z3)),
-                                        a,
-                                        b,
-                                    ],
-                                    "texture": params[15],
-                                    "glossmap": params[16],
-                                })
+                        new_texmap = TexMap.parse_params(params)
+                        if new_texmap is not None:
+                            if LDrawFile.texmap is not None:
+                                LDrawFile.texmaps.append(LDrawFile.texmap)
+                            LDrawFile.texmap = new_texmap
 
-                            if new_texmap is not None:
-                                if LDrawFile.texmap is not None:
-                                    LDrawFile.texmaps.append(LDrawFile.texmap)
-                                LDrawFile.texmap = new_texmap
-                                TexMap.texmaps[new_texmap.id] = new_texmap
-                        elif self.texmap_start:
-                            if params[2].lower() in ["fallback"]:
-                                self.texmap_fallback = True
-                            elif params[2].lower() in ["end"]:
-                                self.set_texmap_end()
-                elif params[1].lower() in ["!:"] and self.texmap_start:
-                    if options.do_texmaps:
+                    elif self.texmap_start:
+                        if params[2].lower() in ["fallback"]:
+                            self.texmap_fallback = True
+                        elif params[2].lower() in ["end"]:
+                            print(params[2].lower())
+                            self.set_texmap_end()
+                elif self.texmap_start:
+                    if params[1].lower() in ["!:"]:
                         # remove 0 !: from line so that it can be parsed like a normal line
                         clean_line = re.sub(r"(.*?\s+!:\s+)", "", line)
                         clean_params = params[2:]
                         self.parse_geometry_line(clean_line, clean_params)
-                        if self.texmap_next:
-                            self.set_texmap_end()
+                    if self.texmap_next:
+                        self.set_texmap_end()
             else:
-                if not self.texmap_start and not self.texmap_fallback:
+                if not self.texmap_fallback:
                     self.parse_geometry_line(line, params)
 
         if self.name == "":
@@ -371,7 +333,6 @@ class LDrawFile:
         self.texmap_start = False
         self.texmap_next = False
         self.texmap_fallback = False
-        # print('texmap_end')
 
     def parse_geometry_line(self, line, params):
         if params[0] == "1":
@@ -405,6 +366,8 @@ class LDrawFile:
                 key.append("rd")
             key.append(color_code)
             key.append(os.path.basename(filename))
+            if LDrawFile.texmap is not None:
+                key.append(LDrawFile.texmap.id)
             key = "_".join([k.lower() for k in key])
             key = re.sub(r"[^a-z0-9._]", "-", key)
 
@@ -413,6 +376,7 @@ class LDrawFile:
                 if not ldraw_file.read_file(self.filepath):
                     return None
                 ldraw_file.parse_file()
+                ldraw_file.name = key
                 file_cache[key] = ldraw_file
             ldraw_file = file_cache[key]
 
