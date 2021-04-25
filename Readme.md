@@ -2,9 +2,7 @@ LDraw Handler for Blender 2.82+, written by Matthew Morrison [cuddlyogre] - cudd
 
 ##### Pull requests and examples of this plugin in action are welcome.
 
-Materials were taken almost wholesale from https://github.com/TobyLobster/ImportLDraw. I added my own glass material
-that was taken from a BlenderArtists thread, but most of it is unchanged. I essentially learned Python by dissecting and
-studying this plugin, and it inspired me to make my own. This plugin wouldn't exist without this one.
+I essentially learned Python by dissecting and studying https://github.com/TobyLobster/ImportLDraw, and it inspired me to make my own. This plugin wouldn't exist without this one.
 
 I built this plugin with performance and compatibility in mind.
 
@@ -16,7 +14,9 @@ will set keyframes so you can watch the model be built. Theoretically, you could
 file if you did it right. LeoCAD and LDCad groups are supported. LeoCAD cameras are supported as well. If you have
 LSynth parts installed, it will import those as well.
 
-BFC meta commands aren't parsed at all. I chose to rely on recalculate normals to handle face normals.
+BFC meta commands aren't parsed at all. I chose to rely on recalculate normals to handle face normals. This may change as development continues.
+
+Materials were taken almost wholesale from TobyLobster's plugin. I added my own glass material that was taken from a BlenderArtists thread, but most of it is unchanged.
 
 You are able to choose the logo you want to show on studs, or no logo or stud at all.
 
