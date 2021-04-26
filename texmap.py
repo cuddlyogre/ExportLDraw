@@ -1,6 +1,8 @@
 import math
 import mathutils
 import uuid
+import base64
+import os
 
 
 # https://github.com/trevorsandy/lpub3d/blob/e7c39cd3df518cf16521dc2c057a9f125cc3b5c3/lclib/common/lc_meshloader.h#L56
@@ -177,3 +179,13 @@ class TexMap:
 
     def clamp(self, num, min_value, max_value):
         return max(min(num, max_value), min_value)
+
+    # TODO: will be used for stud.io parts that have textures
+    # TexMap.base64_to_png(filename, img_data)
+    @staticmethod
+    def base64_to_png(filename, img_data):
+        if type(img_data) is str:
+            img_data = bytes(img_data.encode())
+        this_script_dir = os.path.dirname(os.path.realpath(__file__))
+        with open(os.path.join(this_script_dir, f"{filename}.png"), "wb") as fh:
+            fh.write(base64.decodebytes(img_data))
