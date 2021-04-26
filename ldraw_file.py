@@ -270,6 +270,17 @@ class LDrawFile:
                                 camera = None
                             else:
                                 params = params[1:]
+                elif params[1].lower() in ["PE_TEX_PATH"]:
+                    if params[2].lower() in ['-1']:
+                        # use uv coordinates that at the end of 3,4 lines
+                        # 2*vertcount places at the end of the line
+                        pass
+                elif params[1].lower() in ["pe_tex_info"]:
+                    filename = self.name
+                    if filename == "":
+                        filename = os.path.basename(self.filename)
+                    image_data = params[2]
+                    TexMap.base64_to_png(filename, image_data)
                 elif self.texmap_next:
                     pass
                     # if 0 line and texmap next, error
