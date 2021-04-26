@@ -5,7 +5,10 @@ import glob
 from sys import platform
 from pathlib import Path
 
-from . import options
+if __name__ == "__main__":
+    import options
+else:
+    from . import options
 
 search_paths = []
 texture_paths = []
@@ -242,3 +245,44 @@ def locate(filename, texture=False):
         return full_path
 
     return full_path
+
+
+# http://www.holly-wood.it/ldview-en.html
+def export_index(texture=False):
+    # 'https://www.ldraw.org/library/official/images/parts/3001.png'
+    # 'https://www.ldraw.org/library/unofficial/images/parts/6003.png'
+
+    this_script_dir = os.path.dirname(os.path.realpath(__file__))
+
+    thumbs = os.path.join(this_script_dir, 'thumbs')
+    Path(thumbs).mkdir(parents=True, exist_ok=True)
+
+    if __name__ == "__main__":
+        options.ldraw_path = locate_ldraw()
+        options.ldview_path = 'C:\\"Program Files (x86)"\\LDView\\LDView.exe'
+
+    build_search_paths()
+
+    width = 64
+    height = 64
+    default_zoom = 1
+    default_matrix = "".join([str(x) for x in [
+        0.707107, 0, 0.707107,
+        0.353553, 0.866025, -0.353553,
+        -0.612372, 0.5, 0.612372
+    ]])
+
+    for path in get_search_paths(texture):
+        paths = glob.glob(os.path.join(path, '**', '*'), recursive=True)
+        for path in paths:
+            if os.path.isfile(path) and Path(path).suffix in ['.dat', '.ldr', '.mpd']:
+                thumb_file_path = f"{os.path.join(thumbs, path.replace(os.path.join(options.ldraw_path, ''), ''))}.bmp"
+                Path(os.path.dirname(thumb_file_path)).mkdir(parents=True, exist_ok=True)
+                command = fr""" {options.ldview_path} "{path}" -SaveSnapshot="{thumb_file_path}" -SaveWidth={width} -SaveHeight={height} -DefaultMatrix={default_matrix} -DefaultZoom={default_zoom} """
+                print(command)
+                os.system(command)
+            # print(path)
+
+
+if __name__ == "__main__":
+    export_index()

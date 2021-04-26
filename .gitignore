@@ -3,3 +3,4 @@ __pycache__/*
 .mpd_cache/*
 examples/import/*
 !examples/export/*
+thumbs/*
