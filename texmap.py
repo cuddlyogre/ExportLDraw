@@ -68,6 +68,7 @@ class TexMap:
         elif self.method in ['spherical']:
             self.map_spherical(bm, face)
 
+    # negative v because blender uv starts at bottom left of image, LDraw orientation of up=-y so use top left
     def map_planar(self, bm, face):
         a = self.parameters[0]
         b = self.parameters[1]
@@ -101,7 +102,8 @@ class TexMap:
         for loop in face.loops:
             p = loop.vert.co
             du = p1_normal.dot(p - a) / p1_length
-            dv = p2_normal.dot(p - c) / p2_length  # negative u because blender uv starts at bottom left of image, LDraw orientation of up=-y so use top left
+            dv = p2_normal.dot(p - c) / p2_length
+            # - up_length to move uv to bottom left in blender
             uv = [du, -dv]
             loop[uv_layer].uv = uv
 
@@ -125,6 +127,7 @@ class TexMap:
         uv_layer = bm.loops.layers.uv.verify()
         for loop in face.loops:
             p = loop.vert.co
+            # - up_length to move uv to bottom left in blender
             dot_plane_1 = mathutils.Vector((p.x, p.y - up_length, p.z,) + (1.0,)).dot(plane_1)
             point_in_plane_1 = p - mathutils.Vector((plane_1.x, plane_1.y, plane_1.z,)) * dot_plane_1
             dot_front_plane = mathutils.Vector((point_in_plane_1.x, point_in_plane_1.y, point_in_plane_1.z,) + (1.0,)).dot(front_plane)
@@ -151,7 +154,7 @@ class TexMap:
         plane_1 = mathutils.Vector(plane_1_normal.to_tuple() + (-plane_1_normal.dot(a),))
         plane_2 = mathutils.Vector(plane_2_normal.to_tuple() + (-plane_2_normal.dot(a),))
         angle_1 = 360.0 / angle1
-        angle_2 = 360.0 / angle2
+        angle_2 = 180.0 / angle2
 
         uv_layer = bm.loops.layers.uv.verify()
         for loop in face.loops:
@@ -166,8 +169,10 @@ class TexMap:
             _angle_1 = math.atan2(dot_plane_2, dot_front_plane) / math.pi * angle_1
             du = 0.5 + 0.5 * _angle_1
             _angle_2 = math.asin(dot_plane_1 / vertex_direction.length) / math.pi * angle_2
-            dv = 0.5 - _angle_2
-            uv = [du, dv]
+            # -0.5 instead of 0.5 to move uv to bottom left in blender
+            dv = -0.5 - _angle_2
+
+            uv = [du, -dv]
             loop[uv_layer].uv = uv
 
     def clamp(self, num, min_value, max_value):
