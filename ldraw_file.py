@@ -312,8 +312,8 @@ class LDrawFile:
         if self.name == "":
             self.name = os.path.basename(self.filename)
 
-        if len(self.extra_child_nodes) > 0:
-            key = str(uuid.uuid4()).split('-')[0]  # mesh/object names have a max length of 63 characters
+        if self.extra_geometry is not None:
+            key = f"{self.name}_extra"  # mesh/object names have a max length of 63 characters
             if key not in file_cache:
                 file = LDrawFile(key)
                 file.name = key
