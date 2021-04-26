@@ -19,6 +19,8 @@ def clean_mesh(obj):
 
     bm.transform(matrices.reverse_rotation @ obj.matrix_world)
 
+    # TODO: fix bowtie quads
+
     if options.triangulate:
         bmesh.ops.triangulate(bm, faces=bm.faces[:], quad_method='BEAUTY', ngon_method='BEAUTY')
     elif options.ngon_handling == "triangulate":

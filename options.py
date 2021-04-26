@@ -48,3 +48,4 @@ do_texmaps = True
 use_glass = False
 do_slope_texture = True
 slope_texture_strength = 0.6
+fix_bowtie_quads = False

@@ -1,4 +1,5 @@
 import mathutils
+from . import options
 from .face_info import FaceInfo
 
 
@@ -26,16 +27,34 @@ class LDrawGeometry:
             self.edge_vertices.extend(vertices)
             return
 
-        # https://wiki.ldraw.org/wiki/LDraw_Files_Requirements#Complex_quadrilaterals
-        # https://github.com/TobyLobster/ImportLDraw/pull/65/files#diff-f5a55f4be537f9ace2c9534f1e49c82e
         if vert_count == 4:
-            vA = (vertices[1] - vertices[0]).cross(vertices[2] - vertices[0])
-            vB = (vertices[2] - vertices[1]).cross(vertices[3] - vertices[1])
-            vC = (vertices[3] - vertices[2]).cross(vertices[0] - vertices[2])
-            if vA.dot(vB) < 0:
-                vertices[2], vertices[3] = vertices[3], vertices[2]
-            elif vB.dot(vC) < 0:
-                vertices[2], vertices[1] = vertices[1], vertices[2]
+            if options.fix_bowtie_quads:
+                ba = vertices[1] - vertices[0]
+                cb = vertices[2] - vertices[1]
+                dc = vertices[3] - vertices[2]
+                # ad = vertices[0] - vertices[3]
+                ca = vertices[2] - vertices[0]
+                db = vertices[3] - vertices[1]
+
+                cA = ba.cross(ca)
+                cB = cb.cross(db)
+                cC = dc.cross(ca)
+                # cD = db.cross(ad)
+
+                dA = cA.dot(cB)
+                dB = cB.dot(cC)
+                # dC = cC.dot(cD)
+                # dD = cD.dot(cA)
+                if dA < 0:
+                    _c = tuple([x for x in vertices[2]])
+                    _d = tuple([x for x in vertices[3]])
+                    vertices[2] = _d
+                    vertices[3] = _c
+                elif dB > 0:
+                    _b = tuple([x for x in vertices[1]])
+                    _c = tuple([x for x in vertices[2]])
+                    vertices[1] = _c
+                    vertices[2] = _b
 
         if vert_count in (3, 4):
             self.vert_counts.append(vert_count)
