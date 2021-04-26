@@ -107,12 +107,12 @@ class LDrawFile:
         self.texmap_next = False
         self.texmap_fallback = False
 
-    def read_file(self, parent_filepath=None):
+    def read_file(self):
         if self.filename in mpd_file_cache:
             self.lines = mpd_file_cache[self.filename].lines
         else:
             # TODO: if missing, use a,b,c etc parts if available
-            self.filepath = filesystem.locate(self.filename, parent_filepath)
+            self.filepath = filesystem.locate(self.filename)
             if self.filepath is None:
                 print(f"missing {self.filename}")
                 return False
@@ -373,7 +373,7 @@ class LDrawFile:
 
             if key not in file_cache:
                 ldraw_file = LDrawFile(filename)
-                if not ldraw_file.read_file(self.filepath):
+                if not ldraw_file.read_file():
                     return None
                 ldraw_file.parse_file()
                 ldraw_file.name = key

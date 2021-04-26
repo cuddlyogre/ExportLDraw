@@ -21,7 +21,7 @@ def do_import(filename):
     ldraw_file.reset_caches()
     ldraw_node.reset_caches()
     ldraw_camera.reset_caches()
-    filesystem.build_search_paths()
+    filesystem.build_search_paths(parent_filepath=filename)
     ldraw_file.read_color_table()
     blender_materials.create_blender_node_groups()
 

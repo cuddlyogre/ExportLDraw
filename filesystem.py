@@ -8,6 +8,7 @@ from pathlib import Path
 from . import options
 
 search_paths = []
+texture_paths = []
 
 
 def reset_caches():
@@ -15,14 +16,21 @@ def reset_caches():
     search_paths = []
 
 
+def get_search_paths(texture=False):
+    if texture:
+        return texture_paths + search_paths
+    else:
+        return search_paths
+
+
 def append_search_path(path):
-    if path != "" and os.path.exists(path):
+    if path != "" and os.path.isdir(path):
         search_paths.append(path)
 
 
-def append_extra_search_paths(extra_search_paths, path):
+def append_texture_paths(path):
     if path != "" and os.path.exists(path):
-        extra_search_paths.append(path)
+        texture_paths.append(path)
 
 
 def locate_ldraw():
@@ -47,10 +55,15 @@ def locate_ldraw():
     return ""
 
 
-def build_search_paths():
+def build_search_paths(parent_filepath=None):
     reset_caches()
 
     ldraw_path = options.ldraw_path
+
+    # append top level file's directory
+    if parent_filepath is not None:
+        append_search_path(os.path.dirname(parent_filepath))
+
     append_search_path(os.path.join(ldraw_path))
     append_search_path(os.path.join(ldraw_path, "models"))
 
@@ -61,6 +74,7 @@ def build_search_paths():
         append_official()
         append_unofficial()
 
+    append_textures()
 
 def append_official():
     ldraw_path = options.ldraw_path
@@ -84,25 +98,14 @@ def append_unofficial():
     append_search_path(os.path.join(ldraw_path, "unofficial", "p"))
 
 
-def build_extra_search_paths(part_path, parent_filepath=None, texture=False):
-    extra_search_paths = []
-
-    if texture:
-        ldraw_path = options.ldraw_path
-        if options.prefer_unofficial:
-            append_extra_search_paths(extra_search_paths, os.path.join(ldraw_path, "unofficial", "parts", "textures"))
-            append_extra_search_paths(extra_search_paths, os.path.join(ldraw_path, "parts", "textures"))
-        else:
-            append_extra_search_paths(extra_search_paths, os.path.join(ldraw_path, "parts", "textures"))
-            append_extra_search_paths(extra_search_paths, os.path.join(ldraw_path, "unofficial", "parts", "textures"))
-
-    # ldraw spec says to search in the current file's directory
-    # a path relative to anything in search_paths
-    append_extra_search_paths(extra_search_paths, os.path.dirname(part_path))
-    if parent_filepath is not None:
-        append_extra_search_paths(extra_search_paths, os.path.dirname(parent_filepath))
-
-    return extra_search_paths
+def append_textures():
+    ldraw_path = options.ldraw_path
+    if options.prefer_unofficial:
+        append_texture_paths(os.path.join(ldraw_path, "unofficial", "parts", "textures"))
+        append_texture_paths(os.path.join(ldraw_path, "parts", "textures"))
+    else:
+        append_texture_paths(os.path.join(ldraw_path, "parts", "textures"))
+        append_texture_paths(os.path.join(ldraw_path, "unofficial", "parts", "textures"))
 
 
 # https://stackoverflow.com/a/8462613
@@ -212,7 +215,7 @@ def read_file(filepath):
         return []
 
 
-def locate(filename, parent_filepath=None, texture=False):
+def locate(filename, texture=False):
     part_path = filename.replace("\\", os.path.sep)
     part_path = os.path.expanduser(part_path)
 
@@ -220,21 +223,18 @@ def locate(filename, parent_filepath=None, texture=False):
     if os.path.isfile(part_path):
         return part_path
 
-    extra_search_paths = build_extra_search_paths(part_path, parent_filepath, texture)
-
     full_path = None
-    for path in extra_search_paths + search_paths:
+    for path in get_search_paths(texture):
         full_path = os.path.join(path, part_path)
         if options.debug_text:
             print(full_path)
         full_path = path_insensitive(full_path)
         if os.path.isfile(full_path):
             return full_path
-    return None
 
-    if texture and full_path is None:
-        return None
-        # TODO: requests retrieve image from ldraw.org
+    if full_path is None:
+        # TODO: requests retrieve missing items from ldraw.org
         # full_path = downloader.download_texture(part_path)
+        return full_path
 
     return full_path
