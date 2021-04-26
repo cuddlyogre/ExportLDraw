@@ -1,18 +1,23 @@
 import csv
 import io
 import pprint
+import re
 
 pp = pprint.PrettyPrinter(indent=4, width=120)
 
 
 def parse_line(line, min_params=0):
-    line = line.strip().replace("\t", " ")
-    rows = list(csv.reader(io.StringIO(line), delimiter=' ', quotechar='"', skipinitialspace=True))
+    line = re.sub(r'\s+', ' ', line.strip())
 
-    if len(rows) == 0:
+    try:
+        parts = list(csv.reader(io.StringIO(line), delimiter=' ', quotechar='"', skipinitialspace=True))
+    except csv.Error as e:
+        parts = [re.split(r"\s+", line)]
+
+    if len(parts) == 0:
         return None
 
-    params = rows[0]
+    params = parts[0]
 
     if len(params) == 0:
         return None
