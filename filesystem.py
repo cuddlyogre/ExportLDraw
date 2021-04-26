@@ -13,7 +13,9 @@ texture_paths = []
 
 def reset_caches():
     global search_paths
+    global texture_paths
     search_paths = []
+    texture_paths = []
 
 
 def get_search_paths(texture=False):
@@ -76,6 +78,7 @@ def build_search_paths(parent_filepath=None):
         append_unofficial()
 
     append_textures()
+
 
 def append_official():
     ldraw_path = options.ldraw_path
