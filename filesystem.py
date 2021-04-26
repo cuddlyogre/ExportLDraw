@@ -60,6 +60,7 @@ def build_search_paths(parent_filepath=None):
 
     ldraw_path = options.ldraw_path
 
+    # https://forums.ldraw.org/thread-24495-post-40577.html#pid40577
     # append top level file's directory
     if parent_filepath is not None:
         append_search_path(os.path.dirname(parent_filepath))
