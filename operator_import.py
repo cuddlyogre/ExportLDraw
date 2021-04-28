@@ -263,6 +263,12 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         default=True
     )
 
+    sharpen_edges: bpy.props.BoolProperty(
+        name="Sharpen edges",
+        description="Make imported ldraw edges sharp",
+        default=True
+    )
+
     def execute(self, context):
         start = time.monotonic()
 
@@ -301,6 +307,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         options.treat_shortcut_as_model = self.treat_shortcut_as_model
         options.all_materials = self.all_materials
         options.recalculate_normals = self.recalculate_normals
+        options.sharpen_edges = self.sharpen_edges
 
         ldraw_import.do_import(bpy.path.abspath(self.filepath))
 
@@ -367,5 +374,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         box.prop(self, "bevel_edges")
         box.prop(self, "debug_text")
         box.prop(self, "no_studs")
+        box.prop(self, "sharpen_edges")
         box.prop(self, "import_edges")
         box.prop(self, "grease_pencil_edges")

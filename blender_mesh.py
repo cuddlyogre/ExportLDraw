@@ -22,47 +22,18 @@ from . import special_bricks
 # mesh.polygons.foreach_set("use_smooth", values)
 # bpy.context.object.active_material.use_backface_culling = True
 # bpy.context.object.active_material.use_screen_refraction = True
-
+# apply materials to mesh
+# then mesh cleanup
+# then apply slope materials
+# this order is important because bmesh_ops causes
+# mesh.polygons to get out of sync geometry.face_info
+# which causes materials and slope materials to be applied incorrectly
 def get_mesh(key, filename, geometry):
     if key not in bpy.data.meshes:
-        vertices = []
+        vertices = build_vertices(geometry)
         edges = []
-        faces = []
-
-        # makes indexes sequential
-        # TODO: add this to geometry append step
-        face_index = 0
-        for vert_count in geometry.vert_counts:
-            new_face = []
-            for _ in range(vert_count):
-                new_face.append(face_index)
-                face_index += 1
-            faces.append(new_face)
-
-        vertices = [v.to_tuple() for v in geometry.vertices]
-        mesh = bpy.data.meshes.new(key)
-        mesh.from_pydata(vertices, edges, faces)
-
-        mesh[strings.ldraw_filename_key] = filename
-
-        if options.bevel_edges:
-            mesh.use_customdata_edge_bevel = True
-
-        if options.smooth_type == "auto_smooth":
-            mesh.use_auto_smooth = options.shade_smooth
-            auto_smooth_angle = 89.9  # 1.56905 - 89.9 so 90 degrees and up are affected
-            auto_smooth_angle = 51.1
-            mesh.auto_smooth_angle = math.radians(auto_smooth_angle)
-
-        if options.make_gaps and options.gap_target == "mesh":
-            mesh.transform(matrices.scaled_matrix(options.gap_scale))
-
-        # apply materials to mesh
-        # then mesh cleanup
-        # then apply slope materials
-        # this order is important because bmesh_ops causes
-        # mesh.polygons to get out of sync geometry.face_info
-        # which causes materials and slope materials to be applied incorrectly
+        faces = build_faces(geometry)
+        mesh = build_mesh(key, filename, vertices, edges, faces)
 
         bm = bmesh.new()
         bm.from_mesh(mesh)
@@ -70,25 +41,8 @@ def get_mesh(key, filename, geometry):
         bm.verts.ensure_lookup_table()
         bm.edges.ensure_lookup_table()
 
-        uv_layer = bm.loops.layers.uv.verify()
-        for i, face in enumerate(bm.faces):
-            face_info = geometry.face_info[i]
-
-            color_code = face_info.color_code
-            color = ldraw_colors.get_color(color_code)
-            use_edge_color = face_info.use_edge_color
-            texmap = face_info.texmap
-            material = blender_materials.get_material(color, use_edge_color=use_edge_color, texmap=texmap)
-            if material is not None:
-                # https://blender.stackexchange.com/questions/23905/select-faces-depending-on-material
-                if material.name not in mesh.materials:
-                    mesh.materials.append(material)
-                face.material_index = mesh.materials.find(material.name)
-
-            if texmap is not None:
-                texmap.uv_unwrap_face(bm, face)
-
-            face.smooth = options.shade_smooth
+        process_edges(bm, geometry)
+        process_faces(bm, geometry, filename, mesh)
 
         if options.remove_doubles:
             bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=options.merge_distance)
@@ -96,68 +50,116 @@ def get_mesh(key, filename, geometry):
         if options.recalculate_normals:
             bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
 
-        # # Create kd tree for fast "find nearest points" calculation
-        # kd = mathutils.kdtree.KDTree(len(bm.verts))
-        # for i, v in enumerate(bm.verts):
-        #     kd.insert(v.co, i)
-        # kd.balance()
-        #
-        # # Create edge_indices dictionary, which is the list of edges as pairs of indices into our verts array
-        # edge_indices = {}
-        # for i in range(0, len(geometry.edge_vertices), 2):
-        #     edges0 = [index for (co, index, dist) in kd.find_range(geometry.edge_vertices[i + 0], options.merge_distance)]
-        #     edges1 = [index for (co, index, dist) in kd.find_range(geometry.edge_vertices[i + 1], options.merge_distance)]
-        #     for e0 in edges0:
-        #         for e1 in edges1:
-        #             edge_indices[(e0, e1)] = True
-        #             edge_indices[(e1, e0)] = True
-        #
-        # # Find the appropriate mesh edges and make them sharp (i.e. not smooth)
-        # # https://blender.stackexchange.com/a/188003
-        # # TODO: look in edge indices first since it will almost certainly have less
-        # bevel_weight_layer = bm.edges.layers.bevel_weight.verify()
-        # for edge_vertex in bm.edges:
-        #     v0 = edge_vertex.verts[0].index
-        #     v1 = edge_vertex.verts[1].index
-        #     if (v0, v1) in edge_indices:
-        #         # Make edge sharp
-        #         edge_vertex.smooth = False
-        #
-        #         # Add bevel weight
-        #         if bevel_weight_layer is not None:
-        #             bevel_wight = 1.0
-        #             edge_vertex[bevel_weight_layer] = bevel_wight
-        #
-
         bm.to_mesh(mesh)
         bm.clear()
         bm.free()
-
-        # if options.do_slope_texture:
-        #     if special_bricks.is_slope_part(filename):
-        #         if len(mesh.materials) > 0:
-        #             for polygon in mesh.polygons:
-        #                 face_material = mesh.materials[polygon.material_index]
-        #
-        #                 if strings.ldraw_color_code_key not in face_material:
-        #                     continue
-        #
-        #                 color_code = str(face_material[strings.ldraw_color_code_key])
-        #                 color = ldraw_colors.get_color(color_code)
-        #
-        #                 is_slope_material = special_bricks.is_slope_face(filename, polygon)
-        #                 material = blender_materials.get_material(color, is_slope_material=is_slope_material)
-        #                 if material is None:
-        #                     continue
-        #
-        #                 if material.name not in mesh.materials:
-        #                     mesh.materials.append(material)
-        #                 polygon.material_index = mesh.materials.find(material.name)
 
         mesh.validate()
         mesh.update(calc_edges=True)
     mesh = bpy.data.meshes[key]
     return mesh
+
+
+def process_faces(bm, geometry, filename, mesh):
+    # https://blender.stackexchange.com/questions/414/how-to-use-bmesh-to-add-verts-faces-and-edges-to-existing-geometry
+    for i, face in enumerate(bm.faces):
+        face.smooth = options.shade_smooth
+
+        face_info = geometry.face_info[i]
+        color_code = face_info.color_code
+        color = ldraw_colors.get_color(color_code)
+        use_edge_color = face_info.use_edge_color
+        is_slope_material = special_bricks.is_slope_face(filename, face)
+        texmap = face_info.texmap
+        material = blender_materials.get_material(color, use_edge_color=use_edge_color, is_slope_material=is_slope_material, texmap=texmap)
+        if material is not None:
+            # https://blender.stackexchange.com/questions/23905/select-faces-depending-on-material
+            if material.name not in mesh.materials:
+                mesh.materials.append(material)
+            face.material_index = mesh.materials.find(material.name)
+        if texmap is not None:
+            texmap.uv_unwrap_face(bm, face)
+
+
+def build_edge_indices(bm, geometry):
+    # Create kd tree for fast "find nearest points" calculation
+    kd = mathutils.kdtree.KDTree(len(bm.verts))
+    for i, v in enumerate(bm.verts):
+        kd.insert(v.co, i)
+    kd.balance()
+
+    # Create edge_indices dictionary, which is the list of edges as pairs of indices into our verts array
+    edge_indices = {}
+    for i in range(0, len(geometry.edge_vertices), 2):
+        edges0 = [index for (co, index, dist) in kd.find_range(geometry.edge_vertices[i + 0], options.merge_distance)]
+        edges1 = [index for (co, index, dist) in kd.find_range(geometry.edge_vertices[i + 1], options.merge_distance)]
+        for e0 in edges0:
+            for e1 in edges1:
+                edge_indices[(e0, e1)] = True
+                edge_indices[(e1, e0)] = True
+    return edge_indices
+
+
+# FIXME: this iterates every edge and every vertices in the mesh and geometry
+# TODO: integrate these steps into the geometry creation process
+def process_edges(bm, geometry):
+    if not options.sharpen_edges:
+        return
+
+    edge_indices = build_edge_indices(bm, geometry)
+    # Find the appropriate mesh edges and make them sharp (i.e. not smooth)
+    bevel_weight_layer = bm.edges.layers.bevel_weight.verify()
+    for edge in bm.edges:
+        v0 = edge.verts[0].index
+        v1 = edge.verts[1].index
+        if (v0, v1) in edge_indices:
+            # Make edge sharp
+            edge.smooth = False
+
+            # Add bevel weight
+            # https://blender.stackexchange.com/a/188003
+            if bevel_weight_layer is not None:
+                bevel_wight = 1.0
+                edge[bevel_weight_layer] = bevel_wight
+
+
+def build_mesh(key, filename, vertices, edges, faces):
+    mesh = bpy.data.meshes.new(key)
+    mesh.from_pydata(vertices, edges, faces)
+    mesh[strings.ldraw_filename_key] = filename
+
+    if options.bevel_edges:
+        mesh.use_customdata_edge_bevel = True
+
+    if options.smooth_type == "auto_smooth":
+        mesh.use_auto_smooth = options.shade_smooth
+        auto_smooth_angle = 89.9  # 1.56905 - 89.9 so 90 degrees and up are affected
+        auto_smooth_angle = 51.1
+        mesh.auto_smooth_angle = math.radians(auto_smooth_angle)
+
+    if options.make_gaps and options.gap_target == "mesh":
+        mesh.transform(matrices.scaled_matrix(options.gap_scale))
+
+    return mesh
+
+
+def build_vertices(geometry):
+    vertices = [v.to_tuple() for v in geometry.vertices]
+    return vertices
+
+
+def build_faces(geometry):
+    # makes indexes sequential
+    # TODO: add this to geometry append step
+    faces = []
+    face_index = 0
+    for vert_count in geometry.vert_counts:
+        new_face = []
+        for _ in range(vert_count):
+            new_face.append(face_index)
+            face_index += 1
+        faces.append(new_face)
+    return faces
 
 
 def create_mesh(key, geometry):

@@ -41,6 +41,7 @@ recalculate_normals = True
 triangulate = False
 ngon_handling = "triangulate"
 treat_shortcut_as_model = False
+sharpen_edges = True
 
 # options without a ui
 instancing = False
