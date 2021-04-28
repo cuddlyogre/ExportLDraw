@@ -81,6 +81,16 @@ def build_search_paths(parent_filepath=None):
         append_unofficial()
 
     append_textures()
+    build_lowercase_paths()
+
+
+def build_lowercase_paths():
+    global all_files
+    all_files = {}
+
+    for path in get_search_paths(texture=True):
+        for file in glob.glob(os.path.join(path, '*')):
+            all_files[file.lower()] = file
 
 
 def append_official():
@@ -117,89 +127,9 @@ def append_textures():
 
 # https://stackoverflow.com/a/8462613
 def path_insensitive(path):
-    """
-    Get a case-insensitive path for use on a case sensitive system.
-
-    >>> path_insensitive('/Home')
-    '/home'
-    >>> path_insensitive('/Home/chris')
-    '/home/chris'
-    >>> path_insensitive('/HoME/CHris/')
-    '/home/chris/'
-    >>> path_insensitive('/home/CHRIS')
-    '/home/chris'
-    >>> path_insensitive('/Home/CHRIS/.gtk-bookmarks')
-    '/home/chris/.gtk-bookmarks'
-    >>> path_insensitive('/home/chris/.GTK-bookmarks')
-    '/home/chris/.gtk-bookmarks'
-    >>> path_insensitive('/HOME/Chris/.GTK-bookmarks')
-    '/home/chris/.gtk-bookmarks'
-    >>> path_insensitive("/HOME/Chris/I HOPE this doesn't exist")
-    "/HOME/Chris/I HOPE this doesn't exist"
-    """
-
-    return _path_insensitive(path) or path
-
-
-def _path_insensitive(path):
-    """
-    Recursive part of path_insensitive to do the work.
-    """
-
-    if path == "" or os.path.exists(path):
-        return path
-
-    base = os.path.basename(path)  # may be a directory or a file
-    dirname = os.path.dirname(path)
-
-    suffix = ""
-    if not base:  # dir ends with a slash?
-        if len(dirname) < len(path):
-            suffix = path[:len(path) - len(dirname)]
-
-        base = os.path.basename(dirname)
-        dirname = os.path.dirname(dirname)
-
-    if not os.path.exists(dirname):
-        dirname = _path_insensitive(dirname)
-        if not dirname:
-            return
-
-    # at this point, the directory exists but not the file
-
-    try:  # we are expecting dirname to be a directory, but it could be a file
-        files = os.listdir(dirname)
-    except OSError:
-        return
-
-    baselow = base.lower()
-    try:
-        basefinal = next(fl for fl in files if fl.lower() == baselow)
-    except StopIteration:
-        return
-
-    if basefinal:
-        return os.path.join(dirname, basefinal) + suffix
-    else:
-        return
-
-
-def test_fix_string():
-    build_search_paths()
-    errors = {}
-    for path in search_paths:
-        paths = glob.glob(os.path.join(path, '**', '*'), recursive=True)
-        for path in paths:
-            if not os.path.isfile(path):
-                continue
-            with open(path, 'r') as file:
-                try:
-                    print(fix_string(file.read()))
-                except UnicodeDecodeError as e:
-                    errors[path] = e
-                    # print(e)
-                    # print(path)
-    print(errors)
+    if path.lower() in all_files:
+        return all_files[path.lower()]
+    return path
 
 
 def fix_string(string):
