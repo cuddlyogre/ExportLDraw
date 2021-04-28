@@ -42,6 +42,7 @@ triangulate = False
 ngon_handling = "triangulate"
 treat_shortcut_as_model = False
 sharpen_edges = True
+profile = False
 
 # options without a ui
 instancing = False

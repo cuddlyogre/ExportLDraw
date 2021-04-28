@@ -8,6 +8,10 @@ from . import ldraw_node
 from . import ldraw_import
 from . import special_bricks
 
+import cProfile
+import pstats
+profiler = cProfile.Profile()
+
 
 class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
     bl_idname = "import.ldraw"
@@ -269,6 +273,12 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         default=True
     )
 
+    profile: bpy.props.BoolProperty(
+        name="Profile",
+        description="Profile import performance",
+        default=False
+    )
+
     def execute(self, context):
         start = time.monotonic()
 
@@ -308,8 +318,14 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         options.all_materials = self.all_materials
         options.recalculate_normals = self.recalculate_normals
         options.sharpen_edges = self.sharpen_edges
+        options.profile = self.profile
 
+        if options.profile:
+            profiler.enable()
         ldraw_import.do_import(bpy.path.abspath(self.filepath))
+        if options.profile:
+            profiler.disable()
+            pstats.Stats(profiler).sort_stats('tottime').print_stats()
 
         print("")
         print("======Import Complete======")
@@ -338,6 +354,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         box.prop(self, "resolution", expand=True)
         box.prop(self, "display_logo")
         box.prop(self, "chosen_logo")
+        box.prop(self, "profile")
 
         box.label(text="Scaling Options")
         box.prop(self, "import_scale")
