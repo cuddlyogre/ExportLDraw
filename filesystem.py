@@ -10,9 +10,6 @@ if __name__ == "__main__":
 else:
     from . import options
 
-search_paths = []
-texture_paths = []
-
 
 def reset_caches():
     global search_paths

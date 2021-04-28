@@ -2,13 +2,11 @@ import bpy
 
 from . import options
 from . import filesystem
-
 from . import ldraw_node
 from . import ldraw_file
 from . import ldraw_camera
 from . import blender_materials
 from . import special_bricks
-from . import texmap
 
 
 def do_import(filename):

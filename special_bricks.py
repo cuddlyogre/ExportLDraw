@@ -351,8 +351,6 @@ slopes = {
     '4195004.dat': {45},
 }
 
-slope_angles = {}
-
 # bulbs
 # 11013.dat
 # 11177.dat

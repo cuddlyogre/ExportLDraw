@@ -1,7 +1,6 @@
 import os
 import mathutils
 import re
-import uuid
 
 from . import options
 from . import filesystem
@@ -15,14 +14,10 @@ from . import special_bricks
 from . import ldraw_colors
 from . import ldraw_camera
 
-mpd_file_cache = {}
-file_cache = {}
-
 
 def reset_caches():
     global mpd_file_cache
     global file_cache
-
     mpd_file_cache = {}
     file_cache = {}
 

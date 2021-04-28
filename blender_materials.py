@@ -1,6 +1,5 @@
 import bpy
 import mathutils
-import os
 
 from . import strings
 from . import options

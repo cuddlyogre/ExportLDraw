@@ -12,7 +12,6 @@ bl_info = {
 
 if "bpy" in locals():
     import importlib
-
     importlib.reload(blender_materials)
     importlib.reload(blender_mesh)
     importlib.reload(downloader)
@@ -35,27 +34,8 @@ if "bpy" in locals():
     importlib.reload(strings)
     importlib.reload(texmap)
 else:
-    from . import blender_materials
-    from . import blender_mesh
-    from . import downloader
-    from . import face_info
-    from . import filesystem
-    from . import helpers
-    from . import ldraw_camera
-    from . import ldraw_colors
-    from . import ldraw_export
-    from . import ldraw_file
-    from . import ldraw_geometry
-    from . import ldraw_import
-    from . import ldraw_node
-    from . import ldraw_part_types
-    from . import matrices
     from . import operator_export
     from . import operator_import
-    from . import options
-    from . import special_bricks
-    from . import strings
-    from . import texmap
 
 import bpy
 
