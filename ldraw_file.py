@@ -1,6 +1,7 @@
 import os
 import mathutils
 import re
+import uuid
 
 from . import options
 from . import filesystem
@@ -319,7 +320,8 @@ class LDrawFile:
             self.name = os.path.basename(self.filename)
 
         if self.extra_geometry is not None:
-            key = f"{self.name}_extra"  # mesh/object names have a max length of 63 characters
+            key = str(uuid.uuid4()).split('-')[0]  # mesh/object names have a max length of 63 characters
+            key = f"{self.name}_extra"
             if key not in file_cache:
                 file = LDrawFile(key)
                 file.name = key
@@ -365,13 +367,22 @@ class LDrawFile:
                 filename = f"{name}-{options.chosen_logo}.{ext}"
 
             key = []
+            key.append(filename)
             key.append(options.resolution)
-            if options.display_logo:
-                key.append(options.chosen_logo)
             if options.remove_doubles:
                 key.append("rd")
-            key.append(color_code)
-            key.append(os.path.basename(filename))
+            if options.display_logo:
+                key.append(options.chosen_logo)
+            if options.smooth_type == "auto_smooth":
+                key.append("as")
+            if options.smooth_type == "edge_split":
+                key.append("es")
+            if options.use_alt_colors:
+                key.append("alt")
+            if options.add_subsurface:
+                key.append("ss")
+            if not options.use_glass:
+                key.append("t")
             if LDrawFile.texmap is not None:
                 key.append(LDrawFile.texmap.id)
             key = "_".join([k.lower() for k in key])

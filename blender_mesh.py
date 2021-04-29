@@ -30,9 +30,9 @@ from . import special_bricks
 # which causes materials and slope materials to be applied incorrectly
 def get_mesh(key, filename, geometry):
     if key not in bpy.data.meshes:
-        vertices = build_vertices(geometry)
+        vertices = geometry.vertices
         edges = []
-        faces = build_faces(geometry)
+        faces = geometry.faces
         mesh = build_mesh(key, filename, vertices, edges, faces)
 
         bm = bmesh.new()
@@ -83,6 +83,7 @@ def process_faces(bm, geometry, filename, mesh):
 
 def build_edge_indices(bm, geometry):
     # Create kd tree for fast "find nearest points" calculation
+    # https://docs.blender.org/api/blender_python_api_current/mathutils.kdtree.html
     kd = mathutils.kdtree.KDTree(len(bm.verts))
     for i, v in enumerate(bm.verts):
         kd.insert(v.co, i)
@@ -143,17 +144,12 @@ def build_mesh(key, filename, vertices, edges, faces):
     return mesh
 
 
-def build_vertices(geometry):
-    vertices = [v.to_tuple() for v in geometry.vertices]
-    return vertices
-
-
-def build_faces(geometry):
+def build_faces(vert_counts):
     # makes indexes sequential
     # TODO: add this to geometry append step
     faces = []
     face_index = 0
-    for vert_count in geometry.vert_counts:
+    for vert_count in vert_counts:
         new_face = []
         for _ in range(vert_count):
             new_face.append(face_index)
@@ -162,136 +158,29 @@ def build_faces(geometry):
     return faces
 
 
-def create_mesh(key, geometry):
-    return do_create_mesh(key, geometry.vertices, geometry.vert_counts)
-
-
-# https://youtu.be/cQ0qtcSymDI?t=356
-# https://www.youtube.com/watch?v=cQ0qtcSymDI&t=0s
-# https://www.blenderguru.com/articles/cycles-input-encyclopedia
-# https://blenderscripting.blogspot.com/2011/05/blender-25-python-moving-object-origin.html
-# https://blenderartists.org/t/how-to-set-origin-to-center/687111
-# https://blenderartists.org/t/modifying-object-origin-with-python/507305/3
-# https://blender.stackexchange.com/questions/414/how-to-use-bmesh-to-add-verts-faces-and-edges-to-existing-geometry
-# https://devtalk.blender.org/t/bmesh-adding-new-verts/11108/2
-# f1 = Vector((rand(-5, 5),rand(-5, 5),rand(-5, 5)))
-# f2 = Vector((rand(-5, 5),rand(-5, 5),rand(-5, 5)))
-# f3 = Vector((rand(-5, 5),rand(-5, 5),rand(-5, 5)))
-# f = [f1, f2, f3]
-# for f in enumerate(faces):
-#     this_vert = bm.verts.new(f)
-# used_indexes = list(indexes.values())
-# bigger = []
-# smaller = []
-# remaining = (collections.Counter(bigger) - collections.Counter(smaller)).elements()
-# unused_indexes = list(remaining)
-# print(list(indexes.values()))
-# print(len(used_vertices))
-# if index is not referenced in vertices. remove from vertices
-def do_create_mesh(key, geometry_vertices, geometry_vert_counts):
-    if not options.remove_doubles or options.remove_doubles_strategy == "bmesh_ops":
-        vertices, edges, faces = easy_get_mesh_data(geometry_vertices, geometry_vert_counts)
-    else:
-        vertices, edges, faces = hard_get_mesh_data(geometry_vertices, geometry_vert_counts)
-
-    mesh = bpy.data.meshes.new(key)
-    mesh.from_pydata(vertices, edges, faces)
-
-    if options.bevel_edges:
-        mesh.use_customdata_edge_bevel = True
-
-    return mesh
-
-
-# TODO: add index handling from hard_do_create_mesh
-def easy_get_mesh_data(geometry_vertices, geometry_vert_counts):
-    vertices = []
-    edges = []
-    faces = []
-
-    # makes indexes sequential
-    face_index = 0
-    for f in geometry_vert_counts:
-        new_face = []
-        for _ in range(f):
-            new_face.append(face_index)
-            face_index += 1
-        faces.append(new_face)
-
-    vertices = [v.to_tuple() for v in geometry_vertices]
-
-    return vertices, edges, faces
-
-
-# apply_materials
-# len(geometry_vert_counts) always matches len(faces)
-# len(faces) do not always match len(mesh.polygons)
-# print(len(geometry_vert_counts))
-# print(len(faces))
-# print(len(mesh.polygons))
-# if you validate here, the polygon count changes,
-# which causes polygon count and geometry.face_info count to get out of sync, causing missing face colors
-# mesh.validate()
-# mesh.update(calc_edges=True)
-# print(len(mesh.polygons))
-# slower than bmesh.ops.remove_doubles but necessary if importing to a system without a remove doubles function
-def hard_get_mesh_data(geometry_vertices, geometry_vert_counts):
-    vertices = []
-    edges = []
-    faces = []
-
-    # https://docs.blender.org/api/blender_python_api_current/mathutils.kdtree.html
-    # Create kd tree for fast "find nearest points" calculation
-    # kd = mathutils.kdtree.KDTree(len(geometry_vertices))
-    # for i, v in enumerate(geometry_vertices):
-    #     kd.insert(v.co, i)
-    # kd.balance()
-
-    # kd.find_range(geometry.edge_vertices[i + 0], options.merge_distance)
-    # kd.find(geometry.edge_vertices[i + 0], options.merge_distance)
-
-    # determine indexes to prevent doubles
-    face_index = 0
-    indexes = {}
-    for vert_count in geometry_vert_counts:
-        new_face = []
-        for _ in range(vert_count):
-            v = geometry_vertices[face_index]
-            r = 1
-            vv = mathutils.Vector((round(v.x, r), round(v.y, r), round(v.z, r)))
-            vv = v
-            if vv not in vertices:
-                vertices.append(vv)
-
-            k = ",".join([str(vv.x), str(vv.y), str(vv.z)])
-            k = str(vv[:])
-            if k not in indexes:
-                indexes[k] = vertices.index(vv)
-            index = indexes[k]
-            new_face.append(index)
-
-            face_index += 1
-
-        faces.append(new_face)
-
-    vertices = [v.to_tuple() for v in vertices]
-
-    return vertices, edges, faces
-
-
 def get_edge_mesh(key, filename, geometry):
     e_key = f"e_{key}"
     if e_key not in bpy.data.meshes:
-        edge_mesh = create_edge_mesh(e_key, geometry)
-        edge_mesh[strings.ldraw_edge_key] = filename
-        if options.make_gaps and options.gap_target == "mesh":
-            edge_mesh.transform(matrices.scaled_matrix(options.gap_scale))
-    edge_mesh = bpy.data.meshes[e_key]
-    return edge_mesh
+        vertices = geometry.edge_vertices
+        edges = []
+        faces = geometry.edges
+        mesh = build_edge_mesh(e_key, filename, vertices, edges, faces)
+
+        mesh.validate()
+        mesh.update(calc_edges=True)
+    mesh = bpy.data.meshes[e_key]
+    return mesh
 
 
-def create_edge_mesh(key, geometry):
-    return do_create_mesh(key, geometry.edge_vertices, geometry.edge_vert_counts)
+def build_edge_mesh(key, filename, vertices, edges, faces):
+    mesh = bpy.data.meshes.new(key)
+    mesh.from_pydata(vertices, edges, faces)
+    mesh[strings.ldraw_edge_key] = filename
+
+    if options.make_gaps and options.gap_target == "mesh":
+        mesh.transform(matrices.scaled_matrix(options.gap_scale))
+
+    return mesh
 
 
 def get_gp_mesh(key, mesh):
@@ -338,3 +227,38 @@ def apply_gp_materials(gp_mesh):
         bpy.data.materials.create_gpencil_data(material)  # https://developer.blender.org/T67102
     material = bpy.data.materials[material_name]
     gp_mesh.materials.append(material)
+
+# https://youtu.be/cQ0qtcSymDI?t=356
+# https://www.youtube.com/watch?v=cQ0qtcSymDI&t=0s
+# https://www.blenderguru.com/articles/cycles-input-encyclopedia
+# https://blenderscripting.blogspot.com/2011/05/blender-25-python-moving-object-origin.html
+# https://blenderartists.org/t/how-to-set-origin-to-center/687111
+# https://blenderartists.org/t/modifying-object-origin-with-python/507305/3
+# https://blender.stackexchange.com/questions/414/how-to-use-bmesh-to-add-verts-faces-and-edges-to-existing-geometry
+# https://devtalk.blender.org/t/bmesh-adding-new-verts/11108/2
+# f1 = Vector((rand(-5, 5),rand(-5, 5),rand(-5, 5)))
+# f2 = Vector((rand(-5, 5),rand(-5, 5),rand(-5, 5)))
+# f3 = Vector((rand(-5, 5),rand(-5, 5),rand(-5, 5)))
+# f = [f1, f2, f3]
+# for f in enumerate(faces):
+#     this_vert = bm.verts.new(f)
+# used_indexes = list(indexes.values())
+# bigger = []
+# smaller = []
+# remaining = (collections.Counter(bigger) - collections.Counter(smaller)).elements()
+# unused_indexes = list(remaining)
+# print(list(indexes.values()))
+# print(len(used_vertices))
+# if index is not referenced in vertices. remove from vertices
+# apply_materials
+# len(geometry_vert_counts) always matches len(faces)
+# len(faces) do not always match len(mesh.polygons)
+# print(len(geometry_vert_counts))
+# print(len(faces))
+# print(len(mesh.polygons))
+# if you validate here, the polygon count changes,
+# which causes polygon count and geometry.face_info count to get out of sync, causing missing face colors
+# mesh.validate()
+# mesh.update(calc_edges=True)
+# print(len(mesh.polygons))
+# slower than bmesh.ops.remove_doubles but necessary if importing to a system without a remove doubles function

@@ -209,27 +209,11 @@ class LDrawNode:
             parent_color_code = self.color_code
 
         key = []
-        key.append(options.resolution)
+        key.append(self.file.name)
         key.append(parent_color_code)
-        if options.display_logo:
-            key.append(options.chosen_logo)
-        if options.remove_doubles:
-            key.append("rd")
-        if options.smooth_type == "auto_smooth":
-            key.append("as")
-        if options.smooth_type == "edge_split":
-            key.append("es")
-        if options.use_alt_colors:
-            key.append("alt")
-        if options.add_subsurface:
-            key.append("ss")
-        if not options.use_glass:
-            key.append("t")
         if parent_color_code == "24":
             key.append("edge")
-        key.append(self.file.name)
-        # print(self.file.name)
-        key = "_".join([k.lower() for k in key])
+        key = "_".join([k.lower() for k in key])[0:63]
 
         is_model = self.file.is_like_model()
         is_shortcut = self.file.is_shortcut()
@@ -288,15 +272,6 @@ class LDrawNode:
                 if self.file.is_edge_logo():
                     is_edge_logo = True
 
-                vertices = [matrix @ v for v in self.file.geometry.vertices]
-                geometry.vertices.extend(vertices)
-                geometry.vert_counts.extend(self.file.geometry.vert_counts)
-
-                if (not is_edge_logo) or (is_edge_logo and options.display_logo):
-                    vertices = [matrix @ v for v in self.file.geometry.edge_vertices]
-                    geometry.edge_vertices.extend(vertices)
-                    geometry.edge_vert_counts.extend(self.file.geometry.edge_vert_counts)
-
                 if key not in face_info_cache:
                     new_face_info = []
                     for face_info in self.file.geometry.face_info:
@@ -310,6 +285,25 @@ class LDrawNode:
                     face_info_cache[key] = new_face_info
                 new_face_info = face_info_cache[key]
                 geometry.face_info.extend(new_face_info)
+
+                vertices = [(matrix @ v).to_tuple() for v in self.file.geometry.vertices]
+                geometry.vertices.extend(vertices)
+                for vert_count in self.file.geometry.vert_counts:
+                    new_face = []
+                    for _ in range(vert_count):
+                        new_face.append(geometry.face_count)
+                        geometry.face_count += 1
+                    geometry.faces.append(new_face)
+
+                if (not is_edge_logo) or (is_edge_logo and options.display_logo):
+                    vertices = [(matrix @ v).to_tuple() for v in self.file.geometry.edge_vertices]
+                    geometry.edge_vertices.extend(vertices)
+                    for vert_count in self.file.geometry.edge_vert_counts:
+                        new_face = []
+                        for _ in range(vert_count):
+                            new_face.append(geometry.edge_count)
+                            geometry.edge_count += 1
+                        geometry.edges.append(new_face)
 
             for child_node in self.file.child_nodes:
                 child_node.load(parent_matrix=matrix,

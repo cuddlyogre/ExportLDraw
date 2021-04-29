@@ -10,6 +10,10 @@ class LDrawGeometry:
         self.vertices = []
         self.vert_counts = []
         self.face_info = []
+        self.edges = []
+        self.edge_count = 0
+        self.faces = []
+        self.face_count = 0
 
     def parse_face(self, params, texmap=None):
         vert_count = int(params[0])
