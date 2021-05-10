@@ -98,7 +98,7 @@ class LDrawFile:
         self.part_type = None
         self.lines = []
         self.extra_child_nodes = []
-        self.extra_geometry = LDrawGeometry()
+        self.extra_geometry = None
         self.texmap_start = False
         self.texmap_next = False
         self.texmap_fallback = False
@@ -397,16 +397,20 @@ class LDrawFile:
                 file_cache[key] = ldraw_file
             ldraw_file = file_cache[key]
 
-            ldraw_node = LDrawNode(ldraw_file, color_code=color_code, matrix=matrix)
+            ldraw_node = LDrawNode(ldraw_file, color_code=color_code, matrix=matrix, xyz=mathutils.Vector((x, y, z)))
 
             # if any line in a model file is a subpart, treat that model as a part otherwise subparts are not parsed correctly
             # if subpart found, create new LDrawNode with those subparts and add that to child_nodes
             if self.is_like_model() and ldraw_node.file.is_subpart():
+                if self.extra_geometry is None:
+                    self.extra_geometry = LDrawGeometry()
                 self.extra_child_nodes.append(ldraw_node)
             else:
                 self.child_nodes.append(ldraw_node)
         elif params[0] in ["2", "3", "4"]:
             if self.is_like_model():
+                if self.extra_geometry is None:
+                    self.extra_geometry = LDrawGeometry()
                 self.extra_geometry.parse_face(params, LDrawFile.texmap)
             else:
                 self.geometry.parse_face(params, LDrawFile.texmap)

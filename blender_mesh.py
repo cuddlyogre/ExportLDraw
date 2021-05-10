@@ -30,10 +30,7 @@ from . import special_bricks
 # which causes materials and slope materials to be applied incorrectly
 def get_mesh(key, filename, geometry):
     if key not in bpy.data.meshes:
-        vertices = geometry.vertices
-        edges = []
-        faces = geometry.faces
-        mesh = build_mesh(key, filename, vertices, edges, faces)
+        mesh = build_mesh(key, filename, geometry)
 
         bm = bmesh.new()
         bm.from_mesh(mesh)
@@ -60,25 +57,28 @@ def get_mesh(key, filename, geometry):
     return mesh
 
 
-def process_faces(bm, geometry, filename, mesh):
-    # https://blender.stackexchange.com/questions/414/how-to-use-bmesh-to-add-verts-faces-and-edges-to-existing-geometry
-    for i, face in enumerate(bm.faces):
-        face.smooth = options.shade_smooth
+def build_mesh(key, filename, geometry):
+    vertices = geometry.face_vertices #+ geometry.stud_roots
+    edges = []
+    faces = geometry.face_indexes
 
-        face_info = geometry.face_info[i]
-        color_code = face_info.color_code
-        color = ldraw_colors.get_color(color_code)
-        use_edge_color = face_info.use_edge_color
-        is_slope_material = special_bricks.is_slope_face(filename, face)
-        texmap = face_info.texmap
-        material = blender_materials.get_material(color, use_edge_color=use_edge_color, is_slope_material=is_slope_material, texmap=texmap)
-        if material is not None:
-            # https://blender.stackexchange.com/questions/23905/select-faces-depending-on-material
-            if material.name not in mesh.materials:
-                mesh.materials.append(material)
-            face.material_index = mesh.materials.find(material.name)
-        if texmap is not None:
-            texmap.uv_unwrap_face(bm, face)
+    mesh = bpy.data.meshes.new(key)
+    mesh.from_pydata(vertices, edges, faces)
+    mesh[strings.ldraw_filename_key] = filename
+
+    if options.bevel_edges:
+        mesh.use_customdata_edge_bevel = True
+
+    if options.smooth_type == "auto_smooth":
+        mesh.use_auto_smooth = options.shade_smooth
+        auto_smooth_angle = 89.9  # 1.56905 - 89.9 so 90 degrees and up are affected
+        auto_smooth_angle = 51.1
+        mesh.auto_smooth_angle = math.radians(auto_smooth_angle)
+
+    if options.make_gaps and options.gap_target == "mesh":
+        mesh.transform(matrices.scaled_matrix(options.gap_scale))
+
+    return mesh
 
 
 def build_edge_indices(bm, geometry):
@@ -91,9 +91,9 @@ def build_edge_indices(bm, geometry):
 
     # Create edge_indices dictionary, which is the list of edges as pairs of indices into our verts array
     edge_indices = {}
-    for i in range(0, len(geometry.edge_vertices), 2):
-        edges0 = [index for (co, index, dist) in kd.find_range(geometry.edge_vertices[i + 0], options.merge_distance)]
-        edges1 = [index for (co, index, dist) in kd.find_range(geometry.edge_vertices[i + 1], options.merge_distance)]
+    for i in range(0, len(geometry.edge_face_vertices), 2):
+        edges0 = [index for (co, index, dist) in kd.find_range(geometry.edge_face_vertices[i + 0], options.merge_distance)]
+        edges1 = [index for (co, index, dist) in kd.find_range(geometry.edge_face_vertices[i + 1], options.merge_distance)]
         for e0 in edges0:
             for e1 in edges1:
                 edge_indices[(e0, e1)] = True
@@ -124,58 +124,45 @@ def process_edges(bm, geometry):
                 edge[bevel_weight_layer] = bevel_wight
 
 
-def build_mesh(key, filename, vertices, edges, faces):
-    mesh = bpy.data.meshes.new(key)
-    mesh.from_pydata(vertices, edges, faces)
-    mesh[strings.ldraw_filename_key] = filename
+def process_faces(bm, geometry, filename, mesh):
+    # https://blender.stackexchange.com/questions/414/how-to-use-bmesh-to-add-verts-faces-and-edges-to-existing-geometry
+    for i, face in enumerate(bm.faces):
+        face.smooth = options.shade_smooth
 
-    if options.bevel_edges:
-        mesh.use_customdata_edge_bevel = True
-
-    if options.smooth_type == "auto_smooth":
-        mesh.use_auto_smooth = options.shade_smooth
-        auto_smooth_angle = 89.9  # 1.56905 - 89.9 so 90 degrees and up are affected
-        auto_smooth_angle = 51.1
-        mesh.auto_smooth_angle = math.radians(auto_smooth_angle)
-
-    if options.make_gaps and options.gap_target == "mesh":
-        mesh.transform(matrices.scaled_matrix(options.gap_scale))
-
-    return mesh
-
-
-def build_faces(vert_counts):
-    # makes indexes sequential
-    # TODO: add this to geometry append step
-    faces = []
-    face_index = 0
-    for vert_count in vert_counts:
-        new_face = []
-        for _ in range(vert_count):
-            new_face.append(face_index)
-            face_index += 1
-        faces.append(new_face)
-    return faces
+        face_info = geometry.face_info[i]
+        color_code = face_info.color_code
+        color = ldraw_colors.get_color(color_code)
+        use_edge_color = face_info.use_edge_color
+        is_slope_material = special_bricks.is_slope_face(filename, face)
+        texmap = face_info.texmap
+        material = blender_materials.get_material(color, use_edge_color=use_edge_color, is_slope_material=is_slope_material, texmap=texmap)
+        if material is not None:
+            # https://blender.stackexchange.com/questions/23905/select-faces-depending-on-material
+            if material.name not in mesh.materials:
+                mesh.materials.append(material)
+            face.material_index = mesh.materials.find(material.name)
+        if texmap is not None:
+            texmap.uv_unwrap_face(bm, face)
 
 
 def get_edge_mesh(key, filename, geometry):
     e_key = f"e_{key}"
     if e_key not in bpy.data.meshes:
-        vertices = geometry.edge_vertices
-        edges = []
-        faces = geometry.edges
-        mesh = build_edge_mesh(e_key, filename, vertices, edges, faces)
-
+        mesh = build_edge_mesh(e_key, filename, geometry)
         mesh.validate()
         mesh.update(calc_edges=True)
     mesh = bpy.data.meshes[e_key]
     return mesh
 
 
-def build_edge_mesh(key, filename, vertices, edges, faces):
+def build_edge_mesh(key, filename, geometry):
+    vertices = geometry.edge_face_vertices
+    edges = []
+    faces = geometry.edge_face_indexes
+
     mesh = bpy.data.meshes.new(key)
     mesh.from_pydata(vertices, edges, faces)
-    mesh[strings.ldraw_edge_key] = filename
+    mesh[strings.ldraw_filename_key] = filename
 
     if options.make_gaps and options.gap_target == "mesh":
         mesh.transform(matrices.scaled_matrix(options.gap_scale))
@@ -192,10 +179,12 @@ def get_gp_mesh(key, mesh):
         gp_mesh.stroke_depth_order = "3D"
 
         gp_layer = gp_mesh.layers.new("gpl")
-        gp_frame = gp_layer.frames.new(1)
-        gp_layer.active_frame = gp_frame
+        gp_layer.line_change = 2
 
-        for e in mesh.edge_vert_counts:
+        gp_frame = gp_layer.frames.new(1)
+        # gp_layer.active_frame = gp_frame
+
+        for e in mesh.edges:
             gp_stroke = gp_frame.strokes.new()
             gp_stroke.material_index = 0
             gp_stroke.line_width = 10.0
@@ -251,9 +240,7 @@ def apply_gp_materials(gp_mesh):
 # print(len(used_vertices))
 # if index is not referenced in vertices. remove from vertices
 # apply_materials
-# len(geometry_vert_counts) always matches len(faces)
 # len(faces) do not always match len(mesh.polygons)
-# print(len(geometry_vert_counts))
 # print(len(faces))
 # print(len(mesh.polygons))
 # if you validate here, the polygon count changes,
