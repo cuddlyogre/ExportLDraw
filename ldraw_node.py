@@ -91,9 +91,7 @@ def do_create_object(mesh):
     return obj
 
 
-def create_object(mesh, parent_matrix, matrix):
-    obj = do_create_object(mesh)
-
+def process_object(obj, parent_matrix, matrix):
     if top_empty is None:
         obj.matrix_world = matrices.scaled_matrix(options.import_scale) @ matrices.rotation @ parent_matrix @ matrix
         if options.make_gaps and options.gap_target == "object":
@@ -145,8 +143,6 @@ def create_object(mesh, parent_matrix, matrix):
         bevel_modifier.profile = 0.5
         bevel_modifier.limit_method = "WEIGHT"
         bevel_modifier.use_clamp_overlap = True
-
-    return obj
 
 
 class LDrawNode:
@@ -286,24 +282,27 @@ class LDrawNode:
                 new_face_info = face_info_cache[key]
                 geometry.face_info.extend(new_face_info)
 
-                vertices = [(matrix @ v).to_tuple() for v in self.file.geometry.vertices]
-                geometry.vertices.extend(vertices)
-                for vert_count in self.file.geometry.vert_counts:
-                    new_face = []
-                    for _ in range(vert_count):
-                        new_face.append(geometry.face_count)
-                        geometry.face_count += 1
-                    geometry.faces.append(new_face)
+                # create list starting with current face_index + the indexes of the next n vertices
+                # like this:
+                # tri - [20, 21, 22]
+                # quad - [12, 13, 14, 15]
+                # this keep vertices properly ordered, but does not look for duplicate vertices
+                for face in self.file.geometry.face_vertices:
+                    face_indexes = []
+                    for i, vertex in enumerate(face):
+                        geometry.face_vertices.append(matrix @ vertex)
+                        face_indexes.append(geometry.face_index)
+                        geometry.face_index += 1
+                    geometry.face_indexes.append(face_indexes)
 
                 if (not is_edge_logo) or (is_edge_logo and options.display_logo):
-                    vertices = [(matrix @ v).to_tuple() for v in self.file.geometry.edge_vertices]
-                    geometry.edge_vertices.extend(vertices)
-                    for vert_count in self.file.geometry.edge_vert_counts:
-                        new_face = []
-                        for _ in range(vert_count):
-                            new_face.append(geometry.edge_count)
-                            geometry.edge_count += 1
-                        geometry.edges.append(new_face)
+                    for face in self.file.geometry.edge_face_vertices:
+                        face_indexes = []
+                        for i, vertex in enumerate(face):
+                            geometry.edge_face_vertices.append(matrix @ vertex)
+                            face_indexes.append(geometry.edge_face_index)
+                            geometry.edge_face_index += 1
+                        geometry.edge_face_indexes.append(face_indexes)
 
             for child_node in self.file.child_nodes:
                 child_node.load(parent_matrix=matrix,
@@ -319,7 +318,8 @@ class LDrawNode:
         if self.top:
             mesh = blender_mesh.get_mesh(key, self.file.name, geometry)
 
-            obj = create_object(mesh, parent_matrix, self.matrix)
+            obj = do_create_object(mesh)
+            process_object(obj, parent_matrix, self.matrix)
             obj[strings.ldraw_filename_key] = self.file.name
 
             if file_collection is not None:
@@ -330,11 +330,20 @@ class LDrawNode:
             if options.import_edges:
                 edge_mesh = blender_mesh.get_edge_mesh(key, self.file.name, geometry)
 
+                obj = do_create_object(edge_mesh)
+                process_object(obj, parent_matrix, self.matrix)
+                obj[strings.ldraw_filename_key] = f"{self.file.name}_edges"
+
+                if file_collection is not None:
+                    file_collection.objects.link(obj)
+                else:
+                    bpy.context.scene.collection.objects.link(obj)
+
                 if options.grease_pencil_edges:
                     gp_mesh = blender_mesh.get_gp_mesh(key, edge_mesh)
 
                     gp_object = bpy.data.objects.new(key, gp_mesh)
-                    gp_object.matrix_world = parent_matrix @ self.matrix
+                    process_object(gp_object, parent_matrix, self.matrix)
                     gp_object.active_material_index = len(gp_mesh.materials)
 
                     collection_name = "Grease Pencil Edges"

@@ -428,13 +428,13 @@ class LDrawFile:
         return self.part_type in ldraw_part_types.subpart_types
 
     def is_like_stud(self):
-        return self.name.startswith("stud")
+        return self.filename.startswith("stud")
 
     def is_stud(self):
-        return self.name in ldraw_part_types.stud_names
+        return self.filename in ldraw_part_types.stud_names
 
     def is_edge_logo(self):
-        return self.name in ldraw_part_types.edge_logo_names
+        return self.filename in ldraw_part_types.edge_logo_names
 
     def is_logo(self):
-        return self.name in ldraw_part_types.logo_names
+        return self.filename in ldraw_part_types.logo_names
