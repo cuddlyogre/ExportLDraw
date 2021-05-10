@@ -189,3 +189,9 @@ class TexMap:
         this_script_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(this_script_dir, f"{filename}.png"), "wb") as fh:
             fh.write(base64.decodebytes(img_data))
+
+
+if __name__ == "__main__":
+    filename = 'test'
+    img_data = 'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAC0lEQVQIHWNgQAcAABIAAYAUyswAAAAASUVORK5CYII='
+    TexMap.base64_to_png(filename, img_data)

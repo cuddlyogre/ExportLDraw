@@ -174,6 +174,24 @@ def locate(filename, texture=False):
     return full_path
 
 
+def test_fix_string():
+    build_search_paths()
+    errors = {}
+    for path in search_paths:
+        paths = glob.glob(os.path.join(path, '**', '*'), recursive=True)
+        for path in paths:
+            if not os.path.isfile(path):
+                continue
+            with open(path, 'r') as file:
+                try:
+                    print(fix_string(file.read()))
+                except UnicodeDecodeError as e:
+                    errors[path] = e
+                    # print(e)
+                    # print(path)
+    print(errors)
+
+
 # http://www.holly-wood.it/ldview-en.html
 def export_index(texture=False):
     # 'https://www.ldraw.org/library/official/images/parts/3001.png'
@@ -210,6 +228,5 @@ def export_index(texture=False):
                 os.system(command)
             # print(path)
 
-
-if __name__ == "__main__":
-    export_index()
+# if __name__ == "__main__":
+#     export_index()

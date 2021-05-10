@@ -2,9 +2,8 @@ import os
 import urllib.request
 import urllib.error
 from pathlib import Path
-
-
-# from . import filesystem
+import re
+import requests
 
 
 def download_file(url, destination, headers=None):
@@ -64,4 +63,29 @@ def download_texture(filename):
     download_ldraw(path, filename)
 
 
-# download_texture("685p04.png")
+def digital_bricks():
+    this_script_dir = os.path.dirname(os.path.realpath(__file__))
+
+    folder = 'digital-bricks'
+    Path(folder).mkdir(parents=True, exist_ok=True)
+
+    url = r"http://www.digital-bricks.de/en/index.php?site=nil"
+    r = requests.get(url)
+    for line in r.text.splitlines():
+        parts = re.search(r'"(http(?!s)?:\/\/www\.digital-bricks\.de\/en\/index\.php\?site=lddp.*)"', line.strip())
+        if parts is not None:
+            # print(parts[1])
+            r = requests.get(parts[1])
+            for line2 in r.text.splitlines():
+                parts = re.search(r'"((http(?!s)?:\/\/www\.digital-bricks\.de\/en\/file\.php\?part=)(.*?))"', line2.strip())
+                if parts is not None:
+                    r = requests.get(parts[1])
+                    print(f"{parts[3]}.dat")
+                    with open(os.path.join(this_script_dir, folder, f"{parts[3]}.dat"), 'w') as file:
+                        file.write(r.text)
+
+
+if __name__ == '__main__':
+    pass
+    # download_texture("685p04.png")
+    # digital_bricks()
