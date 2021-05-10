@@ -16,7 +16,7 @@ profiler = cProfile.Profile()
 class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
     bl_idname = "import.ldraw"
     bl_label = "Import LDraw"
-    bl_options = {'PRESET'}
+    bl_options = {'PRESET', 'UNDO'}
     filename_ext = ""
 
     filter_glob: bpy.props.StringProperty(
