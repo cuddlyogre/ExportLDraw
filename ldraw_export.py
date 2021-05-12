@@ -1,5 +1,7 @@
 import bpy
 import bmesh
+import math
+import mathutils
 
 from . import strings
 from . import options
@@ -17,7 +19,8 @@ def clean_mesh(obj):
     bm = bmesh.new()
     bm.from_object(obj, bpy.context.evaluated_depsgraph_get())
 
-    bm.transform(matrices.reverse_rotation @ obj.matrix_world)
+    reverse_rotation = mathutils.Matrix.Rotation(math.radians(90), 4, 'X')
+    bm.transform(reverse_rotation @ obj.matrix_world)
 
     # TODO: fix bowtie quads
 
