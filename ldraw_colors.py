@@ -6,6 +6,8 @@ import struct
 
 from . import options
 
+colors = {}
+
 
 def reset_caches():
     global colors

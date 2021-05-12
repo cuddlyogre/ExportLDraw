@@ -15,6 +15,9 @@ from . import special_bricks
 from . import ldraw_colors
 from . import ldraw_camera
 
+mpd_file_cache = {}
+file_cache = {}
+
 
 def reset_caches():
     global mpd_file_cache

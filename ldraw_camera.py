@@ -4,6 +4,8 @@ import math
 
 from . import options
 
+cameras = []
+
 
 def reset_caches():
     global cameras

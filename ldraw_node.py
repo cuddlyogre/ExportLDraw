@@ -9,6 +9,18 @@ from .ldraw_geometry import LDrawGeometry
 from .face_info import FaceInfo
 from . import blender_mesh
 
+part_count = 0
+current_step = 0
+last_frame = 0
+face_info_cache = {}
+geometry_cache = {}
+top_collection = None
+top_empty = None
+gap_scale_empty = None
+collection_id_map = {}
+next_collection = None
+end_next_collection = False
+
 
 def reset_caches():
     global part_count

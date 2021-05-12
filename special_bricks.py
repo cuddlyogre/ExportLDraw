@@ -366,6 +366,8 @@ lights = {
     '54869.dat': (1.0, 0.052, 0.017, 1.0),
 }
 
+slope_angles = {}
+
 
 def reset_caches():
     global slope_angles
