@@ -127,7 +127,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
     gap_scale_strategy: bpy.props.EnumProperty(
         name="Gap strategy",
         description="How to scale the object to create the gap",
-        default="constraint",
+        default="constraint",  # "object" "constraint"
         items=(
             ("object", "Object", "Apply gap directly to the object"),
             ("constraint", "Constraint", "Use a constraint, allowing the gap to easily be adjusted later"),
@@ -149,7 +149,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
     parent_to_empty: bpy.props.BoolProperty(
         name="Parent to empty",
         description="Parent the model to an empty",
-        default=True
+        default=True # True False
     )
 
     import_scale: bpy.props.FloatProperty(
@@ -164,7 +164,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
     make_gaps: bpy.props.BoolProperty(
         name="Make gaps",
         description="Puts small gaps between parts",
-        default=True
+        default=True #True False
     )
 
     gap_scale: bpy.props.FloatProperty(
