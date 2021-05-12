@@ -105,20 +105,39 @@ def do_create_object(mesh):
 
 def process_object(obj, parent_matrix, matrix):
     if top_empty is None:
-        obj.matrix_world = matrices.scaled_matrix(options.import_scale) @ matrices.rotation @ parent_matrix @ matrix
+        matrix_world = matrices.identity @ matrices.rotation @ matrices.scaled_matrix(options.import_scale)
+        matrix_world = matrix_world @ parent_matrix @ matrix
         if options.make_gaps and options.gap_target == "object":
-            obj.matrix_world = obj.matrix_world @ matrices.scaled_matrix(options.gap_scale)
+            matrix_world = matrix_world @ matrices.scaled_matrix(options.gap_scale)
+        obj.matrix_world[0] = matrix_world[0]
+        obj.matrix_world[1] = matrix_world[1]
+        obj.matrix_world[2] = matrix_world[2]
+        obj.matrix_world[3] = matrix_world[3]
     else:
-        obj.matrix_world = parent_matrix @ matrix
+        matrix_world = matrices.identity @ matrices.rotation @ matrices.scaled_matrix(options.import_scale)
+        top_empty.matrix_world[0] = matrix_world[0]
+        top_empty.matrix_world[1] = matrix_world[1]
+        top_empty.matrix_world[2] = matrix_world[2]
+        top_empty.matrix_world[3] = matrix_world[3]
+
+        matrix_world = parent_matrix @ matrix
+        obj.matrix_world[0] = matrix_world[0]
+        obj.matrix_world[1] = matrix_world[1]
+        obj.matrix_world[2] = matrix_world[2]
+        obj.matrix_world[3] = matrix_world[3]
 
         if options.make_gaps and options.gap_target == "object":
             if options.gap_scale_strategy == "object":
-                obj.matrix_world = obj.matrix_world @ matrices.scaled_matrix(options.gap_scale)
+                matrix_world = matrices.mt4(obj.matrix_world) @ matrices.scaled_matrix(options.gap_scale)
+                obj.matrix_world[0] = matrix_world[0]
+                obj.matrix_world[1] = matrix_world[1]
+                obj.matrix_world[2] = matrix_world[2]
+                obj.matrix_world[3] = matrix_world[3]
             elif options.gap_scale_strategy == "constraint":
                 global gap_scale_empty
                 if gap_scale_empty is None and top_collection is not None:
                     gap_scale_empty = bpy.data.objects.new("gap_scale", None)
-                    gap_scale_empty.matrix_world = gap_scale_empty.matrix_world @ matrices.scaled_matrix(options.gap_scale)
+                    gap_scale_empty.matrix_world = matrices.mt4(gap_scale_empty.matrix_world) @ matrices.scaled_matrix(options.gap_scale)
                     top_collection.objects.link(gap_scale_empty)
                 copy_constraint = obj.constraints.new("COPY_SCALE")
                 copy_constraint.target = gap_scale_empty
@@ -241,7 +260,6 @@ class LDrawNode:
                 top_collection = file_collection
                 if options.parent_to_empty and top_empty is None:
                     top_empty = bpy.data.objects.new(top_collection.name, None)
-                    top_empty.matrix_world = top_empty.matrix_world @ matrices.rotation @ matrices.scaled_matrix(options.import_scale)
                     if top_collection is not None:
                         top_collection.objects.link(top_empty)
         elif geometry is None:  # top-level part
@@ -302,7 +320,8 @@ class LDrawNode:
                 for face in self.file.geometry.face_vertices:
                     face_indexes = []
                     for i, vertex in enumerate(face):
-                        geometry.face_vertices.append(matrix @ vertex)
+                        tv = matrix @ vertex
+                        geometry.face_vertices.append((tv[0], tv[1], tv[2]))
                         face_indexes.append(geometry.face_index)
                         geometry.face_index += 1
                     geometry.face_indexes.append(face_indexes)
@@ -311,7 +330,8 @@ class LDrawNode:
                     for face in self.file.geometry.edge_face_vertices:
                         face_indexes = []
                         for i, vertex in enumerate(face):
-                            geometry.edge_face_vertices.append(matrix @ vertex)
+                            tv = matrix @ vertex
+                            geometry.edge_face_vertices.append((tv[0], tv[1], tv[2]))
                             face_indexes.append(geometry.edge_face_index)
                             geometry.edge_face_index += 1
                         geometry.edge_face_indexes.append(face_indexes)

@@ -1,5 +1,4 @@
 import bpy
-import mathutils
 
 from . import strings
 from . import options
@@ -304,7 +303,7 @@ def __node_principled(nodes, subsurface, sub_rad, metallic, roughness, clearcoat
     node.location = x, y
     if options.add_subsurface:
         node.inputs["Subsurface"].default_value = subsurface
-        node.inputs["Subsurface Radius"].default_value = mathutils.Vector((sub_rad, sub_rad, sub_rad))
+        node.inputs["Subsurface Radius"].default_value = (sub_rad, sub_rad, sub_rad)
     node.inputs["Metallic"].default_value = metallic
     node.inputs["Roughness"].default_value = roughness
     node.inputs["Clearcoat"].default_value = clearcoat

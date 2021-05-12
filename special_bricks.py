@@ -1,4 +1,5 @@
 import math
+from . import matrices
 
 studs = ["stud.dat", "stud2.dat"]
 logos = ["logo", "logo2", "logo3", "logo4", "logo5", "high-contrast"]
@@ -395,7 +396,7 @@ def is_slope_part(part_number):
 
 
 def normal_to_angle(normal):
-    normal = normal.normalized()
+    normal = matrices.normalize(normal)
 
     # Clamp value to range -1 to 1 (ensure we are in the strict range of the acos function, taking account of rounding errors)
     cosine = min(max(normal.y, -1.0), 1.0)

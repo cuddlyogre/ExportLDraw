@@ -1,5 +1,5 @@
 import os
-import mathutils
+import numpy as np
 import re
 import uuid
 
@@ -214,16 +214,14 @@ class LDrawFile:
                                 camera.fov = float(params[1])
                                 params = params[2:]
                             elif params[0] == "ZNEAR":
-                                scale = 1.0
-                                camera.z_near = scale * float(params[1])
+                                camera.z_near = float(params[1])
                                 params = params[2:]
                             elif params[0] == "ZFAR":
-                                scale = 1.0
-                                camera.z_far = scale * float(params[1])
+                                camera.z_far = float(params[1])
                                 params = params[2:]
                             elif params[0] in ["POSITION", "TARGET_POSITION", "UP_VECTOR"]:
                                 (x, y, z) = map(float, params[1:4])
-                                vector = mathutils.Vector((x, y, z))
+                                vector = np.array((x, y, z))
 
                                 if params[0] == "POSITION":
                                     camera.position = vector
@@ -350,7 +348,7 @@ class LDrawFile:
             color_code = params[1]
 
             (x, y, z, a, b, c, d, e, f, g, h, i) = map(float, params[2:14])
-            matrix = mathutils.Matrix((
+            matrix = np.array((
                 (a, b, c, x),
                 (d, e, f, y),
                 (g, h, i, z),

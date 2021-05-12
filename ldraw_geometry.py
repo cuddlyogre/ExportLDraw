@@ -1,4 +1,4 @@
-import mathutils
+import numpy as np
 from . import options
 from .face_info import FaceInfo
 
@@ -16,21 +16,26 @@ class LDrawGeometry:
         self.edge_face_indexes = []
 
     def parse_face(self, params, texmap=None):
-        face = []
         vert_count = int(params[0])
+        color_code = params[1]
+
+        face = []
         for i in range(vert_count):
             x = float(params[i * 3 + 2])
             y = float(params[i * 3 + 3])
             z = float(params[i * 3 + 4])
-            vertex = mathutils.Vector((x, y, z))
+            vertex = np.array((x, y, z, 1))
             face.append(vertex)
 
         if vert_count == 2:
-            self.edge_face_vertices.append(face)
             # TODO: edge_face_info
-            return
+            self.edge_face_vertices.append(face)
 
-        if vert_count == 4:
+        elif vert_count == 3:
+            self.face_vertices.append(face)
+            self.face_info.append(FaceInfo(color_code, texmap=texmap))
+
+        elif vert_count == 4:
             if options.fix_bowtie_quads:
                 ba = face[1] - face[0]
                 cb = face[2] - face[1]
@@ -39,15 +44,15 @@ class LDrawGeometry:
                 ca = face[2] - face[0]
                 db = face[3] - face[1]
 
-                cA = ba.cross(ca)
-                cB = cb.cross(db)
-                cC = dc.cross(ca)
-                # cD = db.cross(ad)
+                cA = np.cross(ba, ca)
+                cB = np.cross(cb, db)
+                cC = np.cross(dc, ca)
+                # cD = np.cross(db, ad)
 
-                dA = cA.dot(cB)
-                dB = cB.dot(cC)
-                # dC = cC.dot(cD)
-                # dD = cD.dot(cA)
+                dA = np.dot(cA, cB)
+                dB = np.dot(cB, cC)
+                # dC = np.dot(cC, cD)
+                # dD = np.dot(cD, cA)
                 if dA < 0:
                     _c = tuple([x for x in face[2]])
                     _d = tuple([x for x in face[3]])
@@ -59,8 +64,14 @@ class LDrawGeometry:
                     face[1] = _c
                     face[2] = _b
 
-        if vert_count in (3, 4):
-            self.face_vertices.append(face)
+            if options.triangulate_import:
+                face1 = [face[0], face[1], face[2]]
+                self.face_vertices.append(face1)
+                self.face_info.append(FaceInfo(color_code, texmap=texmap))
 
-            color_code = params[1]
-            self.face_info.append(FaceInfo(color_code, texmap=texmap))
+                face2 = [face[2], face[3], face[0]]
+                self.face_vertices.append(face2)
+                self.face_info.append(FaceInfo(color_code, texmap=texmap))
+            else:
+                self.face_vertices.append(face)
+                self.face_info.append(FaceInfo(color_code, texmap=texmap))
