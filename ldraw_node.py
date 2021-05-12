@@ -335,13 +335,6 @@ class LDrawNode:
             obj[strings.ldraw_filename_key] = self.file.filename
 
             # https://b3d.interplanety.org/en/how-to-get-global-vertex-coordinates/
-            # for v in geometry.stud_roots:
-            #     x = bpy.data.objects.new('x', None)
-            #     x.empty_display_size = 10
-            #     x.location = obj.matrix_world @ v
-            #     x.parent = obj
-            #     x.matrix_parent_inverse = obj.matrix_world.inverted()
-            #     bpy.context.scene.collection.objects.link(x)
 
             if file_collection is not None:
                 file_collection.objects.link(obj)
