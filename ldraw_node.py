@@ -265,7 +265,7 @@ class LDrawNode:
                 print("is_shortcut")
             elif is_subpart:
                 print("is_subpart")
-            print(self.file.name)
+            print(self.file.filename)
             print("===========")
 
         # if it's a part and already in the cache, reuse it
@@ -328,11 +328,11 @@ class LDrawNode:
                 geometry_cache[key] = geometry
 
         if self.top:
-            mesh = blender_mesh.get_mesh(key, self.file.name, geometry)
+            mesh = blender_mesh.get_mesh(key, self.file.filename, geometry)
 
             obj = do_create_object(mesh)
             process_object(obj, parent_matrix, self.matrix)
-            obj[strings.ldraw_filename_key] = self.file.name
+            obj[strings.ldraw_filename_key] = self.file.filename
 
             # https://b3d.interplanety.org/en/how-to-get-global-vertex-coordinates/
             # for v in geometry.stud_roots:
@@ -349,11 +349,11 @@ class LDrawNode:
                 bpy.context.scene.collection.objects.link(obj)
 
             if options.import_edges:
-                edge_mesh = blender_mesh.get_edge_mesh(key, self.file.name, geometry)
+                edge_mesh = blender_mesh.get_edge_mesh(key, self.file.filename, geometry)
 
                 obj = do_create_object(edge_mesh)
                 process_object(obj, parent_matrix, self.matrix)
-                obj[strings.ldraw_filename_key] = f"{self.file.name}_edges"
+                obj[strings.ldraw_filename_key] = f"{self.file.filename}_edges"
 
                 if file_collection is not None:
                     file_collection.objects.link(obj)
