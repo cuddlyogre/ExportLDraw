@@ -58,7 +58,7 @@ def get_mesh(key, filename, geometry):
 
 
 def build_mesh(key, filename, geometry):
-    vertices = geometry.face_vertices #+ geometry.stud_roots
+    vertices = geometry.face_vertices
     edges = []
     faces = geometry.face_indexes
 

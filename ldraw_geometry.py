@@ -14,7 +14,6 @@ class LDrawGeometry:
         self.edge_face_index = 0
         self.edge_face_vertices = []
         self.edge_face_indexes = []
-        #self.stud_roots = []
 
     def parse_face(self, params, texmap=None):
         face = []

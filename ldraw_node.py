@@ -146,16 +146,15 @@ def process_object(obj, parent_matrix, matrix):
 
 
 class LDrawNode:
-    def __init__(self, file, color_code="16", matrix=matrices.identity): #xyz=None):
+    def __init__(self, file, color_code="16", matrix=matrices.identity):
         self.file = file
         self.color_code = color_code
         self.matrix = matrix
         self.top = False
         self.meta_command = None
         self.meta_args = {}
-        # self.xyz = xyz
 
-    def load(self, parent_matrix=matrices.identity, parent_color_code="16", geometry=None, is_stud=False, is_edge_logo=False, parent_collection=None): #stud_roots=None):
+    def load(self, parent_matrix=matrices.identity, parent_color_code="16", geometry=None, is_stud=False, is_edge_logo=False, parent_collection=None):
         global part_count
         global current_step
         global top_collection
@@ -264,7 +263,6 @@ class LDrawNode:
         else:
             if geometry is not None:
                 if self.file.is_stud():
-                    #geometry.stud_roots.append(self.xyz)
                     is_stud = True
 
                 if self.file.is_edge_logo():
@@ -313,7 +311,6 @@ class LDrawNode:
                                 is_stud=is_stud,
                                 is_edge_logo=is_edge_logo,
                                 parent_collection=file_collection)
-                                #stud_roots=stud_roots)
 
             if self.top:
                 geometry_cache[key] = geometry
