@@ -1,26 +1,68 @@
+# https://gist.github.com/dpalomar/ebc64d6f56cfc25a3e5c20fe7cdfbd4f
+# These settings are for any web project
+
+# Handle line endings automatically for files detected as text
+# and leave all files detected as binary untouched.
+* text=auto
+
+# Force the following filetypes to have unix eols, so Windows does not break them
 *.* text eol=lf
 
-*.png binary
-*.jpg binary
-*.jpeg binary
-*.gif binary
+# Windows forced line-endings
+/.idea/* text eol=crlf
+
+#
+## These files are binary and should be left untouched
+#
+
 *.blend binary
-*.ico binary
-*.mov binary
-*.mp4 binary
-*.mp3 binary
-*.flv binary
-*.fla binary
-*.swf binary
-*.gz binary
-*.zip binary
+*.blend1 binary
 *.7z binary
-*.ttf binary
-*.eot binary
-*.woff binary
-*.otf binary
-*.pyc binary
-*.pdf binary
-*.ez binary
+*.atom binary
+*.bmp binary
 *.bz2 binary
+*.css binary
+*.cur binary
+*.doc binary
+*.docx binary
+*.eot binary
+*.exe binary
+*.ez binary
+*.fla binary
+*.flv binary
+*.gif binary
+*.gz binary
+*.ico binary
+*.jpeg binary
+*.jpg binary
+*.js binary
+*.m4v binary
+*.mid binary
+*.midi binary
+*.mov binary
+*.mp3 binary
+*.mp4 binary
+*.ogg binary
+*.ogv binary
+*.otf binary
+*.pdf binary
+*.png binary
+*.ppt binary
+*.pptx binary
+*.pyc binary
+*.rar binary
+*.rss binary
+*.rtf binary
+*.svg binary
+*.svgz binary
+*.swf binary
 *.swp binary
+*.tar binary
+*.tgz binary
+*.ttf binary
+*.wav binary
+*.woff binary
+*.woff2 binary
+*.xls binary
+*.xlsx binary
+*.zip binary

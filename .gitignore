@@ -4,3 +4,7 @@ __pycache__/*
 examples/import/*
 !examples/export/*
 thumbs/*
+*.blend1
+.pickled/*
+.vs/*
+.old/*
