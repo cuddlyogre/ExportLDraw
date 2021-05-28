@@ -14,6 +14,7 @@ search_paths = []
 texture_paths = []
 all_files = {}
 
+
 def reset_caches():
     global search_paths
     global texture_paths
@@ -132,7 +133,7 @@ def path_insensitive(path):
     return path
 
 
-def fix_string(string):
+def fix_string_encoding(string):
     new_string = string
     if type(string) is str:
         new_string = bytes(string.encode())
@@ -143,13 +144,14 @@ def fix_string(string):
 
 
 def read_file(filepath):
+    lines = []
     filepath = path_insensitive(filepath)
     if os.path.isfile(filepath):
         with open(filepath, 'r') as file:
-            string = fix_string(file.read())
-            return string.strip().splitlines()
-    else:
-        return []
+            for line in file.readlines():
+                fixed_line = fix_string_encoding(line).strip()
+                lines.append(fixed_line)
+    return lines
 
 
 def locate(filename, texture=False):
@@ -187,7 +189,7 @@ def test_fix_string():
                 continue
             with open(path, 'r') as file:
                 try:
-                    print(fix_string(file.read()))
+                    print(fix_string_encoding(file.read()))
                 except UnicodeDecodeError as e:
                     errors[path] = e
                     # print(e)

@@ -1,18 +1,24 @@
 import os
 import bpy
 import math
+import mathutils
+import bmesh
 
 from . import strings
 from . import options
 from . import matrices
+from . import blender_mesh
+from . import special_bricks
+from . import blender_materials
+from . import ldraw_colors
+from . import helpers
+
 from .ldraw_geometry import LDrawGeometry
 from .face_info import FaceInfo
-from . import blender_mesh
 
 part_count = 0
 current_step = 0
 last_frame = 0
-face_info_cache = {}
 geometry_cache = {}
 top_collection = None
 top_empty = None
@@ -26,7 +32,6 @@ def reset_caches():
     global part_count
     global current_step
     global last_frame
-    global face_info_cache
     global geometry_cache
     global top_collection
     global top_empty
@@ -38,7 +43,6 @@ def reset_caches():
     part_count = 0
     current_step = 0
     last_frame = 0
-    face_info_cache = {}
     geometry_cache = {}
     top_collection = None
     top_empty = None
@@ -105,75 +109,95 @@ def do_create_object(mesh):
 
 def process_object(obj, parent_matrix, matrix):
     if top_empty is None:
-        matrix_world = matrices.identity @ matrices.rotation @ matrices.scaled_matrix(options.import_scale)
-        matrix_world = matrix_world @ parent_matrix @ matrix
-        if options.make_gaps and options.gap_target == "object":
-            matrix_world = matrix_world @ matrices.scaled_matrix(options.gap_scale)
-        obj.matrix_world[0] = matrix_world[0]
-        obj.matrix_world[1] = matrix_world[1]
-        obj.matrix_world[2] = matrix_world[2]
-        obj.matrix_world[3] = matrix_world[3]
+        set_object_matrix(obj, parent_matrix, matrix)
     else:
-        matrix_world = matrices.identity @ matrices.rotation @ matrices.scaled_matrix(options.import_scale)
-        top_empty.matrix_world[0] = matrix_world[0]
-        top_empty.matrix_world[1] = matrix_world[1]
-        top_empty.matrix_world[2] = matrix_world[2]
-        top_empty.matrix_world[3] = matrix_world[3]
+        set_parented_object_matrix(obj, parent_matrix, matrix)
 
-        matrix_world = parent_matrix @ matrix
-        obj.matrix_world[0] = matrix_world[0]
-        obj.matrix_world[1] = matrix_world[1]
-        obj.matrix_world[2] = matrix_world[2]
-        obj.matrix_world[3] = matrix_world[3]
-
-        if options.make_gaps and options.gap_target == "object":
-            if options.gap_scale_strategy == "object":
-                matrix_world = matrices.mt4(obj.matrix_world) @ matrices.scaled_matrix(options.gap_scale)
-                obj.matrix_world[0] = matrix_world[0]
-                obj.matrix_world[1] = matrix_world[1]
-                obj.matrix_world[2] = matrix_world[2]
-                obj.matrix_world[3] = matrix_world[3]
-            elif options.gap_scale_strategy == "constraint":
-                global gap_scale_empty
-                if gap_scale_empty is None and top_collection is not None:
-                    gap_scale_empty = bpy.data.objects.new("gap_scale", None)
-                    gap_scale_empty.matrix_world = matrices.mt4(gap_scale_empty.matrix_world) @ matrices.scaled_matrix(options.gap_scale)
-                    top_collection.objects.link(gap_scale_empty)
-                copy_constraint = obj.constraints.new("COPY_SCALE")
-                copy_constraint.target = gap_scale_empty
-                copy_constraint.target.parent = top_empty
-
-        obj.parent = top_empty  # must be after matrix_world set or else transform is incorrect
-
-    # https://docs.blender.org/api/current/bpy.types.bpy_struct.html#bpy.types.bpy_struct.keyframe_insert
-    # https://docs.blender.org/api/current/bpy.types.Scene.html?highlight=frame_set#bpy.types.Scene.frame_set
-    # https://docs.blender.org/api/current/bpy.types.Object.html?highlight=rotation_quaternion#bpy.types.Object.rotation_quaternion
     if options.meta_step:
-        bpy.context.scene.frame_set(options.starting_step_frame)
-        obj.hide_viewport = True
-        obj.hide_render = True
-        obj.keyframe_insert(data_path="hide_render")
-        obj.keyframe_insert(data_path="hide_viewport")
-
-        bpy.context.scene.frame_set(last_frame)
-        obj.hide_viewport = False
-        obj.hide_render = False
-        obj.keyframe_insert(data_path="hide_render")
-        obj.keyframe_insert(data_path="hide_viewport")
+        handle_meta_step(obj)
 
     if options.smooth_type == "edge_split":
-        edge_modifier = obj.modifiers.new("Edge Split", type='EDGE_SPLIT')
-        edge_modifier.use_edge_angle = True
-        edge_modifier.split_angle = math.radians(89.9)  # 1.56905 - 89.9 so 90 degrees and up are affected
-        edge_modifier.use_edge_sharp = True
+        handle_edge_split(obj)
 
     if options.bevel_edges:
-        bevel_modifier = obj.modifiers.new("Bevel", type='BEVEL')
-        bevel_modifier.width = 0.10
-        bevel_modifier.segments = 4
-        bevel_modifier.profile = 0.5
-        bevel_modifier.limit_method = "WEIGHT"
-        bevel_modifier.use_clamp_overlap = True
+        handle_bevel_edges(obj)
+
+
+def handle_bevel_edges(obj):
+    bevel_modifier = obj.modifiers.new("Bevel", type='BEVEL')
+    bevel_modifier.width = 0.10
+    bevel_modifier.segments = 4
+    bevel_modifier.profile = 0.5
+    bevel_modifier.limit_method = "WEIGHT"
+    bevel_modifier.use_clamp_overlap = True
+
+
+def handle_edge_split(obj):
+    edge_modifier = obj.modifiers.new("Edge Split", type='EDGE_SPLIT')
+    edge_modifier.use_edge_angle = True
+    edge_modifier.split_angle = math.radians(89.9)  # 1.56905 - 89.9 so 90 degrees and up are affected
+    edge_modifier.use_edge_sharp = True
+
+
+# https://docs.blender.org/api/current/bpy.types.bpy_struct.html#bpy.types.bpy_struct.keyframe_insert
+# https://docs.blender.org/api/current/bpy.types.Scene.html?highlight=frame_set#bpy.types.Scene.frame_set
+# https://docs.blender.org/api/current/bpy.types.Object.html?highlight=rotation_quaternion#bpy.types.Object.rotation_quaternion
+def handle_meta_step(obj):
+    bpy.context.scene.frame_set(options.starting_step_frame)
+    obj.hide_viewport = True
+    obj.hide_render = True
+    obj.keyframe_insert(data_path="hide_render")
+    obj.keyframe_insert(data_path="hide_viewport")
+    bpy.context.scene.frame_set(last_frame)
+    obj.hide_viewport = False
+    obj.hide_render = False
+    obj.keyframe_insert(data_path="hide_render")
+    obj.keyframe_insert(data_path="hide_viewport")
+
+
+def set_parented_object_matrix(obj, parent_matrix, matrix):
+    matrix_world = matrices.identity @ matrices.rotation @ matrices.scaled_matrix(options.import_scale)
+    top_empty.matrix_world[0] = matrix_world[0]
+    top_empty.matrix_world[1] = matrix_world[1]
+    top_empty.matrix_world[2] = matrix_world[2]
+    top_empty.matrix_world[3] = matrix_world[3]
+    matrix_world = parent_matrix @ matrix
+    obj.matrix_world[0] = matrix_world[0]
+    obj.matrix_world[1] = matrix_world[1]
+    obj.matrix_world[2] = matrix_world[2]
+    obj.matrix_world[3] = matrix_world[3]
+    if options.make_gaps and options.gap_target == "object":
+        if options.gap_scale_strategy == "object":
+            matrix_world = matrices.mt4(obj.matrix_world) @ matrices.scaled_matrix(options.gap_scale)
+            obj.matrix_world[0] = matrix_world[0]
+            obj.matrix_world[1] = matrix_world[1]
+            obj.matrix_world[2] = matrix_world[2]
+            obj.matrix_world[3] = matrix_world[3]
+        elif options.gap_scale_strategy == "constraint":
+            global gap_scale_empty
+            if gap_scale_empty is None and top_collection is not None:
+                gap_scale_empty = bpy.data.objects.new("gap_scale", None)
+                matrix_world = matrices.mt4(gap_scale_empty.matrix_world) @ matrices.scaled_matrix(options.gap_scale)
+                gap_scale_empty.matrix_world[0] = matrix_world[0]
+                gap_scale_empty.matrix_world[1] = matrix_world[1]
+                gap_scale_empty.matrix_world[2] = matrix_world[2]
+                gap_scale_empty.matrix_world[3] = matrix_world[3]
+                top_collection.objects.link(gap_scale_empty)
+            copy_constraint = obj.constraints.new("COPY_SCALE")
+            copy_constraint.target = gap_scale_empty
+            copy_constraint.target.parent = top_empty
+    obj.parent = top_empty  # must be after matrix_world set or else transform is incorrect
+
+
+def set_object_matrix(obj, parent_matrix, matrix):
+    matrix_world = matrices.identity @ matrices.rotation @ matrices.scaled_matrix(options.import_scale)
+    matrix_world = matrix_world @ parent_matrix @ matrix
+    if options.make_gaps and options.gap_target == "object":
+        matrix_world = matrix_world @ matrices.scaled_matrix(options.gap_scale)
+    obj.matrix_world[0] = matrix_world[0]
+    obj.matrix_world[1] = matrix_world[1]
+    obj.matrix_world[2] = matrix_world[2]
+    obj.matrix_world[3] = matrix_world[3]
 
 
 class LDrawNode:
@@ -185,7 +209,7 @@ class LDrawNode:
         self.meta_command = None
         self.meta_args = {}
 
-    def load(self, parent_matrix=matrices.identity, parent_color_code="16", geometry=None, is_stud=False, is_edge_logo=False, parent_collection=None):
+    def load(self, parent_matrix=matrices.identity, parent_color_code="16", geometry=None, is_edge_logo=False, parent_collection=None):
         global part_count
         global current_step
         global top_collection
@@ -251,7 +275,7 @@ class LDrawNode:
         file_collection = parent_collection
 
         if is_model:
-            collection_name = os.path.basename(self.file.filename)
+            collection_name = os.path.basename(self.file.name)
             file_collection = bpy.data.collections.new(collection_name)
             if parent_collection is not None:
                 parent_collection.children.link(file_collection)
@@ -283,64 +307,38 @@ class LDrawNode:
                 print("is_shortcut")
             elif is_subpart:
                 print("is_subpart")
-            print(self.file.filename)
+            print(self.file.name)
             print("===========")
 
-        # if it's a part and already in the cache, reuse it
+        # if it's a part and geometry already in the geometry_cache, reuse it
         # meta commands are not in self.top files which is how they are counted
+        # missing minifig arms if "if key not in bpy.data.meshes:"
         if self.top and key in geometry_cache:
             geometry = geometry_cache[key]
         else:
             if geometry is not None:
-                if self.file.is_stud():
-                    is_stud = True
-
                 if self.file.is_edge_logo():
                     is_edge_logo = True
 
-                if key not in face_info_cache:
-                    new_face_info = []
-                    for face_info in self.file.geometry.face_info:
-                        copy = FaceInfo(color_code=parent_color_code, grain_slope_allowed=not is_stud)
-                        if parent_color_code == "24":
-                            copy.use_edge_color = True
-                        if face_info.color_code != "16":
-                            copy.color_code = face_info.color_code
-                        copy.texmap = face_info.texmap
-                        new_face_info.append(copy)
-                    face_info_cache[key] = new_face_info
-                new_face_info = face_info_cache[key]
-                geometry.face_info.extend(new_face_info)
-
-                # create list starting with current face_index + the indexes of the next n vertices
-                # like this:
-                # tri - [20, 21, 22]
-                # quad - [12, 13, 14, 15]
-                # this keep vertices properly ordered, but does not look for duplicate vertices
-                for face in self.file.geometry.face_vertices:
-                    face_indexes = []
-                    for i, vertex in enumerate(face):
-                        tv = matrix @ vertex
-                        geometry.face_vertices.append((tv[0], tv[1], tv[2]))
-                        face_indexes.append(geometry.face_index)
-                        geometry.face_index += 1
-                    geometry.face_indexes.append(face_indexes)
+                geometry.face_data.append({
+                    "matrix": matrix,
+                    "parent_color_code": parent_color_code,
+                    "face_vertices": self.file.geometry.face_vertices,
+                    "face_infos": self.file.geometry.face_infos,
+                })
 
                 if (not is_edge_logo) or (is_edge_logo and options.display_logo):
-                    for face in self.file.geometry.edge_face_vertices:
-                        face_indexes = []
-                        for i, vertex in enumerate(face):
+                    for edge_vertices in self.file.geometry.edge_vertices:
+                        _edge = []
+                        for i, vertex in enumerate(edge_vertices):
                             tv = matrix @ vertex
-                            geometry.edge_face_vertices.append((tv[0], tv[1], tv[2]))
-                            face_indexes.append(geometry.edge_face_index)
-                            geometry.edge_face_index += 1
-                        geometry.edge_face_indexes.append(face_indexes)
+                            _edge.append((tv[0], tv[1], tv[2]))
+                        geometry.edge_vertices.append(_edge)
 
             for child_node in self.file.child_nodes:
                 child_node.load(parent_matrix=matrix,
                                 parent_color_code=parent_color_code,
                                 geometry=geometry,
-                                is_stud=is_stud,
                                 is_edge_logo=is_edge_logo,
                                 parent_collection=file_collection)
 
@@ -348,11 +346,127 @@ class LDrawNode:
                 geometry_cache[key] = geometry
 
         if self.top:
-            mesh = blender_mesh.get_mesh(key, self.file.filename, geometry)
+            if self.file.name.lower() in [x.lower() for x in ['LDCfgalt.ldr', 'LDConfig.ldr']]:
+                print(self.file.name)
+                colors = {}
+                group_name = 'blank'
+                for line in self.file.lines:
+                    params = helpers.parse_line(line, 17)
+
+                    if params is None:
+                        continue
+
+                    if params[0] == "0":
+                        if line.startswith('0 // LDraw'):
+                            group_name = line
+                            colors[group_name] = []
+                        elif params[1].lower() in ["!colour"]:
+                            colors[group_name].append(ldraw_colors.parse_color(params))
+
+                j = 0
+                for collection_name, codes in colors.items():
+                    collection = bpy.data.collections.new(collection_name)
+                    bpy.context.scene.collection.children.link(collection)
+                    for i, color_code in enumerate(codes):
+                        bm = bmesh.new()
+
+                        monkey = True
+                        if monkey:
+                            prefix = 'monkey'
+                            bmesh.ops.create_monkey(bm)
+                        else:
+                            prefix = 'cube'
+                            bmesh.ops.create_cube(bm, size=1.0)
+
+                        for f in bm.faces:
+                            f.smooth = True
+
+                        mesh = bpy.data.meshes.new(f"{prefix}_{str(color_code)}")
+                        mesh[strings.ldraw_color_code_key] = str(color_code)
+
+                        color = ldraw_colors.get_color(color_code)
+                        material = blender_materials.get_material(color)
+                        if material is not None:
+                            # https://blender.stackexchange.com/questions/23905/select-faces-depending-on-material
+                            if material.name not in mesh.materials:
+                                mesh.materials.append(material)
+                            for face in bm.faces:
+                                face.material_index = mesh.materials.find(material.name)
+
+                        bm.faces.ensure_lookup_table()
+                        bm.verts.ensure_lookup_table()
+                        bm.edges.ensure_lookup_table()
+
+                        bm.to_mesh(mesh)
+                        bm.clear()
+                        bm.free()
+
+                        mesh.validate()
+                        mesh.update(calc_edges=True)
+                        obj = bpy.data.objects.new(mesh.name, mesh)
+                        obj.modifiers.new("Subdivision", type='SUBSURF')
+                        obj.location.x = i * 3
+                        obj.location.y = -j * 3
+                        # obj.rotation_euler.z = math.radians(90)
+                        collection.objects.link(obj)
+                    j += 1
+                print(colors)
+                return
+
+            if key not in bpy.data.meshes:
+                bm = bmesh.new()
+
+                mesh = bpy.data.meshes.new(key)
+                mesh.name = key
+                mesh[strings.ldraw_filename_key] = self.file.name
+
+                if options.bevel_edges:
+                    mesh.use_customdata_edge_bevel = True
+
+                if options.smooth_type == "auto_smooth":
+                    mesh.use_auto_smooth = options.shade_smooth
+                    auto_smooth_angle = 89.9  # 1.56905 - 89.9 so 90 degrees and up are affected
+                    auto_smooth_angle = 51.1
+                    mesh.auto_smooth_angle = math.radians(auto_smooth_angle)
+
+                if options.make_gaps and options.gap_target == "mesh":
+                    mesh.transform(matrices.scaled_matrix(options.gap_scale))
+
+                for data in geometry.face_data:
+                    matrix = data["matrix"]
+                    parent_color_code = data["parent_color_code"]
+                    face_vertices = data["face_vertices"]
+                    face_infos = data["face_infos"]
+
+                    for i, fv in enumerate(face_vertices):
+                        face = self.build_bm_face(bm, fv, matrix)
+                        face_info = self.build_face_info(face_infos[i], parent_color_code)
+                        self.process_face(bm, mesh, face, face_info)
+
+                bm.faces.ensure_lookup_table()
+                bm.verts.ensure_lookup_table()
+                bm.edges.ensure_lookup_table()
+
+                if options.remove_doubles:
+                    bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=options.merge_distance)
+
+                if options.recalculate_normals:
+                    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+
+                if options.sharpen_edges:
+                    self.process_edges(bm, geometry)
+
+                bm.to_mesh(mesh)
+                bm.clear()
+                bm.free()
+
+                mesh.validate()
+                mesh.update(calc_edges=True)
+            mesh = bpy.data.meshes[key]
 
             obj = do_create_object(mesh)
             process_object(obj, parent_matrix, self.matrix)
-            obj[strings.ldraw_filename_key] = self.file.filename
+            obj[strings.ldraw_filename_key] = self.file.name
 
             # https://b3d.interplanety.org/en/how-to-get-global-vertex-coordinates/
 
@@ -362,11 +476,11 @@ class LDrawNode:
                 bpy.context.scene.collection.objects.link(obj)
 
             if options.import_edges:
-                edge_mesh = blender_mesh.get_edge_mesh(key, self.file.filename, geometry)
+                edge_mesh = blender_mesh.get_edge_mesh(key, self.file.name, geometry)
 
                 obj = do_create_object(edge_mesh)
                 process_object(obj, parent_matrix, self.matrix)
-                obj[strings.ldraw_filename_key] = f"{self.file.filename}_edges"
+                obj[strings.ldraw_filename_key] = f"{self.file.name}_edges"
 
                 if file_collection is not None:
                     file_collection.objects.link(obj)
@@ -386,3 +500,76 @@ class LDrawNode:
                         bpy.context.scene.collection.children.link(collection)
                     collection = bpy.context.scene.collection.children[collection_name]
                     collection.objects.link(gp_object)
+
+    def process_edges(self, bm, geometry):
+        # Create kd tree for fast "find nearest points" calculation
+        # https://docs.blender.org/api/blender_python_api_current/mathutils.kdtree.html
+        kd = mathutils.kdtree.KDTree(len(bm.verts))
+        for i, v in enumerate(bm.verts):
+            kd.insert(v.co, i)
+        kd.balance()
+        # Create edge_indices dictionary, which is the list of edges as pairs of indices into our verts array
+        edge_indices = set()
+        for i, edge in enumerate(geometry.edge_vertices):
+            distance = options.merge_distance * 2
+            edges0 = [index for (co, index, dist) in kd.find_range(edge[0], distance)]
+            edges1 = [index for (co, index, dist) in kd.find_range(edge[1], distance)]
+            for e0 in edges0:
+                for e1 in edges1:
+                    edge_indices.add((e0, e1))
+                    edge_indices.add((e1, e0))
+
+        # merge line type 2 edges at a greater distance than mesh edges
+        merge = set()
+        # Find the appropriate mesh edges and make them sharp (i.e. not smooth)
+        bevel_weight_layer = bm.edges.layers.bevel_weight.verify()
+        for edge in bm.edges:
+            v0 = edge.verts[0].index
+            v1 = edge.verts[1].index
+            if (v0, v1) in edge_indices:
+                merge.add(edge.verts[0])
+                merge.add(edge.verts[1])
+
+                # Make edge sharp
+                edge.smooth = False
+
+                # Add bevel weight
+                # https://blender.stackexchange.com/a/188003
+                if bevel_weight_layer is not None:
+                    bevel_wight = 1.0
+                    edge[bevel_weight_layer] = bevel_wight
+        bmesh.ops.remove_doubles(bm, verts=list(merge), dist=options.merge_distance * 2)
+
+    def process_face(self, bm, mesh, face, face_info):
+        face.smooth = options.shade_smooth
+        color_code = face_info.color_code
+        color = ldraw_colors.get_color(color_code)
+        use_edge_color = face_info.use_edge_color
+        texmap = face_info.texmap
+        part_slopes = special_bricks.get_part_slopes(self.file.name)
+
+        material = blender_materials.get_material(color, use_edge_color=use_edge_color, part_slopes=part_slopes, texmap=texmap)
+        if material is not None:
+            # https://blender.stackexchange.com/questions/23905/select-faces-depending-on-material
+            if material.name not in mesh.materials:
+                mesh.materials.append(material)
+            face.material_index = mesh.materials.find(material.name)
+        if texmap is not None:
+            texmap.uv_unwrap_face(bm, face)
+
+    def build_face_info(self, fi, parent_color_code):
+        face_info = FaceInfo(color_code=parent_color_code)
+        if parent_color_code == "24":
+            face_info.use_edge_color = True
+        if fi.color_code != "16":
+            face_info.color_code = fi.color_code
+        face_info.texmap = fi.texmap
+        return face_info
+
+    def build_bm_face(self, bm, fv, matrix):
+        _face = []
+        for vertex in fv:
+            tv = matrix @ vertex
+            _face.append(bm.verts.new((tv[0], tv[1], tv[2])))
+        face = bm.faces.new(_face)
+        return face

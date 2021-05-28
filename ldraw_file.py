@@ -1,5 +1,4 @@
 import os
-import numpy as np
 import re
 import uuid
 
@@ -7,11 +6,11 @@ from . import options
 from . import filesystem
 from . import helpers
 from . import ldraw_part_types
+from . import matrices
 
 from .ldraw_node import LDrawNode
 from .ldraw_geometry import LDrawGeometry
 from .texmap import TexMap
-from . import special_bricks
 from . import ldraw_colors
 from . import ldraw_camera
 
@@ -96,6 +95,7 @@ class LDrawFile:
         self.filename = filename
         self.filepath = None
         self.name = ""
+        self.cache_name = ""
         self.child_nodes = []
         self.geometry = LDrawGeometry()
         self.part_type = None
@@ -105,6 +105,7 @@ class LDrawFile:
         self.texmap_start = False
         self.texmap_next = False
         self.texmap_fallback = False
+        self.cubes = []
 
     def read_file(self):
         if self.filename in mpd_file_cache:
@@ -221,7 +222,7 @@ class LDrawFile:
                                 params = params[2:]
                             elif params[0] in ["POSITION", "TARGET_POSITION", "UP_VECTOR"]:
                                 (x, y, z) = map(float, params[1:4])
-                                vector = np.array((x, y, z))
+                                vector = matrices.Vector((x, y, z))
 
                                 if params[0] == "POSITION":
                                     camera.position = vector
@@ -348,7 +349,7 @@ class LDrawFile:
             color_code = params[1]
 
             (x, y, z, a, b, c, d, e, f, g, h, i) = map(float, params[2:14])
-            matrix = np.array((
+            matrix = matrices.Matrix((
                 (a, b, c, x),
                 (d, e, f, y),
                 (g, h, i, z),
@@ -361,11 +362,13 @@ class LDrawFile:
             filename_args = re.search(r"(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)(?:\s+(\S+.*))?", line.strip())
             filename = filename_args[15].lower()
 
-            if options.display_logo and filename in special_bricks.studs:
+            if options.display_logo and self.is_stud():
                 parts = filename.split(".")
                 name = parts[0]
+                name_parts = name.split('-')
+                stud_name = name_parts[0]
                 ext = parts[1]
-                filename = f"{name}-{options.chosen_logo}.{ext}"
+                filename = f"{stud_name}-{options.chosen_logo}.{ext}"
 
             key = []
             key.append(filename)
@@ -380,8 +383,6 @@ class LDrawFile:
                 key.append("es")
             if options.use_alt_colors:
                 key.append("alt")
-            if options.add_subsurface:
-                key.append("ss")
             if not options.use_glass:
                 key.append("t")
             if LDrawFile.texmap is not None:
@@ -394,7 +395,6 @@ class LDrawFile:
                 if not ldraw_file.read_file():
                     return None
                 ldraw_file.parse_file()
-                ldraw_file.name = key
                 file_cache[key] = ldraw_file
             ldraw_file = file_cache[key]
 
@@ -433,13 +433,13 @@ class LDrawFile:
         return self.part_type in ldraw_part_types.subpart_types
 
     def is_like_stud(self):
-        return self.filename.startswith("stud")
+        return self.name.startswith("stud")
 
     def is_stud(self):
-        return self.filename in ldraw_part_types.stud_names
+        return self.name in ldraw_part_types.stud_names
 
     def is_edge_logo(self):
-        return self.filename in ldraw_part_types.edge_logo_names
+        return self.name in ldraw_part_types.edge_logo_names
 
     def is_logo(self):
-        return self.filename in ldraw_part_types.logo_names
+        return self.name in ldraw_part_types.logo_names

@@ -12,8 +12,10 @@ bl_info = {
 
 if "bpy" in locals():
     import importlib
+
     importlib.reload(blender_materials)
     importlib.reload(blender_mesh)
+    importlib.reload(blender_import)
     importlib.reload(downloader)
     importlib.reload(face_info)
     importlib.reload(filesystem)
@@ -34,8 +36,10 @@ if "bpy" in locals():
     importlib.reload(strings)
     importlib.reload(texmap)
 else:
+    from . import blender_camera
     from . import blender_materials
     from . import blender_mesh
+    from . import blender_import
     from . import downloader
     from . import face_info
     from . import filesystem

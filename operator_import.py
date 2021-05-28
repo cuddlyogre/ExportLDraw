@@ -5,7 +5,7 @@ from bpy_extras.io_utils import ImportHelper
 from . import options
 from . import filesystem
 from . import ldraw_node
-from . import ldraw_import
+from . import blender_import
 from . import special_bricks
 
 import cProfile
@@ -63,12 +63,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
     shade_smooth: bpy.props.BoolProperty(
         name="Shade smooth",
         description="Shade smooth",
-        default=True,
-    )
-
-    add_subsurface: bpy.props.BoolProperty(
-        name="Add subsurface",
-        description="Add subsurface to materials",
         default=True,
     )
 
@@ -305,7 +299,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         options.meta_save = self.meta_save
         options.set_end_frame = self.set_end_frame
         options.frames_per_step = self.frames_per_step
-        options.add_subsurface = self.add_subsurface
         options.smooth_type = self.smooth_type
         options.import_edges = self.import_edges
         options.grease_pencil_edges = self.grease_pencil_edges
@@ -322,7 +315,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
 
         if options.profile:
             profiler.enable()
-        ldraw_import.do_import(bpy.path.abspath(self.filepath))
+        blender_import.do_import(bpy.path.abspath(self.filepath))
         if options.profile:
             profiler.disable()
             pstats.Stats(profiler).sort_stats('tottime').print_stats()
@@ -386,7 +379,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         box.prop(self, "treat_shortcut_as_model")
         box.prop(self, "prefer_unofficial")
         box.prop(self, "all_materials")
-        box.prop(self, "add_subsurface")
         box.prop(self, "remove_doubles_strategy")
         box.prop(self, "bevel_edges")
         box.prop(self, "debug_text")

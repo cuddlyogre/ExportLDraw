@@ -4,8 +4,6 @@ import re
 import math
 import struct
 
-from . import options
-
 colors = {}
 
 
@@ -26,6 +24,7 @@ def get_color(color_code):
 def parse_color(params):
     color = LdrawColor(params)
     colors[color.code] = color
+    return color.code
 
 
 def lighten_rgba(color, scale):
@@ -42,15 +41,6 @@ def lighten_rgba(color, scale):
         __clamp(1.0 - color[2]),
         color[3]
     )
-
-
-def is_fluorescent_transparent(col_name):
-    return col_name in [
-        "Trans_Neon_Orange",
-        "Trans_Neon_Green",
-        "Trans_Neon_Yellow",
-        "Trans_Bright_Green",
-    ]
 
 
 # wp-content/plugins/woocommerce/includes/wc-formatting-functions.php
