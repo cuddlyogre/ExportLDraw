@@ -6,8 +6,8 @@ I essentially learned Python by dissecting and studying https://github.com/TobyL
 
 I built this plugin with performance and compatibility in mind.
 
-https://omr.ldraw.org/files/337 loads in about 13 seconds
-https://omr.ldraw.org/files/338 has lots of incorrectly written parts and MLCad parts that import correctly
+https://omr.ldraw.org/files/337 loads in about 13 seconds.  
+https://omr.ldraw.org/files/338 has incorrectly written parts and MLCad parts that import correctly
 
 It handles MLCad parts, LDCad projects, ldr, and mpd. It also processes most official META commands. For instance, STEP
 will set keyframes so you can watch the model be built. Theoretically, you could build an entire animation in an MPD
