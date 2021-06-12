@@ -1,8 +1,11 @@
 import os
+import sys
 from shutil import copytree, ignore_patterns, rmtree
 
 app_data_dir = os.path.expandvars(r'%APPDATA%\Blender Foundation\Blender')
-version = '2.92'
+version = '2.93'
+if len(sys.argv) > 1:
+    version = sys.argv[1]
 addons_dir = r'scripts\addons'
 blender_dir = os.path.join(app_data_dir, version, addons_dir)
 if not os.path.isdir(blender_dir):
