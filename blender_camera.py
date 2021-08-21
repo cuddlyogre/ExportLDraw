@@ -2,7 +2,7 @@ import bpy
 import math
 
 from . import matrices
-from . import options
+from . import import_options
 
 
 def look_at(obj, target_location, up_vector):
@@ -33,10 +33,7 @@ def look_at(obj, target_location, up_vector):
         row3,
         row4
     ))
-    obj.matrix_world[0] = matrix_world[0]
-    obj.matrix_world[1] = matrix_world[1]
-    obj.matrix_world[2] = matrix_world[2]
-    obj.matrix_world[3] = matrix_world[3]
+    matrices.set_matrix_world(obj, matrix_world)
 
 
 def create_camera(camera, empty=None, collection=None):
@@ -49,20 +46,20 @@ def create_camera(camera, empty=None, collection=None):
     blender_camera.clip_start = camera.z_near
     blender_camera.clip_end = camera.z_far
 
-    blender_camera.clip_start = blender_camera.clip_start * options.import_scale
-    blender_camera.clip_end = blender_camera.clip_end * options.import_scale
+    blender_camera.clip_start = blender_camera.clip_start * import_options.import_scale
+    blender_camera.clip_end = blender_camera.clip_end * import_options.import_scale
 
-    camera.position[0] = camera.position[0] * options.import_scale
-    camera.position[1] = camera.position[1] * options.import_scale
-    camera.position[2] = camera.position[2] * options.import_scale
+    camera.position[0] = camera.position[0] * import_options.import_scale
+    camera.position[1] = camera.position[1] * import_options.import_scale
+    camera.position[2] = camera.position[2] * import_options.import_scale
 
-    camera.target_position[0] = camera.target_position[0] * options.import_scale
-    camera.target_position[1] = camera.target_position[1] * options.import_scale
-    camera.target_position[2] = camera.target_position[2] * options.import_scale
+    camera.target_position[0] = camera.target_position[0] * import_options.import_scale
+    camera.target_position[1] = camera.target_position[1] * import_options.import_scale
+    camera.target_position[2] = camera.target_position[2] * import_options.import_scale
 
-    camera.up_vector[0] = camera.up_vector[0] * options.import_scale
-    camera.up_vector[1] = camera.up_vector[1] * options.import_scale
-    camera.up_vector[2] = camera.up_vector[2] * options.import_scale
+    camera.up_vector[0] = camera.up_vector[0] * import_options.import_scale
+    camera.up_vector[1] = camera.up_vector[1] * import_options.import_scale
+    camera.up_vector[2] = camera.up_vector[2] * import_options.import_scale
 
     if camera.orthographic:
         distance = camera.position - camera.target_position

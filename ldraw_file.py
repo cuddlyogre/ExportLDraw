@@ -1,12 +1,12 @@
 import os
 import re
-import uuid
 
-from . import options
+from . import import_options
 from . import filesystem
 from . import helpers
 from . import ldraw_part_types
 from . import matrices
+from . import special_bricks
 
 from .ldraw_node import LDrawNode
 from .ldraw_geometry import LDrawGeometry
@@ -31,60 +31,77 @@ def read_color_table():
     """Reads the color values from the LDConfig.ldr file. For details of the
     Ldraw color system see: http://www.ldraw.org/article/547"""
 
-    if options.use_alt_colors:
-        filepath = "LDCfgalt.ldr"
+    if ldraw_colors.use_alt_colors:
+        filename = "LDCfgalt.ldr"
     else:
-        filepath = "LDConfig.ldr"
+        filename = "LDConfig.ldr"
 
-    ldraw_file = LDrawFile(filepath)
+    ldraw_file = LDrawFile(filename)
     ldraw_file.read_file()
     ldraw_file.parse_file()
 
 
 def handle_mpd(filepath):
-    ldraw_file = LDrawFile(filepath)
-    ldraw_file.read_file()
+    if filepath in mpd_file_cache:
+        return mpd_file_cache[filepath].filename
 
-    lines = ldraw_file.lines
+    filepath = filesystem.locate(filepath)
+    if filepath is None:
+        return None
+
+    lines = []
+    with open(filepath, 'r') as file:
+        is_mpd = False
+        while True:
+            line = file.readline()
+            if not line:
+                break
+
+            fixed_line = filesystem.fix_string_encoding(line).strip()
+            # fixed_line = line.strip()
+            if fixed_line == "":
+                continue
+            if fixed_line.startswith("0 FILE") and not is_mpd:
+                is_mpd = True
+            if not is_mpd:
+                return filepath
+            lines.append(fixed_line)
 
     if len(lines) < 1:
         return None
 
-    if not lines[0].lower().startswith("0 f"):
-        return filepath
-
-    root_file = None
+    root_file_name = None
     current_file = None
     for line in lines:
-        params = helpers.parse_line(line, 9)
+        params = helpers.parse_line(line, 17)
 
         if params is None:
             continue
 
-        if params[0] == "0" and params[1].lower() == "file":
-            __parse_current_mpd_file(current_file)
-            current_file = LDrawFile(line[7:].lower())
+        if params[0] == "0" and params[1] == "FILE":
+            filename = line[7:].lower()
+            if current_file is not None:
+                mpd_file_cache[current_file.filename] = current_file
+            current_file = LDrawFile(filename)
 
-            if root_file is None:
-                root_file = line[7:].lower()
+            if root_file_name is None:
+                root_file_name = filename
 
         elif params[0] == "0" and params[1].lower() == "nofile":
-            __parse_current_mpd_file(current_file)
+            if current_file is not None:
+                mpd_file_cache[current_file.filename] = current_file
             current_file = None
 
         elif current_file is not None:
             current_file.lines.append(line)
 
-    __parse_current_mpd_file(current_file)
+    if current_file is not None:
+        mpd_file_cache[current_file.filename] = current_file
 
-    if root_file is not None:
-        return root_file
+    if root_file_name is not None:
+        return root_file_name
+
     return filepath
-
-
-def __parse_current_mpd_file(ldraw_file):
-    if ldraw_file is not None:
-        mpd_file_cache[ldraw_file.filename] = ldraw_file
 
 
 class LDrawFile:
@@ -105,7 +122,6 @@ class LDrawFile:
         self.texmap_start = False
         self.texmap_next = False
         self.texmap_fallback = False
-        self.cubes = []
 
     def read_file(self):
         if self.filename in mpd_file_cache:
@@ -120,9 +136,6 @@ class LDrawFile:
         return True
 
     def parse_file(self):
-        if len(self.lines) < 1:
-            return
-
         camera = None
 
         for line in self.lines:
@@ -142,24 +155,23 @@ class LDrawFile:
                 elif params[1].lower() in ["name:"]:
                     self.name = line[7:].lower().strip()
                 elif params[1].lower() in ["step"]:
-                    if options.meta_step:
+                    if import_options.meta_step:
                         ldraw_node = LDrawNode(None)
                         ldraw_node.meta_command = params[1].lower()
                         self.child_nodes.append(ldraw_node)
-                    if options.do_texmaps:
-                        self.set_texmap_end()
+                    self.set_texmap_end()
                 elif params[1].lower() in ["save"]:
-                    if options.meta_save:
+                    if import_options.meta_save:
                         ldraw_node = LDrawNode(None)
                         ldraw_node.meta_command = params[1].lower()
                         self.child_nodes.append(ldraw_node)
                 elif params[1].lower() in ["clear"]:
-                    if options.meta_clear:
+                    if import_options.meta_clear:
                         ldraw_node = LDrawNode(None)
                         ldraw_node.meta_command = params[1].lower()
                         self.child_nodes.append(ldraw_node)
                 elif params[1].lower() in ["print", "write"]:
-                    if options.meta_print_write:
+                    if import_options.meta_print_write:
                         print(line[7:].strip())
                 elif params[1].lower() in ["!ldcad"]:  # http://www.melkert.net/LDCad/tech/meta
                     if params[2].lower() in ["group_def"]:
@@ -226,27 +238,12 @@ class LDrawFile:
 
                                 if params[0] == "POSITION":
                                     camera.position = vector
-                                    if options.debug_text:
-                                        print("POSITION")
-                                        print(camera.position)
-                                        print(camera.target_position)
-                                        print(camera.up_vector)
 
                                 elif params[0] == "TARGET_POSITION":
                                     camera.target_position = vector
-                                    if options.debug_text:
-                                        print("TARGET_POSITION")
-                                        print(camera.position)
-                                        print(camera.target_position)
-                                        print(camera.up_vector)
 
                                 elif params[0] == "UP_VECTOR":
                                     camera.up_vector = vector
-                                    if options.debug_text:
-                                        print("UP_VECTOR")
-                                        print(camera.position)
-                                        print(camera.target_position)
-                                        print(camera.up_vector)
 
                                 params = params[4:]
 
@@ -268,7 +265,7 @@ class LDrawFile:
                                 camera = None
                             else:
                                 params = params[1:]
-                elif params[1].lower() in ["PE_TEX_PATH"]:
+                elif params[1].lower() in ["PE_TEX_PATH"]:  # for stud.io uvs
                     if params[2].lower() in ['-1']:
                         # use uv coordinates that at the end of 3,4 lines
                         # 2*vertcount places at the end of the line
@@ -284,8 +281,6 @@ class LDrawFile:
                     # if 0 line and texmap next, error
                     # also error
                 elif params[1].lower() in ["!texmap"]:  # https://www.ldraw.org/documentation/ldraw-org-file-format-standards/language-extension-for-texture-mapping.html
-                    if not options.do_texmaps:
-                        continue
                     if params[2].lower() in ["start", "next"]:
                         if params[2].lower() == "start":
                             print(params[2].lower())
@@ -322,17 +317,16 @@ class LDrawFile:
             self.name = os.path.basename(self.filename)
 
         if self.extra_geometry is not None:
-            key = str(uuid.uuid4()).split('-')[0]  # mesh/object names have a max length of 63 characters
-            key = f"{self.name}_extra"
-            if key not in file_cache:
-                file = LDrawFile(key)
-                file.name = key
-                file.part_type = "part"
-                file.child_nodes = self.extra_child_nodes
-                file.geometry = self.extra_geometry
-                file_cache[key] = file
-            file = file_cache[key]
-            ldraw_node = LDrawNode(file)
+            filename = f"{self.name}_extra"
+            if filename not in file_cache:
+                ldraw_file = LDrawFile(filename)
+                ldraw_file.name = filename
+                ldraw_file.part_type = "part"
+                ldraw_file.child_nodes = self.extra_child_nodes
+                ldraw_file.geometry = self.extra_geometry
+                file_cache[filename] = ldraw_file
+            ldraw_file = file_cache[filename]
+            ldraw_node = LDrawNode(ldraw_file)
             self.child_nodes.append(ldraw_node)
 
     def set_texmap_end(self):
@@ -362,35 +356,34 @@ class LDrawFile:
             filename_args = re.search(r"(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)(?:\s+(\S+.*))?", line.strip())
             filename = filename_args[15].lower()
 
-            if options.display_logo and self.is_stud():
+            if import_options.display_logo and self.is_stud():
                 parts = filename.split(".")
                 name = parts[0]
                 name_parts = name.split('-')
                 stud_name = name_parts[0]
                 ext = parts[1]
-                filename = f"{stud_name}-{options.chosen_logo}.{ext}"
+                filename = f"{stud_name}-{special_bricks.chosen_logo}.{ext}"
 
             key = []
             key.append(filename)
-            key.append(options.resolution)
-            if options.remove_doubles:
+            key.append(filesystem.resolution)
+            if import_options.remove_doubles:
                 key.append("rd")
-            if options.display_logo:
-                key.append(options.chosen_logo)
-            if options.smooth_type == "auto_smooth":
+            if import_options.display_logo:
+                key.append(special_bricks.chosen_logo)
+            if import_options.smooth_type == "auto_smooth":
                 key.append("as")
-            if options.smooth_type == "edge_split":
+            if import_options.smooth_type == "edge_split":
                 key.append("es")
-            if options.use_alt_colors:
+            if ldraw_colors.use_alt_colors:
                 key.append("alt")
-            if not options.use_glass:
-                key.append("t")
             if LDrawFile.texmap is not None:
                 key.append(LDrawFile.texmap.id)
             key = "_".join([k.lower() for k in key])
             key = re.sub(r"[^a-z0-9._]", "-", key)
 
             if key not in file_cache:
+                filename = handle_mpd(filename)
                 ldraw_file = LDrawFile(filename)
                 if not ldraw_file.read_file():
                     return None
@@ -418,7 +411,7 @@ class LDrawFile:
 
     # this allows shortcuts to be split into their individual parts if desired
     def is_like_model(self):
-        return self.is_model() or (options.treat_shortcut_as_model and self.is_shortcut())
+        return self.is_model() or (import_options.treat_shortcut_as_model and self.is_shortcut())
 
     def is_model(self):
         return self.part_type in ldraw_part_types.model_types

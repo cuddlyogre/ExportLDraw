@@ -1,61 +1,88 @@
 import math
 import mathutils
+
 # import numpy as np
+
+using_np = 'np' in globals()
 
 
 def Vector(array):
-    if 'mathutils' in globals():
-        return mathutils.Vector(array)
-    else:
+    if using_np:
         return np.array(array)
+    else:
+        return mathutils.Vector(array)
 
 
 def Vector4(array):
-    if 'mathutils' in globals():
-        return mathutils.Vector(array + (1.0,))
-    else:
+    if using_np:
         return np.array(array + (1.0,))
+    else:
+        return mathutils.Vector(array + (1.0,))
 
 
 def Matrix(array):
-    if 'mathutils' in globals():
-        return mathutils.Matrix(array)
-    else:
+    if using_np:
         return np.array(array)
+    else:
+        return mathutils.Matrix(array)
+
+
+def set_matrix_world(obj, matrix_world):
+    if using_np:
+        obj.matrix_world[0] = matrix_world[0]
+        obj.matrix_world[1] = matrix_world[1]
+        obj.matrix_world[2] = matrix_world[2]
+        obj.matrix_world[3] = matrix_world[3]
+    else:
+        obj.matrix_world = matrix_world
 
 
 # https://www.kite.com/python/answers/how-to-normalize-an-array-in-numpy-in-python
 def normalize(vector):
-    if 'mathutils' in globals():
-        return vector.normalized()
-    else:
+    if using_np:
         norm = np.linalg.norm(vector)
         normal_array = vector / norm
         return normal_array
+    else:
+        return vector.normalized()
+
+
+def determinant(matrix):
+    if using_np:
+        pass
+    else:
+        return matrix.determinant()
+
+
+def is_degenerate(matrix):
+    if using_np:
+        pass
+    else:
+        return determinant(matrix) == 0
 
 
 # https://stackoverflow.com/questions/9171158/how-do-you-get-the-magnitude-of-a-vector-in-numpy
 def length(vector):
-    if 'mathutils' in globals():
-        return vector.length
-    else:
+    if using_np:
         return math.sqrt(vector[0] ** 2 + vector[1] ** 2 + vector[2] ** 2)
         return np.sqrt(vector.dot(vector))
         return np.linalg.norm(vector)
+    else:
+        return vector.length
 
 
 def dot(a, b):
-    if 'mathutils' in globals():
-        return a.dot(b)
-    else:
+    if using_np:
         return np.dot(a, b)
+    else:
+        return a.dot(b)
 
 
 def cross(a, b):
-    if 'mathutils' in globals():
-        return a.cross(b)
-    else:
+    if using_np:
         return np.cross(a, b)
+    else:
+        return a.cross(b)
 
 
 identity = Matrix((
@@ -99,15 +126,15 @@ def scaled_matrix(scale=1.0):
 
 
 def mt4(matrix):
-    if 'mathutils' in globals():
-        return matrix
-    else:
+    if using_np:
         return np.array((
             matrix[0],
             matrix[1],
             matrix[2],
             matrix[3],
         ))
+    else:
+        return matrix
 
 
 # https://stackoverflow.com/a/48266808

@@ -2,7 +2,6 @@ import bpy
 import os
 
 from . import strings
-from . import options
 from . import ldraw_colors
 from . import filesystem
 
@@ -10,18 +9,11 @@ from . import filesystem
 # https://github.com/bblanimation/abs-plastic-materials
 def create_blender_node_groups():
     this_script_dir = os.path.dirname(os.path.realpath(__file__))
-    path = os.path.join(this_script_dir, 'materials', 'nodes_locations.blend')
     path = os.path.join(this_script_dir, 'materials', 'all_monkeys.blend')
     with bpy.data.libraries.load(path, link=False) as (data_from, data_to):
-        data_to.node_groups = data_from.node_groups
-    for node_group in data_to.node_groups:
+        data_to.materials = data_from.materials
+    for node_group in data_to.materials:
         node_group.use_fake_user = True
-
-
-def create_ldraw_materials():
-    for color_code in ldraw_colors.colors:
-        color = ldraw_colors.colors[color_code]
-        get_material(color, use_edge_color=False)
 
 
 def get_material(color, use_edge_color=False, part_slopes=None, texmap=None):
@@ -43,10 +35,8 @@ def get_key(color, use_edge_color, part_slopes, texmap):
     key.append(color.name)
 
     suffix = []
-    if options.use_alt_colors:
+    if ldraw_colors.use_alt_colors:
         suffix.append("alt")
-    if not options.use_glass:
-        suffix.append("t")
     if use_edge_color:
         suffix.append("edge")
     if part_slopes is not None:
@@ -320,12 +310,11 @@ def __create_texmap_texture(nodes, links, diff_color, texmap):
         texmap_image.interpolation = "Closest"
         texmap_image.extension = "CLIP"
 
+        # TODO: requests retrieve image from ldraw.org
+        # https://blender.stackexchange.com/questions/157531/blender-2-8-python-add-texture-image
         if image_name not in bpy.data.images:
-            # TODO: requests retrieve image from ldraw.org
             image_path = filesystem.locate(image_name, texture=True)
-
             if image_path is not None:
-                # https://blender.stackexchange.com/questions/157531/blender-2-8-python-add-texture-image
                 image = bpy.data.images.load(image_path)
                 image.name = image_name
                 image[strings.ldraw_filename_key] = image_name

@@ -2,6 +2,12 @@ import math
 from . import matrices
 
 logos = ["logo", "logo2", "logo3", "logo4", "logo5", "high-contrast"]
+
+defaults = dict()
+defaults['chosen_logo'] = logos[2]
+
+chosen_logo = defaults['chosen_logo']
+
 part_slopes = {
     '962.dat': [45],
     '2341.dat': [-45],

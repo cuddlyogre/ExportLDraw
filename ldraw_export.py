@@ -4,7 +4,7 @@ import math
 import mathutils
 
 from . import strings
-from . import options
+from . import export_options
 from . import ldraw_file
 from . import ldraw_colors
 from . import filesystem
@@ -22,21 +22,19 @@ def clean_mesh(obj):
     reverse_rotation = mathutils.Matrix.Rotation(math.radians(90), 4, 'X')
     bm.transform(reverse_rotation @ obj.matrix_world)
 
-    # TODO: fix bowtie quads
-
-    if options.triangulate:
+    if export_options.triangulate:
         bmesh.ops.triangulate(bm, faces=bm.faces[:], quad_method='BEAUTY', ngon_method='BEAUTY')
-    elif options.ngon_handling == "triangulate":
+    elif export_options.ngon_handling == "triangulate":
         faces = []
         for f in bm.faces:
             if len(f.verts) > 4:
                 faces.append(f)
         bmesh.ops.triangulate(bm, faces=faces, quad_method='BEAUTY', ngon_method='BEAUTY')
 
-    if options.remove_doubles:
-        bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=options.merge_distance)
+    if export_options.remove_doubles:
+        bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=export_options.merge_distance)
 
-    if options.recalculate_normals:
+    if export_options.recalculate_normals:
         bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
 
     mesh = obj.data.copy()
@@ -76,7 +74,7 @@ def export_subfiles(obj, lines, is_model=False):
 
     color_code = color.code
 
-    precision = options.export_precision
+    precision = export_options.export_precision
     if strings.ldraw_export_precision_key in obj:
         precision = obj[strings.ldraw_export_precision_key]
 
@@ -130,7 +128,7 @@ def export_polygons(obj, lines):
 
     mesh = clean_mesh(obj)
 
-    precision = options.export_precision
+    precision = export_options.export_precision
     if strings.ldraw_export_precision_key in obj:
         precision = obj[strings.ldraw_export_precision_key]
 
@@ -205,7 +203,7 @@ def do_export(filepath):
     active_objects = bpy.context.view_layer.objects.active
 
     objects = all_objects
-    if options.selection_only:
+    if export_options.selection_only:
         objects = selected_objects
 
     # TODO: use LDrawFile
@@ -229,7 +227,7 @@ def do_export(filepath):
 
                 line = part_line.body
 
-                params = helpers.parse_line(line, 14)
+                params = helpers.parse_line(line, 17)
 
                 if params is None:
                     continue

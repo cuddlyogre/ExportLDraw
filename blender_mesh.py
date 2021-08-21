@@ -2,7 +2,7 @@ import bpy
 import mathutils
 
 from . import strings
-from . import options
+from . import import_options
 from . import matrices
 
 from . import blender_materials
@@ -39,8 +39,8 @@ def build_edge_indices(bm, geometry):
     # Create edge_indices dictionary, which is the list of edges as pairs of indices into our verts array
     edge_indices = {}
     for i, edge in enumerate(geometry.edge_vertices):
-        edges0 = [index for (co, index, dist) in kd.find_range(edge[0], options.merge_distance)]
-        edges1 = [index for (co, index, dist) in kd.find_range(edge[1], options.merge_distance)]
+        edges0 = [index for (co, index, dist) in kd.find_range(edge[0], import_options.merge_distance)]
+        edges1 = [index for (co, index, dist) in kd.find_range(edge[1], import_options.merge_distance)]
         for e0 in edges0:
             for e1 in edges1:
                 edge_indices[(e0, e1)] = True
@@ -62,8 +62,8 @@ def build_edge_mesh(key, filename):
     mesh = bpy.data.meshes.new(key)
     mesh[strings.ldraw_filename_key] = filename
 
-    if options.make_gaps and options.gap_target == "mesh":
-        mesh.transform(matrices.scaled_matrix(options.gap_scale))
+    if import_options.make_gaps and import_options.gap_target == "mesh":
+        mesh.transform(matrices.scaled_matrix(import_options.gap_scale))
 
     return mesh
 

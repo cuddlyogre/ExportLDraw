@@ -5,10 +5,14 @@ import glob
 from sys import platform
 from pathlib import Path
 
-if __name__ == "__main__":
-    import options
-else:
-    from . import options
+defaults = dict()
+defaults['ldraw_path'] = ''
+defaults['prefer_unofficial'] = False
+defaults['resolution'] = 'Standard'
+
+ldraw_path = defaults['ldraw_path']
+prefer_unofficial = defaults['prefer_unofficial']
+resolution = defaults['resolution']
 
 search_paths = []
 texture_paths = []
@@ -64,8 +68,6 @@ def locate_ldraw():
 def build_search_paths(parent_filepath=None):
     reset_caches()
 
-    ldraw_path = options.ldraw_path
-
     # https://forums.ldraw.org/thread-24495-post-40577.html#pid40577
     # append top level file's directory
     if parent_filepath is not None:
@@ -74,7 +76,7 @@ def build_search_paths(parent_filepath=None):
     append_search_path(os.path.join(ldraw_path))
     append_search_path(os.path.join(ldraw_path, "models"))
 
-    if options.prefer_unofficial:
+    if prefer_unofficial:
         append_unofficial()
         append_official()
     else:
@@ -95,30 +97,27 @@ def build_lowercase_paths():
 
 
 def append_official():
-    ldraw_path = options.ldraw_path
     append_search_path(os.path.join(ldraw_path, "models"))
     append_search_path(os.path.join(ldraw_path, "parts"))
-    if options.resolution == "High":
+    if resolution == "High":
         append_search_path(os.path.join(ldraw_path, "p", "48"))
-    elif options.resolution == "Low":
+    elif resolution == "Low":
         append_search_path(os.path.join(ldraw_path, "p", "8"))
     append_search_path(os.path.join(ldraw_path, "p"))
 
 
 def append_unofficial():
-    ldraw_path = options.ldraw_path
     append_search_path(os.path.join(ldraw_path, "unofficial", "models"))
     append_search_path(os.path.join(ldraw_path, "unofficial", "parts"))
-    if options.resolution == "High":
+    if resolution == "High":
         append_search_path(os.path.join(ldraw_path, "unofficial", "p", "48"))
-    elif options.resolution == "Low":
+    elif resolution == "Low":
         append_search_path(os.path.join(ldraw_path, "unofficial", "p", "8"))
     append_search_path(os.path.join(ldraw_path, "unofficial", "p"))
 
 
 def append_textures():
-    ldraw_path = options.ldraw_path
-    if options.prefer_unofficial:
+    if prefer_unofficial:
         append_texture_paths(os.path.join(ldraw_path, "unofficial", "parts", "textures"))
         append_texture_paths(os.path.join(ldraw_path, "parts", "textures"))
     else:
@@ -165,8 +164,6 @@ def locate(filename, texture=False):
     full_path = None
     for path in get_search_paths(texture):
         full_path = os.path.join(path, part_path)
-        if options.debug_text:
-            print(full_path)
         full_path = path_insensitive(full_path)
         if os.path.isfile(full_path):
             return full_path
@@ -195,43 +192,3 @@ def test_fix_string():
                     # print(e)
                     # print(path)
     print(errors)
-
-
-# http://www.holly-wood.it/ldview-en.html
-def export_index(texture=False):
-    # 'https://www.ldraw.org/library/official/images/parts/3001.png'
-    # 'https://www.ldraw.org/library/unofficial/images/parts/6003.png'
-
-    this_script_dir = os.path.dirname(os.path.realpath(__file__))
-
-    thumbs = os.path.join(this_script_dir, 'thumbs')
-    Path(thumbs).mkdir(parents=True, exist_ok=True)
-
-    if __name__ == "__main__":
-        options.ldraw_path = locate_ldraw()
-        options.ldview_path = 'C:\\"Program Files (x86)"\\LDView\\LDView.exe'
-
-    build_search_paths()
-
-    width = 64
-    height = 64
-    default_zoom = 1
-    default_matrix = "".join([str(x) for x in [
-        0.707107, 0, 0.707107,
-        0.353553, 0.866025, -0.353553,
-        -0.612372, 0.5, 0.612372
-    ]])
-
-    for path in get_search_paths(texture):
-        paths = glob.glob(os.path.join(path, '**', '*'), recursive=True)
-        for path in paths:
-            if os.path.isfile(path) and Path(path).suffix in ['.dat', '.ldr', '.mpd']:
-                thumb_file_path = f"{os.path.join(thumbs, path.replace(os.path.join(options.ldraw_path, ''), ''))}.bmp"
-                Path(os.path.dirname(thumb_file_path)).mkdir(parents=True, exist_ok=True)
-                command = fr""" {options.ldview_path} "{path}" -SaveSnapshot="{thumb_file_path}" -SaveWidth={width} -SaveHeight={height} -DefaultMatrix={default_matrix} -DefaultZoom={default_zoom} """
-                print(command)
-                os.system(command)
-            # print(path)
-
-# if __name__ == "__main__":
-#     export_index()

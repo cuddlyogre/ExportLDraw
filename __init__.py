@@ -54,7 +54,7 @@ else:
     from . import matrices
     from . import operator_export
     from . import operator_import
-    from . import options
+    from . import import_options
     from . import special_bricks
     from . import strings
     from . import texmap

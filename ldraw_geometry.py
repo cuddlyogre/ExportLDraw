@@ -1,4 +1,4 @@
-from . import options
+from . import import_options
 from . import matrices
 from . import face_info
 
@@ -33,7 +33,7 @@ class LDrawGeometry:
             self.face_infos.append(face_info.FaceInfo(color_code, texmap=texmap))
 
         elif vert_count == 4:
-            if options.triangulate_import:
+            if import_options.triangulate:
                 face1 = [face[0], face[1], face[2]]
                 self.face_vertices.append(face1)
                 self.face_infos.append(face_info.FaceInfo(color_code, texmap=texmap))
