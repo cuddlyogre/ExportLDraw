@@ -417,7 +417,7 @@ class LDrawNode:
                     mesh.transform(matrices.scaled_matrix(import_options.gap_scale))
 
                 for fd in geometry.face_data:
-                    fd.face_vertices.reverse()
+                    # fd.face_vertices.reverse()
                     for i, fv in enumerate(fd.face_vertices):
                         face = build_bm_face(bm, fv, fd.matrix)
                         face_info = build_face_info(fd.face_infos[i], fd.color_code)
