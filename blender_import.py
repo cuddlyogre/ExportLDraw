@@ -46,7 +46,7 @@ def do_import(filepath):
 
     if import_options.meta_step:
         if import_options.set_end_frame:
-            bpy.context.scene.frame_end = ldraw_node.last_frame + import_options.frames_per_step
+            bpy.context.scene.frame_end = ldraw_node.current_frame + import_options.frames_per_step
             bpy.context.scene.frame_set(bpy.context.scene.frame_end)
 
     max_clip_end = 0

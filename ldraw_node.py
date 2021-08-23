@@ -18,7 +18,7 @@ from .ldraw_geometry import LDrawGeometry
 
 part_count = 0
 current_step = 0
-last_frame = 0
+current_frame = 0
 geometry_cache = {}
 top_collection = None
 top_empty = None
@@ -31,7 +31,7 @@ end_next_collection = False
 def reset_caches():
     global part_count
     global current_step
-    global last_frame
+    global current_frame
     global geometry_cache
     global top_collection
     global top_empty
@@ -42,7 +42,7 @@ def reset_caches():
 
     part_count = 0
     current_step = 0
-    last_frame = 0
+    current_frame = 0
     geometry_cache = {}
     top_collection = None
     top_empty = None
@@ -56,12 +56,15 @@ def reset_caches():
 
 
 def set_step():
-    start_frame = import_options.starting_step_frame
-    frame_length = import_options.frames_per_step
-    global last_frame
-    last_frame = (start_frame + frame_length) + (frame_length * current_step)
+    global current_step
+    global current_frame
+
+    first_frame = (import_options.starting_step_frame + import_options.frames_per_step)
+    current_step_frame = (import_options.frames_per_step * current_step)
+    current_frame = first_frame + current_step_frame
+    current_step += 1
     if import_options.set_timelime_markers:
-        bpy.context.scene.timeline_markers.new("STEP", frame=last_frame)
+        bpy.context.scene.timeline_markers.new("STEP", frame=current_frame)
 
 
 def create_meta_group(collection_name, parent_collection):
@@ -148,7 +151,7 @@ def handle_meta_step(obj):
     obj.hide_render = True
     obj.keyframe_insert(data_path="hide_render")
     obj.keyframe_insert(data_path="hide_viewport")
-    bpy.context.scene.frame_set(last_frame)
+    bpy.context.scene.frame_set(current_frame)
     obj.hide_viewport = False
     obj.hide_render = False
     obj.keyframe_insert(data_path="hide_render")
@@ -275,7 +278,6 @@ class LDrawNode:
 
     def load(self, parent_matrix=matrices.identity, parent_color_code="16", geometry=None, is_edge_logo=False, parent_collection=None):
         global part_count
-        global current_step
         global top_collection
         global top_empty
         global next_collection
@@ -283,7 +285,6 @@ class LDrawNode:
 
         if self.file is None:
             if self.meta_command == "step":
-                current_step += 1
                 set_step()
             elif self.meta_command == "group_begin":
                 create_meta_group(self.meta_args["name"], parent_collection)
@@ -304,13 +305,13 @@ class LDrawNode:
                 end_next_collection = True
             elif self.meta_command == "save":
                 if import_options.set_timelime_markers:
-                    bpy.context.scene.timeline_markers.new("SAVE", frame=last_frame)
+                    bpy.context.scene.timeline_markers.new("SAVE", frame=current_frame)
             elif self.meta_command == "clear":
                 if import_options.set_timelime_markers:
-                    bpy.context.scene.timeline_markers.new("CLEAR", frame=last_frame)
+                    bpy.context.scene.timeline_markers.new("CLEAR", frame=current_frame)
                 if top_collection is not None:
                     for ob in top_collection.all_objects:
-                        bpy.context.scene.frame_set(last_frame)
+                        bpy.context.scene.frame_set(current_frame)
                         ob.hide_viewport = True
                         ob.hide_render = True
                         ob.keyframe_insert(data_path="hide_render")
