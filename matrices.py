@@ -61,6 +61,13 @@ def is_degenerate(matrix):
         return determinant(matrix) == 0
 
 
+def is_reversed(matrix):
+    if using_np:
+        pass
+    else:
+        return determinant(matrix) < 0
+
+
 # https://stackoverflow.com/questions/9171158/how-do-you-get-the-magnitude-of-a-vector-in-numpy
 def length(vector):
     if using_np:
