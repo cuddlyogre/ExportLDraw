@@ -31,7 +31,8 @@ if "bpy" in locals():
     importlib.reload(matrices)
     importlib.reload(operator_export)
     importlib.reload(operator_import)
-    importlib.reload(options)
+    importlib.reload(import_options)
+    importlib.reload(export_options)
     importlib.reload(special_bricks)
     importlib.reload(strings)
     importlib.reload(texmap)
@@ -55,6 +56,7 @@ else:
     from . import operator_export
     from . import operator_import
     from . import import_options
+    from . import export_options
     from . import special_bricks
     from . import strings
     from . import texmap
