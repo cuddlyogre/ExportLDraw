@@ -22,8 +22,10 @@ all_files = {}
 def reset_caches():
     global search_paths
     global texture_paths
+    global all_files
     search_paths = []
     texture_paths = []
+    all_files = {}
 
 
 def get_search_paths(texture=False):
