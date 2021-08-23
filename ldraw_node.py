@@ -431,8 +431,8 @@ class LDrawNode:
                 if import_options.remove_doubles:
                     bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=import_options.merge_distance)
 
-                # if import_options.recalculate_normals:
-                #     bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+                if import_options.recalculate_normals:
+                    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
 
                 if import_options.sharpen_edges:
                     process_edges(bm, geometry)
