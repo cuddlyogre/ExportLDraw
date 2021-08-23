@@ -61,7 +61,15 @@ default_settings = {
 def get_setting(key):
     if settings is None:
         load_settings()
-    return settings.get(key)
+
+    setting = settings.get(key)
+    default = default_settings.get(key)
+
+    # ensure saved type is the same as the default type
+    if type(setting) == type(default):
+        return setting
+    else:
+        return default
 
 
 def load_settings():
