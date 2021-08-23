@@ -64,28 +64,28 @@ def get_setting(key):
 
 
 def load_settings():
-    global settings
-    this_script_dir = os.path.dirname(os.path.realpath(__file__))
-    settings_path = os.path.join(this_script_dir, 'config', 'import_options.json')
+    try:
+        global settings
+        this_script_dir = os.path.dirname(os.path.realpath(__file__))
+        settings_path = os.path.join(this_script_dir, 'config', 'import_options.json')
 
-    if not os.path.isfile(settings_path):
-        settings = default_settings
-        save_settings()
+        if not os.path.isfile(settings_path):
+            settings = default_settings
+            save_settings()
 
-    if os.path.isfile(settings_path):
-        try:
+        if os.path.isfile(settings_path):
             with open(settings_path, 'r') as file:
                 settings = json.load(file)
-        except Exception as e:
-            print(e)
-            settings = default_settings
+    except Exception as e:
+        print(e)
+        settings = default_settings
 
 
 def save_settings():
-    this_script_dir = os.path.dirname(os.path.realpath(__file__))
-    settings_path = os.path.join(this_script_dir, 'config', 'import_options.json')
-
     try:
+        this_script_dir = os.path.dirname(os.path.realpath(__file__))
+        settings_path = os.path.join(this_script_dir, 'config', 'import_options.json')
+
         with open(settings_path, 'w') as file:
             file.write(json.dumps(settings))
     except Exception as e:

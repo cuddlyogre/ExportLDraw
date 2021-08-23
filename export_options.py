@@ -1,11 +1,11 @@
 defaults = dict()
-defaults['remove_doubles'] = True,
-defaults['recalculate_normals'] = True,
-defaults['merge_distance'] = 0.05,
-defaults['triangulate'] = False,
-defaults['ngon_handling'] = "triangulate",
-defaults['selection_only'] = True,
-defaults['export_precision'] = 2,
+defaults['remove_doubles'] = True
+defaults['recalculate_normals'] = True
+defaults['merge_distance'] = 0.05
+defaults['triangulate'] = False
+defaults['ngon_handling'] = "triangulate"
+defaults['selection_only'] = True
+defaults['export_precision'] = 2
 
 selection_only = defaults['selection_only']
 export_precision = defaults['export_precision']
