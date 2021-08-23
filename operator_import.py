@@ -3,6 +3,7 @@ import bpy
 import os
 import json
 from bpy_extras.io_utils import ImportHelper
+from pathlib import Path
 
 from . import import_options
 from . import filesystem
@@ -67,7 +68,9 @@ def load_settings():
     try:
         global settings
         this_script_dir = os.path.dirname(os.path.realpath(__file__))
-        settings_path = os.path.join(this_script_dir, 'config', 'import_options.json')
+        config_path = os.path.join(this_script_dir, 'config')
+        Path(config_path).mkdir(parents=True, exist_ok=True)
+        settings_path = os.path.join(config_path, 'import_options.json')
 
         if not os.path.isfile(settings_path):
             settings = default_settings
@@ -84,7 +87,9 @@ def load_settings():
 def save_settings():
     try:
         this_script_dir = os.path.dirname(os.path.realpath(__file__))
-        settings_path = os.path.join(this_script_dir, 'config', 'import_options.json')
+        config_path = os.path.join(this_script_dir, 'config')
+        Path(config_path).mkdir(parents=True, exist_ok=True)
+        settings_path = os.path.join(config_path, 'import_options.json')
 
         with open(settings_path, 'w') as file:
             file.write(json.dumps(settings))

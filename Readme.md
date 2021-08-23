@@ -51,6 +51,9 @@ viewport and change **End** to 10000m.
 
 __File > Import > LDraw (.mpd/.ldr/.l3b/.dat)__
 
+**config/import_options.json** Your import settings are saved here every time you import. If you run across any errors, 
+delete config/import_options.json from the plugin folder. The defaults are saved on the next import.
+
 **Ldraw filepath:** The path to your Ldraw folder. On Windows, the plugins searches the roots of A:-Z:
 for an Ldraw folder (C:\ldraw). On Linux, it searches the home folder for an ldraw folder (~/ldraw). I don't have a Mac
 to test on, so on Mac OS, this value will be blank.
