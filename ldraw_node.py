@@ -268,10 +268,10 @@ def build_bm_face(bm, fv, matrix):
 
 
 class LDrawNode:
-    def __init__(self, file, color_code="16", matrix=matrices.identity):
+    def __init__(self, file):
         self.file = file
-        self.color_code = color_code
-        self.matrix = matrix
+        self.color_code = "16"
+        self.matrix = matrices.identity
         self.top = False
         self.meta_command = None
         self.meta_args = {}

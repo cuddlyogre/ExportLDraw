@@ -391,7 +391,9 @@ class LDrawFile:
                 file_cache[key] = ldraw_file
             ldraw_file = file_cache[key]
 
-            ldraw_node = LDrawNode(ldraw_file, color_code=color_code, matrix=matrix)
+            ldraw_node = LDrawNode(ldraw_file)
+            ldraw_node.color_code = color_code
+            ldraw_node.matrix = matrix
 
             # if any line in a model file is a subpart, treat that model as a part otherwise subparts are not parsed correctly
             # if subpart found, create new LDrawNode with those subparts and add that to child_nodes

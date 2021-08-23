@@ -14,7 +14,7 @@ from . import strings
 
 
 def do_import(filepath):
-    print(filepath)  # TODO: multiple filenames?
+    print(filepath)  # TODO: multiple filepaths?
     bpy.context.scene.eevee.use_ssr = True
     bpy.context.scene.eevee.use_ssr_refraction = True
     bpy.context.scene.eevee.use_taa_reprojection = True
