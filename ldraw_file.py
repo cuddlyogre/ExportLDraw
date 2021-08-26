@@ -13,6 +13,8 @@ from .ldraw_geometry import LDrawGeometry
 from .texmap import TexMap
 from . import ldraw_colors
 from . import ldraw_camera
+from . import texmap
+
 
 mpd_file_cache = {}
 file_cache = {}
@@ -105,9 +107,6 @@ def handle_mpd(filepath):
 
 
 class LDrawFile:
-    texmaps = []
-    texmap = None
-
     def __init__(self, filename):
         self.filename = filename
         self.filepath = None
@@ -291,9 +290,9 @@ class LDrawFile:
 
                         new_texmap = TexMap.parse_params(params)
                         if new_texmap is not None:
-                            if LDrawFile.texmap is not None:
-                                LDrawFile.texmaps.append(LDrawFile.texmap)
-                            LDrawFile.texmap = new_texmap
+                            if texmap.texmap is not None:
+                                texmap.texmaps.append(texmap.texmap)
+                            texmap.texmap = new_texmap
 
                     elif self.texmap_start:
                         if params[2].lower() in ["fallback"]:
@@ -330,10 +329,10 @@ class LDrawFile:
             self.child_nodes.append(ldraw_node)
 
     def set_texmap_end(self):
-        if len(LDrawFile.texmaps) < 1:
-            LDrawFile.texmap = None
+        if len(texmap.texmaps) < 1:
+            texmap.texmap = None
         else:
-            LDrawFile.texmap = LDrawFile.texmaps.pop()
+            texmap.texmap = texmap.texmaps.pop()
         self.texmap_start = False
         self.texmap_next = False
         self.texmap_fallback = False
@@ -377,8 +376,8 @@ class LDrawFile:
                 key.append("es")
             if ldraw_colors.use_alt_colors:
                 key.append("alt")
-            if LDrawFile.texmap is not None:
-                key.append(LDrawFile.texmap.id)
+            if texmap.texmap is not None:
+                key.append(texmap.texmap.id)
             key = "_".join([k.lower() for k in key])
             key = re.sub(r"[^a-z0-9._]", "-", key)
 
@@ -407,9 +406,9 @@ class LDrawFile:
             if self.is_like_model():
                 if self.extra_geometry is None:
                     self.extra_geometry = LDrawGeometry()
-                self.extra_geometry.parse_face(params, LDrawFile.texmap)
+                self.extra_geometry.parse_face(params, texmap.texmap)
             else:
-                self.geometry.parse_face(params, LDrawFile.texmap)
+                self.geometry.parse_face(params, texmap.texmap)
 
     # this allows shortcuts to be split into their individual parts if desired
     def is_like_model(self):

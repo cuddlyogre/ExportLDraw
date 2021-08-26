@@ -14,6 +14,7 @@ from . import strings
 from .face_info import FaceInfo
 from .face_data import FaceData
 from .ldraw_geometry import LDrawGeometry
+from . import texmap
 
 part_count = 0
 current_step = 0
@@ -450,6 +451,7 @@ class LDrawNode:
             matrix = matrices.identity
             self.top = True
             part_count += 1
+            texmap.reset_caches()  # or else the previous part's texmap is applied to this part
 
         if import_options.meta_group and next_collection is not None:
             file_collection = next_collection
