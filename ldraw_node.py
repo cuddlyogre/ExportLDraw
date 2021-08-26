@@ -12,7 +12,7 @@ from . import matrices
 from . import special_bricks
 from . import strings
 from .face_info import FaceInfo
-from .face_data import FaceData
+from .face_data import FaceData, EdgeData
 from .ldraw_geometry import LDrawGeometry
 from . import texmap
 
@@ -296,7 +296,7 @@ def build_edge_mesh(key, geometry):
     i = 0
     for ed in geometry.edge_data:
         matrix = ed.matrix
-        for edge in ed.face_vertices:
+        for edge in ed.edge_vertices:
             index = []
             for vertex in edge:
                 tv = matrix @ vertex
@@ -476,10 +476,10 @@ class LDrawNode:
                 ))
 
                 if (not is_edge_logo) or (is_edge_logo and import_options.display_logo):
-                    geometry.edge_data.append(FaceData(
+                    geometry.edge_data.append(EdgeData(
                         matrix=matrix,
                         color_code=parent_color_code,
-                        face_vertices=self.file.geometry.edge_vertices,
+                        edge_vertices=self.file.geometry.edge_vertices,
                     ))
 
             for child_node in self.file.child_nodes:
