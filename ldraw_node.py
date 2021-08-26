@@ -6,7 +6,6 @@ import bpy
 import mathutils
 
 from . import blender_materials
-from . import blender_mesh
 from . import import_options
 from . import ldraw_colors
 from . import matrices
@@ -119,11 +118,13 @@ def process_object(obj, parent_matrix, matrix):
     if import_options.meta_step:
         handle_meta_step(obj)
 
-    if import_options.smooth_type == "edge_split":
-        handle_edge_split(obj)
 
+def process_object_modifiers(obj):
     if import_options.bevel_edges:
         handle_bevel_edges(obj)
+
+    if import_options.smooth_type == "edge_split":
+        handle_edge_split(obj)
 
 
 def handle_bevel_edges(obj):
@@ -190,23 +191,29 @@ def set_object_matrix(obj, parent_matrix, matrix):
     matrices.set_matrix_world(obj, matrix_world)
 
 
-def process_edges(bm, geometry):
+def build_edge_indices(bm, geometry):
     # Create kd tree for fast "find nearest points" calculation
     # https://docs.blender.org/api/blender_python_api_current/mathutils.kdtree.html
     kd = mathutils.kdtree.KDTree(len(bm.verts))
     for i, v in enumerate(bm.verts):
         kd.insert(v.co, i)
     kd.balance()
+
     # Create edge_indices dictionary, which is the list of edges as pairs of indices into our verts array
     edge_indices = set()
     for i, edge in enumerate(geometry.edge_vertices):
-        distance = import_options.merge_distance * 2
+        distance = import_options.merge_distance
         edges0 = [index for (co, index, dist) in kd.find_range(edge[0], distance)]
         edges1 = [index for (co, index, dist) in kd.find_range(edge[1], distance)]
         for e0 in edges0:
             for e1 in edges1:
                 edge_indices.add((e0, e1))
                 edge_indices.add((e1, e0))
+    return edge_indices
+
+
+def process_edges(bm, geometry):
+    edge_indices = build_edge_indices(bm, geometry)
 
     # merge line type 2 edges at a greater distance than mesh edges
     merge = set()
@@ -259,12 +266,99 @@ def build_face_info(fi, parent_color_code):
 
 
 def build_bm_face(bm, fv, matrix):
-    _face = []
+    verts = []
     for vertex in fv:
         tv = matrix @ vertex
-        _face.append(bm.verts.new((tv[0], tv[1], tv[2])))
-    face = bm.faces.new(_face)
+        vert = (tv[0], tv[1], tv[2])
+        bm_vert = bm.verts.new(vert)
+        verts.append(bm_vert)
+    face = bm.faces.new(verts)
     return face
+
+
+def get_edge_mesh(key, filename, geometry):
+    key = f"e_{key}"
+    if key not in bpy.data.meshes:
+        mesh = build_edge_mesh(key, geometry)
+        mesh[strings.ldraw_filename_key] = filename
+        if import_options.make_gaps and import_options.gap_target == "mesh":
+            mesh.transform(matrices.scaled_matrix(import_options.gap_scale))
+    mesh = bpy.data.meshes[key]
+    return mesh
+
+
+def build_edge_mesh(key, geometry):
+    verts = []
+    edges = []
+    faces = []
+
+    i = 0
+    for ed in geometry.edge_data:
+        matrix = ed.matrix
+        for edge in ed.face_vertices:
+            index = []
+            for vertex in edge:
+                tv = matrix @ vertex
+                vert = (tv[0], tv[1], tv[2])
+                verts.append(vert)
+                index.append(i)
+                i += 1
+            faces.append(index)
+
+    mesh = bpy.data.meshes.new(key)
+    mesh.from_pydata(verts, edges, faces)
+    mesh.validate()
+    mesh.update(calc_edges=True)
+
+    return mesh
+
+
+def get_gp_mesh(key, mesh):
+    gp_key = f"gp_{key}"
+    if gp_key not in bpy.data.grease_pencils:
+        gp_mesh = bpy.data.grease_pencils.new(gp_key)
+
+        gp_mesh.pixel_factor = 5.0
+        gp_mesh.stroke_depth_order = "3D"
+
+        gp_layer = gp_mesh.layers.new("gpl")
+        gp_layer.line_change = 2
+
+        gp_frame = gp_layer.frames.new(1)
+        # gp_layer.active_frame = gp_frame
+
+        for e in mesh.edges:
+            gp_stroke = gp_frame.strokes.new()
+            gp_stroke.material_index = 0
+            gp_stroke.line_width = 10.0
+            for v in e.vertices:
+                i = len(gp_stroke.points)
+                gp_stroke.points.add(1)
+                gp_point = gp_stroke.points[i]
+                gp_point.co = mesh.vertices[v].co
+
+        apply_gp_materials(gp_mesh)
+    gp_mesh = bpy.data.grease_pencils[gp_key]
+    return gp_mesh
+
+
+# https://blender.stackexchange.com/a/166492
+def apply_gp_materials(gp_mesh):
+    color_code = "0"
+    color = ldraw_colors.get_color(color_code)
+
+    use_edge_color = True
+    base_material = blender_materials.get_material(color, use_edge_color=use_edge_color)
+    if base_material is None:
+        return
+
+    material_name = f"gp_{base_material.name}"
+    if material_name not in bpy.data.materials:
+        material = base_material.copy()
+        material.name = material_name
+        bpy.data.materials.create_gpencil_data(material)  # https://developer.blender.org/T67102
+    material = bpy.data.materials[material_name]
+    gp_mesh.materials.append(material)
 
 
 class LDrawNode:
@@ -380,12 +474,11 @@ class LDrawNode:
                 ))
 
                 if (not is_edge_logo) or (is_edge_logo and import_options.display_logo):
-                    for edge_vertices in self.file.geometry.edge_vertices:
-                        _edge = []
-                        for i, vertex in enumerate(edge_vertices):
-                            tv = matrix @ vertex
-                            _edge.append((tv[0], tv[1], tv[2]))
-                        geometry.edge_vertices.append(_edge)
+                    geometry.edge_data.append(FaceData(
+                        matrix=matrix,
+                        color_code=parent_color_code,
+                        face_vertices=self.file.geometry.edge_vertices,
+                    ))
 
             for child_node in self.file.child_nodes:
                 child_node.load(parent_matrix=matrix,
@@ -447,6 +540,7 @@ class LDrawNode:
 
             obj = do_create_object(mesh)
             process_object(obj, parent_matrix, self.matrix)
+            process_object_modifiers(obj)
             obj[strings.ldraw_filename_key] = self.file.name
 
             # https://b3d.interplanety.org/en/how-to-get-global-vertex-coordinates/
@@ -456,28 +550,33 @@ class LDrawNode:
             else:
                 bpy.context.scene.collection.objects.link(obj)
 
-            if import_options.import_edges:
-                edge_mesh = blender_mesh.get_edge_mesh(key, self.file.name, geometry)
+            if import_options.import_edges or import_options.grease_pencil_edges:
+                edge_mesh = get_edge_mesh(key, self.file.name, geometry)
 
-                obj = do_create_object(edge_mesh)
-                process_object(obj, parent_matrix, self.matrix)
-                obj[strings.ldraw_filename_key] = f"{self.file.name}_edges"
+                if import_options.import_edges:
+                    edge_obj = do_create_object(edge_mesh)
+                    process_object(edge_obj, parent_matrix, self.matrix)
+                    edge_obj.parent = obj
+                    edge_obj.matrix_world = obj.matrix_world
+                    edge_obj[strings.ldraw_filename_key] = f"{self.file.name}_edges"
 
-                if file_collection is not None:
-                    file_collection.objects.link(obj)
-                else:
-                    bpy.context.scene.collection.objects.link(obj)
+                    if file_collection is not None:
+                        file_collection.objects.link(edge_obj)
+                    else:
+                        bpy.context.scene.collection.objects.link(edge_obj)
 
                 if import_options.grease_pencil_edges:
-                    gp_mesh = blender_mesh.get_gp_mesh(key, edge_mesh)
+                    gp_mesh = get_gp_mesh(key, edge_mesh)
 
-                    gp_object = bpy.data.objects.new(key, gp_mesh)
-                    process_object(gp_object, parent_matrix, self.matrix)
-                    gp_object.active_material_index = len(gp_mesh.materials)
+                    gp_obj = bpy.data.objects.new(key, gp_mesh)
+                    process_object(gp_obj, parent_matrix, self.matrix)
+                    gp_obj.parent = obj
+                    gp_obj.matrix_world = obj.matrix_world
+                    gp_obj.active_material_index = len(gp_mesh.materials)
 
                     collection_name = "Grease Pencil Edges"
                     if collection_name not in bpy.data.collections:
                         collection = bpy.data.collections.new(collection_name)
                         bpy.context.scene.collection.children.link(collection)
                     collection = bpy.context.scene.collection.children[collection_name]
-                    collection.objects.link(gp_object)
+                    collection.objects.link(gp_obj)

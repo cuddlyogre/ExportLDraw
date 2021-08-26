@@ -15,7 +15,6 @@ if "bpy" in locals():
 
     importlib.reload(blender_camera)
     importlib.reload(blender_materials)
-    importlib.reload(blender_mesh)
     importlib.reload(blender_import)
     importlib.reload(downloader)
     importlib.reload(face_info)
@@ -39,7 +38,6 @@ if "bpy" in locals():
 else:
     from . import blender_camera
     from . import blender_materials
-    from . import blender_mesh
     from . import blender_import
     from . import downloader
     from . import face_info
