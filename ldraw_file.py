@@ -116,7 +116,7 @@ class LDrawFile:
         self.geometry = LDrawGeometry()
         self.part_type = None
         self.lines = []
-        self.extra_child_nodes = []
+        self.extra_child_nodes = None
         self.extra_geometry = None
         self.texmap_start = False
         self.texmap_next = False
@@ -315,14 +315,14 @@ class LDrawFile:
         if self.name == "":
             self.name = os.path.basename(self.filename)
 
-        if self.extra_geometry is not None:
+        if self.extra_geometry is not None or self.extra_child_nodes is not None:
             filename = f"{self.name}_extra"
             if filename not in file_cache:
                 ldraw_file = LDrawFile(filename)
                 ldraw_file.name = filename
                 ldraw_file.part_type = "part"
-                ldraw_file.child_nodes = self.extra_child_nodes
-                ldraw_file.geometry = self.extra_geometry
+                ldraw_file.child_nodes = (self.extra_child_nodes or [])
+                ldraw_file.geometry = (self.extra_geometry or LDrawGeometry())
                 file_cache[filename] = ldraw_file
             ldraw_file = file_cache[filename]
             ldraw_node = LDrawNode(ldraw_file)
@@ -394,11 +394,11 @@ class LDrawFile:
             ldraw_node.color_code = color_code
             ldraw_node.matrix = matrix
 
-            # if any line in a model file is a subpart, treat that model as a part otherwise subparts are not parsed correctly
+            # if any line in a model file is a subpart, treat that model as a part, otherwise subparts are not parsed correctly
             # if subpart found, create new LDrawNode with those subparts and add that to child_nodes
-            if self.is_like_model() and ldraw_node.file.is_subpart():
-                if self.extra_geometry is None:
-                    self.extra_geometry = LDrawGeometry()
+            if self.is_like_model() and ldraw_file.is_subpart():
+                if self.extra_child_nodes is None:
+                    self.extra_child_nodes = []
                 self.extra_child_nodes.append(ldraw_node)
             else:
                 self.child_nodes.append(ldraw_node)
