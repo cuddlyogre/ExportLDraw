@@ -7,7 +7,7 @@ from . import import_options
 
 def look_at(obj, target_location, up_vector):
     # back vector is a vector pointing from the target to the camera
-    back = matrices.Vector(list(obj.location)) - target_location
+    back = matrices.Vector((obj.location[0], obj.location[1], obj.location[2])) - target_location
     back = matrices.normalize(back)
 
     # If our back and up vectors are very close to pointing the same way (or opposite), choose a different up_vector
