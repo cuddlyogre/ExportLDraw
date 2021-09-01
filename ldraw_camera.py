@@ -1,4 +1,4 @@
-from . import matrices
+import mathutils
 
 cameras = []
 
@@ -17,7 +17,7 @@ class LDrawCamera:
         self.fov = 30.0
         self.z_near = 1.0
         self.z_far = 10000.0
-        self.position = matrices.Vector((0.0, 0.0, 0.0))
-        self.target_position = matrices.Vector((1.0, 0.0, 0.0))
-        self.up_vector = matrices.Vector((0.0, 1.0, 0.0))
+        self.position = mathutils.Vector((0.0, 0.0, 0.0))
+        self.target_position = mathutils.Vector((1.0, 0.0, 0.0))
+        self.up_vector = mathutils.Vector((0.0, 1.0, 0.0))
         self.name = "Camera"

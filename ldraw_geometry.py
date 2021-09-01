@@ -1,5 +1,6 @@
+import mathutils
+
 from . import import_options
-from . import matrices
 from . import face_info
 
 
@@ -20,7 +21,7 @@ class LDrawGeometry:
             x = float(params[i * 3 + 2])
             y = float(params[i * 3 + 3])
             z = float(params[i * 3 + 4])
-            vertex = matrices.Vector4((x, y, z))
+            vertex = mathutils.Vector((x, y, z))
             face.append(vertex)
 
         if vert_count == 2:

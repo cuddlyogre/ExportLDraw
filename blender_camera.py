@@ -1,39 +1,38 @@
 import bpy
 import math
+import mathutils
 
-from . import matrices
 from . import import_options
 
 
 def look_at(obj, target_location, up_vector):
     # back vector is a vector pointing from the target to the camera
-    back = matrices.Vector((obj.location[0], obj.location[1], obj.location[2])) - target_location
-    back = matrices.normalize(back)
+    back = obj.location - target_location
+    back = back.normalized()
 
     # If our back and up vectors are very close to pointing the same way (or opposite), choose a different up_vector
-    if abs(matrices.dot(back, up_vector)) > 0.9999:
-        up_vector = matrices.Vector((0.0, 0.0, 1.0))
-        if abs(matrices.dot(back, up_vector)) > 0.9999:
-            up_vector = matrices.Vector((1.0, 0.0, 0.0))
+    if abs(back.dot(up_vector)) > 0.9999:
+        up_vector = mathutils.Vector((0.0, 0.0, 1.0))
+        if abs(back.dot(up_vector)) > 0.9999:
+            up_vector = mathutils.Vector((1.0, 0.0, 0.0))
 
-    right = matrices.cross(up_vector, back)
-    right = matrices.normalize(right)
+    right = up_vector.cross(back)
+    right = right.normalized()
 
-    up = matrices.cross(back, right)
-    up = matrices.normalize(up)
+    up = back.cross(right)
+    up = up.normalized()
 
     row1 = [right[0], up[0], back[0], obj.location[0]]
     row2 = [right[1], up[1], back[1], obj.location[1]]
     row3 = [right[2], up[2], back[2], obj.location[2]]
     row4 = [0.0, 0.0, 0.0, 1.0]
 
-    matrix_world = matrices.Matrix((
+    obj.matrix_world = mathutils.Matrix((
         row1,
         row2,
         row3,
         row4
     ))
-    matrices.set_matrix_world(obj, matrix_world)
 
 
 def create_camera(camera, empty=None, collection=None):
@@ -63,7 +62,7 @@ def create_camera(camera, empty=None, collection=None):
 
     if camera.orthographic:
         distance = camera.position - camera.target_position
-        dist_target_to_camera = matrices.length(distance)
+        dist_target_to_camera = distance.length
         blender_camera.ortho_scale = dist_target_to_camera / 1.92
         blender_camera.type = "ORTHO"
     else:

@@ -408,7 +408,7 @@ def is_slope_part(part_number):
 
 
 def normal_to_angle(normal):
-    normal = matrices.normalize(normal)
+    normal = normal.normalized()
 
     # Clamp value to range -1 to 1 (ensure we are in the strict range of the acos function, taking account of rounding errors)
     cosine = min(max(normal.y, -1.0), 1.0)

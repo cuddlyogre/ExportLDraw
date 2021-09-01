@@ -168,21 +168,21 @@ def handle_meta_step(obj):
 
 def set_parented_object_matrix(obj, parent_matrix, matrix):
     matrix_world = matrices.identity @ matrices.rotation @ matrices.scaled_matrix(import_options.import_scale)
-    matrices.set_matrix_world(top_empty, matrix_world)
+    top_empty.matrix_world = matrix_world
 
     matrix_world = parent_matrix @ matrix
-    matrices.set_matrix_world(obj, matrix_world)
+    obj.matrix_world = matrix_world
 
     if import_options.make_gaps and import_options.gap_target == "object":
         if import_options.gap_scale_strategy == "object":
-            matrix_world = matrices.mt4(obj.matrix_world) @ matrices.scaled_matrix(import_options.gap_scale)
-            matrices.set_matrix_world(obj, matrix_world)
+            matrix_world = obj.matrix_world @ matrices.scaled_matrix(import_options.gap_scale)
+            obj.matrix_world = matrix_world
         elif import_options.gap_scale_strategy == "constraint":
             global gap_scale_empty
             if gap_scale_empty is None and top_collection is not None:
                 gap_scale_empty = bpy.data.objects.new("gap_scale", None)
-                matrix_world = matrices.mt4(gap_scale_empty.matrix_world) @ matrices.scaled_matrix(import_options.gap_scale)
-                matrices.set_matrix_world(gap_scale_empty, matrix_world)
+                matrix_world = gap_scale_empty.matrix_world @ matrices.scaled_matrix(import_options.gap_scale)
+                gap_scale_empty.matrix_world = matrix_world
                 top_collection.objects.link(gap_scale_empty)
             copy_scale_constraint = obj.constraints.new("COPY_SCALE")
             copy_scale_constraint.target = gap_scale_empty
@@ -195,7 +195,7 @@ def set_object_matrix(obj, parent_matrix, matrix):
     matrix_world = matrix_world @ parent_matrix @ matrix
     if import_options.make_gaps and import_options.gap_target == "object":
         matrix_world = matrix_world @ matrices.scaled_matrix(import_options.gap_scale)
-    matrices.set_matrix_world(obj, matrix_world)
+    obj.matrix_world = matrix_world
 
 
 def sharpen_edges(bm, geometry):
@@ -216,8 +216,7 @@ def sharpen_edges(bm, geometry):
         for edge in ed.edge_vertices:
             verts = []
             for vertex in edge:
-                tv = matrix @ vertex
-                vert = matrices.Vector((tv[0], tv[1], tv[2]))
+                vert = matrix @ vertex
                 verts.append(vert)
             edges0 = [index for (co, index, dist) in kd.find_range(verts[0], distance)]
             edges1 = [index for (co, index, dist) in kd.find_range(verts[1], distance)]
@@ -276,11 +275,8 @@ def get_mesh(key, file, geometry):
         if import_options.recalculate_normals:
             bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
 
-        # TODO: sharpen_edges
-        # use get_edge_mesh vertices
         # bpy.context.object.data.edges[6].use_edge_sharp = True
         if import_options.sharpen_edges:
-            # pass
             sharpen_edges(bm, geometry)
 
         if import_options.bevel_edges:
@@ -334,8 +330,7 @@ def build_face_info(fi, parent_color_code):
 def build_bm_face(bm, fv, matrix):
     verts = []
     for vertex in fv:
-        tv = matrix @ vertex
-        vert = (tv[0], tv[1], tv[2])
+        vert = matrix @ vertex
         bm_vert = bm.verts.new(vert)
         verts.append(bm_vert)
     face = bm.faces.new(verts)
@@ -364,8 +359,7 @@ def build_edge_mesh(key, geometry):
         for edge in ed.edge_vertices:
             index = []
             for vertex in edge:
-                tv = matrix @ vertex
-                vert = (tv[0], tv[1], tv[2])
+                vert = matrix @ vertex
                 verts.append(vert)
                 index.append(i)
                 i += 1

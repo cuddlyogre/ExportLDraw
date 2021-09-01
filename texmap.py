@@ -1,9 +1,8 @@
 import math
+import mathutils
 import uuid
 import base64
 import os
-
-from . import matrices
 
 texmaps = []
 texmap = None
@@ -38,9 +37,9 @@ class TexMap:
             new_texmap = TexMap(
                 method=params[3].lower(),
                 parameters=[
-                    matrices.Vector((x1, y1, z1)),
-                    matrices.Vector((x2, y2, z2)),
-                    matrices.Vector((x3, y3, z3)),
+                    mathutils.Vector((x1, y1, z1)),
+                    mathutils.Vector((x2, y2, z2)),
+                    mathutils.Vector((x3, y3, z3)),
                 ],
                 texture=params[13],
                 glossmap=params[14],
@@ -50,9 +49,9 @@ class TexMap:
             new_texmap = TexMap(
                 method=params[3].lower(),
                 parameters=[
-                    matrices.Vector((x1, y1, z1)),
-                    matrices.Vector((x2, y2, z2)),
-                    matrices.Vector((x3, y3, z3)),
+                    mathutils.Vector((x1, y1, z1)),
+                    mathutils.Vector((x2, y2, z2)),
+                    mathutils.Vector((x3, y3, z3)),
                     a,
                 ],
                 texture=params[14],
@@ -63,9 +62,9 @@ class TexMap:
             new_texmap = TexMap(
                 method=params[3].lower(),
                 parameters=[
-                    matrices.Vector((x1, y1, z1)),
-                    matrices.Vector((x2, y2, z2)),
-                    matrices.Vector((x3, y3, z3)),
+                    mathutils.Vector((x1, y1, z1)),
+                    mathutils.Vector((x2, y2, z2)),
+                    mathutils.Vector((x3, y3, z3)),
                     a,
                     b,
                 ],
@@ -92,13 +91,13 @@ class TexMap:
         bc = c - b
         ac = c - a
 
-        texmap_cross = matrices.cross(ab, ac)
-        texmap_normal = texmap_cross / matrices.length(texmap_cross)
+        texmap_cross = ab.cross(ac)
+        texmap_normal = texmap_cross / texmap_cross.length
 
-        p1_length = matrices.length(ab)
+        p1_length = ab.length
         p1_normal = ab / p1_length
 
-        p2_length = matrices.length(ac)
+        p2_length = ac.length
         p2_normal = ac / p2_length
 
         # https://blender.stackexchange.com/a/53808
@@ -114,11 +113,11 @@ class TexMap:
         # TODO: UV PROJECT HERE
         uv_layer = bm.loops.layers.uv.verify()
         for loop in face.loops:
-            p = matrices.Vector((loop.vert.co[0], loop.vert.co[1], loop.vert.co[2]))
+            p = loop.vert.co
             p_str = str(p)
             if p_str not in self.uvs:
-                du = matrices.dot(p1_normal, p - a) / p1_length
-                dv = matrices.dot(p2_normal, p - c) / p2_length
+                du = p1_normal.dot(p - a) / p1_length
+                dv = p2_normal.dot(p - c) / p2_length
                 # - up_length to move uv to bottom left in blender
                 uv = [du, -dv]
                 self.uvs[p_str] = uv
@@ -132,26 +131,26 @@ class TexMap:
         angle1 = self.parameters[3]
 
         up = a - b
-        up_length = matrices.length(up)
-        front = matrices.normalize(c - b)
+        up_length = up.length
+        front = (c - b).normalized()
         plane_1_normal = up / up_length
-        plane_2_normal = matrices.normalize(matrices.cross(front, up))
-        front_plane = matrices.Vector(tuple(front) + (matrices.dot(-front, b),))
+        plane_2_normal = front.cross(up).normalized()
+        front_plane = mathutils.Vector(tuple(front) + (-front.dot(b),))
         up_length = up_length
-        plane_1 = matrices.Vector(tuple(plane_1_normal) + (matrices.dot(-plane_1_normal, b),))
-        plane_2 = matrices.Vector(tuple(plane_2_normal) + (matrices.dot(-plane_2_normal, b),))
+        plane_1 = mathutils.Vector(tuple(plane_1_normal) + (-plane_1_normal.dot(b),))
+        plane_2 = mathutils.Vector(tuple(plane_2_normal) + (-plane_2_normal.dot(b),))
         angle_1 = 360.0 / angle1
 
         uv_layer = bm.loops.layers.uv.verify()
         for loop in face.loops:
-            p = matrices.Vector((loop.vert.co[0], loop.vert.co[1], loop.vert.co[2]))
+            p = loop.vert.co
             p_str = str(p)
             if p_str not in self.uvs:
                 # - up_length to move uv to bottom left in blender
-                dot_plane_1 = matrices.dot(matrices.Vector((p[0], p[1] - up_length, p[2],) + (1.0,)), plane_1)
-                point_in_plane_1 = p - matrices.Vector((plane_1[0], plane_1[1], plane_1[2],)) * dot_plane_1
-                dot_front_plane = matrices.dot(matrices.Vector((point_in_plane_1[0], point_in_plane_1[1], point_in_plane_1[2],) + (1.0,)), front_plane)
-                dot_plane_2 = matrices.dot(matrices.Vector(tuple(point_in_plane_1) + (1.0,)), plane_2)
+                dot_plane_1 = mathutils.Vector((p[0], p[1] - up_length, p[2],) + (1.0,)).dot(plane_1)
+                point_in_plane_1 = p - mathutils.Vector((plane_1[0], plane_1[1], plane_1[2],)) * dot_plane_1
+                dot_front_plane = point_in_plane_1.dot(front_plane)
+                dot_plane_2 = mathutils.Vector(tuple(point_in_plane_1) + (1.0,)).dot(plane_2)
 
                 _angle_1 = math.atan2(dot_plane_2, dot_front_plane) / math.pi * angle_1
                 du = self.clamp(0.5 + 0.5 * _angle_1, 0, 1)
@@ -168,31 +167,31 @@ class TexMap:
         angle1 = self.parameters[3]
         angle2 = self.parameters[4]
 
-        front = matrices.normalize(b - a)
-        plane_1_normal = matrices.normalize(matrices.cross(front, c - a))
-        plane_2_normal = matrices.normalize(matrices.cross(plane_1_normal, front))
-        front_plane = matrices.Vector(tuple(front) + (matrices.dot(-front, a),))
+        front = (b - a).normalized()
+        plane_1_normal = front.cross(c - a).normalized()
+        plane_2_normal = plane_1_normal.cross(front).normalized()
+        front_plane = mathutils.Vector(tuple(front) + (-front.dot(a),))
         center = a
-        plane_1 = matrices.Vector(tuple(plane_1_normal) + (matrices.dot(-plane_1_normal, a),))
-        plane_2 = matrices.Vector(tuple(plane_2_normal) + (matrices.dot(-plane_2_normal, a),))
+        plane_1 = mathutils.Vector(tuple(plane_1_normal) + (-plane_1_normal.dot(a),))
+        plane_2 = mathutils.Vector(tuple(plane_2_normal) + (-plane_2_normal.dot(a),))
         angle_1 = 360.0 / angle1
         angle_2 = 180.0 / angle2
 
         uv_layer = bm.loops.layers.uv.verify()
         for loop in face.loops:
-            p = matrices.Vector((loop.vert.co[0], loop.vert.co[1], loop.vert.co[2]))
+            p = loop.vert.co
             p_str = str(p)
             if p_str not in self.uvs:
                 vertex_direction = p - center
 
-                dot_plane_1 = matrices.dot(matrices.Vector((p[0], p[1], p[2],) + (1.0,)), plane_1)
-                point_in_plane_1 = p - matrices.Vector((plane_1[0], plane_1[1], plane_1[2],)) * dot_plane_1
-                dot_front_plane = matrices.dot(matrices.Vector((point_in_plane_1[0], point_in_plane_1[1], point_in_plane_1[2],) + (1.0,)), front_plane)
-                dot_plane_2 = matrices.dot(matrices.Vector(tuple(point_in_plane_1) + (1.0,)), plane_2)
+                dot_plane_1 = mathutils.Vector((p[0], p[1], p[2],) + (1.0,)).dot(plane_1)
+                point_in_plane_1 = p - mathutils.Vector((plane_1[0], plane_1[1], plane_1[2],)) * dot_plane_1
+                dot_front_plane = point_in_plane_1.dot(front_plane)
+                dot_plane_2 = point_in_plane_1.dot(plane_2)
 
                 _angle_1 = math.atan2(dot_plane_2, dot_front_plane) / math.pi * angle_1
                 du = 0.5 + 0.5 * _angle_1
-                _angle_2 = math.asin(dot_plane_1 / matrices.length(vertex_direction)) / math.pi * angle_2
+                _angle_2 = math.asin(dot_plane_1 / vertex_direction.length) / math.pi * angle_2
                 # -0.5 instead of 0.5 to move uv to bottom left in blender
                 dv = -0.5 - _angle_2
 
