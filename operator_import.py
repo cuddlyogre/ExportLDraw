@@ -327,6 +327,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
 
     treat_shortcut_as_model: bpy.props.BoolProperty(
         name="Treat shortcuts as models",
+        options={'HIDDEN'},
         description="Split shortcut parts into their constituent pieces as if they were models",
         default=get_setting('treat_shortcut_as_model'),
     )
@@ -511,7 +512,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         box.prop(self, "set_timelime_markers")
 
         box.label(text="Extras")
-        box.prop(self, "treat_shortcut_as_model")
+        # box.prop(self, "treat_shortcut_as_model")
         box.prop(self, "prefer_unofficial")
         box.prop(self, "bevel_edges")
         box.prop(self, "no_studs")

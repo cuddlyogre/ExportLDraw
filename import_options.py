@@ -26,7 +26,7 @@ defaults['import_edges'] = False
 defaults['grease_pencil_edges'] = False
 defaults['import_scale'] = 0.02
 defaults['parent_to_empty'] = True  # True False
-defaults['treat_shortcut_as_model'] = False
+defaults['treat_shortcut_as_model'] = True  # False TODO: parent to empty at median of group
 defaults['sharpen_edges'] = True
 defaults['instancing'] = False
 
