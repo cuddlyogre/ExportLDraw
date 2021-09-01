@@ -27,6 +27,7 @@ class TexMap:
         self.parameters = parameters
         self.texture = texture
         self.glossmap = glossmap
+        self.uvs = dict()
 
     # TexMap.parse_params(params)
     @staticmethod
@@ -114,10 +115,14 @@ class TexMap:
         uv_layer = bm.loops.layers.uv.verify()
         for loop in face.loops:
             p = matrices.Vector((loop.vert.co[0], loop.vert.co[1], loop.vert.co[2]))
-            du = matrices.dot(p1_normal, p - a) / p1_length
-            dv = matrices.dot(p2_normal, p - c) / p2_length
-            # - up_length to move uv to bottom left in blender
-            uv = [du, -dv]
+            p_str = str(p)
+            if p_str not in self.uvs:
+                du = matrices.dot(p1_normal, p - a) / p1_length
+                dv = matrices.dot(p2_normal, p - c) / p2_length
+                # - up_length to move uv to bottom left in blender
+                uv = [du, -dv]
+                self.uvs[p_str] = uv
+            uv = self.uvs[p_str]
             loop[uv_layer].uv = uv
 
     def map_cylindrical(self, bm, face):
@@ -140,16 +145,20 @@ class TexMap:
         uv_layer = bm.loops.layers.uv.verify()
         for loop in face.loops:
             p = matrices.Vector((loop.vert.co[0], loop.vert.co[1], loop.vert.co[2]))
-            # - up_length to move uv to bottom left in blender
-            dot_plane_1 = matrices.dot(matrices.Vector((p[0], p[1] - up_length, p[2],) + (1.0,)), plane_1)
-            point_in_plane_1 = p - matrices.Vector((plane_1[0], plane_1[1], plane_1[2],)) * dot_plane_1
-            dot_front_plane = matrices.dot(matrices.Vector((point_in_plane_1[0], point_in_plane_1[1], point_in_plane_1[2],) + (1.0,)), front_plane)
-            dot_plane_2 = matrices.dot(matrices.Vector(tuple(point_in_plane_1) + (1.0,)), plane_2)
+            p_str = str(p)
+            if p_str not in self.uvs:
+                # - up_length to move uv to bottom left in blender
+                dot_plane_1 = matrices.dot(matrices.Vector((p[0], p[1] - up_length, p[2],) + (1.0,)), plane_1)
+                point_in_plane_1 = p - matrices.Vector((plane_1[0], plane_1[1], plane_1[2],)) * dot_plane_1
+                dot_front_plane = matrices.dot(matrices.Vector((point_in_plane_1[0], point_in_plane_1[1], point_in_plane_1[2],) + (1.0,)), front_plane)
+                dot_plane_2 = matrices.dot(matrices.Vector(tuple(point_in_plane_1) + (1.0,)), plane_2)
 
-            _angle_1 = math.atan2(dot_plane_2, dot_front_plane) / math.pi * angle_1
-            du = self.clamp(0.5 + 0.5 * _angle_1, 0, 1)
-            dv = dot_plane_1 / up_length
-            uv = [du, -dv]
+                _angle_1 = math.atan2(dot_plane_2, dot_front_plane) / math.pi * angle_1
+                du = self.clamp(0.5 + 0.5 * _angle_1, 0, 1)
+                dv = dot_plane_1 / up_length
+                uv = [du, -dv]
+                self.uvs[p_str] = uv
+            uv = self.uvs[p_str]
             loop[uv_layer].uv = uv
 
     def map_spherical(self, bm, face):
@@ -172,20 +181,24 @@ class TexMap:
         uv_layer = bm.loops.layers.uv.verify()
         for loop in face.loops:
             p = matrices.Vector((loop.vert.co[0], loop.vert.co[1], loop.vert.co[2]))
-            vertex_direction = p - center
+            p_str = str(p)
+            if p_str not in self.uvs:
+                vertex_direction = p - center
 
-            dot_plane_1 = matrices.dot(matrices.Vector((p[0], p[1], p[2],) + (1.0,)), plane_1)
-            point_in_plane_1 = p - matrices.Vector((plane_1[0], plane_1[1], plane_1[2],)) * dot_plane_1
-            dot_front_plane = matrices.dot(matrices.Vector((point_in_plane_1[0], point_in_plane_1[1], point_in_plane_1[2],) + (1.0,)), front_plane)
-            dot_plane_2 = matrices.dot(matrices.Vector(tuple(point_in_plane_1) + (1.0,)), plane_2)
+                dot_plane_1 = matrices.dot(matrices.Vector((p[0], p[1], p[2],) + (1.0,)), plane_1)
+                point_in_plane_1 = p - matrices.Vector((plane_1[0], plane_1[1], plane_1[2],)) * dot_plane_1
+                dot_front_plane = matrices.dot(matrices.Vector((point_in_plane_1[0], point_in_plane_1[1], point_in_plane_1[2],) + (1.0,)), front_plane)
+                dot_plane_2 = matrices.dot(matrices.Vector(tuple(point_in_plane_1) + (1.0,)), plane_2)
 
-            _angle_1 = math.atan2(dot_plane_2, dot_front_plane) / math.pi * angle_1
-            du = 0.5 + 0.5 * _angle_1
-            _angle_2 = math.asin(dot_plane_1 / matrices.length(vertex_direction)) / math.pi * angle_2
-            # -0.5 instead of 0.5 to move uv to bottom left in blender
-            dv = -0.5 - _angle_2
+                _angle_1 = math.atan2(dot_plane_2, dot_front_plane) / math.pi * angle_1
+                du = 0.5 + 0.5 * _angle_1
+                _angle_2 = math.asin(dot_plane_1 / matrices.length(vertex_direction)) / math.pi * angle_2
+                # -0.5 instead of 0.5 to move uv to bottom left in blender
+                dv = -0.5 - _angle_2
 
-            uv = [du, -dv]
+                uv = [du, -dv]
+                self.uvs[p_str] = uv
+            uv = self.uvs[p_str]
             loop[uv_layer].uv = uv
 
     def clamp(self, num, min_value, max_value):
