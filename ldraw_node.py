@@ -392,7 +392,7 @@ def bmesh_ops(mesh):
     bm.free()
 
 
-def get_gp_mesh(key, mesh):
+def get_gp_mesh(key, mesh, color_code):
     gp_key = f"gp_{key}"
     if gp_key not in bpy.data.grease_pencils:
         gp_mesh = bpy.data.grease_pencils.new(gp_key)
@@ -416,16 +416,14 @@ def get_gp_mesh(key, mesh):
                 gp_point = gp_stroke.points[i]
                 gp_point.co = mesh.vertices[v].co
 
-        apply_gp_materials(gp_mesh)
+        apply_gp_materials(gp_mesh, color_code)
     gp_mesh = bpy.data.grease_pencils[gp_key]
     return gp_mesh
 
 
 # https://blender.stackexchange.com/a/166492
-def apply_gp_materials(gp_mesh):
-    color_code = "0"
+def apply_gp_materials(gp_mesh, color_code):
     color = ldraw_colors.get_color(color_code)
-
     use_edge_color = True
     base_material = blender_materials.get_material(color, use_edge_color=use_edge_color)
     if base_material is None:
@@ -436,6 +434,7 @@ def apply_gp_materials(gp_mesh):
         material = base_material.copy()
         material.name = material_name
         bpy.data.materials.create_gpencil_data(material)  # https://developer.blender.org/T67102
+        material.grease_pencil.color = color.edge_color + (1.0,)
     material = bpy.data.materials[material_name]
     gp_mesh.materials.append(material)
 
@@ -602,7 +601,7 @@ class LDrawNode:
                         bpy.context.scene.collection.objects.link(edge_obj)
 
                 if import_options.grease_pencil_edges:
-                    gp_mesh = get_gp_mesh(key, edge_mesh)
+                    gp_mesh = get_gp_mesh(key, edge_mesh, self.color_code)
 
                     gp_obj = bpy.data.objects.new(key, gp_mesh)
                     process_object(gp_obj, parent_matrix, self.matrix)
