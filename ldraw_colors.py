@@ -177,18 +177,17 @@ class LdrawColor:
         name = params[2]
         color_code = params[4]
 
-        linear_rgba = hex_digits_to_linear_rgba(params[6][1:], 1.0)
-        alpha = linear_rgba[3]
-        linear_rgba = srgb_to_linear_rgb(linear_rgba[0:3])
+        rgba = hex_digits_to_linear_rgba(params[6][1:], 1.0)
+        rgba_linear = srgb_to_linear_rgb(rgba[0:3])
 
-        lineaer_rgba_edge = hex_digits_to_linear_rgba(params[8][1:], 1.0)
-        lineaer_rgba_edge = srgb_to_linear_rgb(lineaer_rgba_edge[0:3])
+        e_rgba = hex_digits_to_linear_rgba(params[8][1:], 1.0)
+        e_rgba_lineaer = srgb_to_linear_rgb(e_rgba[0:3])
 
         self.name = name
         self.code = color_code
-        self.color = linear_rgba
-        self.alpha = alpha
-        self.edge_color = lineaer_rgba_edge
+        self.color = rgba_linear
+        self.edge_color = e_rgba_lineaer
+        self.alpha = 1.0
         self.luminance = 0.0
         self.material = "BASIC"
 
@@ -206,6 +205,9 @@ class LdrawColor:
 
         if "RUBBER" in params:
             self.material = "RUBBER"
+
+        if "MATTE_METALLIC" in params:
+            self.material = "MATTE_METALLIC"
 
         if "METAL" in params:
             self.material = "METAL"
