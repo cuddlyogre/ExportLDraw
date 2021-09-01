@@ -11,21 +11,9 @@ def create_blender_node_groups():
     this_script_dir = os.path.dirname(os.path.realpath(__file__))
     path = os.path.join(this_script_dir, 'materials', 'all_monkeys.blend')
     with bpy.data.libraries.load(path, link=False) as (data_from, data_to):
-        data_to.materials = data_from.materials
-    for node_group in data_to.materials:
+        data_to.node_groups = data_from.node_groups
+    for node_group in data_to.node_groups:
         node_group.use_fake_user = True
-
-
-def get_material(color, use_edge_color=False, part_slopes=None, texmap=None):
-    key = get_key(color, use_edge_color, part_slopes, texmap)
-
-    # Reuse current material if it exists, otherwise create a new material
-    if key in bpy.data.materials:
-        return bpy.data.materials[key]
-
-    material = __create_node_based_material(key, color, use_edge_color=use_edge_color, part_slopes=part_slopes, texmap=texmap)
-
-    return material
 
 
 def get_key(color, use_edge_color, part_slopes, texmap):
@@ -48,6 +36,17 @@ def get_key(color, use_edge_color, part_slopes, texmap):
     key.append(suffix)
     key = " ".join(key)
     return key
+
+
+def get_material(color, use_edge_color=False, part_slopes=None, texmap=None):
+    key = get_key(color, use_edge_color, part_slopes, texmap)
+
+    # Reuse current material if it exists, otherwise create a new material
+    if key in bpy.data.materials:
+        return bpy.data.materials[key]
+
+    material = __create_node_based_material(key, color, use_edge_color=use_edge_color, part_slopes=part_slopes, texmap=texmap)
+    return material
 
 
 def __create_node_based_material(key, color, use_edge_color=False, part_slopes=None, texmap=None):
