@@ -13,7 +13,7 @@ from . import special_bricks
 from . import strings
 from .face_info import FaceInfo
 from .face_data import FaceData, EdgeData
-from .ldraw_geometry import LDrawGeometry
+from .ldraw_geometry import LDrawGeometryData
 from . import texmap
 
 part_count = 0
@@ -26,6 +26,12 @@ gap_scale_empty = None
 collection_id_map = {}
 next_collection = None
 end_next_collection = False
+
+# TODO: sharpen_edges
+auto_smooth_angle = 89.9  # 1.56905 - 89.9 so 90 degrees and up are affected
+auto_smooth_angle = 51.1
+auto_smooth_angle = 31
+auto_smooth_angle = 44.97
 
 
 def reset_caches():
@@ -140,7 +146,7 @@ def handle_bevel_edges(obj):
 def handle_edge_split(obj):
     edge_modifier = obj.modifiers.new("Edge Split", type='EDGE_SPLIT')
     edge_modifier.use_edge_angle = True
-    edge_modifier.split_angle = math.radians(89.9)  # 1.56905 - 89.9 so 90 degrees and up are affected
+    edge_modifier.split_angle = auto_smooth_angle
     edge_modifier.use_edge_sharp = True
 
 
@@ -192,7 +198,7 @@ def set_object_matrix(obj, parent_matrix, matrix):
     matrices.set_matrix_world(obj, matrix_world)
 
 
-def build_edge_indices(bm, geometry):
+def sharpen_edges(bm, geometry):
     # Create kd tree for fast "find nearest points" calculation
     # https://docs.blender.org/api/blender_python_api_current/mathutils.kdtree.html
     kd = mathutils.kdtree.KDTree(len(bm.verts))
@@ -200,21 +206,25 @@ def build_edge_indices(bm, geometry):
         kd.insert(v.co, i)
     kd.balance()
 
+    distance = import_options.merge_distance * 2
+
     # Create edge_indices dictionary, which is the list of edges as pairs of indices into our verts array
     edge_indices = set()
-    for i, edge in enumerate(geometry.edge_vertices):
-        distance = import_options.merge_distance
-        edges0 = [index for (co, index, dist) in kd.find_range(edge[0], distance)]
-        edges1 = [index for (co, index, dist) in kd.find_range(edge[1], distance)]
-        for e0 in edges0:
-            for e1 in edges1:
-                edge_indices.add((e0, e1))
-                edge_indices.add((e1, e0))
-    return edge_indices
-
-
-def process_edges(bm, geometry):
-    edge_indices = build_edge_indices(bm, geometry)
+    # edge_data
+    for ed in geometry.edge_data:
+        matrix = ed.matrix
+        for edge in ed.edge_vertices:
+            verts = []
+            for vertex in edge:
+                tv = matrix @ vertex
+                vert = matrices.Vector((tv[0], tv[1], tv[2]))
+                verts.append(vert)
+            edges0 = [index for (co, index, dist) in kd.find_range(verts[0], distance)]
+            edges1 = [index for (co, index, dist) in kd.find_range(verts[1], distance)]
+            for e0 in edges0:
+                for e1 in edges1:
+                    edge_indices.add((e0, e1))
+                    edge_indices.add((e1, e0))
 
     # merge line type 2 edges at a greater distance than mesh edges
     merge = set()
@@ -235,7 +245,62 @@ def process_edges(bm, geometry):
             if bevel_weight_layer is not None:
                 bevel_wight = 1.0
                 edge[bevel_weight_layer] = bevel_wight
-    bmesh.ops.remove_doubles(bm, verts=list(merge), dist=import_options.merge_distance * 2)
+
+    # if it was detected as a edge, the merge those vertices
+    bmesh.ops.remove_doubles(bm, verts=list(merge), dist=distance)
+
+
+def get_mesh(key, file, geometry):
+    if key not in bpy.data.meshes:
+        bm = bmesh.new()
+
+        mesh = bpy.data.meshes.new(key)
+        mesh.name = key
+        mesh[strings.ldraw_filename_key] = file.name
+
+        # TODO: move uv unwrap to after obj[strings.ldraw_filename_key] = self.file.name
+        for fd in geometry.face_data:
+            # fd.face_vertices.reverse()
+            for i, fv in enumerate(fd.face_vertices):
+                face = build_bm_face(bm, fv, fd.matrix)
+                face_info = build_face_info(fd.face_infos[i], fd.color_code)
+                process_face(file, bm, mesh, face, face_info)
+
+        bm.faces.ensure_lookup_table()
+        bm.verts.ensure_lookup_table()
+        bm.edges.ensure_lookup_table()
+
+        if import_options.remove_doubles:
+            bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=import_options.merge_distance)
+
+        if import_options.recalculate_normals:
+            bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+
+        # TODO: sharpen_edges
+        # use get_edge_mesh vertices
+        # bpy.context.object.data.edges[6].use_edge_sharp = True
+        if import_options.sharpen_edges:
+            # pass
+            sharpen_edges(bm, geometry)
+
+        if import_options.bevel_edges:
+            mesh.use_customdata_edge_bevel = True
+
+        if import_options.smooth_type == "auto_smooth":
+            mesh.use_auto_smooth = import_options.shade_smooth
+            mesh.auto_smooth_angle = math.radians(auto_smooth_angle)
+
+        if import_options.make_gaps and import_options.gap_target == "mesh":
+            mesh.transform(matrices.scaled_matrix(import_options.gap_scale))
+
+        bm.to_mesh(mesh)
+        bm.clear()
+        bm.free()
+
+        mesh.update()
+        mesh.validate()
+    mesh = bpy.data.meshes[key]
+    return mesh
 
 
 def process_face(file, bm, mesh, face, face_info):
@@ -277,11 +342,11 @@ def build_bm_face(bm, fv, matrix):
     return face
 
 
-def get_edge_mesh(key, filename, geometry):
+def get_edge_mesh(key, file, geometry):
     key = f"e_{key}"
     if key not in bpy.data.meshes:
         mesh = build_edge_mesh(key, geometry)
-        mesh[strings.ldraw_filename_key] = filename
+        mesh[strings.ldraw_filename_key] = file.name
         if import_options.make_gaps and import_options.gap_target == "mesh":
             mesh.transform(matrices.scaled_matrix(import_options.gap_scale))
     mesh = bpy.data.meshes[key]
@@ -308,8 +373,8 @@ def build_edge_mesh(key, geometry):
 
     mesh = bpy.data.meshes.new(key)
     mesh.from_pydata(verts, edges, faces)
+    mesh.update()
     mesh.validate()
-    mesh.update(calc_edges=True)
 
     return mesh
 
@@ -447,7 +512,7 @@ class LDrawNode:
                     if top_collection is not None:
                         top_collection.objects.link(top_empty)
         elif geometry is None:  # top-level part
-            geometry = LDrawGeometry()
+            geometry = LDrawGeometryData()
             matrix = matrices.identity
             self.top = True
             part_count += 1
@@ -480,6 +545,7 @@ class LDrawNode:
                         matrix=matrix,
                         color_code=parent_color_code,
                         edge_vertices=self.file.geometry.edge_vertices,
+                        edge_infos=self.file.geometry.edge_infos,
                     ))
 
             for child_node in self.file.child_nodes:
@@ -493,52 +559,7 @@ class LDrawNode:
                 geometry_cache[key] = geometry
 
         if self.top:
-            if key not in bpy.data.meshes:
-                bm = bmesh.new()
-
-                mesh = bpy.data.meshes.new(key)
-                mesh.name = key
-                mesh[strings.ldraw_filename_key] = self.file.name
-
-                if import_options.bevel_edges:
-                    mesh.use_customdata_edge_bevel = True
-
-                if import_options.smooth_type == "auto_smooth":
-                    mesh.use_auto_smooth = import_options.shade_smooth
-                    auto_smooth_angle = 89.9  # 1.56905 - 89.9 so 90 degrees and up are affected
-                    auto_smooth_angle = 51.1
-                    mesh.auto_smooth_angle = math.radians(auto_smooth_angle)
-
-                if import_options.make_gaps and import_options.gap_target == "mesh":
-                    mesh.transform(matrices.scaled_matrix(import_options.gap_scale))
-
-                for fd in geometry.face_data:
-                    # fd.face_vertices.reverse()
-                    for i, fv in enumerate(fd.face_vertices):
-                        face = build_bm_face(bm, fv, fd.matrix)
-                        face_info = build_face_info(fd.face_infos[i], fd.color_code)
-                        process_face(self.file, bm, mesh, face, face_info)
-
-                bm.faces.ensure_lookup_table()
-                bm.verts.ensure_lookup_table()
-                bm.edges.ensure_lookup_table()
-
-                if import_options.remove_doubles:
-                    bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=import_options.merge_distance)
-
-                if import_options.recalculate_normals:
-                    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
-
-                if import_options.sharpen_edges:
-                    process_edges(bm, geometry)
-
-                bm.to_mesh(mesh)
-                bm.clear()
-                bm.free()
-
-                mesh.validate()
-                mesh.update(calc_edges=True)
-            mesh = bpy.data.meshes[key]
+            mesh = get_mesh(key, self.file, geometry)
 
             obj = do_create_object(mesh)
             process_object(obj, parent_matrix, self.matrix)
@@ -553,7 +574,7 @@ class LDrawNode:
                 bpy.context.scene.collection.objects.link(obj)
 
             if import_options.import_edges or import_options.grease_pencil_edges:
-                edge_mesh = get_edge_mesh(key, self.file.name, geometry)
+                edge_mesh = get_edge_mesh(key, self.file, geometry)
 
                 if import_options.import_edges:
                     edge_obj = do_create_object(edge_mesh)

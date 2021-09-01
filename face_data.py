@@ -7,7 +7,8 @@ class FaceData:
 
 
 class EdgeData:
-    def __init__(self, matrix, color_code, edge_vertices):
+    def __init__(self, matrix, color_code, edge_vertices, edge_infos):
         self.matrix = matrix
         self.color_code = color_code
         self.edge_vertices = edge_vertices
+        self.edge_infos = edge_infos

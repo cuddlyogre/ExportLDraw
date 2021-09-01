@@ -5,12 +5,11 @@ from . import face_info
 
 class LDrawGeometry:
     def __init__(self):
-        self.face_data = []
-        self.edge_data = []
-
-        self.face_infos = []
-        self.face_vertices = []
         self.edge_vertices = []
+        self.edge_infos = []
+
+        self.face_vertices = []
+        self.face_infos = []
 
     def parse_face(self, params, texmap=None):
         vert_count = int(params[0])
@@ -25,8 +24,8 @@ class LDrawGeometry:
             face.append(vertex)
 
         if vert_count == 2:
-            # TODO: edge_face_info
             self.edge_vertices.append(face)
+            self.edge_infos.append(face_info.FaceInfo(color_code, texmap=texmap))
 
         elif vert_count == 3:
             self.face_vertices.append(face)
@@ -44,3 +43,9 @@ class LDrawGeometry:
             else:
                 self.face_vertices.append(face)
                 self.face_infos.append(face_info.FaceInfo(color_code, texmap=texmap))
+
+
+class LDrawGeometryData:
+    def __init__(self):
+        self.edge_data = []
+        self.face_data = []
