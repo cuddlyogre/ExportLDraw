@@ -71,6 +71,7 @@ def __create_node_based_material(key, color, use_edge_color=False, part_slopes=N
         __create_cycles_standard(nodes, links, diff_color)
         return material
 
+    # https://wiki.ldraw.org/wiki/Color_24
     if use_edge_color:
         diff_color = color.edge_color + (1.0,)
         material.diffuse_color = diff_color
