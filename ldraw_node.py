@@ -210,11 +210,10 @@ def sharpen_edges(bm, geometry):
     edge_indices = set()
     # edge_data
     for ed in geometry.edge_data:
-        matrix = ed.matrix
         for fi in ed.face_infos:
             verts = []
             for vertex in fi.vertices:
-                vert = matrix @ vertex
+                vert = ed.matrix @ vertex
                 verts.append(vert)
             edges0 = [index for (co, index, dist) in kd.find_range(verts[0], distance)]
             edges1 = [index for (co, index, dist) in kd.find_range(verts[1], distance)]
@@ -258,7 +257,12 @@ def get_mesh(key, file, geometry):
         # TODO: move uv unwrap to after obj[strings.ldraw_filename_key] = self.file.name
         for fd in geometry.face_data:
             for fi in fd.face_infos:
-                face = build_bm_face(bm, fi.vertices, fd.matrix)
+                verts = []
+                for vertex in fi.vertices:
+                    vert = fd.matrix @ vertex
+                    bm_vert = bm.verts.new(vert)
+                    verts.append(bm_vert)
+                face = bm.faces.new(verts)
 
                 color_code = fd.color_code
                 if fi.color_code != "16":
@@ -317,16 +321,6 @@ def process_face(file, bm, mesh, face, color_code, texmap):
         texmap.uv_unwrap_face(bm, face)
 
 
-def build_bm_face(bm, fv, matrix):
-    verts = []
-    for vertex in fv:
-        vert = matrix @ vertex
-        bm_vert = bm.verts.new(vert)
-        verts.append(bm_vert)
-    face = bm.faces.new(verts)
-    return face
-
-
 def get_edge_mesh(key, file, geometry):
     key = f"e_{key}"
     if key not in bpy.data.meshes:
@@ -345,11 +339,10 @@ def build_edge_mesh(key, geometry):
 
     i = 0
     for ed in geometry.edge_data:
-        matrix = ed.matrix
         for fi in ed.face_infos:
             index = []
             for vertex in fi.vertices:
-                vert = matrix @ vertex
+                vert = ed.matrix @ vertex
                 verts.append(vert)
                 index.append(i)
                 i += 1
