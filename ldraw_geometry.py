@@ -1,7 +1,7 @@
 import mathutils
 
 from . import import_options
-from . import face_info
+from .face_info import FaceInfo
 
 
 class LDrawGeometry:
@@ -16,34 +16,29 @@ class LDrawGeometry:
         vert_count = int(params[0])
         color_code = params[1]
 
-        face = []
+        verts = []
         for i in range(vert_count):
             x = float(params[i * 3 + 2])
             y = float(params[i * 3 + 3])
             z = float(params[i * 3 + 4])
             vertex = mathutils.Vector((x, y, z))
-            face.append(vertex)
+            verts.append(vertex)
 
         if vert_count == 2:
-            self.edge_vertices.append(face)
-            self.edge_infos.append(face_info.FaceInfo(color_code, texmap=texmap))
+            self.edge_infos.append(FaceInfo(color_code, verts, texmap=texmap))
 
         elif vert_count == 3:
-            self.face_vertices.append(face)
-            self.face_infos.append(face_info.FaceInfo(color_code, texmap=texmap))
+            self.face_infos.append(FaceInfo(color_code, verts, texmap=texmap))
 
         elif vert_count == 4:
             if import_options.triangulate:
-                face1 = [face[0], face[1], face[2]]
-                self.face_vertices.append(face1)
-                self.face_infos.append(face_info.FaceInfo(color_code, texmap=texmap))
+                verts1 = [verts[0], verts[1], verts[2]]
+                self.face_infos.append(FaceInfo(color_code, verts1, texmap=texmap))
 
-                face2 = [face[2], face[3], face[0]]
-                self.face_vertices.append(face2)
-                self.face_infos.append(face_info.FaceInfo(color_code, texmap=texmap))
+                verts2 = [verts[2], verts[3], verts[0]]
+                self.face_infos.append(FaceInfo(color_code, verts2, texmap=texmap))
             else:
-                self.face_vertices.append(face)
-                self.face_infos.append(face_info.FaceInfo(color_code, texmap=texmap))
+                self.face_infos.append(FaceInfo(color_code, verts, texmap=texmap))
 
 
 class LDrawGeometryData:

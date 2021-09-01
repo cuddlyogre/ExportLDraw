@@ -11,8 +11,7 @@ from . import ldraw_colors
 from . import matrices
 from . import special_bricks
 from . import strings
-from .face_info import FaceInfo
-from .face_data import FaceData, EdgeData
+from .face_data import FaceData
 from .ldraw_geometry import LDrawGeometryData
 from . import texmap
 
@@ -27,7 +26,6 @@ collection_id_map = {}
 next_collection = None
 end_next_collection = False
 
-# TODO: sharpen_edges
 auto_smooth_angle = 89.9  # 1.56905 - 89.9 so 90 degrees and up are affected
 auto_smooth_angle = 51.1
 auto_smooth_angle = 31
@@ -213,9 +211,9 @@ def sharpen_edges(bm, geometry):
     # edge_data
     for ed in geometry.edge_data:
         matrix = ed.matrix
-        for edge in ed.edge_vertices:
+        for fi in ed.face_infos:
             verts = []
-            for vertex in edge:
+            for vertex in fi.vertices:
                 vert = matrix @ vertex
                 verts.append(vert)
             edges0 = [index for (co, index, dist) in kd.find_range(verts[0], distance)]
@@ -259,11 +257,16 @@ def get_mesh(key, file, geometry):
 
         # TODO: move uv unwrap to after obj[strings.ldraw_filename_key] = self.file.name
         for fd in geometry.face_data:
-            # fd.face_vertices.reverse()
-            for i, fv in enumerate(fd.face_vertices):
-                face = build_bm_face(bm, fv, fd.matrix)
-                face_info = build_face_info(fd.face_infos[i], fd.color_code)
-                process_face(file, bm, mesh, face, face_info)
+            for fi in fd.face_infos:
+                face = build_bm_face(bm, fi.vertices, fd.matrix)
+
+                color_code = fd.color_code
+                if fi.color_code != "16":
+                    color_code = fi.color_code
+
+                texmap = fi.texmap
+
+                process_face(file, bm, mesh, face, color_code, texmap)
 
         bm.faces.ensure_lookup_table()
         bm.verts.ensure_lookup_table()
@@ -299,15 +302,12 @@ def get_mesh(key, file, geometry):
     return mesh
 
 
-def process_face(file, bm, mesh, face, face_info):
+def process_face(file, bm, mesh, face, color_code, texmap):
     face.smooth = import_options.shade_smooth
-    color_code = face_info.color_code
     color = ldraw_colors.get_color(color_code)
-    use_edge_color = face_info.use_edge_color
-    texmap = face_info.texmap
     part_slopes = special_bricks.get_part_slopes(file.name)
 
-    material = blender_materials.get_material(color, use_edge_color=use_edge_color, part_slopes=part_slopes, texmap=texmap)
+    material = blender_materials.get_material(color, part_slopes=part_slopes, texmap=texmap)
     if material is not None:
         # https://blender.stackexchange.com/questions/23905/select-faces-depending-on-material
         if material.name not in mesh.materials:
@@ -315,16 +315,6 @@ def process_face(file, bm, mesh, face, face_info):
         face.material_index = mesh.materials.find(material.name)
     if texmap is not None:
         texmap.uv_unwrap_face(bm, face)
-
-
-def build_face_info(fi, parent_color_code):
-    face_info = FaceInfo(color_code=parent_color_code)
-    if parent_color_code == "24":
-        face_info.use_edge_color = True
-    if fi.color_code != "16":
-        face_info.color_code = fi.color_code
-    face_info.texmap = fi.texmap
-    return face_info
 
 
 def build_bm_face(bm, fv, matrix):
@@ -356,9 +346,9 @@ def build_edge_mesh(key, geometry):
     i = 0
     for ed in geometry.edge_data:
         matrix = ed.matrix
-        for edge in ed.edge_vertices:
+        for fi in ed.face_infos:
             index = []
-            for vertex in edge:
+            for vertex in fi.vertices:
                 vert = matrix @ vertex
                 verts.append(vert)
                 index.append(i)
@@ -548,16 +538,14 @@ class LDrawNode:
                 geometry.face_data.append(FaceData(
                     matrix=matrix,
                     color_code=parent_color_code,
-                    face_vertices=self.file.geometry.face_vertices,
                     face_infos=self.file.geometry.face_infos,
                 ))
 
                 if (not is_edge_logo) or (is_edge_logo and import_options.display_logo):
-                    geometry.edge_data.append(EdgeData(
+                    geometry.edge_data.append(FaceData(
                         matrix=matrix,
                         color_code=parent_color_code,
-                        edge_vertices=self.file.geometry.edge_vertices,
-                        edge_infos=self.file.geometry.edge_infos,
+                        face_infos=self.file.geometry.edge_infos,
                     ))
 
             for child_node in self.file.child_nodes:
