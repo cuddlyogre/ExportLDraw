@@ -393,7 +393,7 @@ def build_slope_angles():
     # Create a regular dictionary of parts with ranges of angles to check
     margin = 5  # Allow 5 degrees either way to compensate for measuring inaccuracies
 
-    for part_number, angles in part_slopes:
+    for part_number, angles in part_slopes.items():
         slope_angle = set()
         for c in angles:
             if type(c) is tuple:
@@ -419,9 +419,6 @@ def normal_to_angle(normal):
 
 
 def is_slope_face(part_number, face):
-    if not is_slope_part(part_number):
-        return
-
     angle_to_ground_degrees = normal_to_angle(face.normal)
 
     # Check angle of normal to ground is within one of the acceptable ranges for this part
@@ -429,3 +426,11 @@ def is_slope_face(part_number, face):
         if c[0] <= angle_to_ground_degrees <= c[1]:
             return True
     return False
+
+
+def process_slope_faces(file, mesh):
+    # shade smooth slope textured faces to make them render properly
+    if is_slope_part(file.name):
+        for face in mesh.polygons:
+            if is_slope_face(file.name, face):
+                face.use_smooth = False
