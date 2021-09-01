@@ -379,6 +379,25 @@ def build_edge_mesh(key, geometry):
     return mesh
 
 
+def bmesh_ops(mesh):
+    bm = bmesh.new()
+    bm.from_mesh(mesh)
+
+    bm.faces.ensure_lookup_table()
+    bm.verts.ensure_lookup_table()
+    bm.edges.ensure_lookup_table()
+
+    if import_options.remove_doubles:
+        bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=import_options.merge_distance)
+
+    if import_options.recalculate_normals:
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+
+    bm.to_mesh(mesh)
+    bm.clear()
+    bm.free()
+
+
 def get_gp_mesh(key, mesh):
     gp_key = f"gp_{key}"
     if gp_key not in bpy.data.grease_pencils:
