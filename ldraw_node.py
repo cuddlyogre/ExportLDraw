@@ -203,6 +203,7 @@ def sharpen_edges(bm, geometry):
         kd.insert(v.co, i)
     kd.balance()
 
+    # increase the distance to look for edges to merge
     distance = import_options.merge_distance * 2
 
     # Create edge_indices dictionary, which is the list of edges as pairs of indices into our verts array
@@ -253,7 +254,9 @@ def get_mesh(key, file, geometry):
         mesh.name = key
         mesh[strings.ldraw_filename_key] = file.name
 
-        # TODO: move uv unwrap to after obj[strings.ldraw_filename_key] = self.file.name
+        # FIXME: 31313 - Mindstorms EV3 - Spike3r.mpd - "31313 - 13710ac01.dat"
+        # FIXME: if not treat_shortcut_as_model, texmap uvs may be incorrect, caused by unexpected part transform?
+        # FIXME: move uv unwrap to after obj[strings.ldraw_filename_key] = self.file.name
         for fd in geometry.face_data:
             for fi in fd.face_infos:
                 verts = []
@@ -316,6 +319,7 @@ def process_face(file, bm, mesh, face, color_code, texmap):
         if material.name not in mesh.materials:
             mesh.materials.append(material)
         face.material_index = mesh.materials.find(material.name)
+
     if texmap is not None:
         texmap.uv_unwrap_face(bm, face)
 
@@ -422,6 +426,10 @@ def apply_gp_materials(gp_mesh, color_code):
 
 
 class LDrawNode:
+    """
+    All of the data that makes up a part.
+    """
+
     def __init__(self, file):
         self.file = file
         self.color_code = "16"
@@ -475,6 +483,8 @@ class LDrawNode:
         if import_options.no_studs and self.file.is_like_stud():
             return
 
+        # set the working color code to this file's
+        # color code if it isn't color code 16
         if self.color_code != "16":
             parent_color_code = self.color_code
 
@@ -519,7 +529,9 @@ class LDrawNode:
         # if it's a part and geometry already in the geometry_cache, reuse it
         # meta commands are not in self.top files which is how they are counted
         # missing minifig arms if "if key not in bpy.data.meshes:"
-        if self.top and key in geometry_cache:
+        # with self.top and removed, it is faster but if the top level part is
+        # used as a transformed subpart, it may render incorrectly
+        if key in geometry_cache:
             geometry = geometry_cache[key]
         else:
             if geometry is not None:
@@ -538,6 +550,8 @@ class LDrawNode:
                                 is_edge_logo=is_edge_logo,
                                 parent_collection=file_collection)
 
+            # without if self.top
+            # 10030-1 - Imperial Star Destroyer - UCS.mpd top back of the bridge - 3794a.dat renders incorrectly
             if self.top:
                 geometry_cache[key] = geometry
 
