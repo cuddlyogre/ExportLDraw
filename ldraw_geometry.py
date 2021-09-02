@@ -1,16 +1,19 @@
 import mathutils
 
 from . import import_options
-from .face_info import FaceInfo
+from .geometry_data import FaceInfo
 
 
 class LDrawGeometry:
-    def __init__(self):
-        self.edge_vertices = []
-        self.edge_infos = []
+    """
+    A file's geometry information.
+    """
 
-        self.face_vertices = []
+    def __init__(self):
+        self.edge_infos = []
         self.face_infos = []
+        self.edge_vert_count = 0
+        self.face_vert_count = 0
 
     def parse_face(self, params, texmap=None):
         vert_count = int(params[0])
@@ -25,23 +28,22 @@ class LDrawGeometry:
             verts.append(vertex)
 
         if vert_count == 2:
+            self.edge_vert_count += len(verts)
             self.edge_infos.append(FaceInfo(color_code, verts, texmap=texmap))
 
         elif vert_count == 3:
+            self.face_vert_count += len(verts)
             self.face_infos.append(FaceInfo(color_code, verts, texmap=texmap))
 
         elif vert_count == 4:
             if import_options.triangulate:
                 verts1 = [verts[0], verts[1], verts[2]]
+                self.face_vert_count += len(verts1)
                 self.face_infos.append(FaceInfo(color_code, verts1, texmap=texmap))
 
                 verts2 = [verts[2], verts[3], verts[0]]
+                self.face_vert_count += len(verts2)
                 self.face_infos.append(FaceInfo(color_code, verts2, texmap=texmap))
             else:
+                self.face_vert_count += len(verts)
                 self.face_infos.append(FaceInfo(color_code, verts, texmap=texmap))
-
-
-class LDrawGeometryData:
-    def __init__(self):
-        self.edge_data = []
-        self.face_data = []

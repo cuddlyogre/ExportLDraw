@@ -17,8 +17,8 @@ if "bpy" in locals():
     importlib.reload(blender_materials)
     importlib.reload(blender_import)
     importlib.reload(downloader)
-    importlib.reload(face_info)
     importlib.reload(filesystem)
+    importlib.reload(geometry_data)
     importlib.reload(helpers)
     importlib.reload(ldraw_camera)
     importlib.reload(ldraw_colors)
@@ -40,8 +40,8 @@ else:
     from . import blender_materials
     from . import blender_import
     from . import downloader
-    from . import face_info
     from . import filesystem
+    from . import geometry_data
     from . import helpers
     from . import ldraw_camera
     from . import ldraw_colors

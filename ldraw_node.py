@@ -11,8 +11,7 @@ from . import ldraw_colors
 from . import matrices
 from . import special_bricks
 from . import strings
-from .face_data import FaceData
-from .ldraw_geometry import LDrawGeometryData
+from .geometry_data import GeometryData
 from . import texmap
 
 part_count = 0
@@ -507,7 +506,7 @@ class LDrawNode:
                     if top_collection is not None:
                         top_collection.objects.link(top_empty)
         elif geometry is None:  # top-level part
-            geometry = LDrawGeometryData()
+            geometry = GeometryData()
             matrix = matrices.identity
             self.top = True
             part_count += 1
@@ -528,18 +527,10 @@ class LDrawNode:
                 if self.file.is_edge_logo():
                     is_edge_logo = True
 
-                geometry.face_data.append(FaceData(
-                    matrix=matrix,
-                    color_code=parent_color_code,
-                    face_infos=self.file.geometry.face_infos,
-                ))
-
                 if (not is_edge_logo) or (is_edge_logo and import_options.display_logo):
-                    geometry.edge_data.append(FaceData(
-                        matrix=matrix,
-                        color_code=parent_color_code,
-                        face_infos=self.file.geometry.edge_infos,
-                    ))
+                    geometry.add_edge_data(matrix, parent_color_code, self.file.geometry)
+
+                geometry.add_face_data(matrix, parent_color_code, self.file.geometry)
 
             for child_node in self.file.child_nodes:
                 child_node.load(parent_matrix=matrix,
