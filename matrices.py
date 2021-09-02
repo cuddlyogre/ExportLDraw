@@ -97,9 +97,9 @@ identity = Matrix((
     (0.0, 1.0, 0.0, 0.0),
     (0.0, 0.0, 1.0, 0.0),
     (0.0, 0.0, 0.0, 1.0)
-))
+)).freeze()
 
-rotation = mathutils.Matrix.Rotation(math.radians(-90), 4, 'X')
+rotation = mathutils.Matrix.Rotation(math.radians(-90), 4, 'X').freeze()
 # rotation = Matrix((
 #     (1.0, 0.0, 0.0, 0.0),
 #     (0.0, -4.371138828673793e-08, 1.0, 0.0),
@@ -107,7 +107,7 @@ rotation = mathutils.Matrix.Rotation(math.radians(-90), 4, 'X')
 #     (0.0, 0.0, 0.0, 1.0)
 # ))
 
-reverse_rotation = mathutils.Matrix.Rotation(math.radians(90), 4, 'X')
+reverse_rotation = mathutils.Matrix.Rotation(math.radians(90), 4, 'X').freeze()
 # reverse_rotation = Matrix((
 #     (1.0, 0.0, 0.0, 0.0),
 #     (0.0, 7.549790126404332e-08, -1.0, 0.0),
@@ -120,7 +120,7 @@ reflection = Matrix((
     (0.0, 1.0, 0.0, 0.0),
     (0.0, 0.0, -1.0, 0.0),
     (0.0, 0.0, 0.0, 1.0)
-))
+)).freeze()
 
 
 def scaled_matrix(scale=1.0):
@@ -129,7 +129,7 @@ def scaled_matrix(scale=1.0):
         (0.0, scale, 0.0, 0.0),
         (0.0, 0.0, scale, 0.0),
         (0.0, 0.0, 0.0, scale)
-    ))
+    )).freeze()
 
 
 def mt4(matrix):
