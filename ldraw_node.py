@@ -420,7 +420,7 @@ def apply_gp_materials(gp_mesh, color_code):
         material = base_material.copy()
         material.name = material_name
         bpy.data.materials.create_gpencil_data(material)  # https://developer.blender.org/T67102
-        material.grease_pencil.color = color.edge_color + (1.0,)
+        material.grease_pencil.color = material.diffuse_color
     material = bpy.data.materials[material_name]
     gp_mesh.materials.append(material)
 
