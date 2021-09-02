@@ -478,13 +478,6 @@ class LDrawNode:
         if self.color_code != "16":
             parent_color_code = self.color_code
 
-        key = []
-        key.append(self.file.name)
-        key.append(parent_color_code)
-        if parent_color_code == "24":
-            key.append("edge")
-        key = "_".join([k.lower() for k in key])[0:63]
-
         is_model = self.file.is_like_model()
         is_shortcut = self.file.is_shortcut()
         is_part = self.file.is_part()
@@ -516,6 +509,12 @@ class LDrawNode:
             file_collection = next_collection
             if end_next_collection:
                 next_collection = None
+
+        key = []
+        key.append(self.file.name)
+        key.append(parent_color_code)
+        key.append(hash(matrix.freeze()))
+        key = "_".join([str(k).lower() for k in key])[0:63]
 
         # if it's a part and geometry already in the geometry_cache, reuse it
         # meta commands are not in self.top files which is how they are counted

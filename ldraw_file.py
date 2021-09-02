@@ -282,7 +282,6 @@ class LDrawFile:
                 elif params[1].lower() in ["!texmap"]:  # https://www.ldraw.org/documentation/ldraw-org-file-format-standards/language-extension-for-texture-mapping.html
                     if params[2].lower() in ["start", "next"]:
                         if params[2].lower() == "start":
-                            print(params[2].lower())
                             self.texmap_start = True
                         elif params[2].lower() == "next":
                             self.texmap_next = True
@@ -298,7 +297,6 @@ class LDrawFile:
                         if params[2].lower() in ["fallback"]:
                             self.texmap_fallback = True
                         elif params[2].lower() in ["end"]:
-                            print(params[2].lower())
                             self.set_texmap_end()
                 elif self.texmap_start:
                     if params[1].lower() in ["!:"]:
@@ -378,7 +376,7 @@ class LDrawFile:
                 key.append("alt")
             if texmap.texmap is not None:
                 key.append(texmap.texmap.id)
-            key = "_".join([k.lower() for k in key])
+            key = "_".join([str(k).lower() for k in key])
             key = re.sub(r"[^a-z0-9._]", "-", key)
 
             if key not in file_cache:

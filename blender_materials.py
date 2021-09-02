@@ -30,9 +30,9 @@ def get_key(color, use_edge_color, part_slopes, texmap):
     if part_slopes is not None:
         suffix.append("_".join([str(k) for k in part_slopes]))
     if texmap is not None:
-        texmap_suffix = "_".join([x for x in [texmap.method, texmap.texture, texmap.glossmap] if x != ''])
+        texmap_suffix = "_".join([str(k) for k in [texmap.method, texmap.texture, texmap.glossmap] if k != ''])
         suffix.append(texmap_suffix)
-    suffix = "_".join([k.lower() for k in suffix])
+    suffix = "_".join([str(k).lower() for k in suffix])
     key.append(suffix)
     key = " ".join(key)
     return key
