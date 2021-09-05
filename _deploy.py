@@ -11,7 +11,7 @@ blender_dir = os.path.join(app_data_dir, version, addons_dir)
 if not os.path.isdir(blender_dir):
     exit(f"{blender_dir} does not exist")
 
-addon_name = 'ExportLdraw'
+addon_name = 'ExportLDraw'
 target = os.path.join(blender_dir, addon_name)
 print(f"deploying to {target}")
 
