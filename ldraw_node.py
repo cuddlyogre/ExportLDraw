@@ -509,6 +509,10 @@ class LDrawNode:
 
                 if import_options.smooth_type == "auto_smooth":
                     mesh.use_auto_smooth = import_options.shade_smooth
+                    auto_smooth_angle = 89.9  # 1.56905 - 89.9 so 90 degrees and up are affected
+                    auto_smooth_angle = 51.1
+                    auto_smooth_angle = 31
+                    auto_smooth_angle = 44.97
                     mesh.auto_smooth_angle = math.radians(auto_smooth_angle)
 
                 if import_options.make_gaps and import_options.gap_target == "mesh":
