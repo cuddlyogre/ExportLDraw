@@ -1,5 +1,7 @@
 import math
 import os
+import uuid
+import re
 
 import bmesh
 import bpy
@@ -24,11 +26,7 @@ gap_scale_empty = None
 collection_id_map = {}
 next_collection = None
 end_next_collection = False
-
-auto_smooth_angle = 89.9  # 1.56905 - 89.9 so 90 degrees and up are affected
-auto_smooth_angle = 51.1
-auto_smooth_angle = 31
-auto_smooth_angle = 44.97
+key_map = {}
 
 
 def reset_caches():
@@ -42,6 +40,7 @@ def reset_caches():
     global collection_id_map
     global next_collection
     global end_next_collection
+    global key_map
 
     part_count = 0
     current_step = 0
@@ -53,6 +52,7 @@ def reset_caches():
     collection_id_map = {}
     next_collection = None
     end_next_collection = False
+    key_map = {}
 
     if import_options.meta_step:
         set_step()
@@ -350,11 +350,16 @@ class LDrawNode:
             if end_next_collection:
                 next_collection = None
 
-        key = []
-        key.append(self.file.name)
-        key.append(color_code)
-        key.append(hash(matrix.freeze()))
-        key = "_".join([str(k) for k in key]).strip().lower().replace(" ", "")
+        _key = []
+        _key.append(self.file.name)
+        _key.append(color_code)
+        _key.append(hash(matrix.freeze()))
+        _key = "_".join([str(k).lower() for k in _key])
+        _key = re.sub(r"[^a-z0-9._]", "-", _key)
+
+        if _key not in key_map:
+            key_map[_key] = str(uuid.uuid4())
+        key = key_map[_key]
 
         # if it's a part and geometry already in the geometry_cache, reuse it
         # meta commands are not in self.top files which is how they are counted
@@ -548,10 +553,10 @@ class LDrawNode:
                         edge_obj.matrix_world = obj.matrix_world
                         edge_obj[strings.ldraw_filename_key] = f"{self.file.name}_edges"
 
-                        if collection is not None:
-                            collection.objects.link(edge_obj)
-                        else:
-                            bpy.context.scene.collection.objects.link(edge_obj)
+                    if collection is not None:
+                        collection.objects.link(edge_obj)
+                    else:
+                        bpy.context.scene.collection.objects.link(edge_obj)
 
             #     if import_options.grease_pencil_edges:
             #         if gp_key not in bpy.data.grease_pencils:

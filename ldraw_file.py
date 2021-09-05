@@ -1,6 +1,7 @@
 import os
 import re
 import mathutils
+import uuid
 
 from . import import_options
 from . import filesystem
@@ -15,16 +16,18 @@ from . import ldraw_colors
 from . import ldraw_camera
 from . import texmap
 
-
 mpd_file_cache = {}
 file_cache = {}
+key_map = {}
 
 
 def reset_caches():
     global mpd_file_cache
     global file_cache
+    global key_map
     mpd_file_cache = {}
     file_cache = {}
+    key_map = {}
 
 
 def read_color_table():
@@ -363,23 +366,27 @@ class LDrawFile:
                 ext = parts[1]
                 filename = f"{stud_name}-{special_bricks.chosen_logo}.{ext}"
 
-            key = []
-            key.append(filename)
-            key.append(filesystem.resolution)
+            _key = []
+            _key.append(filename)
+            _key.append(filesystem.resolution)
             if import_options.remove_doubles:
-                key.append("rd")
+                _key.append("rd")
             if import_options.display_logo:
-                key.append(special_bricks.chosen_logo)
+                _key.append(special_bricks.chosen_logo)
             if import_options.smooth_type == "auto_smooth":
-                key.append("as")
+                _key.append("as")
             if import_options.smooth_type == "edge_split":
-                key.append("es")
+                _key.append("es")
             if ldraw_colors.use_alt_colors:
-                key.append("alt")
+                _key.append("alt")
             if texmap.texmap is not None:
-                key.append(texmap.texmap.id)
-            key = "_".join([str(k).lower() for k in key])
-            key = re.sub(r"[^a-z0-9._]", "-", key)
+                _key.append(texmap.texmap.id)
+            _key = "_".join([str(k).lower() for k in _key])
+            _key = re.sub(r"[^a-z0-9._]", "-", _key)
+
+            if _key not in key_map:
+                key_map[_key] = str(uuid.uuid4())
+            key = key_map[_key]
 
             if key not in file_cache:
                 filename = handle_mpd(filename)

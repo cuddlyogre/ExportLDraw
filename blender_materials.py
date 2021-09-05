@@ -1,13 +1,23 @@
 import bpy
 import os
+import uuid
+import re
 
 from . import strings
 from . import ldraw_colors
 from . import filesystem
 
+key_map = {}
+
+
+def reset_caches():
+    global key_map
+    key_map = {}
+
 
 # https://github.com/bblanimation/abs-plastic-materials
 def create_blender_node_groups():
+    reset_caches()
     this_script_dir = os.path.dirname(os.path.realpath(__file__))
     path = os.path.join(this_script_dir, 'materials', 'all_monkeys.blend')
     with bpy.data.libraries.load(path, link=False) as (data_from, data_to):
@@ -17,24 +27,26 @@ def create_blender_node_groups():
 
 
 def get_key(color, use_edge_color, part_slopes, texmap):
-    key = []
-    key.append("LDraw Material")
-    key.append(color.code)
-    key.append(color.name)
-
-    suffix = []
+    _key = []
+    _key.append("LDraw Material")
+    _key.append(color.code)
+    _key.append(color.name)
     if ldraw_colors.use_alt_colors:
-        suffix.append("alt")
+        _key.append("alt")
     if use_edge_color:
-        suffix.append("edge")
+        _key.append("edge")
     if part_slopes is not None:
-        suffix.append("_".join([str(k) for k in part_slopes]))
+        _key.append("_".join([str(k) for k in part_slopes]))
     if texmap is not None:
         texmap_suffix = "_".join([str(k) for k in [texmap.method, texmap.texture, texmap.glossmap] if k != ''])
-        suffix.append(texmap_suffix)
-    suffix = "_".join([str(k).lower() for k in suffix])
-    key.append(suffix)
-    key = " ".join(key)
+        _key.append(texmap_suffix)
+    _key = "_".join([str(k).lower() for k in _key])
+    _key = re.sub(r"[^a-z0-9._]", "-", _key)
+
+    if _key not in key_map:
+        key_map[_key] = str(uuid.uuid4())
+    key = key_map[_key]
+
     return key
 
 
