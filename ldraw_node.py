@@ -17,7 +17,7 @@ from . import texmap
 part_count = 0
 current_step = 0
 current_frame = 0
-geometry_cache = {}
+geometry_data_cache = {}
 top_collection = None
 top_empty = None
 gap_scale_empty = None
@@ -35,7 +35,7 @@ def reset_caches():
     global part_count
     global current_step
     global current_frame
-    global geometry_cache
+    global geometry_data_cache
     global top_collection
     global top_empty
     global gap_scale_empty
@@ -46,7 +46,7 @@ def reset_caches():
     part_count = 0
     current_step = 0
     current_frame = 0
-    geometry_cache = {}
+    geometry_data_cache = {}
     top_collection = None
     top_empty = None
     gap_scale_empty = None
@@ -113,38 +113,14 @@ def do_create_object(mesh):
     return obj
 
 
-def process_object(obj, parent_matrix, matrix):
+def process_object(obj, matrix):
     if top_empty is None:
-        set_object_matrix(obj, parent_matrix, matrix)
+        set_object_matrix(obj, matrix)
     else:
-        set_parented_object_matrix(obj, parent_matrix, matrix)
+        set_parented_object_matrix(obj, matrix)
 
     if import_options.meta_step:
         handle_meta_step(obj)
-
-
-def process_object_modifiers(obj):
-    if import_options.bevel_edges:
-        handle_bevel_edges(obj)
-
-    if import_options.smooth_type == "edge_split":
-        handle_edge_split(obj)
-
-
-def handle_bevel_edges(obj):
-    bevel_modifier = obj.modifiers.new("Bevel", type='BEVEL')
-    bevel_modifier.width = 0.10
-    bevel_modifier.segments = 4
-    bevel_modifier.profile = 0.5
-    bevel_modifier.limit_method = "WEIGHT"
-    bevel_modifier.use_clamp_overlap = True
-
-
-def handle_edge_split(obj):
-    edge_modifier = obj.modifiers.new("Edge Split", type='EDGE_SPLIT')
-    edge_modifier.use_edge_angle = True
-    edge_modifier.split_angle = auto_smooth_angle
-    edge_modifier.use_edge_sharp = True
 
 
 # https://docs.blender.org/api/current/bpy.types.bpy_struct.html#bpy.types.bpy_struct.keyframe_insert
@@ -163,12 +139,10 @@ def handle_meta_step(obj):
     obj.keyframe_insert(data_path="hide_viewport")
 
 
-def set_parented_object_matrix(obj, parent_matrix, matrix):
+def set_parented_object_matrix(obj, matrix):
     matrix_world = matrices.identity @ matrices.rotation @ matrices.scaled_matrix(import_options.import_scale)
     top_empty.matrix_world = matrix_world
-
-    matrix_world = parent_matrix @ matrix
-    obj.matrix_world = matrix_world
+    obj.matrix_world = matrix
 
     if import_options.make_gaps and import_options.gap_target == "object":
         if import_options.gap_scale_strategy == "object":
@@ -184,128 +158,18 @@ def set_parented_object_matrix(obj, parent_matrix, matrix):
             copy_scale_constraint = obj.constraints.new("COPY_SCALE")
             copy_scale_constraint.target = gap_scale_empty
             copy_scale_constraint.target.parent = top_empty
+
     obj.parent = top_empty  # must be after matrix_world set or else transform is incorrect
 
 
-def set_object_matrix(obj, parent_matrix, matrix):
+def set_object_matrix(obj, matrix):
     matrix_world = matrices.identity @ matrices.rotation @ matrices.scaled_matrix(import_options.import_scale)
-    matrix_world = matrix_world @ parent_matrix @ matrix
+    matrix_world = matrix_world @ matrix
+
     if import_options.make_gaps and import_options.gap_target == "object":
         matrix_world = matrix_world @ matrices.scaled_matrix(import_options.gap_scale)
+
     obj.matrix_world = matrix_world
-
-
-def sharpen_edges(bm, geometry):
-    # Create kd tree for fast "find nearest points" calculation
-    # https://docs.blender.org/api/blender_python_api_current/mathutils.kdtree.html
-    kd = mathutils.kdtree.KDTree(len(bm.verts))
-    for i, v in enumerate(bm.verts):
-        kd.insert(v.co, i)
-    kd.balance()
-
-    # increase the distance to look for edges to merge
-    distance = import_options.merge_distance * 2
-
-    # Create edge_indices dictionary, which is the list of edges as pairs of indices into our verts array
-    edge_indices = set()
-    # edge_data
-    for ed in geometry.edge_data:
-        for fi in ed.face_infos:
-            verts = []
-            for vertex in fi.vertices:
-                vert = ed.matrix @ vertex
-                verts.append(vert)
-            edges0 = [index for (co, index, dist) in kd.find_range(verts[0], distance)]
-            edges1 = [index for (co, index, dist) in kd.find_range(verts[1], distance)]
-            for e0 in edges0:
-                for e1 in edges1:
-                    edge_indices.add((e0, e1))
-                    edge_indices.add((e1, e0))
-
-    # merge line type 2 edges at a greater distance than mesh edges
-    merge = set()
-    # Find the appropriate mesh edges and make them sharp (i.e. not smooth)
-    bevel_weight_layer = bm.edges.layers.bevel_weight.verify()
-    for edge in bm.edges:
-        v0 = edge.verts[0].index
-        v1 = edge.verts[1].index
-        if (v0, v1) in edge_indices:
-            merge.add(edge.verts[0])
-            merge.add(edge.verts[1])
-
-            # Make edge sharp
-            edge.smooth = False
-
-            # Add bevel weight
-            # https://blender.stackexchange.com/a/188003
-            if bevel_weight_layer is not None:
-                bevel_wight = 1.0
-                edge[bevel_weight_layer] = bevel_wight
-
-    # if it was detected as a edge, the merge those vertices
-    bmesh.ops.remove_doubles(bm, verts=list(merge), dist=distance)
-
-
-def get_mesh(key, file, geometry):
-    if key not in bpy.data.meshes:
-        bm = bmesh.new()
-
-        mesh = bpy.data.meshes.new(key)
-        mesh.name = key
-        mesh[strings.ldraw_filename_key] = file.name
-
-        # FIXME: 31313 - Mindstorms EV3 - Spike3r.mpd - "31313 - 13710ac01.dat"
-        # FIXME: if not treat_shortcut_as_model, texmap uvs may be incorrect, caused by unexpected part transform?
-        # FIXME: move uv unwrap to after obj[strings.ldraw_filename_key] = self.file.name
-        for fd in geometry.face_data:
-            for fi in fd.face_infos:
-                verts = []
-                for vertex in fi.vertices:
-                    vert = fd.matrix @ vertex
-                    bm_vert = bm.verts.new(vert)
-                    verts.append(bm_vert)
-                face = bm.faces.new(verts)
-
-                color_code = fd.color_code
-                if fi.color_code != "16":
-                    color_code = fi.color_code
-
-                texmap = fi.texmap
-
-                process_face(file, bm, mesh, face, color_code, texmap)
-
-        bm.faces.ensure_lookup_table()
-        bm.verts.ensure_lookup_table()
-        bm.edges.ensure_lookup_table()
-
-        if import_options.remove_doubles:
-            bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=import_options.merge_distance)
-
-        if import_options.recalculate_normals:
-            bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
-
-        # bpy.context.object.data.edges[6].use_edge_sharp = True
-        if import_options.sharpen_edges:
-            sharpen_edges(bm, geometry)
-
-        if import_options.bevel_edges:
-            mesh.use_customdata_edge_bevel = True
-
-        if import_options.smooth_type == "auto_smooth":
-            mesh.use_auto_smooth = import_options.shade_smooth
-            mesh.auto_smooth_angle = math.radians(auto_smooth_angle)
-
-        if import_options.make_gaps and import_options.gap_target == "mesh":
-            mesh.transform(matrices.scaled_matrix(import_options.gap_scale))
-
-        bm.to_mesh(mesh)
-        bm.clear()
-        bm.free()
-
-        mesh.update()
-        mesh.validate()
-    mesh = bpy.data.meshes[key]
-    return mesh
 
 
 def process_face(file, bm, mesh, face, color_code, texmap):
@@ -322,41 +186,6 @@ def process_face(file, bm, mesh, face, color_code, texmap):
 
     if texmap is not None:
         texmap.uv_unwrap_face(bm, face)
-
-
-def get_edge_mesh(key, file, geometry):
-    key = f"e_{key}"
-    if key not in bpy.data.meshes:
-        mesh = build_edge_mesh(key, geometry)
-        mesh[strings.ldraw_filename_key] = file.name
-        if import_options.make_gaps and import_options.gap_target == "mesh":
-            mesh.transform(matrices.scaled_matrix(import_options.gap_scale))
-    mesh = bpy.data.meshes[key]
-    return mesh
-
-
-def build_edge_mesh(key, geometry):
-    verts = []
-    edges = []
-    faces = []
-
-    i = 0
-    for ed in geometry.edge_data:
-        for fi in ed.face_infos:
-            index = []
-            for vertex in fi.vertices:
-                vert = ed.matrix @ vertex
-                verts.append(vert)
-                index.append(i)
-                i += 1
-            faces.append(index)
-
-    mesh = bpy.data.meshes.new(key)
-    mesh.from_pydata(verts, edges, faces)
-    mesh.update()
-    mesh.validate()
-
-    return mesh
 
 
 def bmesh_ops(mesh):
@@ -438,13 +267,14 @@ class LDrawNode:
         self.meta_command = None
         self.meta_args = {}
 
-    def load(self, parent_matrix=matrices.identity, parent_color_code="16", geometry=None, is_edge_logo=False, parent_collection=None):
+    def load(self, parent_matrix=matrices.identity, color_code="16", geometry_data=None, is_edge_logo=False, parent_collection=None):
         global part_count
         global top_collection
         global top_empty
         global next_collection
         global end_next_collection
 
+        # these meta commands affect the scene
         if self.file is None:
             if self.meta_command == "step":
                 set_step()
@@ -486,7 +316,7 @@ class LDrawNode:
         # set the working color code to this file's
         # color code if it isn't color code 16
         if self.color_code != "16":
-            parent_color_code = self.color_code
+            color_code = self.color_code
 
         is_model = self.file.is_like_model()
         is_shortcut = self.file.is_shortcut()
@@ -494,109 +324,268 @@ class LDrawNode:
         is_subpart = self.file.is_subpart()
 
         matrix = parent_matrix @ self.matrix
-        file_collection = parent_collection
+        collection = parent_collection
 
         if is_model:
             collection_name = os.path.basename(self.file.name)
-            file_collection = bpy.data.collections.new(collection_name)
+            collection = bpy.data.collections.new(collection_name)
             if parent_collection is not None:
-                parent_collection.children.link(file_collection)
+                parent_collection.children.link(collection)
 
             if top_collection is None:
-                top_collection = file_collection
+                top_collection = collection
                 if import_options.parent_to_empty and top_empty is None:
                     top_empty = bpy.data.objects.new(top_collection.name, None)
                     if top_collection is not None:
                         top_collection.objects.link(top_empty)
-        elif geometry is None:  # top-level part
-            geometry = GeometryData()
+        elif geometry_data is None:  # top-level part
+            geometry_data = GeometryData()
             matrix = matrices.identity
             self.top = True
             part_count += 1
             texmap.reset_caches()  # or else the previous part's texmap is applied to this part
 
         if import_options.meta_group and next_collection is not None:
-            file_collection = next_collection
+            collection = next_collection
             if end_next_collection:
                 next_collection = None
 
         key = []
         key.append(self.file.name)
-        key.append(parent_color_code)
+        key.append(color_code)
         key.append(hash(matrix.freeze()))
-        key = "_".join([str(k).lower() for k in key])[0:63]
+        key = "_".join([str(k) for k in key]).strip().lower().replace(" ", "")
 
         # if it's a part and geometry already in the geometry_cache, reuse it
         # meta commands are not in self.top files which is how they are counted
         # missing minifig arms if "if key not in bpy.data.meshes:"
-        # with self.top and removed, it is faster but if the top level part is
+        # with "self.top and" removed, it is faster but if the top level part is
         # used as a transformed subpart, it may render incorrectly
-        if key in geometry_cache:
-            geometry = geometry_cache[key]
+        if key in geometry_data_cache:
+            geometry_data = geometry_data_cache[key]
         else:
-            if geometry is not None:
+            if geometry_data is not None:
                 if self.file.is_edge_logo():
                     is_edge_logo = True
 
                 if (not is_edge_logo) or (is_edge_logo and import_options.display_logo):
-                    geometry.add_edge_data(matrix, parent_color_code, self.file.geometry)
+                    geometry_data.add_edge_data(matrix, color_code, self.file.geometry)
 
-                geometry.add_face_data(matrix, parent_color_code, self.file.geometry)
+                geometry_data.add_face_data(matrix, color_code, self.file.geometry)
 
             for child_node in self.file.child_nodes:
-                child_node.load(parent_matrix=matrix,
-                                parent_color_code=parent_color_code,
-                                geometry=geometry,
-                                is_edge_logo=is_edge_logo,
-                                parent_collection=file_collection)
+                child_node.load(
+                    geometry_data=geometry_data,
+                    parent_matrix=matrix,
+                    color_code=color_code,
+                    parent_collection=collection,
+                    is_edge_logo=is_edge_logo,
+                )
 
-            # without if self.top
+            # without "if self.top:"
             # 10030-1 - Imperial Star Destroyer - UCS.mpd top back of the bridge - 3794a.dat renders incorrectly
             if self.top:
-                geometry_cache[key] = geometry
+                geometry_data_cache[key] = geometry_data
 
         if self.top:
-            mesh = get_mesh(key, self.file, geometry)
+            matrix = parent_matrix @ self.matrix
+            scaled_matrix = matrices.scaled_matrix(import_options.gap_scale)
+
+            e_key = f"e_{key}"
+            gp_key = f"gp_{key}"
+
+            if key not in bpy.data.meshes:
+                bm = bmesh.new()
+
+                mesh = bpy.data.meshes.new(key)
+                mesh.name = key
+                mesh[strings.ldraw_filename_key] = self.file.name
+
+                # FIXME: 31313 - Mindstorms EV3 - Spike3r.mpd - "31313 - 13710ac01.dat"
+                # FIXME: if not treat_shortcut_as_model, texmap uvs may be incorrect, caused by unexpected part transform?
+                # FIXME: move uv unwrap to after obj[strings.ldraw_filename_key] = self.file.name
+                for fd in geometry_data.face_data:
+                    for fi in fd.face_infos:
+                        verts = []
+                        for vertex in fi.vertices:
+                            vert = fd.matrix @ vertex
+                            bm_vert = bm.verts.new(vert)
+                            verts.append(bm_vert)
+                        face = bm.faces.new(verts)
+
+                        color_code = fd.color_code
+                        if fi.color_code != "16":
+                            color_code = fi.color_code
+
+                        process_face(self.file, bm, mesh, face, color_code, fi.texmap)
+
+                bm.faces.ensure_lookup_table()
+                bm.verts.ensure_lookup_table()
+                bm.edges.ensure_lookup_table()
+
+                if import_options.remove_doubles:
+                    # if vertices in sharp edge collection, do not add to merge collection
+                    bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=import_options.merge_distance)
+
+                if import_options.recalculate_normals:
+                    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+
+                # bpy.context.object.data.edges[6].use_edge_sharp = True
+                # Create kd tree for fast "find nearest points" calculation
+                # https://docs.blender.org/api/blender_python_api_current/mathutils.kdtree.html
+                vertices = bm.verts
+                kd = mathutils.kdtree.KDTree(len(vertices))
+                for i, v in enumerate(vertices):
+                    kd.insert(v.co, i)
+                kd.balance()
+
+                # increase the distance to look for edges to merge
+                # merge line type 2 edges at a greater distance than mesh edges
+                distance = import_options.merge_distance * 2
+                distance = import_options.merge_distance
+
+                edge_mesh = bpy.data.meshes.new(e_key)
+                edge_mesh.name = e_key
+                edge_mesh[strings.ldraw_filename_key] = self.file.name
+
+                e_verts = []
+                e_edges = []
+                e_faces = []
+                i = 0
+                # Create edge_indices dictionary, which is the list of edges as pairs of indices into our verts array
+                edge_indices = set()
+                for ed in geometry_data.edge_data:
+                    for fi in ed.face_infos:
+                        edge_verts = []
+                        face_indices = []
+                        for vertex in fi.vertices:
+                            vert = ed.matrix @ vertex
+                            e_verts.append(vert)
+                            edge_verts.append(vert)
+                            face_indices.append(i)
+                            i += 1
+
+                        edges0 = [index for (co, index, dist) in kd.find_range(edge_verts[0], distance)]
+                        edges1 = [index for (co, index, dist) in kd.find_range(edge_verts[1], distance)]
+                        for e0 in edges0:
+                            for e1 in edges1:
+                                edge_indices.add((e0, e1))
+                                edge_indices.add((e1, e0))
+
+                        e_faces.append(face_indices)
+
+                edge_mesh.from_pydata(e_verts, e_edges, e_faces)
+                edge_mesh.update()
+                edge_mesh.validate()
+
+                # # Find the appropriate mesh edges and make them sharp (i.e. not smooth)
+                # merge = set()
+                # for edge in bm.edges:
+                #     v0 = edge.verts[0].index
+                #     v1 = edge.verts[1].index
+                #     if (v0, v1) in edge_indices:
+                #         merge.add(edge.verts[0])
+                #         merge.add(edge.verts[1])
+                #
+                #         # Make edge sharp
+                #         edge.smooth = False
+                #
+                # # if it was detected as a edge, the merge those vertices
+                # bmesh.ops.remove_doubles(bm, verts=list(merge), dist=distance)
+
+                bm.to_mesh(mesh)
+                bm.clear()
+                bm.free()
+
+                mesh.update()
+                mesh.validate()
+
+                for edge in mesh.edges:
+                    v0 = edge.vertices[0]
+                    v1 = edge.vertices[1]
+                    if (v0, v1) in edge_indices:
+                        edge.use_edge_sharp = True
+                        edge.use_freestyle_mark = True
+
+                if import_options.smooth_type == "auto_smooth":
+                    mesh.use_auto_smooth = import_options.shade_smooth
+                    mesh.auto_smooth_angle = math.radians(auto_smooth_angle)
+
+                if import_options.make_gaps and import_options.gap_target == "mesh":
+                    mesh.transform(scaled_matrix)
+                    edge_mesh.transform(scaled_matrix)
+
+            mesh = bpy.data.meshes[key]
 
             obj = do_create_object(mesh)
-            process_object(obj, parent_matrix, self.matrix)
-            process_object_modifiers(obj)
             obj[strings.ldraw_filename_key] = self.file.name
+            process_object(obj, matrix)
+
+            if import_options.smooth_type == "edge_split":
+                edge_modifier = obj.modifiers.new("Edge Split", type='EDGE_SPLIT')
+                edge_modifier.use_edge_angle = True
+                edge_modifier.split_angle = math.radians(89.9)
+                edge_modifier.use_edge_sharp = True
 
             # https://b3d.interplanety.org/en/how-to-get-global-vertex-coordinates/
-
-            if file_collection is not None:
-                file_collection.objects.link(obj)
+            if collection is not None:
+                collection.objects.link(obj)
             else:
                 bpy.context.scene.collection.objects.link(obj)
 
             if import_options.import_edges or import_options.grease_pencil_edges:
-                edge_mesh = get_edge_mesh(key, self.file, geometry)
+                if e_key in bpy.data.meshes:
+                    edge_mesh = bpy.data.meshes[e_key]
 
-                if import_options.import_edges:
-                    edge_obj = do_create_object(edge_mesh)
-                    process_object(edge_obj, parent_matrix, self.matrix)
-                    edge_obj.parent = obj
-                    edge_obj.matrix_world = obj.matrix_world
-                    edge_obj[strings.ldraw_filename_key] = f"{self.file.name}_edges"
+                    if import_options.import_edges:
+                        edge_obj = do_create_object(edge_mesh)
+                        process_object(edge_obj, matrix)
+                        edge_obj.parent = obj
+                        edge_obj.matrix_world = obj.matrix_world
+                        edge_obj[strings.ldraw_filename_key] = f"{self.file.name}_edges"
 
-                    if file_collection is not None:
-                        file_collection.objects.link(edge_obj)
-                    else:
-                        bpy.context.scene.collection.objects.link(edge_obj)
+                        if collection is not None:
+                            collection.objects.link(edge_obj)
+                        else:
+                            bpy.context.scene.collection.objects.link(edge_obj)
 
-                if import_options.grease_pencil_edges:
-                    gp_mesh = get_gp_mesh(key, edge_mesh, self.color_code)
-
-                    gp_obj = bpy.data.objects.new(key, gp_mesh)
-                    process_object(gp_obj, parent_matrix, self.matrix)
-                    gp_obj.parent = obj
-                    gp_obj.matrix_world = obj.matrix_world
-                    gp_obj.active_material_index = len(gp_mesh.materials)
-
-                    collection_name = "Grease Pencil Edges"
-                    if collection_name not in bpy.data.collections:
-                        collection = bpy.data.collections.new(collection_name)
-                        bpy.context.scene.collection.children.link(collection)
-                    collection = bpy.context.scene.collection.children[collection_name]
-                    collection.objects.link(gp_obj)
+            #     if import_options.grease_pencil_edges:
+            #         if gp_key not in bpy.data.grease_pencils:
+            #             gp_mesh = bpy.data.grease_pencils.new(gp_key)
+            #             gp_mesh.name = gp_key
+            #             gp_mesh.pixel_factor = 5.0
+            #             gp_mesh.stroke_depth_order = "3D"
+            #
+            #             gp_layer = gp_mesh.layers.new("gpl")
+            #             gp_layer.line_change = 2
+            #
+            #             gp_frame = gp_layer.frames.new(1)
+            #             # gp_layer.active_frame = gp_frame
+            #
+            #             for e in edge_mesh.edges:
+            #                 gp_stroke = gp_frame.strokes.new()
+            #                 gp_stroke.material_index = 0
+            #                 gp_stroke.line_width = 10.0
+            #                 for v in e.vertices:
+            #                     i = len(gp_stroke.points)
+            #                     gp_stroke.points.add(1)
+            #                     gp_point = gp_stroke.points[i]
+            #                     gp_point.co = edge_mesh.vertices[v].co
+            #
+            #             apply_gp_materials(gp_mesh, self.color_code)
+            #
+            #             bpy.data.grease_pencils[gp_key] = gp_mesh
+            #         gp_mesh = bpy.data.grease_pencils[gp_key]
+            #
+            #         gp_obj = bpy.data.objects.new(gp_key, gp_mesh)
+            #         process_object(gp_obj, matrix)
+            #         gp_obj.parent = obj
+            #         gp_obj.matrix_world = obj.matrix_world
+            #         gp_obj.active_material_index = len(gp_mesh.materials)
+            #
+            #         name = "Grease Pencil Edges"
+            #         if name not in bpy.data.collections:
+            #             collection = bpy.data.collections.new(name)
+            #             bpy.context.scene.collection.children.link(collection)
+            #         collection = bpy.context.scene.collection.children[name]
+            #         collection.objects.link(gp_obj)

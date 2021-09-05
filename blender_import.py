@@ -16,10 +16,8 @@ from . import texmap
 
 def do_import(filepath):
     print(filepath)  # TODO: multiple filepaths?
-    bpy.context.scene.eevee.use_ssr = True
-    bpy.context.scene.eevee.use_ssr_refraction = True
-    bpy.context.scene.eevee.use_taa_reprojection = True
 
+    scene_setup()
     ldraw_file.reset_caches()
     ldraw_node.reset_caches()
     ldraw_camera.reset_caches()
@@ -65,6 +63,35 @@ def do_import(filepath):
                 if space.type == "VIEW_3D":
                     if space.clip_end < max_clip_end:
                         space.clip_end = max_clip_end
+
+
+def scene_setup():
+    bpy.context.scene.eevee.use_ssr = True
+    bpy.context.scene.eevee.use_ssr_refraction = True
+    bpy.context.scene.eevee.use_taa_reprojection = True
+
+    if import_options.use_freestyle_edges:
+        bpy.context.scene.render.use_freestyle = True
+        if len(bpy.context.view_layer.freestyle_settings.linesets) < 1:
+            bpy.context.view_layer.freestyle_settings.linesets.new("Ldraw LineSet")
+        lineset = bpy.context.view_layer.freestyle_settings.linesets[0]
+        lineset.select_by_visibility = True
+        lineset.select_by_edge_types = True
+        lineset.select_by_face_marks = False
+        lineset.select_by_collection = False
+        lineset.select_by_image_border = False
+        lineset.visibility = 'VISIBLE'
+        lineset.edge_type_negation = 'INCLUSIVE'
+        lineset.edge_type_combination = 'OR'
+        lineset.select_silhouette = False
+        lineset.select_border = False
+        lineset.select_contour = False
+        lineset.select_suggestive_contour = False
+        lineset.select_ridge_valley = False
+        lineset.select_crease = False
+        lineset.select_edge_mark = True
+        lineset.select_external_contour = False
+        lineset.select_material_boundary = False
 
 
 def load_materials(file):

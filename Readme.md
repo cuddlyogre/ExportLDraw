@@ -98,13 +98,12 @@ be scaled to adjust to gaps between parts.
 **Extras**
 
 **Prefer unofficial parts:** If a part is in both the unofficial and official library, use the unofficial one.  
-**Prefer unofficial parts:** If a part is in both the unofficial and official library, use the unofficial one.  
 **Import all materials:** Import all LDraw materials, not just the ones used by the model.  
 **Add subsurface:** Attach a subsurface shader node to materials.  
-**Bevel edges:** Bevel part edges slightly. This might cause some parts to look incorrect.  
 **Debug text:** Render debug text to the system console.  
 **No studs:** Don't import studs. Not particularly useful but is neat to see.  
 **Import edges:** Import LDraw edges as edges.  
+**Freestyle edges:** Render LDraw edges using freestyle.
 **Import edges as grease pencil:** Import LDraw edges as grease pencil lines.
 
 # Exporting

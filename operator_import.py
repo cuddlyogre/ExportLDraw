@@ -19,6 +19,7 @@ profiler = cProfile.Profile()
 
 settings = None
 
+# FIXME: error if a new setting key is forgotten
 default_settings = {
     'ldraw_path': filesystem.locate_ldraw(),
     'prefer_unofficial': filesystem.defaults['prefer_unofficial'],
@@ -32,7 +33,6 @@ default_settings = {
     'make_gaps': import_options.defaults['make_gaps'],
     'gap_scale': import_options.defaults['gap_scale'],
     'no_studs': import_options.defaults['no_studs'],
-    'bevel_edges': import_options.defaults['bevel_edges'],
     'set_timelime_markers': import_options.defaults['set_timelime_markers'],
     'meta_group': import_options.defaults['meta_group'],
     'meta_print_write': import_options.defaults['meta_print_write'],
@@ -45,6 +45,7 @@ default_settings = {
     'starting_step_frame': import_options.defaults['starting_step_frame'],
     'smooth_type': import_options.defaults['smooth_type'],
     'import_edges': import_options.defaults['import_edges'],
+    'use_freestyle_edges': import_options.defaults['use_freestyle_edges'],
     'grease_pencil_edges': import_options.defaults['grease_pencil_edges'],
     'import_scale': import_options.defaults['import_scale'],
     'parent_to_empty': import_options.defaults['parent_to_empty'],
@@ -150,12 +151,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         name="Shade smooth",
         description="Shade smooth",
         default=get_setting('shade_smooth'),
-    )
-
-    bevel_edges: bpy.props.BoolProperty(
-        name="Bevel edges",
-        description="Add bevel to edges",
-        default=get_setting('bevel_edges'),
     )
 
     resolution: bpy.props.EnumProperty(
@@ -319,6 +314,12 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         default=get_setting('import_edges'),
     )
 
+    use_freestyle_edges: bpy.props.BoolProperty(
+        name="Use Freestyle edges",
+        description="Render LDraw edges using freestyle",
+        default=get_setting('use_freestyle_edges'),
+    )
+
     grease_pencil_edges: bpy.props.BoolProperty(
         name="Imported edges as grease pencil",
         description="Import edges as grease pencil strokes",
@@ -372,6 +373,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
     def execute(self, context):
         start = time.monotonic()
 
+        # FIXME: error if a new setting key is forgotten
         global settings
         settings = {
             'ldraw_path': self.ldraw_path,
@@ -386,7 +388,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
             'make_gaps': self.make_gaps,
             'gap_scale': self.gap_scale,
             'no_studs': self.no_studs,
-            'bevel_edges': self.bevel_edges,
             'set_timelime_markers': self.set_timelime_markers,
             'meta_group': self.meta_group,
             'meta_print_write': self.meta_print_write,
@@ -399,6 +400,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
             'starting_step_frame': self.starting_step_frame,
             'smooth_type': self.smooth_type,
             'import_edges': self.import_edges,
+            'use_freestyle_edges': self.use_freestyle_edges,
             'grease_pencil_edges': self.grease_pencil_edges,
             'import_scale': self.import_scale,
             'parent_to_empty': self.parent_to_empty,
@@ -424,7 +426,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         import_options.make_gaps = self.make_gaps
         import_options.gap_scale = self.gap_scale
         import_options.no_studs = self.no_studs
-        import_options.bevel_edges = self.bevel_edges
         import_options.set_timelime_markers = self.set_timelime_markers
         import_options.meta_group = self.meta_group
         import_options.meta_print_write = self.meta_print_write
@@ -437,6 +438,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         import_options.starting_step_frame = self.starting_step_frame
         import_options.smooth_type = self.smooth_type
         import_options.import_edges = self.import_edges
+        import_options.use_freestyle_edges = self.use_freestyle_edges
         import_options.grease_pencil_edges = self.grease_pencil_edges
         import_options.import_scale = self.import_scale
         import_options.parent_to_empty = self.parent_to_empty
@@ -512,10 +514,10 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         box.prop(self, "set_timelime_markers")
 
         box.label(text="Extras")
+        box.prop(self, "sharpen_edges")
+        box.prop(self, "use_freestyle_edges")
+        box.prop(self, "import_edges")
+        # box.prop(self, "grease_pencil_edges")
         # box.prop(self, "treat_shortcut_as_model")
         box.prop(self, "prefer_unofficial")
-        box.prop(self, "bevel_edges")
         box.prop(self, "no_studs")
-        box.prop(self, "sharpen_edges")
-        box.prop(self, "import_edges")
-        box.prop(self, "grease_pencil_edges")

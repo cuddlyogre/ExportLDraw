@@ -143,6 +143,8 @@ class LDrawFile:
             if params is None:
                 continue
 
+            # create meta nodes when those commands affect the scene
+            # process meta command in place if it only affects the file
             if params[0] == "0":
                 if params[1].lower() in ["!colour"]:
                     ldraw_colors.parse_color(params)
