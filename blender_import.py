@@ -70,10 +70,11 @@ def scene_setup():
     bpy.context.scene.eevee.use_ssr_refraction = True
     bpy.context.scene.eevee.use_taa_reprojection = True
 
+    # https://blender.stackexchange.com/a/146838
     if import_options.use_freestyle_edges:
         bpy.context.scene.render.use_freestyle = True
         if len(bpy.context.view_layer.freestyle_settings.linesets) < 1:
-            bpy.context.view_layer.freestyle_settings.linesets.new("Ldraw LineSet")
+            bpy.context.view_layer.freestyle_settings.linesets.new("LDraw LineSet")
         lineset = bpy.context.view_layer.freestyle_settings.linesets[0]
         lineset.select_by_visibility = True
         lineset.select_by_edge_types = True

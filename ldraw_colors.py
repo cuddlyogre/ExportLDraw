@@ -27,7 +27,7 @@ def get_color(color_code):
 
 
 def parse_color(params):
-    color = LdrawColor(params)
+    color = LDrawColor(params)
     colors[color.code] = color
     return color.code
 
@@ -155,7 +155,7 @@ def __clamp(value):
     return max(min(value, 1.0), 0.0)
 
 
-class LdrawColor:
+class LDrawColor:
     def __init__(self, params):
         self.name = None
         self.code = None

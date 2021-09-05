@@ -31,7 +31,7 @@ def read_color_table():
     ldraw_colors.reset_caches()
 
     """Reads the color values from the LDConfig.ldr file. For details of the
-    Ldraw color system see: http://www.ldraw.org/article/547"""
+    LDraw color system see: http://www.ldraw.org/article/547"""
 
     if ldraw_colors.use_alt_colors:
         filename = "LDCfgalt.ldr"
