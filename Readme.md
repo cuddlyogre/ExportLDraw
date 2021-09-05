@@ -104,7 +104,6 @@ be scaled to adjust to gaps between parts.
 **No studs:** Don't import studs. Not particularly useful but is neat to see.  
 **Import edges:** Import LDraw edges as edges.  
 **Freestyle edges:** Render LDraw edges using freestyle.
-**Import edges as grease pencil:** Import LDraw edges as grease pencil lines.
 
 # Exporting
 

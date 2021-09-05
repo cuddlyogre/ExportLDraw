@@ -46,7 +46,6 @@ default_settings = {
     'smooth_type': import_options.defaults['smooth_type'],
     'import_edges': import_options.defaults['import_edges'],
     'use_freestyle_edges': import_options.defaults['use_freestyle_edges'],
-    'grease_pencil_edges': import_options.defaults['grease_pencil_edges'],
     'import_scale': import_options.defaults['import_scale'],
     'parent_to_empty': import_options.defaults['parent_to_empty'],
     'gap_target': import_options.defaults['gap_target'],
@@ -320,12 +319,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         default=get_setting('use_freestyle_edges'),
     )
 
-    grease_pencil_edges: bpy.props.BoolProperty(
-        name="Imported edges as grease pencil",
-        description="Import edges as grease pencil strokes",
-        default=get_setting('grease_pencil_edges'),
-    )
-
     treat_shortcut_as_model: bpy.props.BoolProperty(
         name="Treat shortcuts as models",
         options={'HIDDEN'},
@@ -401,7 +394,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
             'smooth_type': self.smooth_type,
             'import_edges': self.import_edges,
             'use_freestyle_edges': self.use_freestyle_edges,
-            'grease_pencil_edges': self.grease_pencil_edges,
             'import_scale': self.import_scale,
             'parent_to_empty': self.parent_to_empty,
             'gap_target': self.gap_target,
@@ -439,7 +431,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         import_options.smooth_type = self.smooth_type
         import_options.import_edges = self.import_edges
         import_options.use_freestyle_edges = self.use_freestyle_edges
-        import_options.grease_pencil_edges = self.grease_pencil_edges
         import_options.import_scale = self.import_scale
         import_options.parent_to_empty = self.parent_to_empty
         import_options.gap_target = self.gap_target
@@ -517,7 +508,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         box.prop(self, "sharpen_edges")
         box.prop(self, "use_freestyle_edges")
         box.prop(self, "import_edges")
-        # box.prop(self, "grease_pencil_edges")
         # box.prop(self, "treat_shortcut_as_model")
         box.prop(self, "prefer_unofficial")
         box.prop(self, "no_studs")

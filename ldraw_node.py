@@ -331,7 +331,6 @@ class LDrawNode:
             scaled_matrix = matrices.scaled_matrix(import_options.gap_scale)
 
             e_key = f"e_{key}"
-            gp_key = f"gp_{key}"
 
             if key not in bpy.data.meshes:
                 bm = bmesh.new()
@@ -476,59 +475,16 @@ class LDrawNode:
             else:
                 bpy.context.scene.collection.objects.link(obj)
 
-            if import_options.import_edges or import_options.grease_pencil_edges:
+            if import_options.import_edges:
                 if e_key in bpy.data.meshes:
                     edge_mesh = bpy.data.meshes[e_key]
-
-                    if import_options.import_edges:
-                        edge_obj = do_create_object(edge_mesh)
-                        process_object(edge_obj, matrix)
-                        edge_obj.parent = obj
-                        edge_obj.matrix_world = obj.matrix_world
-                        edge_obj[strings.ldraw_filename_key] = f"{self.file.name}_edges"
+                    edge_obj = do_create_object(edge_mesh)
+                    process_object(edge_obj, matrix)
+                    edge_obj.parent = obj
+                    edge_obj.matrix_world = obj.matrix_world
+                    edge_obj[strings.ldraw_filename_key] = f"{self.file.name}_edges"
 
                     if collection is not None:
                         collection.objects.link(edge_obj)
                     else:
                         bpy.context.scene.collection.objects.link(edge_obj)
-
-            #     if import_options.grease_pencil_edges:
-            #         if gp_key not in bpy.data.grease_pencils:
-            #             gp_mesh = bpy.data.grease_pencils.new(gp_key)
-            #             gp_mesh.name = gp_key
-            #             gp_mesh.pixel_factor = 5.0
-            #             gp_mesh.stroke_depth_order = "3D"
-            #
-            #             gp_layer = gp_mesh.layers.new("gpl")
-            #             gp_layer.line_change = 2
-            #
-            #             gp_frame = gp_layer.frames.new(1)
-            #             # gp_layer.active_frame = gp_frame
-            #
-            #             for e in edge_mesh.edges:
-            #                 gp_stroke = gp_frame.strokes.new()
-            #                 gp_stroke.material_index = 0
-            #                 gp_stroke.line_width = 10.0
-            #                 for v in e.vertices:
-            #                     i = len(gp_stroke.points)
-            #                     gp_stroke.points.add(1)
-            #                     gp_point = gp_stroke.points[i]
-            #                     gp_point.co = edge_mesh.vertices[v].co
-            #
-            #             apply_gp_materials(gp_mesh, self.color_code)
-            #
-            #             bpy.data.grease_pencils[gp_key] = gp_mesh
-            #         gp_mesh = bpy.data.grease_pencils[gp_key]
-            #
-            #         gp_obj = bpy.data.objects.new(gp_key, gp_mesh)
-            #         process_object(gp_obj, matrix)
-            #         gp_obj.parent = obj
-            #         gp_obj.matrix_world = obj.matrix_world
-            #         gp_obj.active_material_index = len(gp_mesh.materials)
-            #
-            #         name = "Grease Pencil Edges"
-            #         if name not in bpy.data.collections:
-            #             collection = bpy.data.collections.new(name)
-            #             bpy.context.scene.collection.children.link(collection)
-            #         collection = bpy.context.scene.collection.children[name]
-            #         collection.objects.link(gp_obj)
