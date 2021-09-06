@@ -101,16 +101,15 @@ def load_materials(file):
     group_name = 'blank'
     for line in file.lines:
         params = helpers.parse_line(line, 17)
-
         if params is None:
             continue
 
-        if params[0] == "0":
-            if line.startswith('0 // LDraw'):
-                group_name = line
-                colors[group_name] = []
-            elif params[1].lower() in ["!colour"]:
-                colors[group_name].append(ldraw_colors.parse_color(params))
+        clean_line = helpers.clean_line(line)
+        if clean_line.startswith('0 // LDraw'):
+            group_name = clean_line
+            colors[group_name] = []
+        elif clean_line.startswith("0 !COLOUR"):
+            colors[group_name].append(ldraw_colors.parse_color(params))
 
     j = 0
     for collection_name, codes in colors.items():
@@ -133,12 +132,9 @@ def load_materials(file):
             mesh = bpy.data.meshes.new(f"{prefix}_{str(color_code)}")
             mesh[strings.ldraw_color_code_key] = str(color_code)
 
-            color = ldraw_colors.get_color(color_code)
-            material = blender_materials.get_material(color)
+            material = blender_materials.get_material(color_code)
             if material is None:
-                _color_code = "16"
-                color = ldraw_colors.get_color(_color_code)
-                material = blender_materials.get_material(color)
+                continue
 
             # https://blender.stackexchange.com/questions/23905/select-faces-depending-on-material
             if material.name not in mesh.materials:

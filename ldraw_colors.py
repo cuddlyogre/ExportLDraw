@@ -1,6 +1,5 @@
 """Parses and stores a table of color / material definitions. Converts color space."""
 
-import re
 import math
 import struct
 
@@ -27,7 +26,8 @@ def get_color(color_code):
 
 
 def parse_color(params):
-    color = LDrawColor(params)
+    color = LDrawColor()
+    color.parse_color(params)
     colors[color.code] = color
     return color.code
 
@@ -62,56 +62,6 @@ def is_dark(color):
     return brightness < 0.02
 
 
-def hex_string_to_linear_rgba(hex_string):
-    """Convert color hex value to RGB value."""
-    # Handle direct colors
-    # Direct colors are documented here: http://www.hassings.dk/l3/l3p.html
-    match = re.fullmatch(r"0x0*([0-9])((?:[A-F0-9]{2}){3})", hex_string)
-    if match is not None:
-        digit = match.group(1)
-        rgb_str = match.group(2)
-
-        interleaved = False
-        if digit == "2":  # Opaque
-            alpha = 1.0
-        elif digit == "3":  # Transparent
-            alpha = 0.5
-        elif digit == "4":  # Opaque
-            alpha = 1.0
-            interleaved = True
-        elif digit == "5":  # More Transparent
-            alpha = 0.333
-            interleaved = True
-        elif digit == "6":  # Less transparent
-            alpha = 0.666
-            interleaved = True
-        elif digit == "7":  # Invisible
-            alpha = 0.0
-            interleaved = True
-        else:
-            alpha = 1.0
-
-        if interleaved:
-            # Input string is six hex digits of two colors "RGBRGB".
-            # This was designed to be a dithered color.
-            # Take the average of those two colors (R+R,G+G,B+B) * 0.5
-            r = float(int(rgb_str[0], 16)) / 15
-            g = float(int(rgb_str[1], 16)) / 15
-            b = float(int(rgb_str[2], 16)) / 15
-            color1 = srgb_to_linear_rgb((r, g, b))
-            r = float(int(rgb_str[3], 16)) / 15
-            g = float(int(rgb_str[4], 16)) / 15
-            b = float(int(rgb_str[5], 16)) / 15
-            color2 = srgb_to_linear_rgb((r, g, b))
-            return (0.5 * (color1[0] + color2[0]),
-                    0.5 * (color1[1] + color2[1]),
-                    0.5 * (color1[2] + color2[2]), alpha)
-
-        # String is "RRGGBB" format
-        return hex_digits_to_linear_rgba(rgb_str, alpha)
-    return None
-
-
 def __is_int(s):
     try:
         int(s)
@@ -143,12 +93,24 @@ def srgb_to_linear_rgb(srgb_color):
     return r, g, b
 
 
-def hex_digits_to_linear_rgba(hex_digits, alpha):
+def hex_digits_to_linear_rgba(hex_digits):
+    srgb = hex_digits_to_srgb(hex_digits)
+    linear_rgb = srgb_to_linear_rgb(srgb)
+    return linear_rgb[0], linear_rgb[1], linear_rgb[2]
+
+
+def hex_digits_to_srgb(hex_digits):
     # String is "RRGGBB" format
     int_tuple = struct.unpack("BBB", bytes.fromhex(hex_digits))
     srgb = tuple([val / 255 for val in int_tuple])
-    linear_rgb = srgb_to_linear_rgb(srgb)
-    return linear_rgb[0], linear_rgb[1], linear_rgb[2], alpha
+    return srgb[0], srgb[1], srgb[2]
+
+
+def get_color_value(hex_digits, linear=True):
+    if linear:
+        return hex_digits_to_linear_rgba(hex_digits)
+    else:
+        return hex_digits_to_srgb(hex_digits)
 
 
 def __clamp(value):
@@ -156,7 +118,7 @@ def __clamp(value):
 
 
 class LDrawColor:
-    def __init__(self, params):
+    def __init__(self):
         self.name = None
         self.code = None
         self.color = None
@@ -171,22 +133,21 @@ class LDrawColor:
         self.minsize = None
         self.maxsize = None
 
-        self.__parse_color(params)
-
-    def __parse_color(self, params):
+    def parse_color(self, params, linear=True):
         name = params[2]
-        color_code = params[4]
-
-        rgba = hex_digits_to_linear_rgba(params[6][1:], 1.0)
-        rgba_linear = srgb_to_linear_rgb(rgba[0:3])
-
-        e_rgba = hex_digits_to_linear_rgba(params[8][1:], 1.0)
-        e_rgba_lineaer = srgb_to_linear_rgb(e_rgba[0:3])
-
         self.name = name
+
+        color_code = params[4]
         self.code = color_code
-        self.color = rgba_linear
-        self.edge_color = e_rgba_lineaer
+
+        hex_digits = params[6][1:]
+        rgba = get_color_value(hex_digits, linear)
+        self.color = rgba
+
+        hex_digits = params[8][1:]
+        e_rgba = get_color_value(hex_digits, linear)
+        self.edge_color = e_rgba
+
         self.alpha = 1.0
         self.luminance = 0.0
         self.material = "BASIC"
@@ -216,8 +177,11 @@ class LDrawColor:
             subline = params[params.index("MATERIAL"):]
 
             self.material = get_value(subline, "MATERIAL")
+
             hex_digits = get_value(subline, "VALUE")[1:]
-            self.secondary_color = hex_digits_to_linear_rgba(hex_digits, 1.0)
+            secondary_color = get_color_value(hex_digits, linear)
+            self.secondary_color = secondary_color
+
             self.fraction = get_value(subline, "FRACTION")
             self.vfraction = get_value(subline, "VFRACTION")
             self.size = get_value(subline, "SIZE")

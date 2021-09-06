@@ -26,7 +26,9 @@ def create_blender_node_groups():
         node_group.use_fake_user = True
 
 
-def get_key(color, use_edge_color, part_slopes, texmap):
+def get_material(color_code, use_edge_color=False, part_slopes=None, texmap=None):
+    color = ldraw_colors.get_color(color_code)
+
     _key = []
     _key.append("LDraw Material")
     _key.append(color.code)
@@ -46,12 +48,6 @@ def get_key(color, use_edge_color, part_slopes, texmap):
     if _key not in key_map:
         key_map[_key] = str(uuid.uuid4())
     key = key_map[_key]
-
-    return key
-
-
-def get_material(color, use_edge_color=False, part_slopes=None, texmap=None):
-    key = get_key(color, use_edge_color, part_slopes, texmap)
 
     # Reuse current material if it exists, otherwise create a new material
     if key in bpy.data.materials:
@@ -75,20 +71,13 @@ def __create_node_based_material(key, color, use_edge_color=False, part_slopes=N
 
     is_transparent = False
 
-    if color is None:
-        diff_color = (1.0, 1.0, 0.0) + (1.0,)
-        material.diffuse_color = diff_color
-        material["LEGO.isTransparent"] = is_transparent
-        material[strings.ldraw_color_code_key] = "16"
-        __create_cycles_standard(nodes, links, diff_color)
-        return material
-
     # https://wiki.ldraw.org/wiki/Color_24
     if use_edge_color:
         diff_color = color.edge_color + (1.0,)
         material.diffuse_color = diff_color
         material["LEGO.isTransparent"] = is_transparent
         material[strings.ldraw_color_code_key] = "24"
+        material[strings.ldraw_color_name_key] = color.name
         __create_cycles_standard(nodes, links, diff_color)
         return material
 
@@ -98,6 +87,7 @@ def __create_node_based_material(key, color, use_edge_color=False, part_slopes=N
     material.diffuse_color = diff_color
     material["LEGO.isTransparent"] = is_transparent
     material[strings.ldraw_color_code_key] = color.code
+    material[strings.ldraw_color_name_key] = color.name
 
     if is_transparent:
         material.blend_method = "BLEND"

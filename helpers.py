@@ -6,8 +6,12 @@ import re
 pp = pprint.PrettyPrinter(indent=4, width=120)
 
 
+def clean_line(line):
+    return re.sub(r'\s+', ' ', str(line).strip())
+
+
 def parse_line(line, min_params=0):
-    line = re.sub(r'\s+', ' ', line.strip())
+    line = clean_line(line)
 
     try:
         parts = list(csv.reader(io.StringIO(line), delimiter=' ', quotechar='"', skipinitialspace=True))

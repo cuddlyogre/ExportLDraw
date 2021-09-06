@@ -163,10 +163,9 @@ def set_object_matrix(obj, matrix):
 
 def process_face(file, bm, mesh, face, color_code, texmap):
     face.smooth = import_options.shade_smooth
-    color = ldraw_colors.get_color(color_code)
     part_slopes = special_bricks.get_part_slopes(file.name)
 
-    material = blender_materials.get_material(color, part_slopes=part_slopes, texmap=texmap)
+    material = blender_materials.get_material(color_code, part_slopes=part_slopes, texmap=texmap)
     if material is not None:
         # https://blender.stackexchange.com/questions/23905/select-faces-depending-on-material
         if material.name not in mesh.materials:
@@ -188,7 +187,6 @@ class LDrawNode:
         self.matrix = matrices.identity
         self.meta_command = None
         self.meta_args = dict()
-        self.geometry_data = None
 
     def load(self, parent_matrix=matrices.identity, color_code="16", geometry_data=None, parent_collection=None, is_edge_logo=False):
         global part_count
@@ -320,10 +318,6 @@ class LDrawNode:
                 geometry_data_cache[key] = geometry_data
 
         if top:
-            self.geometry_data = geometry_data
-            if not x:
-                return
-
             matrix = parent_matrix @ self.matrix
             e_key = f"e_{key}"
 
