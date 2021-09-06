@@ -38,7 +38,8 @@ def do_import(filepath):
         load_materials(file)
         return
 
-    root_node = ldraw_node.LDrawNode(file)
+    root_node = ldraw_node.LDrawNode()
+    root_node.file = file
     root_node.load()
 
     if ldraw_node.top_collection is not None:

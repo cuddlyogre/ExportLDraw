@@ -13,20 +13,20 @@ from . import ldraw_colors
 from . import matrices
 from . import special_bricks
 from . import strings
-from .geometry_data import GeometryData
+from .geometry_data import GeometryData, FaceData
 from . import texmap
 
 part_count = 0
 current_step = 0
 current_frame = 0
-geometry_data_cache = {}
+geometry_data_cache = dict()
 top_collection = None
 top_empty = None
 gap_scale_empty = None
-collection_id_map = {}
+collection_id_map = dict()
 next_collection = None
 end_next_collection = False
-key_map = {}
+key_map = dict()
 
 
 def reset_caches():
@@ -40,19 +40,18 @@ def reset_caches():
     global collection_id_map
     global next_collection
     global end_next_collection
-    global key_map
 
     part_count = 0
     current_step = 0
     current_frame = 0
-    geometry_data_cache = {}
+    geometry_data_cache = dict()
     top_collection = None
     top_empty = None
     gap_scale_empty = None
-    collection_id_map = {}
+    collection_id_map = dict()
     next_collection = None
     end_next_collection = False
-    key_map = {}
+    key_map = dict()
 
     if import_options.meta_step:
         set_step()
@@ -111,16 +110,6 @@ def do_create_object(mesh):
     else:
         obj = bpy.data.objects.new(mesh.name, mesh)
     return obj
-
-
-def process_object(obj, matrix):
-    if top_empty is None:
-        set_object_matrix(obj, matrix)
-    else:
-        set_parented_object_matrix(obj, matrix)
-
-    if import_options.meta_step:
-        handle_meta_step(obj)
 
 
 # https://docs.blender.org/api/current/bpy.types.bpy_struct.html#bpy.types.bpy_struct.keyframe_insert
@@ -193,15 +182,15 @@ class LDrawNode:
     All of the data that makes up a part.
     """
 
-    def __init__(self, file):
-        self.file = file
+    def __init__(self):
+        self.file = None
         self.color_code = "16"
         self.matrix = matrices.identity
-        self.top = False
         self.meta_command = None
-        self.meta_args = {}
+        self.meta_args = dict()
+        self.geometry_data = None
 
-    def load(self, parent_matrix=matrices.identity, color_code="16", geometry_data=None, is_edge_logo=False, parent_collection=None):
+    def load(self, parent_matrix=matrices.identity, color_code="16", geometry_data=None, parent_collection=None, is_edge_logo=False):
         global part_count
         global top_collection
         global top_empty
@@ -244,73 +233,77 @@ class LDrawNode:
                         ob.keyframe_insert(data_path="hide_viewport")
             return
 
-        if import_options.no_studs and self.file.is_like_stud():
-            return
-
         # set the working color code to this file's
         # color code if it isn't color code 16
         if self.color_code != "16":
             color_code = self.color_code
 
-        is_model = self.file.is_like_model()
-        is_shortcut = self.file.is_shortcut()
-        is_part = self.file.is_part()
-        is_subpart = self.file.is_subpart()
+        if self.file.is_edge_logo():
+            is_edge_logo = True
 
+        top = False
         matrix = parent_matrix @ self.matrix
         collection = parent_collection
 
-        if is_model:
-            collection_name = os.path.basename(self.file.name)
-            collection = bpy.data.collections.new(collection_name)
-            if parent_collection is not None:
-                parent_collection.children.link(collection)
+        if geometry_data is None:
+            if self.file.is_like_model():
+                collection_name = os.path.basename(self.file.name)
+                collection = bpy.data.collections.new(collection_name)
+                if parent_collection is not None:
+                    parent_collection.children.link(collection)
 
-            if top_collection is None:
-                top_collection = collection
-                if import_options.parent_to_empty and top_empty is None:
-                    top_empty = bpy.data.objects.new(top_collection.name, None)
-                    if top_collection is not None:
-                        top_collection.objects.link(top_empty)
-        elif geometry_data is None:  # top-level part
-            geometry_data = GeometryData()
-            matrix = matrices.identity
-            self.top = True
-            part_count += 1
-            texmap.reset_caches()  # or else the previous part's texmap is applied to this part
+                if top_collection is None:
+                    top_collection = collection
+                    if import_options.parent_to_empty and top_empty is None:
+                        top_empty = bpy.data.objects.new(top_collection.name, None)
+                        if top_collection is not None:
+                            top_collection.objects.link(top_empty)
+            else:  # top-level part
+                geometry_data = GeometryData()
+                matrix = matrices.identity
+                top = True
+                part_count += 1
+                texmap.reset_caches()  # or else the previous part's texmap is applied to this part
 
         if import_options.meta_group and next_collection is not None:
             collection = next_collection
             if end_next_collection:
                 next_collection = None
 
-        _key = []
-        _key.append(self.file.name)
-        _key.append(color_code)
-        _key.append(hash(matrix.freeze()))
-        _key = "_".join([str(k).lower() for k in _key])
-        _key = re.sub(r"[^a-z0-9._]", "-", _key)
+        # _key = []
+        # _key.append(self.file.name)
+        # _key.append(color_code)
+        # _key.append(hash(matrix.freeze()))
+        # _key = "_".join([str(k).lower() for k in _key])
+        # _key = re.sub(r"[^a-z0-9._]", "-", _key)
+        #
+        # if _key not in key_map:
+        #     key_map[_key] = str(uuid.uuid4())
+        # key = key_map[_key]
+        key = str(hash((self.file.name, color_code, matrix.freeze())))
 
-        if _key not in key_map:
-            key_map[_key] = str(uuid.uuid4())
-        key = key_map[_key]
-
-        # if it's a part and geometry already in the geometry_cache, reuse it
-        # meta commands are not in self.top files which is how they are counted
-        # missing minifig arms if "if key not in bpy.data.meshes:"
-        # with "self.top and" removed, it is faster but if the top level part is
-        # used as a transformed subpart, it may render incorrectly
+        # TODO: reuse primitive ldraw_nodes
+        # if is_primitive then build primitive geometry_data
+        # if geometry already in the geometry_cache, reuse it
+        # only works with top level data
         if key in geometry_data_cache:
             geometry_data = geometry_data_cache[key]
         else:
             if geometry_data is not None:
-                if self.file.is_edge_logo():
-                    is_edge_logo = True
-
                 if (not is_edge_logo) or (is_edge_logo and import_options.display_logo):
-                    geometry_data.add_edge_data(matrix, color_code, self.file.geometry)
+                    # geometry_data.add_edge_data(matrix, color_code, self.file.geometry)
+                    geometry_data.edge_data.append(FaceData(
+                        matrix=matrix,
+                        color_code=color_code,
+                        face_infos=self.file.geometry.edge_infos,
+                    ))
 
-                geometry_data.add_face_data(matrix, color_code, self.file.geometry)
+                # geometry_data.add_face_data(matrix, color_code, self.file.geometry)
+                geometry_data.face_data.append(FaceData(
+                    matrix=matrix,
+                    color_code=color_code,
+                    face_infos=self.file.geometry.face_infos,
+                ))
 
             for child_node in self.file.child_nodes:
                 child_node.load(
@@ -321,15 +314,17 @@ class LDrawNode:
                     is_edge_logo=is_edge_logo,
                 )
 
-            # without "if self.top:"
+            # without "if top:"
             # 10030-1 - Imperial Star Destroyer - UCS.mpd top back of the bridge - 3794a.dat renders incorrectly
-            if self.top:
+            if top:
                 geometry_data_cache[key] = geometry_data
 
-        if self.top:
-            matrix = parent_matrix @ self.matrix
-            scaled_matrix = matrices.scaled_matrix(import_options.gap_scale)
+        if top:
+            self.geometry_data = geometry_data
+            if not x:
+                return
 
+            matrix = parent_matrix @ self.matrix
             e_key = f"e_{key}"
 
             if key not in bpy.data.meshes:
@@ -362,7 +357,7 @@ class LDrawNode:
                 bm.edges.ensure_lookup_table()
 
                 if import_options.remove_doubles:
-                    # if vertices in sharp edge collection, do not add to merge collection
+                    # TODO: if vertices in sharp edge collection, do not add to merge collection
                     bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=import_options.merge_distance)
 
                 if import_options.recalculate_normals:
@@ -379,8 +374,8 @@ class LDrawNode:
 
                 # increase the distance to look for edges to merge
                 # merge line type 2 edges at a greater distance than mesh edges
-                distance = import_options.merge_distance * 2
                 distance = import_options.merge_distance
+                distance = import_options.merge_distance * 2
 
                 edge_mesh = bpy.data.meshes.new(e_key)
                 edge_mesh.name = e_key
@@ -416,20 +411,21 @@ class LDrawNode:
                 edge_mesh.update()
                 edge_mesh.validate()
 
-                # # Find the appropriate mesh edges and make them sharp (i.e. not smooth)
-                # merge = set()
-                # for edge in bm.edges:
-                #     v0 = edge.verts[0].index
-                #     v1 = edge.verts[1].index
-                #     if (v0, v1) in edge_indices:
-                #         merge.add(edge.verts[0])
-                #         merge.add(edge.verts[1])
-                #
-                #         # Make edge sharp
-                #         edge.smooth = False
-                #
-                # # if it was detected as a edge, the merge those vertices
-                # bmesh.ops.remove_doubles(bm, verts=list(merge), dist=distance)
+                # Find the appropriate mesh edges and make them sharp (i.e. not smooth)
+                merge = set()
+                for edge in bm.edges:
+                    v0 = edge.verts[0].index
+                    v1 = edge.verts[1].index
+                    if (v0, v1) in edge_indices:
+                        merge.add(edge.verts[0])
+                        merge.add(edge.verts[1])
+
+                        # Make edge sharp
+                        edge.smooth = False
+
+                if import_options.remove_doubles:
+                    # if it was detected as a edge, then merge those vertices
+                    bmesh.ops.remove_doubles(bm, verts=list(merge), dist=distance)
 
                 bm.to_mesh(mesh)
                 bm.clear()
@@ -447,21 +443,26 @@ class LDrawNode:
 
                 if import_options.smooth_type == "auto_smooth":
                     mesh.use_auto_smooth = import_options.shade_smooth
-                    auto_smooth_angle = 89.9  # 1.56905 - 89.9 so 90 degrees and up are affected
-                    auto_smooth_angle = 51.1
                     auto_smooth_angle = 31
                     auto_smooth_angle = 44.97
+                    auto_smooth_angle = 51.1
+                    auto_smooth_angle = 89.9  # 1.56905 - 89.9 so 90 degrees and up are affected
                     mesh.auto_smooth_angle = math.radians(auto_smooth_angle)
 
                 if import_options.make_gaps and import_options.gap_target == "mesh":
-                    mesh.transform(scaled_matrix)
-                    edge_mesh.transform(scaled_matrix)
-
+                    mesh.transform(matrices.scaled_matrix(import_options.gap_scale))
+                    edge_mesh.transform(matrices.scaled_matrix(import_options.gap_scale))
             mesh = bpy.data.meshes[key]
-
             obj = do_create_object(mesh)
             obj[strings.ldraw_filename_key] = self.file.name
-            process_object(obj, matrix)
+
+            if top_empty is None:
+                set_object_matrix(obj, matrix)
+            else:
+                set_parented_object_matrix(obj, matrix)
+
+            if import_options.meta_step:
+                handle_meta_step(obj)
 
             if import_options.smooth_type == "edge_split":
                 edge_modifier = obj.modifiers.new("Edge Split", type='EDGE_SPLIT')
@@ -476,15 +477,19 @@ class LDrawNode:
                 bpy.context.scene.collection.objects.link(obj)
 
             if import_options.import_edges:
-                if e_key in bpy.data.meshes:
-                    edge_mesh = bpy.data.meshes[e_key]
-                    edge_obj = do_create_object(edge_mesh)
-                    process_object(edge_obj, matrix)
-                    edge_obj.parent = obj
-                    edge_obj.matrix_world = obj.matrix_world
-                    edge_obj[strings.ldraw_filename_key] = f"{self.file.name}_edges"
+                edge_mesh = bpy.data.meshes[e_key]
+                edge_obj = do_create_object(edge_mesh)
+                edge_obj[strings.ldraw_filename_key] = f"{self.file.name}_edges"
 
-                    if collection is not None:
-                        collection.objects.link(edge_obj)
-                    else:
-                        bpy.context.scene.collection.objects.link(edge_obj)
+                edge_obj.parent = obj
+                edge_obj.matrix_world = obj.matrix_world
+
+                if import_options.meta_step:
+                    handle_meta_step(obj)
+
+                if collection is not None:
+                    collection.objects.link(edge_obj)
+                else:
+                    bpy.context.scene.collection.objects.link(edge_obj)
+
+        return self

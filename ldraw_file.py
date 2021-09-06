@@ -114,7 +114,6 @@ class LDrawFile:
         self.filename = filename
         self.filepath = None
         self.name = ""
-        self.cache_name = ""
         self.child_nodes = []
         self.geometry = LDrawGeometry()
         self.part_type = None
@@ -160,18 +159,18 @@ class LDrawFile:
                     self.name = line[7:].lower().strip()
                 elif params[1].lower() in ["step"]:
                     if import_options.meta_step:
-                        ldraw_node = LDrawNode(None)
+                        ldraw_node = LDrawNode()
                         ldraw_node.meta_command = params[1].lower()
                         self.child_nodes.append(ldraw_node)
                     self.set_texmap_end()
                 elif params[1].lower() in ["save"]:
                     if import_options.meta_save:
-                        ldraw_node = LDrawNode(None)
+                        ldraw_node = LDrawNode()
                         ldraw_node.meta_command = params[1].lower()
                         self.child_nodes.append(ldraw_node)
                 elif params[1].lower() in ["clear"]:
                     if import_options.meta_clear:
-                        ldraw_node = LDrawNode(None)
+                        ldraw_node = LDrawNode()
                         ldraw_node.meta_command = params[1].lower()
                         self.child_nodes.append(ldraw_node)
                 elif params[1].lower() in ["print", "write"]:
@@ -181,7 +180,7 @@ class LDrawFile:
                     if params[2].lower() in ["group_def"]:
                         params = re.search(r"\S+\s+\S+\s+\S+\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])", line.strip())
 
-                        ldraw_node = LDrawNode(None)
+                        ldraw_node = LDrawNode()
                         ldraw_node.meta_command = "group_def"
 
                         id_args = re.search(r"\[(.*)=(.*)\]", params[2])
@@ -194,7 +193,7 @@ class LDrawFile:
                     elif params[2].lower() in ["group_nxt"]:
                         params = re.search(r"\S+\s+\S+\s+\S+\s+(\[.*\])\s+(\[.*\])", line.strip())
 
-                        ldraw_node = LDrawNode(None)
+                        ldraw_node = LDrawNode()
                         ldraw_node.meta_command = "group_nxt"
 
                         id_args = re.search(r"\[(.*)=(.*)\]", params[1])
@@ -208,12 +207,12 @@ class LDrawFile:
                             begin_params = re.search(r"\S+\s+\S+\s+\S+\s+\S+\s+(.*)", line.strip())
 
                             if begin_params is not None:
-                                ldraw_node = LDrawNode(None)
+                                ldraw_node = LDrawNode()
                                 ldraw_node.meta_command = "group_begin"
                                 ldraw_node.meta_args["name"] = begin_params[1]
                                 self.child_nodes.append(ldraw_node)
                         elif params[3].lower() in ["end"]:
-                            ldraw_node = LDrawNode(None)
+                            ldraw_node = LDrawNode()
                             ldraw_node.meta_command = "group_end"
                             self.child_nodes.append(ldraw_node)
                     elif params[2] == "CAMERA":
@@ -328,7 +327,8 @@ class LDrawFile:
                 ldraw_file.geometry = (self.extra_geometry or LDrawGeometry())
                 file_cache[filename] = ldraw_file
             ldraw_file = file_cache[filename]
-            ldraw_node = LDrawNode(ldraw_file)
+            ldraw_node = LDrawNode()
+            ldraw_node.file = ldraw_file
             self.child_nodes.append(ldraw_node)
 
     def set_texmap_end(self):
@@ -397,7 +397,11 @@ class LDrawFile:
                 file_cache[key] = ldraw_file
             ldraw_file = file_cache[key]
 
-            ldraw_node = LDrawNode(ldraw_file)
+            if import_options.no_studs and ldraw_file.is_like_stud():
+                return
+
+            ldraw_node = LDrawNode()
+            ldraw_node.file = ldraw_file
             ldraw_node.color_code = color_code
             ldraw_node.matrix = matrix
 
@@ -432,6 +436,9 @@ class LDrawFile:
 
     def is_subpart(self):
         return self.part_type in ldraw_part_types.subpart_types
+
+    def is_primitive(self):
+        return self.part_type in ldraw_part_types.primitive_types
 
     def is_like_stud(self):
         return self.name.startswith("stud")
