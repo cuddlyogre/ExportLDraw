@@ -113,8 +113,12 @@ def load_materials(file):
 
     j = 0
     for collection_name, codes in colors.items():
-        collection = bpy.data.collections.new(collection_name)
-        bpy.context.scene.collection.children.link(collection)
+        if collection_name not in bpy.data.collections:
+            bpy.data.collections.new(collection_name)
+        collection = bpy.data.collections[collection_name]
+        if collection_name not in bpy.context.scene.collection.children:
+            bpy.context.scene.collection.children.link(collection)
+
         for i, color_code in enumerate(codes):
             bm = bmesh.new()
 
