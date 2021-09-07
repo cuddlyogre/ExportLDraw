@@ -42,12 +42,13 @@ def get_material(color_code, use_edge_color=False, part_slopes=None, texmap=None
     if texmap is not None:
         texmap_suffix = "_".join([str(k) for k in [texmap.method, texmap.texture, texmap.glossmap] if k != ''])
         _key.append(texmap_suffix)
-    _key = "_".join([str(k).lower() for k in _key])
-    _key = re.sub(r"[^a-z0-9._]", "-", _key)
+    _key = " ".join([str(k) for k in _key])
+    # _key = re.sub(r"[^a-z0-9._]", "-", _key)
 
     if _key not in key_map:
         key_map[_key] = str(uuid.uuid4())
     key = key_map[_key]
+    key = _key
 
     # Reuse current material if it exists, otherwise create a new material
     if key in bpy.data.materials:
