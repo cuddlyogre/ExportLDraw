@@ -9,6 +9,7 @@ defaults['use_alt_colors'] = True
 use_alt_colors = defaults['use_alt_colors']
 
 colors = {}
+bad_color = None
 
 
 def reset_caches():
@@ -20,8 +21,26 @@ def get_color(color_code):
     if color_code in colors:
         return colors[color_code]
 
+    global bad_color
+    if bad_color is None:
+        bad_color = LDrawColor()
+        bad_color.name = "Bad Color"
+        bad_color.code = "-9999"
+
+        hex_digits = "#FF0000"[1:]
+        rgba = get_color_value(hex_digits)
+        bad_color.color = rgba
+
+        hex_digits = "#00FF00"[1:]
+        e_rgba = get_color_value(hex_digits)
+        bad_color.edge_color = e_rgba
+
+        bad_color.alpha = 1.0
+        bad_color.luminance = 0.0
+        colors[bad_color.code] = bad_color
+
     print(f"Bad color code: {color_code}")
-    color_code = "16"
+    color_code = bad_color.code
     return colors[color_code]
 
 
