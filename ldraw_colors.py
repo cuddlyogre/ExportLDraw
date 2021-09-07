@@ -23,21 +23,9 @@ def get_color(color_code):
 
     global bad_color
     if bad_color is None:
-        bad_color = LDrawColor()
-        bad_color.name = "Bad Color"
-        bad_color.code = "-9999"
-
-        hex_digits = "#FF0000"[1:]
-        rgba = get_color_value(hex_digits)
-        bad_color.color = rgba
-
-        hex_digits = "#00FF00"[1:]
-        e_rgba = get_color_value(hex_digits)
-        bad_color.edge_color = e_rgba
-
-        bad_color.alpha = 1.0
-        bad_color.luminance = 0.0
-        colors[bad_color.code] = bad_color
+        params = ["0", "!COLOUR", "Bad_Color", "CODE", "-9999", "VALUE", "#FF0000", "EDGE", "#00FF00"]
+        parse_color(params)
+        bad_color = colors[params[4]]
 
     print(f"Bad color code: {color_code}")
     color_code = bad_color.code
@@ -132,6 +120,13 @@ def get_color_value(hex_digits, linear=True):
         return hex_digits_to_srgb(hex_digits)
 
 
+def extract_hex_digits(hex_digits):
+    if hex_digits.startswith('#'):
+        return hex_digits[1:]
+    else:
+        return hex_digits
+
+
 def __clamp(value):
     return max(min(value, 1.0), 0.0)
 
@@ -159,11 +154,11 @@ class LDrawColor:
         color_code = params[4]
         self.code = color_code
 
-        hex_digits = params[6][1:]
+        hex_digits = extract_hex_digits(params[6])
         rgba = get_color_value(hex_digits, linear)
         self.color = rgba
 
-        hex_digits = params[8][1:]
+        hex_digits = extract_hex_digits(params[8])
         e_rgba = get_color_value(hex_digits, linear)
         self.edge_color = e_rgba
 
@@ -197,7 +192,7 @@ class LDrawColor:
 
             self.material = get_value(subline, "MATERIAL")
 
-            hex_digits = get_value(subline, "VALUE")[1:]
+            hex_digits = extract_hex_digits(get_value(subline, "VALUE"))
             secondary_color = get_color_value(hex_digits, linear)
             self.secondary_color = secondary_color
 
