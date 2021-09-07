@@ -166,11 +166,10 @@ def process_face(file, bm, mesh, face, color_code, texmap):
     part_slopes = special_bricks.get_part_slopes(file.name)
 
     material = blender_materials.get_material(color_code, part_slopes=part_slopes, texmap=texmap)
-    if material is not None:
-        # https://blender.stackexchange.com/questions/23905/select-faces-depending-on-material
-        if material.name not in mesh.materials:
-            mesh.materials.append(material)
-        face.material_index = mesh.materials.find(material.name)
+    # https://blender.stackexchange.com/questions/23905/select-faces-depending-on-material
+    if material.name not in mesh.materials:
+        mesh.materials.append(material)
+    face.material_index = mesh.materials.find(material.name)
 
     if texmap is not None:
         texmap.uv_unwrap_face(bm, face)

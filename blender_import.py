@@ -137,8 +137,6 @@ def load_materials(file):
             mesh[strings.ldraw_color_code_key] = str(color_code)
 
             material = blender_materials.get_material(color_code)
-            if material is None:
-                continue
 
             # https://blender.stackexchange.com/questions/23905/select-faces-depending-on-material
             if material.name not in mesh.materials:
