@@ -104,9 +104,14 @@ def __create_node_based_material(key, color, use_edge_color=False, part_slopes=N
     if color.name == "Milky_White":
         __create_cycles_milky_white(nodes, links, diff_color)
     elif 'Opal' in color.name:
-        __create_cycles_opal(nodes, links, diff_color, color.secondary_color)
+        secondary_color = color.secondary_color + (1.0,)
+        __create_cycles_opal(nodes, links, diff_color, secondary_color)
     elif color.material == "GLITTER":
-        __create_cycles_glitter(nodes, links, diff_color, color.secondary_color)
+        secondary_color = color.secondary_color + (1.0,)
+        __create_cycles_glitter(nodes, links, diff_color, secondary_color)
+    elif color.material == "SPECKLE":
+        secondary_color = color.secondary_color + (1.0,)
+        __create_cycles_speckle(nodes, links, diff_color, secondary_color)
     elif color.luminance > 0:
         __create_cycles_emission(nodes, links, diff_color, color.luminance)
     elif color.material == "CHROME":
@@ -115,8 +120,6 @@ def __create_node_based_material(key, color, use_edge_color=False, part_slopes=N
         __create_cycles_pearlescent(nodes, links, diff_color)
     elif color.material == "METAL":
         __create_cycles_metal(nodes, links, diff_color)
-    elif color.material == "SPECKLE":
-        __create_cycles_speckle(nodes, links, diff_color, color.secondary_color)
     elif color.material == "RUBBER":
         if is_transparent:
             __create_cycles_rubber_translucent(nodes, links, diff_color)
