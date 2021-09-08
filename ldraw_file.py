@@ -407,7 +407,7 @@ class LDrawFile:
 
             # if any line in a model file is a subpart, treat that model as a part, otherwise subparts are not parsed correctly
             # if subpart found, create new LDrawNode with those subparts and add that to child_nodes
-            if self.is_like_model() and ldraw_file.is_subpart():
+            if self.is_like_model() and (ldraw_file.is_subpart() or ldraw_file.is_primitive()):
                 if self.extra_child_nodes is None:
                     self.extra_child_nodes = []
                 self.extra_child_nodes.append(ldraw_node)
