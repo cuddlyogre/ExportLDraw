@@ -2,12 +2,25 @@ import csv
 import io
 import pprint
 import re
+import codecs
 
 pp = pprint.PrettyPrinter(indent=4, width=120)
 
 
 def clean_line(line):
-    return re.sub(r'\s+', ' ', str(line).strip())
+    line = re.sub(r'\s+', ' ', str(line)).strip()
+    line = fix_string_encoding(line)
+    return line
+
+
+def fix_string_encoding(string):
+    new_string = string
+    if type(string) is str:
+        new_string = bytes(string.encode())
+    for codec in [codecs.BOM_UTF8, codecs.BOM_UTF16, codecs.BOM_UTF32]:
+        new_string = new_string.replace(codec, b'')
+    new_string = new_string.decode()
+    return new_string
 
 
 def parse_line(line, min_params=0):

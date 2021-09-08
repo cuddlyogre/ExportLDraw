@@ -61,15 +61,15 @@ def handle_mpd(filepath):
             if not line:
                 break
 
-            fixed_line = filesystem.fix_string_encoding(line).strip()
+            clean_line = helpers.clean_line(line)
             # fixed_line = line.strip()
-            if fixed_line == "":
+            if clean_line == "":
                 continue
-            if fixed_line.startswith("0 FILE") and not is_mpd:
+            if clean_line.startswith("0 FILE") and not is_mpd:
                 is_mpd = True
             if not is_mpd:
                 return filepath
-            lines.append(fixed_line)
+            lines.append(clean_line)
 
     if len(lines) < 1:
         return None

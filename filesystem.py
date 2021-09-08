@@ -1,9 +1,10 @@
 import os
-import codecs
 import string
 import glob
 from sys import platform
 from pathlib import Path
+
+from . import helpers
 
 defaults = dict()
 defaults['ldraw_path'] = ''
@@ -134,24 +135,14 @@ def path_insensitive(path):
     return path
 
 
-def fix_string_encoding(string):
-    new_string = string
-    if type(string) is str:
-        new_string = bytes(string.encode())
-    for codec in [codecs.BOM_UTF8, codecs.BOM_UTF16, codecs.BOM_UTF32]:
-        new_string = new_string.replace(codec, b'')
-    new_string = new_string.decode()
-    return new_string
-
-
 def read_file(filepath):
     lines = []
     filepath = path_insensitive(filepath)
     if os.path.isfile(filepath):
         with open(filepath, 'r') as file:
             for line in file.readlines():
-                fixed_line = fix_string_encoding(line).strip()
-                lines.append(fixed_line)
+                clean_line = helpers.clean_line(line)
+                lines.append(clean_line)
     return lines
 
 
@@ -188,7 +179,7 @@ def test_fix_string():
                 continue
             with open(path, 'r') as file:
                 try:
-                    print(fix_string_encoding(file.read()))
+                    print(helpers.fix_string_encoding(file.read()))
                 except UnicodeDecodeError as e:
                     errors[path] = e
                     # print(e)
