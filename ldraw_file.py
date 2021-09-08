@@ -157,27 +157,22 @@ class LDrawFile:
                 elif params[1].lower() in ["name:"]:
                     self.name = line[7:].lower().strip()
                 elif params[1].lower() in ["step"]:
-                    if import_options.meta_step:
-                        ldraw_node = LDrawNode()
-                        ldraw_node.meta_command = "step"
-                        self.child_nodes.append(ldraw_node)
-                    self.set_texmap_end()
+                    ldraw_node = LDrawNode()
+                    ldraw_node.meta_command = "step"
+                    self.child_nodes.append(ldraw_node)
                 elif params[1].lower() in ["save"]:
-                    if import_options.meta_save:
-                        ldraw_node = LDrawNode()
-                        ldraw_node.meta_command = "save"
-                        self.child_nodes.append(ldraw_node)
+                    ldraw_node = LDrawNode()
+                    ldraw_node.meta_command = "save"
+                    self.child_nodes.append(ldraw_node)
                 elif params[1].lower() in ["clear"]:
-                    if import_options.meta_clear:
-                        ldraw_node = LDrawNode()
-                        ldraw_node.meta_command = "clear"
-                        self.child_nodes.append(ldraw_node)
+                    ldraw_node = LDrawNode()
+                    ldraw_node.meta_command = "clear"
+                    self.child_nodes.append(ldraw_node)
                 elif params[1].lower() in ["print", "write"]:
-                    if import_options.meta_print_write:
-                        ldraw_node = LDrawNode()
-                        ldraw_node.meta_command = "print"
-                        ldraw_node.meta_args = line[7:].strip()
-                        self.child_nodes.append(ldraw_node)
+                    ldraw_node = LDrawNode()
+                    ldraw_node.meta_command = "print"
+                    ldraw_node.meta_args = line[7:].strip()
+                    self.child_nodes.append(ldraw_node)
                 elif self.texmap_next:
                     pass
                     # if 0 line and texmap next, error

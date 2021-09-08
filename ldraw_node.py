@@ -196,22 +196,26 @@ class LDrawNode:
         # these meta commands affect the scene
         if self.file is None:
             if self.meta_command == "step":
-                set_step()
+                if import_options.meta_step:
+                    set_step()
             elif self.meta_command == "save":
-                if import_options.set_timelime_markers:
-                    bpy.context.scene.timeline_markers.new("SAVE", frame=current_frame)
+                if import_options.meta_save:
+                    if import_options.set_timelime_markers:
+                        bpy.context.scene.timeline_markers.new("SAVE", frame=current_frame)
             elif self.meta_command == "clear":
-                if import_options.set_timelime_markers:
-                    bpy.context.scene.timeline_markers.new("CLEAR", frame=current_frame)
-                if top_collection is not None:
-                    for ob in top_collection.all_objects:
-                        bpy.context.scene.frame_set(current_frame)
-                        ob.hide_viewport = True
-                        ob.hide_render = True
-                        ob.keyframe_insert(data_path="hide_render")
-                        ob.keyframe_insert(data_path="hide_viewport")
+                if import_options.meta_clear:
+                    if import_options.set_timelime_markers:
+                        bpy.context.scene.timeline_markers.new("CLEAR", frame=current_frame)
+                    if top_collection is not None:
+                        for ob in top_collection.all_objects:
+                            bpy.context.scene.frame_set(current_frame)
+                            ob.hide_viewport = True
+                            ob.hide_render = True
+                            ob.keyframe_insert(data_path="hide_render")
+                            ob.keyframe_insert(data_path="hide_viewport")
             elif self.meta_command == "print":
-                print(self.meta_args)
+                if import_options.meta_print_write:
+                    print(self.meta_args)
             elif self.meta_command == "group_begin":
                 create_meta_group(self.meta_args["name"], parent_collection)
                 end_next_collection = False
