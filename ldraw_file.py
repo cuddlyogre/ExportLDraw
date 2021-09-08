@@ -318,15 +318,38 @@ class LDrawFile:
             self.name = os.path.basename(self.filename)
 
         if self.extra_geometry is not None or self.extra_child_nodes is not None:
-            filename = f"{self.name}_extra"
-            if filename not in file_cache:
+            _key = []
+            _key.append(self.filename)
+            _key.append("extra")
+            _key.append(filesystem.resolution)
+            if import_options.remove_doubles:
+                _key.append("rd")
+            if import_options.display_logo:
+                _key.append(special_bricks.chosen_logo)
+            if import_options.smooth_type == "auto_smooth":
+                _key.append("as")
+            if import_options.smooth_type == "edge_split":
+                _key.append("es")
+            if ldraw_colors.use_alt_colors:
+                _key.append("alt")
+            if texmap.texmap is not None:
+                _key.append(texmap.texmap.id)
+            _key = "_".join([str(k).lower() for k in _key])
+            _key = re.sub(r"[^a-z0-9._]", "-", _key)
+
+            if _key not in key_map:
+                key_map[_key] = str(uuid.uuid4())
+            key = key_map[_key]
+
+            if key not in file_cache:
+                filename = f"{self.name}_extra"
                 ldraw_file = LDrawFile(filename)
                 ldraw_file.name = filename
                 ldraw_file.part_type = "part"
                 ldraw_file.child_nodes = (self.extra_child_nodes or [])
                 ldraw_file.geometry = (self.extra_geometry or LDrawGeometry())
-                file_cache[filename] = ldraw_file
-            ldraw_file = file_cache[filename]
+                file_cache[key] = ldraw_file
+            ldraw_file = file_cache[key]
             ldraw_node = LDrawNode()
             ldraw_node.file = ldraw_file
             self.child_nodes.append(ldraw_node)
