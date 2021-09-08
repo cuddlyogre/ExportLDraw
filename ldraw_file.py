@@ -11,7 +11,6 @@ from . import special_bricks
 
 from .ldraw_node import LDrawNode
 from .ldraw_geometry import LDrawGeometry
-from .texmap import TexMap
 from . import ldraw_colors
 from . import ldraw_camera
 from . import texmap
@@ -160,22 +159,67 @@ class LDrawFile:
                 elif params[1].lower() in ["step"]:
                     if import_options.meta_step:
                         ldraw_node = LDrawNode()
-                        ldraw_node.meta_command = params[1].lower()
+                        ldraw_node.meta_command = "step"
                         self.child_nodes.append(ldraw_node)
                     self.set_texmap_end()
                 elif params[1].lower() in ["save"]:
                     if import_options.meta_save:
                         ldraw_node = LDrawNode()
-                        ldraw_node.meta_command = params[1].lower()
+                        ldraw_node.meta_command = "save"
                         self.child_nodes.append(ldraw_node)
                 elif params[1].lower() in ["clear"]:
                     if import_options.meta_clear:
                         ldraw_node = LDrawNode()
-                        ldraw_node.meta_command = params[1].lower()
+                        ldraw_node.meta_command = "clear"
                         self.child_nodes.append(ldraw_node)
                 elif params[1].lower() in ["print", "write"]:
                     if import_options.meta_print_write:
-                        print(line[7:].strip())
+                        ldraw_node = LDrawNode()
+                        ldraw_node.meta_command = "print"
+                        ldraw_node.meta_args = line[7:].strip()
+                        self.child_nodes.append(ldraw_node)
+                elif self.texmap_next:
+                    pass
+                    # if 0 line and texmap next, error
+                    # also error
+                elif params[1].lower() in ["!texmap"]:  # https://www.ldraw.org/documentation/ldraw-org-file-format-standards/language-extension-for-texture-mapping.html
+                    if params[2].lower() in ["start", "next"]:
+                        if params[2].lower() == "start":
+                            self.texmap_start = True
+                        elif params[2].lower() == "next":
+                            self.texmap_next = True
+                        self.texmap_fallback = False
+
+                        new_texmap = texmap.TexMap.parse_params(params)
+                        if new_texmap is not None:
+                            if texmap.texmap is not None:
+                                texmap.texmaps.append(texmap.texmap)
+                            texmap.texmap = new_texmap
+
+                    elif self.texmap_start:
+                        if params[2].lower() in ["fallback"]:
+                            self.texmap_fallback = True
+                        elif params[2].lower() in ["end"]:
+                            self.set_texmap_end()
+                elif self.texmap_start:
+                    if params[1].lower() in ["!:"]:
+                        # remove 0 !: from line so that it can be parsed like a normal line
+                        clean_line = re.sub(r"(.*?\s+!:\s+)", "", line)
+                        clean_params = params[2:]
+                        self.parse_geometry_line(clean_line, clean_params)
+                    if self.texmap_next:
+                        self.set_texmap_end()
+                elif params[1].lower() in ["PE_TEX_PATH"]:  # for stud.io uvs
+                    if params[2].lower() in ['-1']:
+                        # use uv coordinates that at the end of 3,4 lines
+                        # 2*vertcount places at the end of the line
+                        pass
+                elif params[1].lower() in ["pe_tex_info"]:
+                    filename = self.name
+                    if filename == "":
+                        filename = os.path.basename(self.filename)
+                    image_data = params[2]
+                    texmap.TexMap.base64_to_png(filename, image_data)
                 elif params[1].lower() in ["!ldcad"]:  # http://www.melkert.net/LDCad/tech/meta
                     if params[2].lower() in ["group_def"]:
                         params = re.search(r"\S+\s+\S+\s+\S+\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])", line.strip())
@@ -268,48 +312,6 @@ class LDrawFile:
                                 camera = None
                             else:
                                 params = params[1:]
-                elif params[1].lower() in ["PE_TEX_PATH"]:  # for stud.io uvs
-                    if params[2].lower() in ['-1']:
-                        # use uv coordinates that at the end of 3,4 lines
-                        # 2*vertcount places at the end of the line
-                        pass
-                elif params[1].lower() in ["pe_tex_info"]:
-                    filename = self.name
-                    if filename == "":
-                        filename = os.path.basename(self.filename)
-                    image_data = params[2]
-                    TexMap.base64_to_png(filename, image_data)
-                elif self.texmap_next:
-                    pass
-                    # if 0 line and texmap next, error
-                    # also error
-                elif params[1].lower() in ["!texmap"]:  # https://www.ldraw.org/documentation/ldraw-org-file-format-standards/language-extension-for-texture-mapping.html
-                    if params[2].lower() in ["start", "next"]:
-                        if params[2].lower() == "start":
-                            self.texmap_start = True
-                        elif params[2].lower() == "next":
-                            self.texmap_next = True
-                        self.texmap_fallback = False
-
-                        new_texmap = TexMap.parse_params(params)
-                        if new_texmap is not None:
-                            if texmap.texmap is not None:
-                                texmap.texmaps.append(texmap.texmap)
-                            texmap.texmap = new_texmap
-
-                    elif self.texmap_start:
-                        if params[2].lower() in ["fallback"]:
-                            self.texmap_fallback = True
-                        elif params[2].lower() in ["end"]:
-                            self.set_texmap_end()
-                elif self.texmap_start:
-                    if params[1].lower() in ["!:"]:
-                        # remove 0 !: from line so that it can be parsed like a normal line
-                        clean_line = re.sub(r"(.*?\s+!:\s+)", "", line)
-                        clean_params = params[2:]
-                        self.parse_geometry_line(clean_line, clean_params)
-                    if self.texmap_next:
-                        self.set_texmap_end()
             else:
                 if not self.texmap_fallback:
                     self.parse_geometry_line(line, params)

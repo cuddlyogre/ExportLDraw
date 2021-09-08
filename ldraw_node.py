@@ -9,11 +9,10 @@ import mathutils
 
 from . import blender_materials
 from . import import_options
-from . import ldraw_colors
 from . import matrices
 from . import special_bricks
 from . import strings
-from .geometry_data import GeometryData, FaceData
+from .geometry_data import GeometryData
 from . import texmap
 
 part_count = 0
@@ -198,6 +197,21 @@ class LDrawNode:
         if self.file is None:
             if self.meta_command == "step":
                 set_step()
+            elif self.meta_command == "save":
+                if import_options.set_timelime_markers:
+                    bpy.context.scene.timeline_markers.new("SAVE", frame=current_frame)
+            elif self.meta_command == "clear":
+                if import_options.set_timelime_markers:
+                    bpy.context.scene.timeline_markers.new("CLEAR", frame=current_frame)
+                if top_collection is not None:
+                    for ob in top_collection.all_objects:
+                        bpy.context.scene.frame_set(current_frame)
+                        ob.hide_viewport = True
+                        ob.hide_render = True
+                        ob.keyframe_insert(data_path="hide_render")
+                        ob.keyframe_insert(data_path="hide_viewport")
+            elif self.meta_command == "print":
+                print(self.meta_args)
             elif self.meta_command == "group_begin":
                 create_meta_group(self.meta_args["name"], parent_collection)
                 end_next_collection = False
@@ -215,19 +229,6 @@ class LDrawNode:
                     if key in bpy.data.collections:
                         next_collection = bpy.data.collections[key]
                 end_next_collection = True
-            elif self.meta_command == "save":
-                if import_options.set_timelime_markers:
-                    bpy.context.scene.timeline_markers.new("SAVE", frame=current_frame)
-            elif self.meta_command == "clear":
-                if import_options.set_timelime_markers:
-                    bpy.context.scene.timeline_markers.new("CLEAR", frame=current_frame)
-                if top_collection is not None:
-                    for ob in top_collection.all_objects:
-                        bpy.context.scene.frame_set(current_frame)
-                        ob.hide_viewport = True
-                        ob.hide_render = True
-                        ob.keyframe_insert(data_path="hide_render")
-                        ob.keyframe_insert(data_path="hide_viewport")
             return
 
         # set the working color code to this file's
@@ -260,7 +261,6 @@ class LDrawNode:
                 matrix = matrices.identity
                 top = True
                 part_count += 1
-                texmap.reset_caches()  # or else the previous part's texmap is applied to this part
 
         if import_options.meta_group and next_collection is not None:
             collection = next_collection
@@ -288,19 +288,8 @@ class LDrawNode:
         else:
             if geometry_data is not None:
                 if (not is_edge_logo) or (is_edge_logo and import_options.display_logo):
-                    # geometry_data.add_edge_data(matrix, color_code, self.file.geometry)
-                    geometry_data.edge_data.append(FaceData(
-                        matrix=matrix,
-                        color_code=color_code,
-                        face_infos=self.file.geometry.edge_infos,
-                    ))
-
-                # geometry_data.add_face_data(matrix, color_code, self.file.geometry)
-                geometry_data.face_data.append(FaceData(
-                    matrix=matrix,
-                    color_code=color_code,
-                    face_infos=self.file.geometry.face_infos,
-                ))
+                    geometry_data.add_edge_data(matrix, color_code, self.file.geometry)
+                geometry_data.add_face_data(matrix, color_code, self.file.geometry)
 
             for child_node in self.file.child_nodes:
                 child_node.load(
@@ -485,4 +474,5 @@ class LDrawNode:
                 else:
                     bpy.context.scene.collection.objects.link(edge_obj)
 
+        texmap.reset_caches()  # or else the previous part's texmap is applied to this part
         return self
