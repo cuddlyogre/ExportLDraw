@@ -24,8 +24,8 @@ def get_color(color_code):
     global bad_color
     if bad_color is None:
         params = ["0", "!COLOUR", "Bad_Color", "CODE", "-9999", "VALUE", "#FF0000", "EDGE", "#00FF00"]
-        parse_color(params)
-        bad_color = colors[params[4]]
+        color_code = parse_color(params)
+        bad_color = colors[color_code]
 
     print(f"Bad color code: {color_code}")
     color_code = bad_color.code
