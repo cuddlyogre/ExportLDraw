@@ -61,7 +61,8 @@ def locate_ldraw():
     elif platform == "win32":
         drive_letters = list(string.ascii_lowercase)
         for drive_letter in drive_letters:
-            ldraw_path = os.path.join(os.path.join(f"{drive_letter}:\\", 'ldraw'))
+            d = "{drive_letter}:\\".format(**{"drive_letter": drive_letter})
+            ldraw_path = os.path.join(os.path.join(d, 'ldraw'))
             if os.path.isdir(ldraw_path):
                 return ldraw_path
 

@@ -67,6 +67,8 @@ def do_import(filepath):
 
 
 def scene_setup():
+    if not helpers.is_28():
+        return
     bpy.context.scene.eevee.use_ssr = True
     bpy.context.scene.eevee.use_ssr_refraction = True
     bpy.context.scene.eevee.use_taa_reprojection = True
@@ -133,7 +135,7 @@ def load_materials(file):
             for f in bm.faces:
                 f.smooth = True
 
-            mesh = bpy.data.meshes.new(f"{prefix}_{str(color_code)}")
+            mesh = bpy.data.meshes.new("{prefix}_{color_code}".format(**{"prefix": prefix, "color_code": str(color_code)}))
             mesh[strings.ldraw_color_code_key] = str(color_code)
 
             material = blender_materials.get_material(color_code)

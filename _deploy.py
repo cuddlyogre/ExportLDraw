@@ -17,7 +17,8 @@ print(f"deploying to {target}")
 
 this_script_dir = os.path.dirname(os.path.realpath(__file__))
 patterns = {".git", "__pycache__", ".idea"}
-rmtree(target)
+if os.path.isdir(target):
+    rmtree(target)
 copytree(this_script_dir, target, dirs_exist_ok=True, ignore=ignore_patterns(*patterns))
 
 pycache_dir = os.path.join(target, "__pycache__")

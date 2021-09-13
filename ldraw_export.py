@@ -20,7 +20,7 @@ def clean_mesh(obj):
     bm.from_object(obj, bpy.context.evaluated_depsgraph_get())
 
     reverse_rotation = mathutils.Matrix.Rotation(math.radians(90), 4, 'X')
-    bm.transform(reverse_rotation @ obj.matrix_world)
+    bm.transform(reverse_rotation * obj.matrix_world)
 
     if export_options.triangulate:
         bmesh.ops.triangulate(bm, faces=bm.faces[:], quad_method='BEAUTY', ngon_method='BEAUTY')
@@ -79,7 +79,7 @@ def export_subfiles(obj, lines, is_model=False):
         precision = obj[strings.ldraw_export_precision_key]
 
     if is_model:
-        aa = matrices.reverse_rotation @ obj.matrix_world
+        aa = matrices.reverse_rotation * obj.matrix_world
 
         a = fix_round(aa[0][0], precision)
         b = fix_round(aa[0][1], precision)
@@ -96,7 +96,22 @@ def export_subfiles(obj, lines, is_model=False):
         i = fix_round(aa[2][2], precision)
         z = fix_round(aa[2][3], precision)
 
-        line = f"1 {color_code} {x} {y} {z} {a} {b} {c} {d} {e} {f} {g} {h} {i} {name}"
+        line = "1 {color_code} {x} {y} {z} {a} {b} {c} {d} {e} {f} {g} {h} {i} {name}".format(**{
+            "color_code": color_code,
+            "a": a,
+            "b": b,
+            "c": c,
+            "x": x,
+            "d": d,
+            "e": e,
+            "f": f,
+            "y": y,
+            "g": g,
+            "h": h,
+            "i": i,
+            "z": z,
+            "name": name,
+        })
     else:
         aa = obj.matrix_world
 
@@ -115,7 +130,23 @@ def export_subfiles(obj, lines, is_model=False):
         i = fix_round(aa[2][2], precision)
         z = fix_round(-aa[2][3], precision)
 
-        line = f"1 {color_code} {x} {z} {y} {a} {c} {b} {g} {i} {h} {d} {f} {e} {name}"
+        line = "1 {color_code} {x} {z} {y} {a} {c} {b} {g} {i} {h} {d} {f} {e} {name}".format(**{
+            "color_code": color_code,
+            "a": a,
+            "b": b,
+            "c": c,
+            "x": x,
+            "d": d,
+            "e": e,
+            "f": f,
+            "y": y,
+            "g": g,
+            "h": h,
+            "i": i,
+            "z": z,
+            "name": name,
+        })
+
     lines.append(line)
 
 
@@ -282,7 +313,7 @@ def do_export(filepath):
                 current_color_code = new_color_code
                 color = ldraw_colors.get_color(current_color_code)
 
-                joined_part_lines.append(f"0 // {color.name}")
+                joined_part_lines.append("0 // {c}".format(**{"c": color.name}))
 
         joined_part_lines.append(" ".join(line))
     lines.extend(joined_part_lines)

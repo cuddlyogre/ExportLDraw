@@ -136,7 +136,7 @@ class LDrawFile:
             # TODO: if missing, use a,b,c etc parts if available
             self.filepath = filesystem.locate(self.filename)
             if self.filepath is None:
-                print(f"missing {self.filename}")
+                print("missing {x}".format(**{"x": self.filename}))
                 return False
             self.lines = filesystem.read_file(self.filepath)
         return True
@@ -397,7 +397,7 @@ class LDrawFile:
             key = key_map[_key]
 
             if key not in file_cache:
-                filename = f"{self.name}_extra"
+                filename = "{x}_extra".format(**{"x": self.name})
                 ldraw_file = LDrawFile(filename)
                 ldraw_file.name = filename
                 ldraw_file.part_type = "part"
@@ -434,7 +434,7 @@ class LDrawFile:
             # filename_args = re.search(r"(?:.*\s+){14}(.*)", line.strip())
             # print(line.strip())
             filename_args = re.search(r"(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)(?:\s+(\S+.*))?", line.strip())
-            filename = filename_args[15].lower()
+            filename = filename_args.group(15).lower()
 
             # filename = "stud-logo.dat"
             # parts = filename.split(".") => ["stud-logo", "dat"]
@@ -451,7 +451,7 @@ class LDrawFile:
                 stud_name = name_parts[0]
                 chosen_logo = special_bricks.chosen_logo
                 ext = parts[1]
-                filename = f"{stud_name}-{chosen_logo}.{ext}"
+                filename = "{stud_name}-{chosen_logo}.{ext}".format(**{"stud_name": stud_name, "chosen_logo": chosen_logo, "ext": ext})
 
             _key = []
             _key.append(filename)

@@ -27,7 +27,7 @@ def get_color(color_code):
         color_code = parse_color(params)
         bad_color = colors[color_code]
 
-    print(f"Bad color code: {color_code}")
+    print("Bad color code: {color_code}".format(**{"color_code": color_code}))
     color_code = bad_color.code
     return colors[color_code]
 

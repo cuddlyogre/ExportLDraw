@@ -113,32 +113,32 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
     bl_options = {'PRESET', 'UNDO'}
     filename_ext = ""
 
-    filter_glob: bpy.props.StringProperty(
+    filter_glob = bpy.props.StringProperty(
         name="Extensions",
         options={'HIDDEN'},
         default="*.mpd;*.ldr;*.dat",
     )
 
-    ldraw_path: bpy.props.StringProperty(
+    ldraw_path = bpy.props.StringProperty(
         name="LDraw path",
         description="Full filepath to the LDraw Parts Library (download from http://www.ldraw.org)",
         default=get_setting('ldraw_path'),
     )
 
-    use_alt_colors: bpy.props.BoolProperty(
+    use_alt_colors = bpy.props.BoolProperty(
         name="Use alternate colors",
         options={'HIDDEN'},
         description="Use LDCfgalt.ldr",
         default=get_setting('use_alt_colors'),
     )
 
-    remove_doubles: bpy.props.BoolProperty(
+    remove_doubles = bpy.props.BoolProperty(
         name="Remove doubles",
         description="Merge overlapping vertices",
         default=get_setting('remove_doubles'),
     )
 
-    merge_distance: bpy.props.FloatProperty(
+    merge_distance = bpy.props.FloatProperty(
         name="Merge distance",
         description="Maximum distance between elements to merge",
         default=get_setting('merge_distance'),
@@ -146,13 +146,13 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         min=0.0,
     )
 
-    shade_smooth: bpy.props.BoolProperty(
+    shade_smooth = bpy.props.BoolProperty(
         name="Shade smooth",
         description="Shade smooth",
         default=get_setting('shade_smooth'),
     )
 
-    resolution: bpy.props.EnumProperty(
+    resolution = bpy.props.EnumProperty(
         name="Part resolution",
         description="Resolution of part primitives, ie. how much geometry they have",
         default=get_setting('resolution'),
@@ -163,7 +163,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         ),
     )
 
-    display_logo: bpy.props.BoolProperty(
+    display_logo = bpy.props.BoolProperty(
         name="Display logo",
         description="Display logo on studs. Requires unofficial parts library to be downloaded",
         default=get_setting('display_logo'),
@@ -171,14 +171,14 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
 
     # cast items as list or "EnumProperty(..., default='logo3'): not found in enum members"
     # and a messed up menu
-    chosen_logo: bpy.props.EnumProperty(
+    chosen_logo = bpy.props.EnumProperty(
         name="Chosen logo",
         description="Use this logo on studs",
         default=get_setting('chosen_logo'),
         items=list(((l, l, l) for l in special_bricks.logos)),
     )
 
-    smooth_type: bpy.props.EnumProperty(
+    smooth_type = bpy.props.EnumProperty(
         name="Smooth type",
         description="Use this strategy to smooth meshes",
         default=get_setting('smooth_type'),
@@ -188,7 +188,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         ),
     )
 
-    gap_target: bpy.props.EnumProperty(
+    gap_target = bpy.props.EnumProperty(
         name="Gap target",
         description="Where to apply gap",
         default=get_setting('gap_target'),
@@ -198,7 +198,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         ),
     )
 
-    gap_scale_strategy: bpy.props.EnumProperty(
+    gap_scale_strategy = bpy.props.EnumProperty(
         name="Gap strategy",
         description="How to scale the object to create the gap",
         default=get_setting('gap_scale_strategy'),
@@ -208,19 +208,19 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         ),
     )
 
-    no_studs: bpy.props.BoolProperty(
+    no_studs = bpy.props.BoolProperty(
         name="No studs",
         description="Don't import studs",
         default=get_setting('no_studs'),
     )
 
-    parent_to_empty: bpy.props.BoolProperty(
+    parent_to_empty = bpy.props.BoolProperty(
         name="Parent to empty",
         description="Parent the model to an empty",
         default=get_setting('parent_to_empty'),
     )
 
-    import_scale: bpy.props.FloatProperty(
+    import_scale = bpy.props.FloatProperty(
         name="Import scale",
         description="Scale the entire model by this amount",
         default=get_setting('import_scale'),
@@ -229,13 +229,13 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         max=1.00,
     )
 
-    make_gaps: bpy.props.BoolProperty(
+    make_gaps = bpy.props.BoolProperty(
         name="Make gaps",
         description="Puts small gaps between parts",
         default=get_setting('make_gaps'),
     )
 
-    gap_scale: bpy.props.FloatProperty(
+    gap_scale = bpy.props.FloatProperty(
         name="Gap scale",
         description="Scale parts by this value to make gaps",
         default=get_setting('gap_scale'),
@@ -244,56 +244,56 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         max=1.0,
     )
 
-    meta_print_write: bpy.props.BoolProperty(
+    meta_print_write = bpy.props.BoolProperty(
         name="PRINT/WRITE",
         description="Process PRINT/WRITE meta command",
         default=get_setting('meta_print_write'),
     )
 
-    meta_group: bpy.props.BoolProperty(
+    meta_group = bpy.props.BoolProperty(
         name="GROUP",
         description="Process GROUP meta commands",
         default=get_setting('meta_group'),
     )
 
-    meta_step: bpy.props.BoolProperty(
+    meta_step = bpy.props.BoolProperty(
         name="STEP",
         description="Process STEP meta command",
         default=get_setting('meta_step'),
     )
 
-    meta_clear: bpy.props.BoolProperty(
+    meta_clear = bpy.props.BoolProperty(
         name="CLEAR",
         description="Process CLEAR meta command",
         default=get_setting('meta_clear'),
     )
 
-    meta_pause: bpy.props.BoolProperty(
+    meta_pause = bpy.props.BoolProperty(
         name="PAUSE",
         description="Process PAUSE meta command",
         default=get_setting('meta_pause'),
     )
 
-    meta_save: bpy.props.BoolProperty(
+    meta_save = bpy.props.BoolProperty(
         name="SAVE",
         description="Process SAVE meta command",
         default=get_setting('meta_save'),
     )
 
-    set_end_frame: bpy.props.BoolProperty(
+    set_end_frame = bpy.props.BoolProperty(
         name="Set step end frame",
         description="Set the end frame to the last step",
         default=get_setting('set_end_frame'),
     )
 
-    frames_per_step: bpy.props.IntProperty(
+    frames_per_step = bpy.props.IntProperty(
         name="Frames per step",
         description="Frames per step",
         default=get_setting('frames_per_step'),
         min=1,
     )
 
-    starting_step_frame: bpy.props.IntProperty(
+    starting_step_frame = bpy.props.IntProperty(
         name="Starting step frame",
         options={'HIDDEN'},
         description="Frame to add the first STEP meta command",
@@ -301,63 +301,63 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         min=1,
     )
 
-    set_timelime_markers: bpy.props.BoolProperty(
+    set_timelime_markers = bpy.props.BoolProperty(
         name="Set timeline markers",
         description="Set timeline markers for meta commands",
         default=get_setting('set_timelime_markers'),
     )
 
-    import_edges: bpy.props.BoolProperty(
+    import_edges = bpy.props.BoolProperty(
         name="Import edges",
         description="Import edge meshes",
         default=get_setting('import_edges'),
     )
 
-    use_freestyle_edges: bpy.props.BoolProperty(
+    use_freestyle_edges = bpy.props.BoolProperty(
         name="Use Freestyle edges",
         description="Render LDraw edges using freestyle",
         default=get_setting('use_freestyle_edges'),
     )
 
-    treat_shortcut_as_model: bpy.props.BoolProperty(
+    treat_shortcut_as_model = bpy.props.BoolProperty(
         name="Treat shortcuts as models",
         options={'HIDDEN'},
         description="Split shortcut parts into their constituent pieces as if they were models",
         default=get_setting('treat_shortcut_as_model'),
     )
 
-    prefer_unofficial: bpy.props.BoolProperty(
+    prefer_unofficial = bpy.props.BoolProperty(
         name="Prefer unofficial parts",
         description="Search for unofficial parts first",
         default=get_setting('prefer_unofficial'),
     )
 
-    recalculate_normals: bpy.props.BoolProperty(
+    recalculate_normals = bpy.props.BoolProperty(
         name="Recalculate normals",
         description="Recalculate normals",
         default=get_setting('recalculate_normals'),
     )
 
-    triangulate: bpy.props.BoolProperty(
+    triangulate = bpy.props.BoolProperty(
         name="Triangulate faces",
         description="Triangulate all faces",
         default=get_setting('triangulate'),
     )
 
-    sharpen_edges: bpy.props.BoolProperty(
+    sharpen_edges = bpy.props.BoolProperty(
         name="Sharpen edges",
         description="Make imported LDraw edges sharp",
         default=get_setting('sharpen_edges'),
     )
 
-    instancing: bpy.props.BoolProperty(
+    instancing = bpy.props.BoolProperty(
         name="Instance parts",
         options={'HIDDEN'},
         description="Use collection instancing",
         default=get_setting('instancing'),
     )
 
-    profile: bpy.props.BoolProperty(
+    profile = bpy.props.BoolProperty(
         name="Profile",
         description="Profile import performance",
         default=False
@@ -451,10 +451,10 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         print("")
         print("======Import Complete======")
         print(self.filepath)
-        print(f"Part count: {ldraw_node.part_count}")
+        print("Part count: {x}".format(**{"x": ldraw_node.part_count}))
         end = time.monotonic()
         elapsed = (end - start)
-        print(f"elapsed: {elapsed}")
+        print("elapsed: {elapsed}".format(**{"elapsed": elapsed}))
         print("===========================")
         print("")
 
@@ -463,11 +463,13 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
     # https://docs.blender.org/api/current/bpy.types.UILayout.html
     def draw(self, context):
         layout = self.layout
-        layout.use_property_split = True
+        # layout.use_property_split = True
 
         box = layout.box()
 
-        box.label(text="LDraw filepath:", icon='FILEBROWSER')
+        icons = ('NONE', 'QUESTION', 'ERROR', 'CANCEL', 'TRIA_RIGHT', 'TRIA_DOWN', 'TRIA_LEFT', 'TRIA_UP', 'ARROW_LEFTRIGHT', 'PLUS', 'DISCLOSURE_TRI_DOWN', 'DISCLOSURE_TRI_RIGHT', 'RADIOBUT_OFF', 'RADIOBUT_ON', 'MENU')
+
+        box.label(text="LDraw filepath:", icon='NONE')
         box.prop(self, "ldraw_path")
 
         box.label(text="Import Options")

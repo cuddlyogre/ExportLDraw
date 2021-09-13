@@ -62,28 +62,40 @@ else:
 import bpy
 
 
-def build_import_menu(self, context):
+def import_menu(self, context):
     self.layout.operator(operator_import.IMPORT_OT_do_ldraw_import.bl_idname, text="LDraw (.mpd/.ldr/.l3b/.dat)")
 
 
-def build_export_menu(self, context):
+def export_menu(self, context):
     self.layout.operator(operator_export.EXPORT_OT_do_ldraw_export.bl_idname, text="LDraw (.mpd/.ldr/.l3b/.dat)")
 
 
 def register():
     bpy.utils.register_class(operator_import.IMPORT_OT_do_ldraw_import)
-    bpy.types.TOPBAR_MT_file_import.append(build_import_menu)
+    if hasattr(bpy.types, 'TOPBAR_MT_file_import'):
+        bpy.types.TOPBAR_MT_file_import.append(import_menu)
+    else:
+        bpy.types.INFO_MT_file_import.append(import_menu)
 
     bpy.utils.register_class(operator_export.EXPORT_OT_do_ldraw_export)
-    bpy.types.TOPBAR_MT_file_export.append(build_export_menu)
+    if hasattr(bpy.types, 'TOPBAR_MT_file_import'):
+        bpy.types.TOPBAR_MT_file_export.append(export_menu)
+    else:
+        bpy.types.INFO_MT_file_export.append(import_menu)
 
 
 def unregister():
     bpy.utils.unregister_class(operator_import.IMPORT_OT_do_ldraw_import)
-    bpy.types.TOPBAR_MT_file_import.remove(build_import_menu)
+    if hasattr(bpy.types, 'TOPBAR_MT_file_import'):
+        bpy.types.TOPBAR_MT_file_import.remove(import_menu)
+    else:
+        bpy.types.INFO_MT_file_import.remove(import_menu)
 
     bpy.utils.unregister_class(operator_export.EXPORT_OT_do_ldraw_export)
-    bpy.types.TOPBAR_MT_file_export.remove(build_export_menu)
+    if hasattr(bpy.types, 'TOPBAR_MT_file_import'):
+        bpy.types.TOPBAR_MT_file_export.remove(export_menu)
+    else:
+        bpy.types.INFO_MT_file_export.remove(import_menu)
 
 
 if __name__ == "__main__":

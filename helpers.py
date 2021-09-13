@@ -4,7 +4,13 @@ import pprint
 import re
 import codecs
 
+import bpy
+
 pp = pprint.PrettyPrinter(indent=4, width=120)
+
+
+def is_28():
+    return hasattr(bpy.app, "version") and bpy.app.version >= (2, 80)
 
 
 def clean_line(line):

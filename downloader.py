@@ -45,7 +45,7 @@ def download_ldraw(path, filename):
 
     ldraw_org_url = "https://www.ldraw.org/library"
     texture_path = os.path.join(path, filename)
-    texture_url = f"{ldraw_org_url}/{path}/{filename}"
+    texture_url = "{ldraw_org_url}/{path}/{filename}".format(**{"ldraw_org_url": ldraw_org_url, "path": path, "filename": filename})
 
     # ldraw_path = filesystem.locate_ldraw()
     home = str(Path.home())
@@ -59,7 +59,7 @@ def download_ldraw(path, filename):
 
 
 def download_texture(filename):
-    path = f"unofficial/parts/textures"
+    path = "unofficial/parts/textures"
     download_ldraw(path, filename)
 
 
@@ -80,8 +80,9 @@ def digital_bricks():
                 parts = re.search(r'"((http(?!s)?:\/\/www\.digital-bricks\.de\/en\/file\.php\?part=)(.*?))"', line2.strip())
                 if parts is not None:
                     r = requests.get(parts[1])
-                    print(f"{parts[3]}.dat")
-                    with open(os.path.join(this_script_dir, folder, f"{parts[3]}.dat"), 'w') as file:
+                    part_number = "{x}.dat".format(**{"x": parts[3]})
+                    print(part_number)
+                    with open(os.path.join(this_script_dir, folder, part_number), 'w') as file:
                         file.write(r.text)
 
 

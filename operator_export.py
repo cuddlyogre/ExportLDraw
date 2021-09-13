@@ -16,50 +16,50 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
     bl_options = {'PRESET'}
     filename_ext = ""
 
-    filter_glob: bpy.props.StringProperty(
+    filter_glob = bpy.props.StringProperty(
         name="Extensions",
         options={'HIDDEN'},
         default="*.mpd;*.ldr;*.dat",
     )
 
-    ldraw_path: bpy.props.StringProperty(
+    ldraw_path = bpy.props.StringProperty(
         name="LDraw path",
         description="Full filepath to the LDraw Parts Library (download from http://www.ldraw.org)",
         default=filesystem.locate_ldraw(),
     )
 
-    use_alt_colors: bpy.props.BoolProperty(
+    use_alt_colors = bpy.props.BoolProperty(
         name="Use alternate colors",
         options={'HIDDEN'},
         description="Use LDCfgalt.ldr",
         default=True,
     )
 
-    selection_only: bpy.props.BoolProperty(
+    selection_only = bpy.props.BoolProperty(
         name="Selection only",
         description="Export selected objects only",
         default=True,
     )
 
-    recalculate_normals: bpy.props.BoolProperty(
+    recalculate_normals = bpy.props.BoolProperty(
         name="Recalculate normals",
         description="Recalculate normals",
         default=True,
     )
 
-    triangulate: bpy.props.BoolProperty(
+    triangulate = bpy.props.BoolProperty(
         name="Triangulate faces",
         description="Triangulate all faces",
         default=False,
     )
 
-    remove_doubles: bpy.props.BoolProperty(
+    remove_doubles = bpy.props.BoolProperty(
         name="Remove doubles",
         description="Merge overlapping verices",
         default=True,
     )
 
-    merge_distance: bpy.props.FloatProperty(
+    merge_distance = bpy.props.FloatProperty(
         name="Merge distance",
         description="Maximum distance between elements to merge",
         default=0.05,
@@ -67,7 +67,7 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
         min=0.0,
     )
 
-    ngon_handling: bpy.props.EnumProperty(
+    ngon_handling = bpy.props.EnumProperty(
         name="Ngon handling",
         description="What to do with ngons",
         default="triangulate",
@@ -77,14 +77,14 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
         ],
     )
 
-    export_precision: bpy.props.IntProperty(
+    export_precision = bpy.props.IntProperty(
         name="Export precision",
         description="Round vertex coordinates to this number of places",
         default=2,
         min=0,
     )
 
-    resolution: bpy.props.EnumProperty(
+    resolution = bpy.props.EnumProperty(
         name="Part resolution",
         options={'HIDDEN'},
         description="Resolution of part primitives, ie. how much geometry they have",
@@ -96,7 +96,7 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
         ),
     )
 
-    prefer_unofficial: bpy.props.BoolProperty(
+    prefer_unofficial = bpy.props.BoolProperty(
         name="Prefer unofficial parts",
         options={'HIDDEN'},
         description="Search for unofficial parts first",
@@ -126,7 +126,7 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
         print(self.filepath)
         end = time.monotonic()
         elapsed = (end - start)
-        print(f"elapsed: {elapsed}")
+        print("elapsed: {elapsed}".format(**{"elapsed": elapsed}))
         print("===========================")
         print("")
 
@@ -134,7 +134,7 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
 
     def draw(self, context):
         layout = self.layout
-        layout.use_property_split = True
+        # layout.use_property_split = True
 
         box = layout.box()
 

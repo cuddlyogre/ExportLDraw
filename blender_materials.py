@@ -75,7 +75,7 @@ def __create_node_based_material(key, color, use_edge_color=False, part_slopes=N
     # https://wiki.ldraw.org/wiki/Color_24
     if use_edge_color:
         diff_color = color.edge_color + (1.0,)
-        material.diffuse_color = diff_color
+        material.diffuse_color = color.edge_color
         material["LEGO.isTransparent"] = is_transparent
         material[strings.ldraw_color_code_key] = "24"
         material[strings.ldraw_color_name_key] = color.name
@@ -85,21 +85,21 @@ def __create_node_based_material(key, color, use_edge_color=False, part_slopes=N
     is_transparent = color.alpha < 1.0
 
     diff_color = color.color + (1.0,)
-    material.diffuse_color = diff_color
+    material.diffuse_color = color.color
     material["LEGO.isTransparent"] = is_transparent
     material[strings.ldraw_color_code_key] = color.code
     material[strings.ldraw_color_name_key] = color.name
 
-    if is_transparent:
-        material.blend_method = "BLEND"
-        # material.refraction_depth = 0.1
-        material.refraction_depth = 1.0
-        # material.use_backface_culling = False
-        material.use_backface_culling = True
-        # material.show_transparent_back = False
-        material.show_transparent_back = True
-        # material.use_screen_refraction = False
-        material.use_screen_refraction = True
+    # if is_transparent:
+    #     material.blend_method = "BLEND"
+    #     # material.refraction_depth = 0.1
+    #     material.refraction_depth = 1.0
+    #     # material.use_backface_culling = False
+    #     material.use_backface_culling = True
+    #     # material.show_transparent_back = False
+    #     material.show_transparent_back = True
+    #     # material.use_screen_refraction = False
+    #     material.use_screen_refraction = True
 
     if color.name == "Milky_White":
         __create_cycles_milky_white(nodes, links, diff_color)

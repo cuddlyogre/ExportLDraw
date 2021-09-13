@@ -210,7 +210,8 @@ class TexMap:
         if type(img_data) is str:
             img_data = bytes(img_data.encode())
         this_script_dir = os.path.dirname(os.path.realpath(__file__))
-        with open(os.path.join(this_script_dir, f"{filename}.png"), "wb") as fh:
+        path = os.path.join(this_script_dir, "{filename}.png".format(**{"filename": filename}))
+        with open(path, "wb") as fh:
             fh.write(base64.decodebytes(img_data))
 
 

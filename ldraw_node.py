@@ -69,46 +69,49 @@ def set_step():
 
 
 def create_meta_group(collection_name, parent_collection):
-    if collection_name not in bpy.data.collections:
-        bpy.data.collections.new(collection_name)
-    collection = bpy.data.collections[collection_name]
-    if parent_collection is None:
-        parent_collection = bpy.context.scene.collection
-    if collection.name not in parent_collection.children:
-        parent_collection.children.link(collection)
-    return collection
+    return None
+    # if collection_name not in bpy.data.collections:
+    #     bpy.data.collections.new(collection_name)
+    # collection = bpy.data.collections[collection_name]
+    # if parent_collection is None:
+    #     parent_collection = bpy.context.scene.collection
+    # if collection.name not in parent_collection.children:
+    #     parent_collection.children.link(collection)
+    # return collection
 
 
 # obj.show_name = True
 def do_create_object(mesh):
-    if import_options.instancing:
-        if mesh.name not in bpy.data.objects:
-            bpy.data.objects.new(mesh.name, mesh)
-        instanced_obj = bpy.data.objects[mesh.name]
-
-        collection_name = 'Parts'
-        if collection_name not in bpy.data.collections:
-            parts_collection = bpy.data.collections.new(collection_name)
-            bpy.context.scene.collection.children.link(parts_collection)
-            parts_collection.hide_viewport = True
-            parts_collection.hide_render = True
-        parts_collection = bpy.data.collections[collection_name]
-
-        collection_name = mesh.name
-        if collection_name not in bpy.data.collections:
-            part_collection = bpy.data.collections.new(collection_name)
-            parts_collection.children.link(part_collection)
-        part_collection = bpy.data.collections[collection_name]
-
-        if instanced_obj.name not in part_collection.objects:
-            part_collection.objects.link(instanced_obj)
-
-        obj = bpy.data.objects.new(mesh.name, None)
-        obj.instance_type = 'COLLECTION'
-        obj.instance_collection = part_collection
-    else:
-        obj = bpy.data.objects.new(mesh.name, mesh)
+    obj = bpy.data.objects.new(mesh.name, mesh)
     return obj
+    # if import_options.instancing:
+    #     if mesh.name not in bpy.data.objects:
+    #         bpy.data.objects.new(mesh.name, mesh)
+    #     instanced_obj = bpy.data.objects[mesh.name]
+    #
+    #     collection_name = 'Parts'
+    #     if collection_name not in bpy.data.collections:
+    #         parts_collection = bpy.data.collections.new(collection_name)
+    #         bpy.context.scene.collection.children.link(parts_collection)
+    #         parts_collection.hide_viewport = True
+    #         parts_collection.hide_render = True
+    #     parts_collection = bpy.data.collections[collection_name]
+    #
+    #     collection_name = mesh.name
+    #     if collection_name not in bpy.data.collections:
+    #         part_collection = bpy.data.collections.new(collection_name)
+    #         parts_collection.children.link(part_collection)
+    #     part_collection = bpy.data.collections[collection_name]
+    #
+    #     if instanced_obj.name not in part_collection.objects:
+    #         part_collection.objects.link(instanced_obj)
+    #
+    #     obj = bpy.data.objects.new(mesh.name, None)
+    #     obj.instance_type = 'COLLECTION'
+    #     obj.instance_collection = part_collection
+    # else:
+    #     obj = bpy.data.objects.new(mesh.name, mesh)
+    # return obj
 
 
 # https://docs.blender.org/api/current/bpy.types.bpy_struct.html#bpy.types.bpy_struct.keyframe_insert
@@ -128,19 +131,19 @@ def handle_meta_step(obj):
 
 
 def set_parented_object_matrix(obj, matrix):
-    matrix_world = matrices.identity @ matrices.rotation @ matrices.scaled_matrix(import_options.import_scale)
+    matrix_world = matrices.identity * matrices.rotation * matrices.scaled_matrix(import_options.import_scale)
     top_empty.matrix_world = matrix_world
     obj.matrix_world = matrix
 
     if import_options.make_gaps and import_options.gap_target == "object":
         if import_options.gap_scale_strategy == "object":
-            matrix_world = obj.matrix_world @ matrices.scaled_matrix(import_options.gap_scale)
+            matrix_world = obj.matrix_world * matrices.scaled_matrix(import_options.gap_scale)
             obj.matrix_world = matrix_world
         elif import_options.gap_scale_strategy == "constraint":
             global gap_scale_empty
             if gap_scale_empty is None and top_collection is not None:
                 gap_scale_empty = bpy.data.objects.new("gap_scale", None)
-                matrix_world = gap_scale_empty.matrix_world @ matrices.scaled_matrix(import_options.gap_scale)
+                matrix_world = gap_scale_empty.matrix_world * matrices.scaled_matrix(import_options.gap_scale)
                 gap_scale_empty.matrix_world = matrix_world
                 top_collection.objects.link(gap_scale_empty)
             copy_scale_constraint = obj.constraints.new("COPY_SCALE")
@@ -151,11 +154,11 @@ def set_parented_object_matrix(obj, matrix):
 
 
 def set_object_matrix(obj, matrix):
-    matrix_world = matrices.identity @ matrices.rotation @ matrices.scaled_matrix(import_options.import_scale)
-    matrix_world = matrix_world @ matrix
+    matrix_world = matrices.identity * matrices.rotation * matrices.scaled_matrix(import_options.import_scale)
+    matrix_world = matrix_world * matrix
 
     if import_options.make_gaps and import_options.gap_target == "object":
-        matrix_world = matrix_world @ matrices.scaled_matrix(import_options.gap_scale)
+        matrix_world = matrix_world * matrices.scaled_matrix(import_options.gap_scale)
 
     obj.matrix_world = matrix_world
 
@@ -207,33 +210,33 @@ class LDrawNode:
                 if import_options.meta_clear:
                     if import_options.set_timelime_markers:
                         bpy.context.scene.timeline_markers.new("CLEAR", frame=current_frame)
-                    if top_collection is not None:
-                        for ob in top_collection.all_objects:
-                            bpy.context.scene.frame_set(current_frame)
-                            ob.hide_viewport = True
-                            ob.hide_render = True
-                            ob.keyframe_insert(data_path="hide_render")
-                            ob.keyframe_insert(data_path="hide_viewport")
+                    # if top_collection is not None:
+                    #     for ob in top_collection.all_objects:
+                    #         bpy.context.scene.frame_set(current_frame)
+                    #         ob.hide_viewport = True
+                    #         ob.hide_render = True
+                    #         ob.keyframe_insert(data_path="hide_render")
+                    #         ob.keyframe_insert(data_path="hide_viewport")
             elif self.meta_command == "print":
                 if import_options.meta_print_write:
                     print(self.meta_args)
-            elif self.meta_command == "group_begin":
-                create_meta_group(self.meta_args["name"], parent_collection)
-                end_next_collection = False
-                if self.meta_args["name"] in bpy.data.collections:
-                    next_collection = bpy.data.collections[self.meta_args["name"]]
-            elif self.meta_command == "group_end":
-                end_next_collection = True
-            elif self.meta_command == "group_def":
-                if self.meta_args["id"] not in collection_id_map:
-                    collection_id_map[self.meta_args["id"]] = self.meta_args["name"]
-                create_meta_group(self.meta_args["name"], parent_collection)
-            elif self.meta_command == "group_nxt":
-                if self.meta_args["id"] in collection_id_map:
-                    key = collection_id_map[self.meta_args["id"]]
-                    if key in bpy.data.collections:
-                        next_collection = bpy.data.collections[key]
-                end_next_collection = True
+            # elif self.meta_command == "group_begin":
+            #     create_meta_group(self.meta_args["name"], parent_collection)
+            #     end_next_collection = False
+            #     if self.meta_args["name"] in bpy.data.collections:
+            #         next_collection = bpy.data.collections[self.meta_args["name"]]
+            # elif self.meta_command == "group_end":
+            #     end_next_collection = True
+            # elif self.meta_command == "group_def":
+            #     if self.meta_args["id"] not in collection_id_map:
+            #         collection_id_map[self.meta_args["id"]] = self.meta_args["name"]
+            #     create_meta_group(self.meta_args["name"], parent_collection)
+            # elif self.meta_command == "group_nxt":
+            #     if self.meta_args["id"] in collection_id_map:
+            #         key = collection_id_map[self.meta_args["id"]]
+            #         if key in bpy.data.collections:
+            #             next_collection = bpy.data.collections[key]
+            #     end_next_collection = True
             return
 
         # set the working color code to this file's
@@ -245,32 +248,33 @@ class LDrawNode:
             is_edge_logo = True
 
         top = False
-        matrix = parent_matrix @ self.matrix
-        collection = parent_collection
+        matrix = parent_matrix * self.matrix
+        # collection = parent_collection
 
         if geometry_data is None:
             if self.file.is_like_model():
-                collection_name = os.path.basename(self.file.name)
-                collection = bpy.data.collections.new(collection_name)
-                if parent_collection is not None:
-                    parent_collection.children.link(collection)
-
-                if top_collection is None:
-                    top_collection = collection
-                    if import_options.parent_to_empty and top_empty is None:
-                        top_empty = bpy.data.objects.new(top_collection.name, None)
-                        if top_collection is not None:
-                            top_collection.objects.link(top_empty)
+                pass
+                # collection_name = os.path.basename(self.file.name)
+                # collection = bpy.data.collections.new(collection_name)
+                # if parent_collection is not None:
+                #     parent_collection.children.link(collection)
+                #
+                # if top_collection is None:
+                #     top_collection = collection
+                #     if import_options.parent_to_empty and top_empty is None:
+                #         top_empty = bpy.data.objects.new(top_collection.name, None)
+                #         if top_collection is not None:
+                #             top_collection.objects.link(top_empty)
             else:  # top-level part
                 geometry_data = GeometryData()
                 matrix = matrices.identity
                 top = True
                 part_count += 1
 
-        if import_options.meta_group and next_collection is not None:
-            collection = next_collection
-            if end_next_collection:
-                next_collection = None
+        # if import_options.meta_group and next_collection is not None:
+        #     collection = next_collection
+        #     if end_next_collection:
+        #         next_collection = None
 
         # key = str(hash((self.file.name, color_code, matrix.freeze())))
         _key = []
@@ -301,7 +305,7 @@ class LDrawNode:
                     geometry_data=geometry_data,
                     parent_matrix=matrix,
                     color_code=color_code,
-                    parent_collection=collection,
+                    # parent_collection=collection,
                     is_edge_logo=is_edge_logo,
                 )
 
@@ -311,8 +315,8 @@ class LDrawNode:
                 geometry_data_cache[key] = geometry_data
 
         if top:
-            matrix = parent_matrix @ self.matrix
-            e_key = f"e_{key}"
+            matrix = parent_matrix * self.matrix
+            e_key = "e_{key}".format(**{"key": key})
 
             if key not in bpy.data.meshes:
                 bm = bmesh.new()
@@ -328,7 +332,7 @@ class LDrawNode:
                     for fi in fd.face_infos:
                         verts = []
                         for vertex in fi.vertices:
-                            vert = fd.matrix @ vertex
+                            vert = fd.matrix * vertex
                             bm_vert = bm.verts.new(vert)
                             verts.append(bm_vert)
                         face = bm.faces.new(verts)
@@ -379,7 +383,7 @@ class LDrawNode:
                         edge_verts = []
                         face_indices = []
                         for vertex in fi.vertices:
-                            vert = ed.matrix @ vertex
+                            vert = ed.matrix * vertex
                             e_verts.append(vert)
                             edge_verts.append(vert)
                             face_indices.append(i)
@@ -457,15 +461,16 @@ class LDrawNode:
                 edge_modifier.use_edge_sharp = True
 
             # https://b3d.interplanety.org/en/how-to-get-global-vertex-coordinates/
-            if collection is not None:
-                collection.objects.link(obj)
-            else:
-                bpy.context.scene.collection.objects.link(obj)
+            # if collection is not None:
+            #     collection.objects.link(obj)
+            # else:
+            #     bpy.context.scene.collection.objects.link(obj)
+            bpy.context.scene.objects.link(obj)
 
             if import_options.import_edges:
                 edge_mesh = bpy.data.meshes[e_key]
                 edge_obj = do_create_object(edge_mesh)
-                edge_obj[strings.ldraw_filename_key] = f"{self.file.name}_edges"
+                edge_obj[strings.ldraw_filename_key] = "{x}_edges".format(**{"x": self.file.name})
 
                 edge_obj.parent = obj
                 edge_obj.matrix_world = obj.matrix_world
