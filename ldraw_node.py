@@ -383,6 +383,7 @@ class LDrawNode:
                             edge_verts.append(vert)
                             face_indices.append(i)
                             i += 1
+                        e_faces.append(face_indices)
 
                         edges0 = [index for (co, index, dist) in kd.find_range(edge_verts[0], distance)]
                         edges1 = [index for (co, index, dist) in kd.find_range(edge_verts[1], distance)]
@@ -390,8 +391,6 @@ class LDrawNode:
                             for e1 in edges1:
                                 edge_indices.add((e0, e1))
                                 edge_indices.add((e1, e0))
-
-                        e_faces.append(face_indices)
 
                 edge_mesh.from_pydata(e_verts, e_edges, e_faces)
                 edge_mesh.update()
