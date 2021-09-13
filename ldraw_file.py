@@ -119,9 +119,15 @@ class LDrawFile:
         self.lines = []
         self.extra_child_nodes = None
         self.extra_geometry = None
+
         self.texmap_start = False
         self.texmap_next = False
         self.texmap_fallback = False
+
+        self.bfc_certified = None
+        self.bfc_winding = "CCW"
+        self.bfc = True
+        self.bfc_culling = True
 
     def read_file(self):
         if self.filename in mpd_file_cache:
@@ -139,6 +145,7 @@ class LDrawFile:
         camera = None
 
         for line in self.lines:
+            clean_line = helpers.clean_line(line)
             params = helpers.parse_line(line, 17)
 
             if params is None:
@@ -146,7 +153,58 @@ class LDrawFile:
 
             # create meta nodes when those commands affect the scene
             # process meta command in place if it only affects the file
-            if params[0] == "0":
+            if clean_line.startswith('0 BFC '):
+                if self.bfc_certified is False:
+                    continue
+
+                print(clean_line)
+                if clean_line == '0 BFC NOCERTIFY':
+                    if self.bfc_certified is None:
+                        self.bfc_certified = False
+                else:
+                    if self.bfc_certified is None:
+                        self.bfc_certified = True
+
+                    if clean_line in ['0 BFC CERTIFY', '0 BFC CERTIFY CCW']:
+                        self.bfc_winding = "CCW"
+                    elif clean_line == '0 BFC CERTIFY CW':
+                        self.bfc_winding = "CW"
+                    elif clean_line == '0 BFC CW':
+                        ldraw_node = LDrawNode()
+                        ldraw_node.meta_command = "bfc"
+                        ldraw_node.meta_args = "cw"
+                        self.child_nodes.append(ldraw_node)
+                    elif clean_line == '0 BFC CCW':
+                        ldraw_node = LDrawNode()
+                        ldraw_node.meta_command = "bfc"
+                        ldraw_node.meta_args = "ccw"
+                        self.child_nodes.append(ldraw_node)
+                    elif clean_line == '0 BFC CLIP':
+                        ldraw_node = LDrawNode()
+                        ldraw_node.meta_command = "bfc clip"
+                        self.child_nodes.append(ldraw_node)
+                    elif clean_line in ['0 BFC CLIP CW', '0 BFC CW CLIP']:
+                        ldraw_node = LDrawNode()
+                        ldraw_node.meta_command = "bfc clip"
+                        ldraw_node.meta_args = "cw"
+                        self.child_nodes.append(ldraw_node)
+                    elif clean_line in ['0 BFC CLIP CCW', '0 BFC CCW CLIP']:
+                        ldraw_node = LDrawNode()
+                        ldraw_node.meta_command = "bfc clip"
+                        ldraw_node.meta_args = "ccw"
+                        self.child_nodes.append(ldraw_node)
+                    elif clean_line == '0 BFC NOCLIP':
+                        ldraw_node = LDrawNode()
+                        ldraw_node.meta_command = "bfc noclip"
+                        self.child_nodes.append(ldraw_node)
+                    elif clean_line == '0 BFC INVERTNEXT':
+                        ldraw_node = LDrawNode()
+                        ldraw_node.meta_command = "bfc invertnext"
+                        self.child_nodes.append(ldraw_node)
+            elif params[0] == "0":
+                if self.bfc_certified is None:
+                    self.bfc_certified = False
+
                 if params[1].lower() in ["!colour"]:
                     ldraw_colors.parse_color(params)
                 elif params[1].lower() in ["!ldraw_org"]:
@@ -378,13 +436,22 @@ class LDrawFile:
             filename_args = re.search(r"(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)(?:\s+(\S+.*))?", line.strip())
             filename = filename_args[15].lower()
 
+            # filename = "stud-logo.dat"
+            # parts = filename.split(".") => ["stud-logo", "dat"]
+            # name = parts[0] => "stud-logo"
+            # name_parts = name.split('-') => ["stud", "logo"]
+            # stud_name = name_parts[0] => "stud"
+            # chosen_logo = special_bricks.chosen_logo => "logo5"
+            # ext = parts[1] => "dat"
+            # filename = f"{stud_name}-{chosen_logo}.{ext}" => "stud-logo5.dat"
             if import_options.display_logo and self.is_stud():
                 parts = filename.split(".")
                 name = parts[0]
                 name_parts = name.split('-')
                 stud_name = name_parts[0]
+                chosen_logo = special_bricks.chosen_logo
                 ext = parts[1]
-                filename = f"{stud_name}-{special_bricks.chosen_logo}.{ext}"
+                filename = f"{stud_name}-{chosen_logo}.{ext}"
 
             _key = []
             _key.append(filename)
