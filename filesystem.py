@@ -137,12 +137,16 @@ def path_insensitive(path):
 
 def read_file(filepath):
     lines = []
-    filepath = path_insensitive(filepath)
-    if os.path.isfile(filepath):
-        with open(filepath, 'r') as file:
-            for line in file.readlines():
-                clean_line = helpers.clean_line(line)
+    try:
+        with open(filepath, mode='r', encoding='utf-8') as file:
+            while True:
+                line = file.readline()
+                if not line:
+                    break
+                clean_line = line.strip()
                 lines.append(clean_line)
+    except Exception as e:
+        print(e)
     return lines
 
 
