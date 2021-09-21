@@ -15,15 +15,20 @@ class LDrawGeometry:
         self.edge_vert_count = 0
         self.face_vert_count = 0
 
-    def parse_face(self, params, texmap=None):
+    def parse_face(self, params, texmap=None, inverted=False):
         vert_count = int(params[0])
         color_code = params[1]
 
         verts = []
         for i in range(vert_count):
-            x = float(params[i * 3 + 2])
-            y = float(params[i * 3 + 3])
-            z = float(params[i * 3 + 4])
+            if inverted:
+                z = float(params[i * 3 + 4])
+                y = float(params[i * 3 + 3])
+                x = float(params[i * 3 + 2])
+            else:
+                x = float(params[i * 3 + 2])
+                y = float(params[i * 3 + 3])
+                z = float(params[i * 3 + 4])
             vertex = mathutils.Vector((x, y, z))
             verts.append(vertex)
 

@@ -92,8 +92,8 @@ class LDrawFile:
 
         self.bfc_certified = None
         self.bfc_winding = "CCW"
-        self.bfc = True
         self.bfc_culling = True
+        self.bfc_inverted = False
 
     @classmethod
     def get_file(cls, filename):
@@ -187,37 +187,21 @@ class LDrawFile:
                     elif clean_line == '0 BFC CERTIFY CW':
                         self.bfc_winding = "CW"
                     elif clean_line == '0 BFC CW':
-                        ldraw_node = LDrawNode()
-                        ldraw_node.meta_command = "bfc"
-                        ldraw_node.meta_args = "cw"
-                        self.child_nodes.append(ldraw_node)
+                        self.bfc_winding = "CW"
                     elif clean_line == '0 BFC CCW':
-                        ldraw_node = LDrawNode()
-                        ldraw_node.meta_command = "bfc"
-                        ldraw_node.meta_args = "ccw"
-                        self.child_nodes.append(ldraw_node)
+                        self.bfc_winding = "CCW"
                     elif clean_line == '0 BFC CLIP':
-                        ldraw_node = LDrawNode()
-                        ldraw_node.meta_command = "bfc clip"
-                        self.child_nodes.append(ldraw_node)
+                        self.bfc_culling = True
                     elif clean_line in ['0 BFC CLIP CW', '0 BFC CW CLIP']:
-                        ldraw_node = LDrawNode()
-                        ldraw_node.meta_command = "bfc clip"
-                        ldraw_node.meta_args = "cw"
-                        self.child_nodes.append(ldraw_node)
+                        self.bfc_winding = "CW"
+                        self.bfc_culling = True
                     elif clean_line in ['0 BFC CLIP CCW', '0 BFC CCW CLIP']:
-                        ldraw_node = LDrawNode()
-                        ldraw_node.meta_command = "bfc clip"
-                        ldraw_node.meta_args = "ccw"
-                        self.child_nodes.append(ldraw_node)
+                        self.bfc_winding = "CCW"
+                        self.bfc_culling = True
                     elif clean_line == '0 BFC NOCLIP':
-                        ldraw_node = LDrawNode()
-                        ldraw_node.meta_command = "bfc noclip"
-                        self.child_nodes.append(ldraw_node)
+                        self.bfc_culling = False
                     elif clean_line == '0 BFC INVERTNEXT':
-                        ldraw_node = LDrawNode()
-                        ldraw_node.meta_command = "bfc invertnext"
-                        self.child_nodes.append(ldraw_node)
+                        self.bfc_inverted = True
             elif params[0] == "0":
                 if self.bfc_certified is None:
                     self.bfc_certified = False
@@ -277,6 +261,7 @@ class LDrawFile:
                         clean_line = re.sub(r"(.*?\s+!:\s+)", "", line)
                         clean_params = params[2:]
                         self.parse_geometry_line(clean_line, clean_params)
+                        self.bfc_inverted = False
                     if self.texmap_next:
                         self.set_texmap_end()
                 elif params[1].lower() in ["PE_TEX_PATH"]:  # for stud.io uvs
@@ -385,6 +370,7 @@ class LDrawFile:
             else:
                 if not self.texmap_fallback:
                     self.parse_geometry_line(line, params)
+                self.bfc_inverted = False
 
         if self.name == "":
             self.name = os.path.basename(self.filename)
