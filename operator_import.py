@@ -441,12 +441,14 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         import_options.sharpen_edges = self.sharpen_edges
         import_options.instancing = self.instancing
 
+        # https://docs.python.org/3/library/profile.html
         if self.profile:
             profiler.enable()
         blender_import.do_import(bpy.path.abspath(self.filepath))
         if self.profile:
             profiler.disable()
             pstats.Stats(profiler).sort_stats('tottime').print_stats()
+            # pstats.Stats(profiler).sort_stats('cumtime').print_stats()
 
         print("")
         print("======Import Complete======")
