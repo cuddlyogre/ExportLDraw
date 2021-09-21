@@ -29,21 +29,9 @@ def reset_caches():
     all_files = {}
 
 
-def get_search_paths(texture=False):
-    if texture:
-        return texture_paths + search_paths
-    else:
-        return search_paths
-
-
 def append_search_path(path):
-    if path != "" and os.path.isdir(path):
+    if path[0] != "" and os.path.isdir(path[0]):
         search_paths.append(path)
-
-
-def append_texture_paths(path):
-    if path != "" and os.path.exists(path):
-        texture_paths.append(path)
 
 
 def locate_ldraw():
@@ -59,13 +47,21 @@ def locate_ldraw():
         pass
         # OS X
     elif platform == "win32":
-        drive_letters = list(string.ascii_lowercase)
-        for drive_letter in drive_letters:
+        for drive_letter in string.ascii_lowercase:
             ldraw_path = os.path.join(os.path.join(f"{drive_letter}:\\", 'ldraw'))
             if os.path.isdir(ldraw_path):
                 return ldraw_path
 
     return ""
+
+
+def build_lowercase_paths():
+    global all_files
+    all_files = {}
+
+    for path in search_paths:
+        for file in glob.glob(os.path.join(path[0], path[1])):
+            all_files[file.lower()] = file
 
 
 def build_search_paths(parent_filepath=None):
@@ -74,62 +70,52 @@ def build_search_paths(parent_filepath=None):
     # https://forums.ldraw.org/thread-24495-post-40577.html#pid40577
     # append top level file's directory
     if parent_filepath is not None:
-        append_search_path(os.path.dirname(parent_filepath))
+        append_search_path((os.path.dirname(parent_filepath), '**/*'))
+        append_search_path((os.path.dirname(parent_filepath), '*'))
 
-    append_search_path(os.path.join(ldraw_path))
-    append_search_path(os.path.join(ldraw_path, "models"))
+    append_search_path((os.path.join(ldraw_path), '*'))
 
     if prefer_unofficial:
-        append_unofficial()
-        append_official()
+        append_unofficial_paths()
+        append_official_paths()
     else:
-        append_official()
-        append_unofficial()
+        append_official_paths()
+        append_unofficial_paths()
 
-    append_textures()
     build_lowercase_paths()
 
 
-def build_lowercase_paths():
-    global all_files
-    all_files = {}
+def append_paths(folder=''):
+    append_search_path((os.path.join(ldraw_path, folder, "models"), '**/*'))
+    append_search_path((os.path.join(ldraw_path, folder, "models"), '*'))
 
-    for path in get_search_paths(texture=True):
-        for file in glob.glob(os.path.join(path, '*')):
-            all_files[file.lower()] = file
+    append_search_path((os.path.join(ldraw_path, folder, "parts", "textures"), '**/*'))
+    append_search_path((os.path.join(ldraw_path, folder, "parts", "textures"), '*'))
 
+    append_search_path((os.path.join(ldraw_path, folder, "parts"), '**/*'))
+    append_search_path((os.path.join(ldraw_path, folder, "parts"), '*'))
 
-def append_official():
-    append_search_path(os.path.join(ldraw_path, "models"))
-    append_search_path(os.path.join(ldraw_path, "parts"))
     if resolution == "High":
-        append_search_path(os.path.join(ldraw_path, "p", "48"))
+        append_search_path((os.path.join(ldraw_path, folder, "p", "48"), '**/*'))
+        append_search_path((os.path.join(ldraw_path, folder, "p", "48"), '*'))
     elif resolution == "Low":
-        append_search_path(os.path.join(ldraw_path, "p", "8"))
-    append_search_path(os.path.join(ldraw_path, "p"))
+        append_search_path((os.path.join(ldraw_path, folder, "p", "8"), '**/*'))
+        append_search_path((os.path.join(ldraw_path, folder, "p", "8"), '*'))
+
+    append_search_path((os.path.join(ldraw_path, folder, "p"), '**/*'))
+    append_search_path((os.path.join(ldraw_path, folder, "p"), '*'))
 
 
-def append_unofficial():
-    append_search_path(os.path.join(ldraw_path, "unofficial", "models"))
-    append_search_path(os.path.join(ldraw_path, "unofficial", "parts"))
-    if resolution == "High":
-        append_search_path(os.path.join(ldraw_path, "unofficial", "p", "48"))
-    elif resolution == "Low":
-        append_search_path(os.path.join(ldraw_path, "unofficial", "p", "8"))
-    append_search_path(os.path.join(ldraw_path, "unofficial", "p"))
+def append_official_paths():
+    append_paths()
 
 
-def append_textures():
-    if prefer_unofficial:
-        append_texture_paths(os.path.join(ldraw_path, "unofficial", "parts", "textures"))
-        append_texture_paths(os.path.join(ldraw_path, "parts", "textures"))
-    else:
-        append_texture_paths(os.path.join(ldraw_path, "parts", "textures"))
-        append_texture_paths(os.path.join(ldraw_path, "unofficial", "parts", "textures"))
+def append_unofficial_paths():
+    append_paths(folder="unofficial")
 
 
 # https://stackoverflow.com/a/8462613
-def path_insensitive(path):
+def path_lowercase(path):
     if path.lower() in all_files:
         return all_files[path.lower()]
     return path
@@ -150,7 +136,7 @@ def read_file(filepath):
     return lines
 
 
-def locate(filename, texture=False):
+def locate(filename):
     part_path = filename.replace("\\", os.path.sep)
     part_path = os.path.expanduser(part_path)
 
@@ -158,34 +144,13 @@ def locate(filename, texture=False):
     if os.path.isfile(part_path):
         return part_path
 
-    full_path = None
-    for path in get_search_paths(texture):
-        full_path = os.path.join(path, part_path)
-        full_path = path_insensitive(full_path)
+    for path in search_paths:
+        full_path = os.path.join(path[0], part_path)
+        full_path = path_lowercase(full_path)
         if os.path.isfile(full_path):
             return full_path
 
-    if full_path is None:
-        # TODO: requests retrieve missing items from ldraw.org
-        # full_path = downloader.download_texture(part_path)
-        return full_path
+    # TODO: requests retrieve missing items from ldraw.org
 
-    return full_path
-
-
-def test_fix_string():
-    build_search_paths()
-    errors = {}
-    for path in search_paths:
-        paths = glob.glob(os.path.join(path, '**', '*'), recursive=True)
-        for path in paths:
-            if not os.path.isfile(path):
-                continue
-            with open(path, 'r') as file:
-                try:
-                    print(helpers.fix_string_encoding(file.read()))
-                except UnicodeDecodeError as e:
-                    errors[path] = e
-                    # print(e)
-                    # print(path)
-    print(errors)
+    print(f"missing {filename}")
+    return None

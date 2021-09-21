@@ -319,11 +319,12 @@ def __create_texmap_texture(nodes, links, diff_color, texmap):
         # TODO: requests retrieve image from ldraw.org
         # https://blender.stackexchange.com/questions/157531/blender-2-8-python-add-texture-image
         if image_name not in bpy.data.images:
-            image_path = filesystem.locate(image_name, texture=True)
+            image_path = filesystem.locate(image_name)
             if image_path is not None:
                 image = bpy.data.images.load(image_path)
                 image.name = image_name
                 image[strings.ldraw_filename_key] = image_name
+                image.colorspace_settings.name = 'sRGB'
 
         if image_name in bpy.data.images:
             image = bpy.data.images[image_name]
@@ -344,7 +345,7 @@ def __create_texmap_texture(nodes, links, diff_color, texmap):
         glossmap_image.extension = "CLIP"
 
         if image_name not in bpy.data.images:
-            image_path = filesystem.locate(image_name, texture=True)
+            image_path = filesystem.locate(image_name)
             if image_path is not None:
                 image = bpy.data.images.load(image_path)
                 image.name = image_name
