@@ -278,11 +278,12 @@ class LDrawNode:
         _key.append(color_code)
         _key.append(hash(matrix.freeze()))
         _key = "_".join([str(k).lower() for k in _key])
-        _key = re.sub(r"[^a-z0-9._]", "-", _key)
+        # _key = re.sub(r"[^a-z0-9._]", "-", _key)
 
         if _key not in key_map:
             key_map[_key] = str(uuid.uuid4())
         key = key_map[_key]
+        # key = _key
 
         # TODO: reuse primitive ldraw_nodes
         # if is_primitive then build primitive geometry_data

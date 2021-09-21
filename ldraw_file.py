@@ -410,7 +410,7 @@ class LDrawFile:
             if texmap.texmap is not None:
                 _key.append(texmap.texmap.id)
             _key = "_".join([str(k).lower() for k in _key])
-            _key = re.sub(r"[^a-z0-9._]", "-", _key)
+            # _key = re.sub(r"[^a-z0-9._]", "-", _key)
 
             if _key not in key_map:
                 key_map[_key] = str(uuid.uuid4())
@@ -488,7 +488,7 @@ class LDrawFile:
             if texmap.texmap is not None:
                 _key.append(texmap.texmap.id)
             _key = "_".join([str(k).lower() for k in _key])
-            _key = re.sub(r"[^a-z0-9._]", "-", _key)
+            # _key = re.sub(r"[^a-z0-9._]", "-", _key)
 
             if _key not in key_map:
                 key_map[_key] = str(uuid.uuid4())
