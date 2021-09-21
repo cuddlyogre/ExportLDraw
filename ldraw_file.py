@@ -40,50 +40,17 @@ def read_color_table():
     else:
         filename = "LDConfig.ldr"
 
-    ldraw_file = LDrawFile(filename)
-    ldraw_file.read_file()
-    ldraw_file.parse_file()
+    ldraw_file = LDrawFile.get_file(filename)
+    if ldraw_file is None:
+        return
 
 
-def handle_mpd(filepath):
-    if filepath in mpd_file_cache:
-        return mpd_file_cache[filepath].filename
-
-    filepath = filesystem.locate(filepath)
-    if filepath is None:
-        return None
-
-    lines = []
-    with open(filepath, 'r') as file:
-        is_mpd = False
-        while True:
-            line = file.readline()
-            if not line:
-                break
-
-            clean_line = helpers.clean_line(line)
-            # fixed_line = line.strip()
-            if clean_line == "":
-                continue
-            if clean_line.startswith("0 FILE") and not is_mpd:
-                is_mpd = True
-            if not is_mpd:
-                return filepath
-            lines.append(clean_line)
-
-    if len(lines) < 1:
-        return None
-
+def handle_mpd(filepath, lines):
     root_file_name = None
     current_file = None
-    for line in lines:
-        params = helpers.parse_line(line, 17)
-
-        if params is None:
-            continue
-
-        if params[0] == "0" and params[1] == "FILE":
-            filename = line[7:].lower()
+    for clean_line in lines:
+        if clean_line.startswith("0 FILE "):
+            filename = clean_line.split(maxsplit=2)[2].lower()
             if current_file is not None:
                 mpd_file_cache[current_file.filename] = current_file
             current_file = LDrawFile(filename)
@@ -91,13 +58,13 @@ def handle_mpd(filepath):
             if root_file_name is None:
                 root_file_name = filename
 
-        elif params[0] == "0" and params[1].lower() == "nofile":
+        elif clean_line.startswith("0 NOFILE"):
             if current_file is not None:
                 mpd_file_cache[current_file.filename] = current_file
             current_file = None
 
         elif current_file is not None:
-            current_file.lines.append(line)
+            current_file.lines.append(clean_line)
 
     if current_file is not None:
         mpd_file_cache[current_file.filename] = current_file
@@ -111,8 +78,7 @@ def handle_mpd(filepath):
 class LDrawFile:
     def __init__(self, filename):
         self.filename = filename
-        self.filepath = None
-        self.name = ""
+        self.name = os.path.basename(filename)
         self.child_nodes = []
         self.geometry = LDrawGeometry()
         self.part_type = None
@@ -129,17 +95,71 @@ class LDrawFile:
         self.bfc = True
         self.bfc_culling = True
 
-    def read_file(self):
-        if self.filename in mpd_file_cache:
-            self.lines = mpd_file_cache[self.filename].lines
+    @classmethod
+    def get_file(cls, filename):
+        lines = []
+
+        if filename in mpd_file_cache:
+            lines = mpd_file_cache[filename].lines
         else:
-            # TODO: if missing, use a,b,c etc parts if available
-            self.filepath = filesystem.locate(self.filename)
-            if self.filepath is None:
-                print(f"missing {self.filename}")
-                return False
-            self.lines = filesystem.read_file(self.filepath)
-        return True
+            # TODO: if missing, use a,b,c,etc parts if available
+            filepath = filesystem.locate(filename)
+            if filepath is None:
+                return None
+
+            is_mpd = False
+            no_file = False
+            root_file_name = None
+            current_file = None
+            try:
+                with open(filepath, mode='r', encoding='utf-8') as file:
+                    while True:
+                        line = file.readline()
+                        if not line:
+                            break
+
+                        clean_line = line.strip()
+                        if clean_line == "":
+                            continue
+
+                        if clean_line.startswith("0 FILE "):
+                            if not is_mpd:
+                                is_mpd = True
+
+                            no_file = False
+
+                            mpd_filename = clean_line.split(maxsplit=2)[2].lower()
+                            if root_file_name is None:
+                                root_file_name = mpd_filename
+
+                            if current_file is not None:
+                                mpd_file_cache[current_file.filename] = current_file
+                            current_file = LDrawFile(mpd_filename)
+                        elif is_mpd:
+                            if no_file:
+                                continue
+
+                            if clean_line.startswith("0 NOFILE"):
+                                no_file = True
+                                if current_file is not None:
+                                    mpd_file_cache[current_file.filename] = current_file
+                                current_file = None
+
+                            elif current_file is not None:
+                                current_file.lines.append(clean_line)
+                        else:
+                            lines.append(clean_line)
+            except Exception as e:
+                print(e)
+
+            if root_file_name is not None:
+                filename = root_file_name
+                lines = mpd_file_cache[filename].lines
+
+        ldraw_file = LDrawFile(filename)
+        ldraw_file.lines = lines
+        ldraw_file.parse_file()
+        return ldraw_file
 
     def parse_file(self):
         camera = None
@@ -399,7 +419,6 @@ class LDrawFile:
             if key not in file_cache:
                 filename = f"{self.name}_extra"
                 ldraw_file = LDrawFile(filename)
-                ldraw_file.name = filename
                 ldraw_file.part_type = "part"
                 ldraw_file.child_nodes = (self.extra_child_nodes or [])
                 ldraw_file.geometry = (self.extra_geometry or LDrawGeometry())
@@ -476,11 +495,9 @@ class LDrawFile:
             key = key_map[_key]
 
             if key not in file_cache:
-                filename = handle_mpd(filename)
-                ldraw_file = LDrawFile(filename)
-                if not ldraw_file.read_file():
-                    return None
-                ldraw_file.parse_file()
+                ldraw_file = LDrawFile.get_file(filename)
+                if ldraw_file is None:
+                    return
                 file_cache[key] = ldraw_file
             ldraw_file = file_cache[key]
 

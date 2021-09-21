@@ -26,13 +26,9 @@ def do_import(filepath):
     ldraw_file.read_color_table()
     blender_materials.create_blender_node_groups()
 
-    filepath = ldraw_file.handle_mpd(filepath)
-    if filepath is None:
+    file = ldraw_file.LDrawFile.get_file(filepath)
+    if file is None:
         return
-
-    file = ldraw_file.LDrawFile(filepath)
-    file.read_file()
-    file.parse_file()
 
     if file.name.lower() in [x.lower() for x in ['LDCfgalt.ldr', 'LDConfig.ldr']]:
         load_materials(file)
