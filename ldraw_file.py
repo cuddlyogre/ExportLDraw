@@ -168,9 +168,6 @@ class LDrawFile:
             clean_line = helpers.clean_line(line)
             params = helpers.parse_line(line, 17)
 
-            if params is None:
-                continue
-
             # create meta nodes when those commands affect the scene
             # process meta command in place if it only affects the file
             if clean_line.startswith('0 BFC '):
@@ -321,13 +318,13 @@ class LDrawFile:
                     if params[2].lower() in ["group"]:
                         if params[3].lower() in ["begin"]:
                             # begin_params = re.search(r"(?:.*\s+){3}begin\s+(.*)", line, re.IGNORECASE)
-                            begin_params = re.search(r"\S+\s+\S+\s+\S+\s+\S+\s+(.*)", line.strip())
+                            # begin_params = re.search(r"\S+\s+\S+\s+\S+\s+\S+\s+(.*)", line.strip())
+                            begin_params = line.strip().split(maxsplit=4)
 
-                            if begin_params is not None:
-                                ldraw_node = LDrawNode()
-                                ldraw_node.meta_command = "group_begin"
-                                ldraw_node.meta_args["name"] = begin_params[1]
-                                self.child_nodes.append(ldraw_node)
+                            ldraw_node = LDrawNode()
+                            ldraw_node.meta_command = "group_begin"
+                            ldraw_node.meta_args["name"] = begin_params[4]
+                            self.child_nodes.append(ldraw_node)
                         elif params[3].lower() in ["end"]:
                             ldraw_node = LDrawNode()
                             ldraw_node.meta_command = "group_end"
@@ -374,9 +371,9 @@ class LDrawFile:
                                 camera.hidden = True
                                 params = params[1:]
                             elif params[0] == "NAME":
-                                camera_name_params = re.search(r"\S+\s+\S+\s+\S+\s+\S+\s+(.*)", line.strip())
-
-                                camera.name = camera_name_params[1].strip()
+                                #  camera_name_params = re.search(r"\S+\s+\S+\s+\S+\s+\S+\s+(.*)", line.strip())
+                                camera_name_params = line.strip().split(maxsplit=4)
+                                camera.name = camera_name_params[4]
 
                                 # By definition this is the last of the parameters
                                 params = []
@@ -452,8 +449,9 @@ class LDrawFile:
             # there might be spaces in the filename, so don't just split on whitespace
             # filename_args = re.search(r"(?:.*\s+){14}(.*)", line.strip())
             # print(line.strip())
-            filename_args = re.search(r"(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)(?:\s+(\S+.*))?", line.strip())
-            filename = filename_args[15].lower()
+            # filename_args = re.search(r"(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)(?:\s+(\S+.*))?", line.strip())
+            filename_args = line.strip().split(maxsplit=14)
+            filename = filename_args[14].lower()
 
             # filename = "stud-logo.dat"
             # parts = filename.split(".") => ["stud-logo", "dat"]
