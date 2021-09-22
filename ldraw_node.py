@@ -27,6 +27,9 @@ next_collection = None
 end_next_collection = False
 key_map = dict()
 
+import_scale_matrix = None
+gap_scale_matrix = None
+
 
 def reset_caches():
     global part_count
@@ -39,6 +42,9 @@ def reset_caches():
     global collection_id_map
     global next_collection
     global end_next_collection
+    global key_map
+    global import_scale_matrix
+    global gap_scale_matrix
 
     part_count = 0
     current_step = 0
@@ -51,6 +57,12 @@ def reset_caches():
     next_collection = None
     end_next_collection = False
     key_map = dict()
+
+    scale = import_options.import_scale
+    import_scale_matrix = mathutils.Matrix.Scale(scale, 4).freeze()
+
+    scale = import_options.gap_scale
+    gap_scale_matrix = mathutils.Matrix.Scale(scale, 4).freeze()
 
     if import_options.meta_step:
         set_step()
@@ -127,20 +139,30 @@ def handle_meta_step(obj):
     obj.keyframe_insert(data_path="hide_viewport")
 
 
-def set_parented_object_matrix(obj, matrix):
-    matrix_world = matrices.identity @ matrices.rotation @ matrices.scaled_matrix(import_options.import_scale)
-    top_empty.matrix_world = matrix_world
+def set_object_matrix(obj, matrix):
+    transform_matrix = matrices.identity @ matrices.rotation @ import_scale_matrix
+
+    if not import_options.parent_to_empty:
+        matrix_world = transform_matrix @ matrix
+
+        if import_options.make_gaps and import_options.gap_target == "object":
+            matrix_world = matrix_world @ gap_scale_matrix
+
+        obj.matrix_world = matrix_world
+        return
+
+    top_empty.matrix_world = transform_matrix
     obj.matrix_world = matrix
 
     if import_options.make_gaps and import_options.gap_target == "object":
         if import_options.gap_scale_strategy == "object":
-            matrix_world = obj.matrix_world @ matrices.scaled_matrix(import_options.gap_scale)
+            matrix_world = obj.matrix_world @ gap_scale_matrix
             obj.matrix_world = matrix_world
         elif import_options.gap_scale_strategy == "constraint":
             global gap_scale_empty
-            if gap_scale_empty is None and top_collection is not None:
+            if gap_scale_empty is None:
                 gap_scale_empty = bpy.data.objects.new("gap_scale", None)
-                matrix_world = gap_scale_empty.matrix_world @ matrices.scaled_matrix(import_options.gap_scale)
+                matrix_world = gap_scale_empty.matrix_world @ gap_scale_matrix
                 gap_scale_empty.matrix_world = matrix_world
                 top_collection.objects.link(gap_scale_empty)
             copy_scale_constraint = obj.constraints.new("COPY_SCALE")
@@ -148,16 +170,6 @@ def set_parented_object_matrix(obj, matrix):
             copy_scale_constraint.target.parent = top_empty
 
     obj.parent = top_empty  # must be after matrix_world set or else transform is incorrect
-
-
-def set_object_matrix(obj, matrix):
-    matrix_world = matrices.identity @ matrices.rotation @ matrices.scaled_matrix(import_options.import_scale)
-    matrix_world = matrix_world @ matrix
-
-    if import_options.make_gaps and import_options.gap_target == "object":
-        matrix_world = matrix_world @ matrices.scaled_matrix(import_options.gap_scale)
-
-    obj.matrix_world = matrix_world
 
 
 def process_face(file, bm, mesh, face, color_code, texmap):
@@ -283,6 +295,7 @@ class LDrawNode:
         if _key not in key_map:
             key_map[_key] = str(uuid.uuid4())
         key = key_map[_key]
+        e_key = f"e_{key}"
         # key = _key
 
         # TODO: reuse primitive ldraw_nodes
@@ -333,9 +346,6 @@ class LDrawNode:
                 geometry_data_cache[key] = geometry_data
 
         if top:
-            matrix = parent_matrix @ self.matrix
-            e_key = f"e_{key}"
-
             if key not in bpy.data.meshes:
                 bm = bmesh.new()
 
@@ -458,16 +468,14 @@ class LDrawNode:
                     mesh.auto_smooth_angle = math.radians(auto_smooth_angle)
 
                 if import_options.make_gaps and import_options.gap_target == "mesh":
-                    mesh.transform(matrices.scaled_matrix(import_options.gap_scale))
-                    edge_mesh.transform(matrices.scaled_matrix(import_options.gap_scale))
+                    mesh.transform(gap_scale_matrix)
+                    edge_mesh.transform(gap_scale_matrix)
             mesh = bpy.data.meshes[key]
             obj = do_create_object(mesh)
             obj[strings.ldraw_filename_key] = self.file.name
 
-            if top_empty is None:
-                set_object_matrix(obj, matrix)
-            else:
-                set_parented_object_matrix(obj, matrix)
+            matrix = parent_matrix @ self.matrix
+            set_object_matrix(obj, matrix)
 
             if import_options.meta_step:
                 handle_meta_step(obj)

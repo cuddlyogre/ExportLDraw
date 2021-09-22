@@ -79,7 +79,7 @@ def export_subfiles(obj, lines, is_model=False):
         precision = obj[strings.ldraw_export_precision_key]
 
     if is_model:
-        aa = matrices.reverse_rotation @ obj.matrix_world
+        aa = matrices.identity @ matrices.reverse_rotation @ obj.matrix_world
 
         a = fix_round(aa[0][0], precision)
         b = fix_round(aa[0][1], precision)
