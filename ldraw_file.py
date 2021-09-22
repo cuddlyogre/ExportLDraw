@@ -15,16 +15,16 @@ from . import ldraw_colors
 from . import ldraw_camera
 from . import texmap
 
-mpd_file_cache = {}
+file_lines_cache = {}
 file_cache = {}
 key_map = {}
 
 
 def reset_caches():
-    global mpd_file_cache
+    global file_lines_cache
     global file_cache
     global key_map
-    mpd_file_cache = {}
+    file_lines_cache = {}
     file_cache = {}
     key_map = {}
 
@@ -45,38 +45,9 @@ def read_color_table():
         return
 
 
-def handle_mpd(filepath, lines):
-    root_file_name = None
-    current_file = None
-    for clean_line in lines:
-        if clean_line.startswith("0 FILE "):
-            filename = clean_line.split(maxsplit=2)[2].lower()
-            if current_file is not None:
-                mpd_file_cache[current_file.filename] = current_file
-            current_file = LDrawFile(filename)
-
-            if root_file_name is None:
-                root_file_name = filename
-
-        elif clean_line.startswith("0 NOFILE"):
-            if current_file is not None:
-                mpd_file_cache[current_file.filename] = current_file
-            current_file = None
-
-        elif current_file is not None:
-            current_file.lines.append(clean_line)
-
-    if current_file is not None:
-        mpd_file_cache[current_file.filename] = current_file
-
-    if root_file_name is not None:
-        return root_file_name
-
-    return filepath
-
-
 class LDrawFile:
     def __init__(self, filename):
+        self.filepath = None
         self.filename = filename
         self.name = os.path.basename(filename)
         self.child_nodes = []
@@ -97,11 +68,8 @@ class LDrawFile:
 
     @classmethod
     def get_file(cls, filename):
-        lines = []
-
-        if filename in mpd_file_cache:
-            lines = mpd_file_cache[filename].lines
-        else:
+        filepath = None
+        if filename not in file_lines_cache:
             # TODO: if missing, use a,b,c,etc parts if available
             filepath = filesystem.locate(filename)
             if filepath is None:
@@ -109,7 +77,7 @@ class LDrawFile:
 
             is_mpd = False
             no_file = False
-            root_file_name = None
+            first_mpd_filename = None
             current_file = None
             try:
                 with open(filepath, mode='r', encoding='utf-8') as file:
@@ -129,11 +97,11 @@ class LDrawFile:
                             no_file = False
 
                             mpd_filename = clean_line.split(maxsplit=2)[2].lower()
-                            if root_file_name is None:
-                                root_file_name = mpd_filename
+                            if first_mpd_filename is None:
+                                first_mpd_filename = mpd_filename
 
                             if current_file is not None:
-                                mpd_file_cache[current_file.filename] = current_file
+                                file_lines_cache[current_file.filename] = current_file
                             current_file = LDrawFile(mpd_filename)
                         elif is_mpd:
                             if no_file:
@@ -142,22 +110,24 @@ class LDrawFile:
                             if clean_line.startswith("0 NOFILE"):
                                 no_file = True
                                 if current_file is not None:
-                                    mpd_file_cache[current_file.filename] = current_file
+                                    file_lines_cache[current_file.filename] = current_file
                                 current_file = None
 
                             elif current_file is not None:
                                 current_file.lines.append(clean_line)
                         else:
-                            lines.append(clean_line)
+                            if filename not in file_lines_cache:
+                                file_lines_cache[filename] = LDrawFile(filename)
+                            file_lines_cache[filename].lines.append(clean_line)
             except Exception as e:
                 print(e)
 
-            if root_file_name is not None:
-                filename = root_file_name
-                lines = mpd_file_cache[filename].lines
+            if first_mpd_filename is not None:
+                filename = first_mpd_filename
 
         ldraw_file = LDrawFile(filename)
-        ldraw_file.lines = lines
+        ldraw_file.filepath = filepath
+        ldraw_file.lines = file_lines_cache[filename].lines
         ldraw_file.parse_file()
         return ldraw_file
 
