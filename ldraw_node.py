@@ -1,7 +1,6 @@
 import math
 import os
 import uuid
-import re
 
 import bmesh
 import bpy
@@ -290,38 +289,11 @@ class LDrawNode:
         _key.append(color_code)
         _key.append(hash(matrix.freeze()))
         _key = "_".join([str(k).lower() for k in _key])
-        # _key = re.sub(r"[^a-z0-9._]", "-", _key)
 
         if _key not in key_map:
             key_map[_key] = str(uuid.uuid4())
         key = key_map[_key]
         e_key = f"e_{key}"
-        # key = _key
-
-        # TODO: reuse primitive ldraw_nodes
-        # if is_primitive then build primitive geometry_data
-        # if geometry already in the geometry_cache, reuse it
-        # only works with top level data
-        # if top and key in serialized_meshes and key not in bpy.data.meshes:
-        #     path = os.path.join(this_dir, f"{name}.pickle")
-        #     with open(path, 'wb') as file:
-        #         file.write(p)
-        #
-        #     pl = None
-        #     with open(path, 'rb') as file:
-        #         rp = file.read()
-        #         pl = pickle.loads(rp)
-        #     print(pl)
-        #
-        #     e_verts = pl['vertices']
-        #     e_edges = []
-        #     e_faces = pl['faces']
-        #
-        #     edge_mesh = bpy.data.meshes.new(key)
-        #     edge_mesh.from_pydata(e_verts, e_edges, e_faces)
-        #     edge_mesh.update()
-        #     edge_mesh.validate()
-        # elif key in geometry_data_cache:
 
         if key in geometry_data_cache:
             geometry_data = geometry_data_cache[key]
