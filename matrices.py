@@ -92,6 +92,7 @@ def cross(a, b):
         return a.cross(b)
 
 
+# mathutils.Matrix.Identity(4)
 identity = Matrix((
     (1.0, 0.0, 0.0, 0.0),
     (0.0, 1.0, 0.0, 0.0),
@@ -123,6 +124,7 @@ reflection = Matrix((
 )).freeze()
 
 
+# mathutils.Matrix.Scale(scale, 4)
 def scaled_matrix(scale=1.0):
     return Matrix((
         (scale, 0.0, 0.0, 0.0),
