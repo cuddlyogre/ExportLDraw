@@ -119,6 +119,8 @@ class LDrawFile:
                             if filename not in file_lines_cache:
                                 file_lines_cache[filename] = LDrawFile(filename)
                             file_lines_cache[filename].lines.append(clean_line)
+                    if current_file is not None:
+                        file_lines_cache[current_file.filename] = current_file
             except Exception as e:
                 print(e)
 
