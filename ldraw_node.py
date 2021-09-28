@@ -22,6 +22,7 @@ top_collection = None
 top_empty = None
 gap_scale_empty = None
 collection_id_map = dict()
+next_collections = []
 next_collection = None
 end_next_collection = False
 key_map = dict()
@@ -39,6 +40,7 @@ def reset_caches():
     global top_empty
     global gap_scale_empty
     global collection_id_map
+    global next_collections
     global next_collection
     global end_next_collection
     global key_map
@@ -53,6 +55,7 @@ def reset_caches():
     top_empty = None
     gap_scale_empty = None
     collection_id_map = dict()
+    next_collections = []
     next_collection = None
     end_next_collection = False
     key_map = dict()
@@ -77,17 +80,6 @@ def set_step():
     current_step += 1
     if import_options.set_timelime_markers:
         bpy.context.scene.timeline_markers.new("STEP", frame=current_frame)
-
-
-def create_meta_group(collection_name, parent_collection):
-    if collection_name not in bpy.data.collections:
-        bpy.data.collections.new(collection_name)
-    collection = bpy.data.collections[collection_name]
-    if parent_collection is None:
-        parent_collection = bpy.context.scene.collection
-    if collection.name not in parent_collection.children:
-        parent_collection.children.link(collection)
-    return collection
 
 
 # obj.show_name = True
@@ -191,7 +183,9 @@ class LDrawNode:
     """
 
     def __init__(self):
+        self.is_root = False
         self.file = None
+        self.line = ""
         self.color_code = "16"
         self.matrix = matrices.identity
         self.meta_command = None
@@ -204,6 +198,12 @@ class LDrawNode:
         global top_empty
         global next_collection
         global end_next_collection
+
+        groups_collection_name = 'Groups'
+        if groups_collection_name not in bpy.data.collections:
+            c = bpy.data.collections.new(groups_collection_name)
+            bpy.context.scene.collection.children.link(c)
+        groups_collection = bpy.data.collections[groups_collection_name]
 
         # these meta commands affect the scene
         if self.file is None:
@@ -228,23 +228,33 @@ class LDrawNode:
             elif self.meta_command == "print":
                 if import_options.meta_print_write:
                     print(self.meta_args)
-            elif self.meta_command == "group_begin":
-                create_meta_group(self.meta_args["name"], parent_collection)
-                end_next_collection = False
-                if self.meta_args["name"] in bpy.data.collections:
-                    next_collection = bpy.data.collections[self.meta_args["name"]]
-            elif self.meta_command == "group_end":
-                end_next_collection = True
             elif self.meta_command == "group_def":
-                if self.meta_args["id"] not in collection_id_map:
-                    collection_id_map[self.meta_args["id"]] = self.meta_args["name"]
-                create_meta_group(self.meta_args["name"], parent_collection)
+                collection_name = self.meta_args["name"]
+                collection_id_map[self.meta_args["id"]] = collection_name
+                if collection_name not in bpy.data.collections:
+                    c = bpy.data.collections.new(collection_name)
+                    groups_collection.children.link(c)
             elif self.meta_command == "group_nxt":
                 if self.meta_args["id"] in collection_id_map:
-                    key = collection_id_map[self.meta_args["id"]]
-                    if key in bpy.data.collections:
-                        next_collection = bpy.data.collections[key]
+                    collection_name = collection_id_map[self.meta_args["id"]]
+                    if collection_name in bpy.data.collections:
+                        next_collection = bpy.data.collections[collection_name]
                 end_next_collection = True
+            elif self.meta_command == "group_begin":
+                if next_collection is not None:
+                    next_collections.append(next_collection)
+                collection_name = self.meta_args["name"]
+                if collection_name not in bpy.data.collections:
+                    c = bpy.data.collections.new(collection_name)
+                    groups_collection.children.link(c)
+                next_collection = bpy.data.collections[collection_name]
+                if len(next_collections) > 0:
+                    next_collections[-1].children.link(next_collection)
+            elif self.meta_command == "group_end":
+                if len(next_collections) > 0:
+                    next_collection = next_collections.pop()
+                else:
+                    next_collection = None
             return
 
         # set the working color code to this file's
@@ -259,31 +269,39 @@ class LDrawNode:
         matrix = parent_matrix @ self.matrix
         collection = parent_collection
 
-        if geometry_data is None:
-            if self.file.is_like_model():
-                collection_name = os.path.basename(self.file.name)
-                collection = bpy.data.collections.new(collection_name)
+        if self.file.is_model():
+            collection_name = os.path.basename(self.file.name)
+            if collection_name not in bpy.data.collections:
+                bpy.data.collections.new(collection_name)
+            collection = bpy.data.collections[collection_name]
+
+            if top_collection is None:
+                top_collection = collection
+            else:
+                # if collection.name not in top_collection.children:
+                #     top_collection.children.link(collection)
                 if parent_collection is not None:
-                    parent_collection.children.link(collection)
+                    if collection.name not in parent_collection.children:
+                        parent_collection.children.link(collection)
+        elif self.file.is_shortcut():
+            # TODO: instead of adding to group, parent to empty
+            pass
+        elif geometry_data is None:  # top-level part
+            geometry_data = GeometryData()
+            matrix = matrices.identity
+            top = True
+            part_count += 1
 
-                if top_collection is None:
-                    top_collection = collection
-                    if import_options.parent_to_empty and top_empty is None:
-                        top_empty = bpy.data.objects.new(top_collection.name, None)
-                        if top_collection is not None:
-                            top_collection.objects.link(top_empty)
-            else:  # top-level part
-                geometry_data = GeometryData()
-                matrix = matrices.identity
-                top = True
-                part_count += 1
+        # if importing anything but a model, create a group for that part
+        if top_collection is None:
+            collection_name = os.path.basename(self.file.name)
+            collection = bpy.data.collections.new(collection_name)
+            top_collection = collection
 
-        if import_options.meta_group and next_collection is not None:
-            collection = next_collection
-            if end_next_collection:
-                next_collection = None
+        if top_empty is None:
+            top_empty = bpy.data.objects.new(top_collection.name, None)
+            top_collection.objects.link(top_empty)
 
-        # key = str(hash((self.file.name, color_code, matrix.freeze())))
         _key = []
         _key.append(self.file.name)
         _key.append(color_code)
@@ -311,6 +329,11 @@ class LDrawNode:
                     parent_collection=collection,
                     is_edge_logo=is_edge_logo,
                 )
+
+                if self.is_root:
+                    if child_node.meta_command not in ["group_nxt"]:
+                        if end_next_collection:
+                            next_collection = None
 
             # without "if top:"
             # 10030-1 - Imperial Star Destroyer - UCS.mpd top back of the bridge - 3794a.dat renders incorrectly
@@ -459,10 +482,17 @@ class LDrawNode:
                 edge_modifier.use_edge_sharp = True
 
             # https://b3d.interplanety.org/en/how-to-get-global-vertex-coordinates/
-            if collection is not None:
-                collection.objects.link(obj)
+            collection.objects.link(obj)
+
+            if next_collection is not None:
+                next_collection.objects.link(obj)
             else:
-                bpy.context.scene.collection.objects.link(obj)
+                collection_name = 'Ungrouped'
+                if collection_name not in bpy.data.collections:
+                    c = bpy.data.collections.new(collection_name)
+                    groups_collection.children.link(c)
+                ungrouped_collection = bpy.data.collections[collection_name]
+                ungrouped_collection.objects.link(obj)
 
             if import_options.import_edges:
                 edge_mesh = bpy.data.meshes[e_key]
@@ -475,10 +505,11 @@ class LDrawNode:
                 if import_options.meta_step:
                     handle_meta_step(obj)
 
-                if collection is not None:
-                    collection.objects.link(edge_obj)
+                collection.objects.link(edge_obj)
+                if next_collection is not None:
+                    next_collection.objects.link(edge_obj)
                 else:
-                    bpy.context.scene.collection.objects.link(edge_obj)
+                    ungrouped_collection.objects.link(edge_obj)
 
         texmap.reset_caches()  # or else the previous part's texmap is applied to this part
         return self

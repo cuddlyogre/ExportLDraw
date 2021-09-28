@@ -34,7 +34,6 @@ default_settings = {
     'gap_scale': import_options.defaults['gap_scale'],
     'no_studs': import_options.defaults['no_studs'],
     'set_timelime_markers': import_options.defaults['set_timelime_markers'],
-    'meta_group': import_options.defaults['meta_group'],
     'meta_print_write': import_options.defaults['meta_print_write'],
     'meta_step': import_options.defaults['meta_step'],
     'meta_clear': import_options.defaults['meta_clear'],
@@ -250,12 +249,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         default=get_setting('meta_print_write'),
     )
 
-    meta_group: bpy.props.BoolProperty(
-        name="GROUP",
-        description="Process GROUP meta commands",
-        default=get_setting('meta_group'),
-    )
-
     meta_step: bpy.props.BoolProperty(
         name="STEP",
         description="Process STEP meta command",
@@ -382,7 +375,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
             'gap_scale': self.gap_scale,
             'no_studs': self.no_studs,
             'set_timelime_markers': self.set_timelime_markers,
-            'meta_group': self.meta_group,
             'meta_print_write': self.meta_print_write,
             'meta_step': self.meta_step,
             'meta_clear': self.meta_clear,
@@ -419,7 +411,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         import_options.gap_scale = self.gap_scale
         import_options.no_studs = self.no_studs
         import_options.set_timelime_markers = self.set_timelime_markers
-        import_options.meta_group = self.meta_group
         import_options.meta_print_write = self.meta_print_write
         import_options.meta_step = self.meta_step
         import_options.meta_clear = self.meta_clear
@@ -496,7 +487,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         box.prop(self, "triangulate")
 
         box.label(text="Meta Commands")
-        box.prop(self, "meta_group")
         box.prop(self, "meta_print_write")
         box.prop(self, "meta_step")
         box.prop(self, "frames_per_step")

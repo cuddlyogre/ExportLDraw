@@ -35,6 +35,7 @@ def do_import(filepath):
         return
 
     root_node = ldraw_node.LDrawNode()
+    root_node.is_root = True
     root_node.file = file
     root_node.load()
 
