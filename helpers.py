@@ -18,12 +18,7 @@ def clean_line(line):
     return line
 
 
-def parse_line(line, min_params=0):
-    params = split_line(line)
-    while len(params) < min_params:
-        params.append("")
-    return params
-
+def parse_csv_line(line, min_params=0):
     try:
         parts = list(csv.reader(io.StringIO(line), delimiter=' ', quotechar='"', skipinitialspace=True))
     except csv.Error as e:
@@ -39,7 +34,13 @@ def parse_line(line, min_params=0):
 
     while len(params) < min_params:
         params.append("")
+    return params
 
+
+def parse_line(line, min_params=0):
+    params = split_line(line)
+    while len(params) < min_params:
+        params.append("")
     return params
 
 

@@ -11,6 +11,7 @@ from . import special_bricks
 
 from .ldraw_node import LDrawNode
 from .ldraw_geometry import LDrawGeometry
+from .texmap import TexMap
 from . import ldraw_colors
 from . import ldraw_camera
 from . import texmap
@@ -49,10 +50,14 @@ class LDrawFile:
     def __init__(self, filename):
         self.filepath = None
         self.filename = filename
+
+        self.description = None
         self.name = os.path.basename(filename)
+        self.author = None
+        self.part_type = None
+
         self.child_nodes = []
         self.geometry = LDrawGeometry()
-        self.part_type = None
         self.lines = []
         self.extra_child_nodes = None
         self.extra_geometry = None
@@ -65,6 +70,17 @@ class LDrawFile:
         self.bfc_winding = "CCW"
         self.bfc_culling = True
         self.bfc_inverted = False
+
+        self.camera = None
+
+    def __str__(self):
+        x = [
+            f"filename: {self.filename}",
+            f"description: {self.description}",
+            f"name: {self.name}",
+            f"author: {self.author}",
+        ]
+        return "\n".join(x)
 
     @classmethod
     def get_file(cls, filename):
@@ -131,22 +147,61 @@ class LDrawFile:
         ldraw_file.filepath = filepath
         ldraw_file.lines = file_lines_cache[filename].lines
         ldraw_file.parse_file()
+        # print(ldraw_file)
         return ldraw_file
 
-    def parse_file(self):
-        camera = None
+    def get_params(self, line, command):
+        l = " ".join(line.split())[len(command):].split()
+        return [x.lower() for x in l]
 
+    def parse_file(self):
         for line in self.lines:
             clean_line = helpers.clean_line(line)
-            params = helpers.parse_line(line, 17)
 
             # create meta nodes when those commands affect the scene
             # process meta command in place if it only affects the file
-            if clean_line.startswith('0 BFC '):
+            if clean_line.lower().startswith("0 Name: ".lower()):
+                self.name = clean_line.split(maxsplit=2)[2]
+            elif clean_line.lower().startswith("0 Author: ".lower()):
+                self.author = clean_line.split(maxsplit=2)[2]
+            elif clean_line.startswith("0 !LDRAW_ORG "):
+                self.determine_part_type(clean_line, "0 !LDRAW_ORG ")
+            elif clean_line.startswith("0 LDRAW_ORG "):
+                self.determine_part_type(clean_line, "0 LDRAW_ORG ")
+            elif clean_line.startswith("0 Official LCAD "):
+                self.determine_part_type(clean_line, "0 Official LCAD ")
+            elif clean_line.startswith("0 Unofficial "):
+                self.determine_part_type(clean_line, "0 Unofficial ")
+            elif clean_line.startswith("0 Un-official "):
+                self.determine_part_type(clean_line, "0 Un-official ")
+            elif clean_line.startswith("0 !COLOUR "):
+                _params = self.get_params(clean_line, "0 !COLOUR ")
+                ldraw_colors.parse_color(_params)
+            elif clean_line.startswith("0 STEP"):
+                ldraw_node = LDrawNode()
+                ldraw_node.line = clean_line
+                ldraw_node.meta_command = "step"
+                self.child_nodes.append(ldraw_node)
+            elif clean_line.startswith("0 SAVE"):
+                ldraw_node = LDrawNode()
+                ldraw_node.line = clean_line
+                ldraw_node.meta_command = "save"
+                self.child_nodes.append(ldraw_node)
+            elif clean_line.startswith("0 CLEAR"):
+                ldraw_node = LDrawNode()
+                ldraw_node.line = clean_line
+                ldraw_node.meta_command = "clear"
+                self.child_nodes.append(ldraw_node)
+            elif clean_line in ["0 PRINT", "0 WRITE"]:
+                ldraw_node = LDrawNode()
+                ldraw_node.line = clean_line
+                ldraw_node.meta_command = "print"
+                ldraw_node.meta_args = clean_line.split(maxsplit=2)[2]
+                self.child_nodes.append(ldraw_node)
+            elif clean_line.startswith('0 BFC '):
                 if self.bfc_certified is False:
                     continue
 
-                print(clean_line)
                 if clean_line == '0 BFC NOCERTIFY':
                     if self.bfc_certified is None:
                         self.bfc_certified = False
@@ -174,198 +229,213 @@ class LDrawFile:
                         self.bfc_culling = False
                     elif clean_line == '0 BFC INVERTNEXT':
                         self.bfc_inverted = True
-            elif params[0] == "0":
-                if self.bfc_certified is None:
-                    self.bfc_certified = False
+            elif clean_line.startswith("0 !LDCAD GROUP_DEF "):
+                # http://www.melkert.net/LDCad/tech/meta
+                params = re.search(r"\S+\s+\S+\s+\S+\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])", clean_line)
 
-                if params[1].lower() in ["!colour"]:
-                    ldraw_colors.parse_color(params)
-                elif params[1].lower() in ["!ldraw_org"]:
-                    if params[2].lower() in ["lcad"]:
-                        self.part_type = params[3].lower()
+                ldraw_node = LDrawNode()
+                ldraw_node.line = clean_line
+                ldraw_node.meta_command = "group_def"
+
+                id_args = re.search(r"\[(.*)=(.*)\]", params[2])
+                ldraw_node.meta_args["id"] = id_args[2]
+
+                name_args = re.search(r"\[(.*)=(.*)\]", params[4])
+                ldraw_node.meta_args["name"] = name_args[2]
+
+                self.child_nodes.append(ldraw_node)
+            elif clean_line.startswith("0 !LDCAD GROUP_NXT "):
+                params = re.search(r"\S+\s+\S+\s+\S+\s+(\[.*\])\s+(\[.*\])", clean_line)
+
+                ldraw_node = LDrawNode()
+                ldraw_node.line = clean_line
+                ldraw_node.meta_command = "group_nxt"
+
+                id_args = re.search(r"\[(.*)=(.*)\]", params[1])
+                ldraw_node.meta_args["id"] = id_args[2]
+
+                self.child_nodes.append(ldraw_node)
+            elif clean_line.startswith("0 !LEOCAD GROUP BEGIN "):
+                # https://www.leocad.org/docs/meta.html
+                name_args = clean_line.split(maxsplit=4)
+                ldraw_node = LDrawNode()
+                ldraw_node.line = clean_line
+                ldraw_node.meta_command = "group_begin"
+                ldraw_node.meta_args["name"] = name_args[4]
+                self.child_nodes.append(ldraw_node)
+            elif clean_line.startswith("0 !LEOCAD GROUP END"):
+                ldraw_node = LDrawNode()
+                ldraw_node.line = clean_line
+                ldraw_node.meta_command = "group_end"
+                self.child_nodes.append(ldraw_node)
+            elif clean_line.startswith("0 !LEOCAD CAMERA "):
+                _params = self.get_params(clean_line, "0 !LEOCAD CAMERA ")
+                if self.camera is None:
+                    self.camera = ldraw_camera.LDrawCamera()
+
+                # https://www.leocad.org/docs/meta.html
+                # "Camera commands can be grouped in the same line"
+                # _params = _params[1:] at the end bumps promotes _params[2] to _params[1]
+                while len(_params) > 0:
+                    if _params[0] == "fov":
+                        self.camera.fov = float(_params[1])
+                        _params = _params[2:]
+                    elif _params[0] == "znear":
+                        self.camera.z_near = float(_params[1])
+                        _params = _params[2:]
+                    elif _params[0] == "zfar":
+                        self.camera.z_far = float(_params[1])
+                        _params = _params[2:]
+                    elif _params[0] in ["position", "target_position", "up_vector"]:
+                        (x, y, z) = map(float, _params[1:4])
+                        vector = mathutils.Vector((x, y, z))
+
+                        if _params[0] == "position":
+                            self.camera.position = vector
+
+                        elif _params[0] == "target_position":
+                            self.camera.target_position = vector
+
+                        elif _params[0] == "up_vector":
+                            self.camera.up_vector = vector
+
+                        _params = _params[4:]
+
+                    elif _params[0] == "orthographic":
+                        self.camera.orthographic = True
+                        _params = _params[1:]
+                    elif _params[0] == "hidden":
+                        self.camera.hidden = True
+                        _params = _params[1:]
+                    elif _params[0] == "name":
+                        # "0 !LEOCAD CAMERA NAME Camera  2".split("NAME ")[1] => "Camera  2"
+                        # "NAME Camera  2".split("NAME ")[1] => "Camera  2"
+                        name_args = clean_line.split("NAME ")
+                        self.camera.name = name_args[1]
+
+                        # By definition this is the last of the parameters
+                        _params = []
+
+                        ldraw_camera.cameras.append(self.camera)
+                        self.camera = None
                     else:
-                        self.part_type = params[2].lower()
-                elif params[1].lower() in ["name:"]:
-                    self.name = line[7:].lower().strip()
-                elif params[1].lower() in ["step"]:
-                    ldraw_node = LDrawNode()
-                    ldraw_node.meta_command = "step"
-                    self.child_nodes.append(ldraw_node)
-                elif params[1].lower() in ["save"]:
-                    ldraw_node = LDrawNode()
-                    ldraw_node.meta_command = "save"
-                    self.child_nodes.append(ldraw_node)
-                elif params[1].lower() in ["clear"]:
-                    ldraw_node = LDrawNode()
-                    ldraw_node.meta_command = "clear"
-                    self.child_nodes.append(ldraw_node)
-                elif params[1].lower() in ["print", "write"]:
-                    ldraw_node = LDrawNode()
-                    ldraw_node.meta_command = "print"
-                    ldraw_node.meta_args = line[7:].strip()
-                    self.child_nodes.append(ldraw_node)
-                elif self.texmap_next:
-                    pass
+                        _params = _params[1:]
+            elif clean_line.startswith("0 !TEXMAP "):
+                # https://www.ldraw.org/documentation/ldraw-org-file-format-standards/language-extension-for-texture-mapping.html
+                params = self.get_params(clean_line, "0 !TEXMAP ")
+
+                if self.texmap_start:
+                    if params[0].lower() in ["fallback"]:
+                        self.texmap_fallback = True
+                    elif params[0].lower() in ["end"]:
+                        self.set_texmap_end()
+                elif params[0].lower() in ["start", "next"]:
+                    if params[0].lower() == "start":
+                        self.texmap_start = True
+                    elif params[0].lower() == "next":
+                        self.texmap_next = True
+                    self.texmap_fallback = False
+
+                    new_texmap = None
+                    method = params[1].lower()
+                    if method in ['planar']:
+                        _params = clean_line[len("0 !TEXMAP "):].split(maxsplit=11)  # planar
+
+                        (x1, y1, z1, x2, y2, z2, x3, y3, z3) = map(float, _params[2:11])
+
+                        texture_params = helpers.parse_csv_line(_params[11], 2)
+                        texture = texture_params[0]
+                        glossmap = texture_params[1]
+
+                        new_texmap = TexMap(
+                            method=method,
+                            parameters=[
+                                mathutils.Vector((x1, y1, z1)),
+                                mathutils.Vector((x2, y2, z2)),
+                                mathutils.Vector((x3, y3, z3)),
+                            ],
+                            texture=texture,
+                            glossmap=glossmap,
+                        )
+                    elif method in ['cylindrical']:
+                        _params = clean_line[len("0 !TEXMAP "):].split(maxsplit=12)  # cylindrical
+
+                        (x1, y1, z1, x2, y2, z2, x3, y3, z3, a) = map(float, _params[2:12])
+
+                        texture_params = helpers.parse_csv_line(_params[12], 2)
+                        texture = texture_params[0]
+                        glossmap = texture_params[1]
+
+                        new_texmap = TexMap(
+                            method=method,
+                            parameters=[
+                                mathutils.Vector((x1, y1, z1)),
+                                mathutils.Vector((x2, y2, z2)),
+                                mathutils.Vector((x3, y3, z3)),
+                                a,
+                            ],
+                            texture=texture,
+                            glossmap=glossmap,
+                        )
+                    elif method in ['spherical']:
+                        _params = clean_line[len("0 !TEXMAP "):].split(maxsplit=13)  # spherical
+
+                        (x1, y1, z1, x2, y2, z2, x3, y3, z3, a, b) = map(float, _params[2:13])
+
+                        texture_params = helpers.parse_csv_line(_params[13], 2)
+                        texture = texture_params[0]
+                        glossmap = texture_params[1]
+
+                        new_texmap = TexMap(
+                            method=method,
+                            parameters=[
+                                mathutils.Vector((x1, y1, z1)),
+                                mathutils.Vector((x2, y2, z2)),
+                                mathutils.Vector((x3, y3, z3)),
+                                a,
+                                b,
+                            ],
+                            texture=texture,
+                            glossmap=glossmap,
+                        )
+
+                    if new_texmap is not None:
+                        if texmap.texmap is not None:
+                            texmap.texmaps.append(texmap.texmap)
+                        texmap.texmap = new_texmap
+            elif self.texmap_start:
+                if clean_line.startswith('0 !: '):
+                    # remove 0 !: from line so that it can be parsed like a normal line
+                    _clean_line = clean_line[len('0 !: '):].strip()
+                    self.parse_geometry_line(_clean_line)
+                else:
+                    self.parse_geometry_line(clean_line)
+
+                if self.texmap_next:
+                    self.set_texmap_end()
+                continue
+            elif clean_line.startswith("0"):
+                # every other line type 0 happens here
+                if self.texmap_next:
                     # if 0 line and texmap next, error
                     # also error
-                elif params[1].lower() in ["!texmap"]:  # https://www.ldraw.org/documentation/ldraw-org-file-format-standards/language-extension-for-texture-mapping.html
-                    if params[2].lower() in ["start", "next"]:
-                        if params[2].lower() == "start":
-                            self.texmap_start = True
-                        elif params[2].lower() == "next":
-                            self.texmap_next = True
-                        self.texmap_fallback = False
-
-                        new_texmap = texmap.TexMap.parse_params(params)
-                        if new_texmap is not None:
-                            if texmap.texmap is not None:
-                                texmap.texmaps.append(texmap.texmap)
-                            texmap.texmap = new_texmap
-
-                    elif self.texmap_start:
-                        if params[2].lower() in ["fallback"]:
-                            self.texmap_fallback = True
-                        elif params[2].lower() in ["end"]:
-                            self.set_texmap_end()
-                elif self.texmap_start:
-                    if params[1].lower() in ["!:"]:
-                        # remove 0 !: from line so that it can be parsed like a normal line
-                        clean_line = re.sub(r"(.*?\s+!:\s+)", "", line)
-                        clean_params = params[2:]
-                        self.parse_geometry_line(clean_line, clean_params)
-                        self.bfc_inverted = False
-                    if self.texmap_next:
-                        self.set_texmap_end()
-                elif params[1].lower() in ["PE_TEX_PATH"]:  # for stud.io uvs
-                    if params[2].lower() in ['-1']:
-                        # use uv coordinates that at the end of 3,4 lines
-                        # 2*vertcount places at the end of the line
-                        pass
-                elif params[1].lower() in ["pe_tex_info"]:
-                    filename = self.name
-                    if filename == "":
-                        filename = os.path.basename(self.filename)
-                    image_data = params[2]
-                    texmap.TexMap.base64_to_png(filename, image_data)
-                elif params[1].lower() in ["!ldcad"]:  # http://www.melkert.net/LDCad/tech/meta
-                    if params[2].lower() in ["group_def"]:
-                        params = re.search(r"\S+\s+\S+\s+\S+\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])", line.strip())
-
-                        ldraw_node = LDrawNode()
-                        ldraw_node.meta_command = "group_def"
-
-                        id_args = re.search(r"\[(.*)=(.*)\]", params[2])
-                        ldraw_node.meta_args["id"] = id_args[2]
-
-                        name_args = re.search(r"\[(.*)=(.*)\]", params[4])
-                        ldraw_node.meta_args["name"] = name_args[2]
-
-                        self.child_nodes.append(ldraw_node)
-                    elif params[2].lower() in ["group_nxt"]:
-                        params = re.search(r"\S+\s+\S+\s+\S+\s+(\[.*\])\s+(\[.*\])", line.strip())
-
-                        ldraw_node = LDrawNode()
-                        ldraw_node.meta_command = "group_nxt"
-
-                        id_args = re.search(r"\[(.*)=(.*)\]", params[1])
-                        ldraw_node.meta_args["id"] = id_args[2]
-
-                        self.child_nodes.append(ldraw_node)
-                elif params[1].lower() in ["!leocad"]:  # https://www.leocad.org/docs/meta.html
-                    if params[2].lower() in ["group"]:
-                        if params[3].lower() in ["begin"]:
-                            # begin_params = re.search(r"(?:.*\s+){3}begin\s+(.*)", line, re.IGNORECASE)
-                            # begin_params = re.search(r"\S+\s+\S+\s+\S+\s+\S+\s+(.*)", line.strip())
-                            begin_params = line.strip().split(maxsplit=4)
-
-                            ldraw_node = LDrawNode()
-                            ldraw_node.meta_command = "group_begin"
-                            ldraw_node.meta_args["name"] = begin_params[4]
-                            self.child_nodes.append(ldraw_node)
-                        elif params[3].lower() in ["end"]:
-                            ldraw_node = LDrawNode()
-                            ldraw_node.meta_command = "group_end"
-                            self.child_nodes.append(ldraw_node)
-                    elif params[2] == "CAMERA":
-                        if camera is None:
-                            camera = ldraw_camera.LDrawCamera()
-
-                        params = params[3:]
-
-                        # https://www.leocad.org/docs/meta.html
-                        # "Camera commands can be grouped in the same line"
-                        # params = params[1:] at the end bumps promotes params[2] to params[1]
-
-                        while len(params) > 0:
-                            if params[0] == "FOV":
-                                camera.fov = float(params[1])
-                                params = params[2:]
-                            elif params[0] == "ZNEAR":
-                                camera.z_near = float(params[1])
-                                params = params[2:]
-                            elif params[0] == "ZFAR":
-                                camera.z_far = float(params[1])
-                                params = params[2:]
-                            elif params[0] in ["POSITION", "TARGET_POSITION", "UP_VECTOR"]:
-                                (x, y, z) = map(float, params[1:4])
-                                vector = mathutils.Vector((x, y, z))
-
-                                if params[0] == "POSITION":
-                                    camera.position = vector
-
-                                elif params[0] == "TARGET_POSITION":
-                                    camera.target_position = vector
-
-                                elif params[0] == "UP_VECTOR":
-                                    camera.up_vector = vector
-
-                                params = params[4:]
-
-                            elif params[0] == "ORTHOGRAPHIC":
-                                camera.orthographic = True
-                                params = params[1:]
-                            elif params[0] == "HIDDEN":
-                                camera.hidden = True
-                                params = params[1:]
-                            elif params[0] == "NAME":
-                                #  camera_name_params = re.search(r"\S+\s+\S+\s+\S+\s+\S+\s+(.*)", line.strip())
-                                camera_name_params = line.strip().split(maxsplit=4)
-                                camera.name = camera_name_params[4]
-
-                                # By definition this is the last of the parameters
-                                params = []
-
-                                ldraw_camera.cameras.append(camera)
-                                camera = None
-                            else:
-                                params = params[1:]
+                    continue
+                if clean_line.startswith("0 //"):
+                    continue
+                if self.description is None:
+                    self.description = clean_line.split(maxsplit=1)[1]
             else:
+                # everything not line type 1 happens here
                 if not self.texmap_fallback:
-                    self.parse_geometry_line(line, params)
-                self.bfc_inverted = False
-
-        if self.name == "":
-            self.name = os.path.basename(self.filename)
+                    self.parse_geometry_line(clean_line)
 
         if self.extra_geometry is not None or self.extra_child_nodes is not None:
             _key = []
             _key.append(self.filename)
             _key.append("extra")
-            _key.append(filesystem.resolution)
-            if import_options.remove_doubles:
-                _key.append("rd")
-            if import_options.display_logo:
-                _key.append(special_bricks.chosen_logo)
-            if import_options.smooth_type == "auto_smooth":
-                _key.append("as")
-            if import_options.smooth_type == "edge_split":
-                _key.append("es")
-            if ldraw_colors.use_alt_colors:
-                _key.append("alt")
             if texmap.texmap is not None:
                 _key.append(texmap.texmap.id)
             _key = "_".join([str(k).lower() for k in _key])
-            # _key = re.sub(r"[^a-z0-9._]", "-", _key)
 
             if _key not in key_map:
                 key_map[_key] = str(uuid.uuid4())
@@ -380,8 +450,23 @@ class LDrawFile:
                 file_cache[key] = ldraw_file
             ldraw_file = file_cache[key]
             ldraw_node = LDrawNode()
+            ldraw_node.line = clean_line
             ldraw_node.file = ldraw_file
             self.child_nodes.append(ldraw_node)
+
+    def determine_part_type(self, clean_line, command):
+        _params = self.get_params(clean_line, command)
+        part_type = _params[0]
+        if 'subpart' in part_type:
+            self.part_type = "subpart"
+        elif 'primitive' in part_type:
+            self.part_type = "primitive"
+        elif 'model' in part_type:
+            self.part_type = 'model'
+        elif 'part' in part_type:
+            self.part_type = 'part'
+        elif 'shortcut' in part_type:
+            self.part_type = 'shortcut'
 
     def set_texmap_end(self):
         if len(texmap.texmaps) < 1:
@@ -392,7 +477,8 @@ class LDrawFile:
         self.texmap_next = False
         self.texmap_fallback = False
 
-    def parse_geometry_line(self, line, params):
+    def parse_geometry_line(self, clean_line):
+        params = clean_line.split(maxsplit=14)
         if params[0] == "1":
             color_code = params[1]
 
@@ -404,12 +490,7 @@ class LDrawFile:
                 (0, 0, 0, 1)
             ))
 
-            # there might be spaces in the filename, so don't just split on whitespace
-            # filename_args = re.search(r"(?:.*\s+){14}(.*)", line.strip())
-            # print(line.strip())
-            # filename_args = re.search(r"(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)(?:\s+(\S+.*))?", line.strip())
-            filename_args = line.strip().split(maxsplit=14)
-            filename = filename_args[14].lower()
+            filename = params[14].lower()
 
             # filename = "stud-logo.dat"
             # parts = filename.split(".") => ["stud-logo", "dat"]
@@ -430,21 +511,9 @@ class LDrawFile:
 
             _key = []
             _key.append(filename)
-            _key.append(filesystem.resolution)
-            if import_options.remove_doubles:
-                _key.append("rd")
-            if import_options.display_logo:
-                _key.append(special_bricks.chosen_logo)
-            if import_options.smooth_type == "auto_smooth":
-                _key.append("as")
-            if import_options.smooth_type == "edge_split":
-                _key.append("es")
-            if ldraw_colors.use_alt_colors:
-                _key.append("alt")
             if texmap.texmap is not None:
                 _key.append(texmap.texmap.id)
             _key = "_".join([str(k).lower() for k in _key])
-            # _key = re.sub(r"[^a-z0-9._]", "-", _key)
 
             if _key not in key_map:
                 key_map[_key] = str(uuid.uuid4())
@@ -474,7 +543,7 @@ class LDrawFile:
                 self.extra_child_nodes.append(ldraw_node)
             else:
                 self.child_nodes.append(ldraw_node)
-        elif params[0] in ["2", "3", "4"]:
+        elif params[0] in ["2", "3", "4", "5"]:
             if self.is_like_model():
                 if self.extra_geometry is None:
                     self.extra_geometry = LDrawGeometry()

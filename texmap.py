@@ -20,58 +20,13 @@ def reset_caches():
 # https://github.com/trevorsandy/lpub3d/blob/e7c39cd3df518cf16521dc2c057a9f125cc3b5c3/lclib/common/lc_meshloader.cpp#L1486
 # https://stackoverflow.com/questions/53970131/how-to-find-the-clockwise-angle-between-two-vectors-in-python#53970746
 class TexMap:
-    def __init__(self, method, parameters, texture, glossmap):
+    def __init__(self, method, parameters, texture, glossmap=''):
         self.id = str(uuid.uuid4())
         self.method = method
         self.parameters = parameters
         self.texture = texture
         self.glossmap = glossmap
         self.uvs = dict()
-
-    # TexMap.parse_params(params)
-    @staticmethod
-    def parse_params(params):
-        new_texmap = None
-        if params[3].lower() in ['planar']:
-            (x1, y1, z1, x2, y2, z2, x3, y3, z3) = map(float, params[4:13])
-            new_texmap = TexMap(
-                method=params[3].lower(),
-                parameters=[
-                    mathutils.Vector((x1, y1, z1)),
-                    mathutils.Vector((x2, y2, z2)),
-                    mathutils.Vector((x3, y3, z3)),
-                ],
-                texture=params[13],
-                glossmap=params[14],
-            )
-        elif params[3].lower() in ['cylindrical']:
-            (x1, y1, z1, x2, y2, z2, x3, y3, z3, a) = map(float, params[4:14])
-            new_texmap = TexMap(
-                method=params[3].lower(),
-                parameters=[
-                    mathutils.Vector((x1, y1, z1)),
-                    mathutils.Vector((x2, y2, z2)),
-                    mathutils.Vector((x3, y3, z3)),
-                    a,
-                ],
-                texture=params[14],
-                glossmap=params[15],
-            )
-        elif params[3].lower() in ['spherical']:
-            (x1, y1, z1, x2, y2, z2, x3, y3, z3, a, b) = map(float, params[4:15])
-            new_texmap = TexMap(
-                method=params[3].lower(),
-                parameters=[
-                    mathutils.Vector((x1, y1, z1)),
-                    mathutils.Vector((x2, y2, z2)),
-                    mathutils.Vector((x3, y3, z3)),
-                    a,
-                    b,
-                ],
-                texture=params[15],
-                glossmap=params[16],
-            )
-        return new_texmap
 
     def uv_unwrap_face(self, bm, face):
         if self.method in ['planar']:

@@ -137,7 +137,7 @@ def read_file(filepath):
 
 
 def locate(filename):
-    part_path = filename.replace("\\", os.path.sep)
+    part_path = filename.replace("\\", "/")
     part_path = os.path.expanduser(part_path)
 
     # full path was specified
