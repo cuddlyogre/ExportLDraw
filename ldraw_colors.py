@@ -10,6 +10,7 @@ use_alt_colors = defaults['use_alt_colors']
 
 colors = {}
 bad_color = None
+materials = ["chrome", "pearlescent", "rubber", "matte_metallic", "metal"]
 
 
 def reset_caches():
@@ -77,13 +78,6 @@ def __is_int(s):
         return False
 
 
-def get_value(line, value):
-    """Parses a color value from the ldConfig.ldr file"""
-    if value in line:
-        n = line.index(value)
-        return line[n + 1]
-
-
 def __srgb_to_rgb_value(value):
     # See https://en.wikipedia.org/wiki/SRGB#The_reverse_transformation
     if value < 0.04045:
@@ -113,7 +107,9 @@ def hex_digits_to_srgb(hex_digits):
     return srgb[0], srgb[1], srgb[2]
 
 
-def get_color_value(hex_digits, linear=True):
+def get_color_value(value, linear=True):
+    hex_digits = extract_hex_digits(value)
+
     if linear:
         return hex_digits_to_linear_rgba(hex_digits)
     else:
@@ -139,65 +135,108 @@ class LDrawColor:
         self.edge_color = None
         self.alpha = None
         self.luminance = None
-        self.material = None
-        self.secondary_color = None
-        self.fraction = None
-        self.vfraction = None
-        self.size = None
-        self.minsize = None
-        self.maxsize = None
+        self.material_name = None
+        self.material_color = None
+        self.material_alpha = None
+        self.material_luminance = None
+        self.material_fraction = None
+        self.material_vfraction = None
+        self.material_size = None
+        self.material_minsize = None
+        self.material_maxsize = None
 
     def parse_color(self, params, linear=True):
+        # name CODE x VALUE v EDGE e required
+        # 0 !COLOUR Black CODE 0 VALUE #1B2A34 EDGE #2B4354
+
         name = params[2]
         self.name = name
 
-        color_code = params[4]
-        self.code = color_code
+        i = params.index("code")
+        code = params[i + 1]
+        self.code = code
 
-        hex_digits = extract_hex_digits(params[6])
-        rgba = get_color_value(hex_digits, linear)
+        i = params.index("value")
+        value = params[i + 1]
+        rgba = get_color_value(value, linear)
         self.color = rgba
 
-        hex_digits = extract_hex_digits(params[8])
-        e_rgba = get_color_value(hex_digits, linear)
+        i = params.index("edge")
+        edge = params[i + 1]
+        e_rgba = get_color_value(edge, linear)
         self.edge_color = e_rgba
 
-        self.alpha = 1.0
-        self.luminance = 0.0
-        self.material = "BASIC"
+        # [ALPHA a] [LUMINANCE l] [ CHROME | PEARLESCENT | RUBBER | MATTE_METALLIC | METAL | MATERIAL <params> ]
+        alpha = 255
+        if "alpha" in params:
+            i = params.index("alpha")
+            alpha = int(params[i + 1])
+        self.alpha = alpha / 255
 
-        if "ALPHA" in params:
-            self.alpha = int(get_value(params, "ALPHA")) / 256.0
+        luminance = 0
+        if "luminance" in params:
+            i = params.index("luminance")
+            luminance = int(params[i + 1])
+        self.luminance = luminance
 
-        if "LUMINANCE" in params:
-            self.luminance = int(get_value(params, "LUMINANCE"))
+        material_name = None
+        for _material in materials:
+            if _material in params:
+                material_name = _material
+                break
+        self.material_name = material_name
 
-        if "CHROME" in params:
-            self.material = "CHROME"
+        # MATERIAL SPECKLE VALUE #898788 FRACTION 0.4               MINSIZE 1    MAXSIZE 3
+        # MATERIAL GLITTER VALUE #FFFFFF FRACTION 0.8 VFRACTION 0.6 MINSIZE 0.02 MAXSIZE 0.1
+        if "material" in params:
+            i = params.index("material")
+            material_parts = params[i:]
 
-        if "PEARLESCENT" in params:
-            self.material = "PEARLESCENT"
+            material_name = material_parts[1]
+            self.material_name = material_name
 
-        if "RUBBER" in params:
-            self.material = "RUBBER"
+            i = params.index("value")
+            material_value = params[i + 1]
+            material_rgba = get_color_value(material_value, linear)
+            self.material_color = material_rgba
 
-        if "MATTE_METALLIC" in params:
-            self.material = "MATTE_METALLIC"
+            material_alpha = 255
+            if "alpha" in material_parts:
+                i = material_parts.index("alpha")
+                material_alpha = int(material_parts[i + 1])
+            self.material_alpha = material_alpha / 255
 
-        if "METAL" in params:
-            self.material = "METAL"
+            material_luminance = 0
+            if "luminance" in material_parts:
+                i = material_parts.index("luminance")
+                material_luminance = int(material_parts[i + 1])
+            self.material_luminance = material_luminance
 
-        if "MATERIAL" in params:
-            subline = params[params.index("MATERIAL"):]
+            material_minsize = 0.0
+            material_maxsize = 0.0
+            if "size" in material_parts:
+                i = material_parts.index("size")
+                material_minsize = float(material_parts[i + 1])
+                material_maxsize = float(material_parts[i + 1])
 
-            self.material = get_value(subline, "MATERIAL")
+            if "minsize" in material_parts:
+                i = material_parts.index("minsize")
+                material_minsize = float(material_parts[i + 1])
 
-            hex_digits = extract_hex_digits(get_value(subline, "VALUE"))
-            secondary_color = get_color_value(hex_digits, linear)
-            self.secondary_color = secondary_color
+            if "maxsize" in material_parts:
+                i = material_parts.index("maxsize")
+                material_maxsize = float(material_parts[i + 1])
+            self.material_minsize = material_minsize
+            self.material_maxsize = material_maxsize
 
-            self.fraction = get_value(subline, "FRACTION")
-            self.vfraction = get_value(subline, "VFRACTION")
-            self.size = get_value(subline, "SIZE")
-            self.minsize = get_value(subline, "MINSIZE")
-            self.maxsize = get_value(subline, "MAXSIZE")
+            material_fraction = 0.0
+            if "fraction" in material_parts:
+                i = material_parts.index("fraction")
+                material_fraction = float(material_parts[i + 1])
+            self.material_fraction = material_fraction
+
+            material_vfraction = 0.0
+            if "vfraction" in material_parts:
+                i = material_parts.index("vfraction")
+                material_vfraction = float(material_parts[i + 1])
+            self.material_vfraction = material_vfraction

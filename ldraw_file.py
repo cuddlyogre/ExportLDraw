@@ -461,6 +461,7 @@ class LDrawFile:
                 return
 
             ldraw_node = LDrawNode()
+            ldraw_node.line = clean_line
             ldraw_node.file = ldraw_file
             ldraw_node.color_code = color_code
             ldraw_node.matrix = matrix

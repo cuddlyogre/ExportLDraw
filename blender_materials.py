@@ -104,23 +104,23 @@ def __create_node_based_material(key, color, use_edge_color=False, part_slopes=N
     if color.name == "Milky_White":
         __create_cycles_milky_white(nodes, links, diff_color)
     elif 'Opal' in color.name:
-        secondary_color = color.secondary_color + (1.0,)
-        __create_cycles_opal(nodes, links, diff_color, secondary_color)
-    elif color.material == "GLITTER":
-        secondary_color = color.secondary_color + (1.0,)
-        __create_cycles_glitter(nodes, links, diff_color, secondary_color)
-    elif color.material == "SPECKLE":
-        secondary_color = color.secondary_color + (1.0,)
-        __create_cycles_speckle(nodes, links, diff_color, secondary_color)
+        material_color = color.material_color + (1.0,)
+        __create_cycles_opal(nodes, links, diff_color, material_color)
+    elif color.material_name == "GLITTER":
+        material_color = color.material_color + (1.0,)
+        __create_cycles_glitter(nodes, links, diff_color, material_color)
+    elif color.material_name == "SPECKLE":
+        material_color = color.material_color + (1.0,)
+        __create_cycles_speckle(nodes, links, diff_color, material_color)
     elif color.luminance > 0:
         __create_cycles_emission(nodes, links, diff_color, color.luminance)
-    elif color.material == "CHROME":
+    elif color.material_name == "CHROME":
         __create_cycles_chrome(nodes, links, diff_color)
-    elif color.material == "PEARLESCENT":
+    elif color.material_name == "PEARLESCENT":
         __create_cycles_pearlescent(nodes, links, diff_color)
-    elif color.material == "METAL":
+    elif color.material_name == "METAL":
         __create_cycles_metal(nodes, links, diff_color)
-    elif color.material == "RUBBER":
+    elif color.material_name == "RUBBER":
         if is_transparent:
             __create_cycles_rubber_translucent(nodes, links, diff_color)
         else:
