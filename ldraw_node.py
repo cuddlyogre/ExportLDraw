@@ -199,11 +199,12 @@ class LDrawNode:
         global next_collection
         global end_next_collection
 
-        groups_collection_name = 'Groups'
-        if groups_collection_name not in bpy.data.collections:
-            c = bpy.data.collections.new(groups_collection_name)
-            bpy.context.scene.collection.children.link(c)
-        groups_collection = bpy.data.collections[groups_collection_name]
+        if import_options.meta_group:
+            groups_collection_name = 'Groups'
+            if groups_collection_name not in bpy.data.collections:
+                c = bpy.data.collections.new(groups_collection_name)
+                bpy.context.scene.collection.children.link(c)
+            groups_collection = bpy.data.collections[groups_collection_name]
 
         # these meta commands affect the scene
         if self.file is None:
@@ -228,33 +229,34 @@ class LDrawNode:
             elif self.meta_command == "print":
                 if import_options.meta_print_write:
                     print(self.meta_args)
-            elif self.meta_command == "group_def":
-                collection_name = self.meta_args["name"]
-                collection_id_map[self.meta_args["id"]] = collection_name
-                if collection_name not in bpy.data.collections:
-                    c = bpy.data.collections.new(collection_name)
-                    groups_collection.children.link(c)
-            elif self.meta_command == "group_nxt":
-                if self.meta_args["id"] in collection_id_map:
-                    collection_name = collection_id_map[self.meta_args["id"]]
-                    if collection_name in bpy.data.collections:
-                        next_collection = bpy.data.collections[collection_name]
-                end_next_collection = True
-            elif self.meta_command == "group_begin":
-                if next_collection is not None:
-                    next_collections.append(next_collection)
-                collection_name = self.meta_args["name"]
-                if collection_name not in bpy.data.collections:
-                    c = bpy.data.collections.new(collection_name)
-                    groups_collection.children.link(c)
-                next_collection = bpy.data.collections[collection_name]
-                if len(next_collections) > 0:
-                    next_collections[-1].children.link(next_collection)
-            elif self.meta_command == "group_end":
-                if len(next_collections) > 0:
-                    next_collection = next_collections.pop()
-                else:
-                    next_collection = None
+            elif self.meta_command.startswith("group") and import_options.meta_group:
+                if self.meta_command == "group_def":
+                    collection_name = self.meta_args["name"]
+                    collection_id_map[self.meta_args["id"]] = collection_name
+                    if collection_name not in bpy.data.collections:
+                        c = bpy.data.collections.new(collection_name)
+                        groups_collection.children.link(c)
+                elif self.meta_command == "group_nxt":
+                    if self.meta_args["id"] in collection_id_map:
+                        collection_name = collection_id_map[self.meta_args["id"]]
+                        if collection_name in bpy.data.collections:
+                            next_collection = bpy.data.collections[collection_name]
+                    end_next_collection = True
+                elif self.meta_command == "group_begin":
+                    if next_collection is not None:
+                        next_collections.append(next_collection)
+                    collection_name = self.meta_args["name"]
+                    if collection_name not in bpy.data.collections:
+                        c = bpy.data.collections.new(collection_name)
+                        groups_collection.children.link(c)
+                    next_collection = bpy.data.collections[collection_name]
+                    if len(next_collections) > 0:
+                        next_collections[-1].children.link(next_collection)
+                elif self.meta_command == "group_end":
+                    if len(next_collections) > 0:
+                        next_collection = next_collections.pop()
+                    else:
+                        next_collection = None
             return
 
         # set the working color code to this file's
@@ -277,6 +279,8 @@ class LDrawNode:
 
             if top_collection is None:
                 top_collection = collection
+                if top_collection.name not in bpy.context.scene.collection.children:
+                    bpy.context.scene.collection.children.link(top_collection)
             else:
                 # if collection.name not in top_collection.children:
                 #     top_collection.children.link(collection)
@@ -330,10 +334,11 @@ class LDrawNode:
                     is_edge_logo=is_edge_logo,
                 )
 
-                if self.is_root:
-                    if child_node.meta_command not in ["group_nxt"]:
-                        if end_next_collection:
-                            next_collection = None
+                if import_options.meta_group:
+                    if self.is_root:
+                        if child_node.meta_command not in ["group_nxt"]:
+                            if end_next_collection:
+                                next_collection = None
 
             # without "if top:"
             # 10030-1 - Imperial Star Destroyer - UCS.mpd top back of the bridge - 3794a.dat renders incorrectly
@@ -484,15 +489,16 @@ class LDrawNode:
             # https://b3d.interplanety.org/en/how-to-get-global-vertex-coordinates/
             collection.objects.link(obj)
 
-            if next_collection is not None:
-                next_collection.objects.link(obj)
-            else:
-                collection_name = 'Ungrouped'
-                if collection_name not in bpy.data.collections:
-                    c = bpy.data.collections.new(collection_name)
-                    groups_collection.children.link(c)
-                ungrouped_collection = bpy.data.collections[collection_name]
-                ungrouped_collection.objects.link(obj)
+            if import_options.meta_group:
+                if next_collection is not None:
+                    next_collection.objects.link(obj)
+                else:
+                    collection_name = 'Ungrouped'
+                    if collection_name not in bpy.data.collections:
+                        c = bpy.data.collections.new(collection_name)
+                        groups_collection.children.link(c)
+                    ungrouped_collection = bpy.data.collections[collection_name]
+                    ungrouped_collection.objects.link(obj)
 
             if import_options.import_edges:
                 edge_mesh = bpy.data.meshes[e_key]
@@ -506,10 +512,17 @@ class LDrawNode:
                     handle_meta_step(obj)
 
                 collection.objects.link(edge_obj)
-                if next_collection is not None:
-                    next_collection.objects.link(edge_obj)
-                else:
-                    ungrouped_collection.objects.link(edge_obj)
+
+                if import_options.meta_group:
+                    if next_collection is not None:
+                        next_collection.objects.link(edge_obj)
+                    else:
+                        collection_name = 'Ungrouped'
+                        if collection_name not in bpy.data.collections:
+                            c = bpy.data.collections.new(collection_name)
+                            groups_collection.children.link(c)
+                        ungrouped_collection = bpy.data.collections[collection_name]
+                        ungrouped_collection.objects.link(edge_obj)
 
         texmap.reset_caches()  # or else the previous part's texmap is applied to this part
         return self

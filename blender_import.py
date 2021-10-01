@@ -39,9 +39,6 @@ def do_import(filepath):
     root_node.file = file
     root_node.load()
 
-    if ldraw_node.top_collection is not None:
-        bpy.context.scene.collection.children.link(ldraw_node.top_collection)
-
     if import_options.meta_step:
         if import_options.set_end_frame:
             bpy.context.scene.frame_end = ldraw_node.current_frame + import_options.frames_per_step
