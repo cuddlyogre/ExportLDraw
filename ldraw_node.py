@@ -474,6 +474,12 @@ class LDrawNode:
             obj = do_create_object(mesh)
             obj[strings.ldraw_filename_key] = self.file.name
 
+            # bpy.context.space_data.shading.color_type = 'MATERIAL'
+            # bpy.context.space_data.shading.color_type = 'OBJECT'
+            # Shading > Color > Object to see object colors
+            color = ldraw_colors.get_color(color_code)
+            obj.color = color.color + (color.alpha,)
+
             matrix = parent_matrix @ self.matrix
             set_object_matrix(obj, matrix)
 
