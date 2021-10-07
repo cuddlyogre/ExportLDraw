@@ -1,14 +1,3 @@
-class FaceInfo:
-    """
-    A file's face information. The raw model data before any transforms.
-    """
-
-    def __init__(self, color_code, vertices, texmap=None):
-        self.color_code = color_code
-        self.vertices = vertices
-        self.texmap = texmap
-
-
 class GeometryData:
     """
     Accumulated FaceData used to build the final mesh.
@@ -17,23 +6,33 @@ class GeometryData:
     def __init__(self):
         self.edge_data = []
         self.face_data = []
+        self.line_data = []
         self.edge_vert_count = 0
         self.face_vert_count = 0
+        self.line_vert_count = 0
 
-    def add_edge_data(self, matrix, color_code, geometry):
-        self.edge_vert_count += geometry.edge_vert_count
+    def add_edge_data(self, matrix, color_code, face_info):
+        self.edge_vert_count += len(face_info.vertices)
         self.edge_data.append(FaceData(
             matrix=matrix,
             color_code=color_code,
-            face_infos=geometry.edge_infos,
+            face_infos=face_info,
         ))
 
-    def add_face_data(self, matrix, color_code, geometry):
-        self.face_vert_count += geometry.face_vert_count
+    def add_face_data(self, matrix, color_code, face_info):
+        self.face_vert_count += len(face_info.vertices)
         self.face_data.append(FaceData(
             matrix=matrix,
             color_code=color_code,
-            face_infos=geometry.face_infos,
+            face_infos=face_info,
+        ))
+
+    def add_line_data(self, matrix, color_code, face_info):
+        self.line_vert_count += len(face_info.vertices)
+        self.line_data.append(FaceData(
+            matrix=matrix,
+            color_code=color_code,
+            face_infos=face_info,
         ))
 
 

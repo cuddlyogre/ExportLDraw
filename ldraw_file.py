@@ -10,7 +10,7 @@ from . import ldraw_part_types
 from . import special_bricks
 
 from .ldraw_node import LDrawNode
-from .ldraw_geometry import LDrawGeometry
+from .face_info import FaceInfo
 from .texmap import TexMap
 from . import ldraw_colors
 from . import ldraw_camera
@@ -57,10 +57,8 @@ class LDrawFile:
         self.part_type = None
 
         self.child_nodes = []
-        self.geometry = LDrawGeometry()
         self.lines = []
         self.extra_child_nodes = None
-        self.extra_geometry = None
 
         self.texmap_start = False
         self.texmap_next = False
@@ -425,7 +423,7 @@ class LDrawFile:
                 if not self.texmap_fallback:
                     self.parse_geometry_line(clean_line)
 
-        if self.extra_geometry is not None or self.extra_child_nodes is not None:
+        if self.extra_child_nodes is not None:
             _key = []
             _key.append(self.filename)
             _key.append("extra")
@@ -441,28 +439,27 @@ class LDrawFile:
                 filename = f"{self.name}_extra"
                 ldraw_file = LDrawFile(filename)
                 ldraw_file.part_type = "part"
-                ldraw_file.child_nodes = (self.extra_child_nodes or [])
-                ldraw_file.geometry = (self.extra_geometry or LDrawGeometry())
+                ldraw_file.child_nodes = self.extra_child_nodes
                 file_cache[key] = ldraw_file
             ldraw_file = file_cache[key]
             ldraw_node = LDrawNode()
-            ldraw_node.line = clean_line
+            ldraw_node.line = ""
             ldraw_node.file = ldraw_file
             self.child_nodes.append(ldraw_node)
 
     def determine_part_type(self, clean_line, command):
         _params = helpers.get_params(clean_line, command)
         part_type = _params[0]
-        if 'subpart' in part_type:
+        if "subpart" in part_type:
             self.part_type = "subpart"
-        elif 'primitive' in part_type:
+        elif "primitive" in part_type:
             self.part_type = "primitive"
-        elif 'model' in part_type:
-            self.part_type = 'model'
-        elif 'part' in part_type:
-            self.part_type = 'part'
-        elif 'shortcut' in part_type:
-            self.part_type = 'shortcut'
+        elif "model" in part_type:
+            self.part_type = "model"
+        elif "part" in part_type:
+            self.part_type = "part"
+        elif "shortcut" in part_type:
+            self.part_type = "shortcut"
 
     def set_texmap_end(self):
         if len(texmap.texmaps) < 1:
@@ -540,12 +537,52 @@ class LDrawFile:
             else:
                 self.child_nodes.append(ldraw_node)
         elif params[0] in ["2", "3", "4", "5"]:
+            line_type = params[0]
+
+            if line_type == "2":
+                vert_count = 2
+            elif line_type == "3":
+                vert_count = 3
+            elif line_type == "4":
+                vert_count = 4
+            elif line_type == "5":
+                vert_count = 2
+
+            verts = []
+            for i in range(vert_count):
+                x = float(params[i * 3 + 2])
+                y = float(params[i * 3 + 3])
+                z = float(params[i * 3 + 4])
+
+                vertex = mathutils.Vector((x, y, z))
+                verts.append(vertex)
+
+            color_code = params[1]
+
+            ldraw_node = LDrawNode()
+            ldraw_node.line = clean_line
+
+            if line_type == "2":
+                face_info = FaceInfo(color_code, verts)
+                ldraw_node.meta_command = "edge"
+            elif line_type == "3":
+                face_info = FaceInfo(color_code, verts, texmap=texmap.texmap)
+                ldraw_node.meta_command = "face"
+            elif line_type == "4":
+                face_info = FaceInfo(color_code, verts, texmap=texmap.texmap)
+                ldraw_node.meta_command = "face"
+            elif line_type == "5":
+                face_info = FaceInfo(color_code, verts)
+                ldraw_node.meta_command = "line"
+
+            ldraw_node.meta_args["face_info"] = face_info
+
             if self.is_like_model():
-                if self.extra_geometry is None:
-                    self.extra_geometry = LDrawGeometry()
-                self.extra_geometry.parse_face(params, texmap.texmap)
+                if self.extra_child_nodes is None:
+                    self.extra_child_nodes = []
+                self.extra_child_nodes.append(ldraw_node)
             else:
-                self.geometry.parse_face(params, texmap.texmap)
+                self.child_nodes.append(ldraw_node)
 
     # this allows shortcuts to be split into their individual parts if desired
     def is_like_model(self):

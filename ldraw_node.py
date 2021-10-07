@@ -200,6 +200,13 @@ class LDrawNode:
         global next_collection
         global end_next_collection
 
+        matrix = parent_matrix @ self.matrix
+
+        # set the working color code to this file's
+        # color code if it isn't color code 16
+        if self.color_code != "16":
+            color_code = self.color_code
+
         if import_options.meta_group:
             groups_collection_name = 'Groups'
             if groups_collection_name not in bpy.data.collections:
@@ -207,7 +214,6 @@ class LDrawNode:
                 bpy.context.scene.collection.children.link(c)
             groups_collection = bpy.data.collections[groups_collection_name]
 
-        # these meta commands affect the scene
         if self.file is None:
             if self.meta_command == "step":
                 if import_options.meta_step:
@@ -230,6 +236,33 @@ class LDrawNode:
             elif self.meta_command == "print":
                 if import_options.meta_print_write:
                     print(self.meta_args)
+            elif self.meta_command in ["edge"]:
+                if is_edge_logo and not import_options.display_logo:
+                    return
+
+                if geometry_data is None:
+                    geometry_data = GeometryData()
+                geometry_data.add_edge_data(
+                    matrix=matrix,
+                    color_code=color_code,
+                    face_info=self.meta_args["face_info"],
+                )
+            elif self.meta_command in ["face"]:
+                if geometry_data is None:
+                    geometry_data = GeometryData()
+                geometry_data.add_face_data(
+                    matrix=matrix,
+                    color_code=color_code,
+                    face_info=self.meta_args["face_info"],
+                )
+            elif self.meta_command in ["line"]:
+                if geometry_data is None:
+                    geometry_data = GeometryData()
+                geometry_data.add_line_data(
+                    matrix=matrix,
+                    color_code=color_code,
+                    face_info=self.meta_args["face_info"],
+                )
             elif self.meta_command.startswith("group") and import_options.meta_group:
                 if self.meta_command == "group_def":
                     collection_name = self.meta_args["name"]
@@ -247,10 +280,12 @@ class LDrawNode:
                     if next_collection is not None:
                         next_collections.append(next_collection)
                     collection_name = self.meta_args["name"]
+
                     if collection_name not in bpy.data.collections:
                         c = bpy.data.collections.new(collection_name)
                         groups_collection.children.link(c)
                     next_collection = bpy.data.collections[collection_name]
+
                     if len(next_collections) > 0:
                         next_collections[-1].children.link(next_collection)
                 elif self.meta_command == "group_end":
@@ -260,16 +295,10 @@ class LDrawNode:
                         next_collection = None
             return
 
-        # set the working color code to this file's
-        # color code if it isn't color code 16
-        if self.color_code != "16":
-            color_code = self.color_code
-
         if self.file.is_edge_logo():
             is_edge_logo = True
 
         top = False
-        matrix = parent_matrix @ self.matrix
         collection = parent_collection
 
         if self.file.is_model():
@@ -320,11 +349,6 @@ class LDrawNode:
         if key in geometry_data_cache:
             geometry_data = geometry_data_cache[key]
         else:
-            if geometry_data is not None:
-                if (not is_edge_logo) or (is_edge_logo and import_options.display_logo):
-                    geometry_data.add_edge_data(matrix, color_code, self.file.geometry)
-                geometry_data.add_face_data(matrix, color_code, self.file.geometry)
-
             for child_node in self.file.child_nodes:
                 child_node.load(
                     geometry_data=geometry_data,
@@ -357,19 +381,20 @@ class LDrawNode:
                 # FIXME: if not treat_shortcut_as_model, texmap uvs may be incorrect, caused by unexpected part transform?
                 # FIXME: move uv unwrap to after obj[strings.ldraw_filename_key] = self.file.name
                 for fd in geometry_data.face_data:
-                    for fi in fd.face_infos:
-                        verts = []
-                        for vertex in fi.vertices:
-                            vert = fd.matrix @ vertex
-                            bm_vert = bm.verts.new(vert)
-                            verts.append(bm_vert)
-                        face = bm.faces.new(verts)
+                    fi = fd.face_infos
 
-                        color_code = fd.color_code
-                        if fi.color_code != "16":
-                            color_code = fi.color_code
+                    verts = []
+                    for vertex in fi.vertices:
+                        vert = fd.matrix @ vertex
+                        bm_vert = bm.verts.new(vert)
+                        verts.append(bm_vert)
+                    face = bm.faces.new(verts)
 
-                        process_face(self.file, bm, mesh, face, color_code, fi.texmap)
+                    color_code = fd.color_code
+                    if fi.color_code != "16":
+                        color_code = fi.color_code
+
+                    process_face(self.file, bm, mesh, face, color_code, fi.texmap)
 
                 bm.faces.ensure_lookup_table()
                 bm.verts.ensure_lookup_table()
@@ -407,23 +432,24 @@ class LDrawNode:
                 # Create edge_indices dictionary, which is the list of edges as pairs of indices into our verts array
                 edge_indices = set()
                 for ed in geometry_data.edge_data:
-                    for fi in ed.face_infos:
-                        edge_verts = []
-                        face_indices = []
-                        for vertex in fi.vertices:
-                            vert = ed.matrix @ vertex
-                            e_verts.append(vert)
-                            edge_verts.append(vert)
-                            face_indices.append(i)
-                            i += 1
-                        e_faces.append(face_indices)
+                    fi = ed.face_infos
 
-                        edges0 = [index for (co, index, dist) in kd.find_range(edge_verts[0], distance)]
-                        edges1 = [index for (co, index, dist) in kd.find_range(edge_verts[1], distance)]
-                        for e0 in edges0:
-                            for e1 in edges1:
-                                edge_indices.add((e0, e1))
-                                edge_indices.add((e1, e0))
+                    edge_verts = []
+                    face_indices = []
+                    for vertex in fi.vertices:
+                        vert = ed.matrix @ vertex
+                        e_verts.append(vert)
+                        edge_verts.append(vert)
+                        face_indices.append(i)
+                        i += 1
+                    e_faces.append(face_indices)
+
+                    edges0 = [index for (co, index, dist) in kd.find_range(edge_verts[0], distance)]
+                    edges1 = [index for (co, index, dist) in kd.find_range(edge_verts[1], distance)]
+                    for e0 in edges0:
+                        for e1 in edges1:
+                            edge_indices.add((e0, e1))
+                            edge_indices.add((e1, e0))
 
                 edge_mesh.from_pydata(e_verts, e_edges, e_faces)
                 edge_mesh.update()
