@@ -273,18 +273,17 @@ class LDrawNode:
         collection = parent_collection
 
         if self.file.is_model():
-            collection_name = os.path.basename(self.file.name)
+            collection_name = os.path.basename(self.file.name[:63])
             if collection_name not in bpy.data.collections:
                 bpy.data.collections.new(collection_name)
             collection = bpy.data.collections[collection_name]
+            collection[strings.ldraw_filename_key] = self.file.name
 
             if top_collection is None:
                 top_collection = collection
                 if top_collection.name not in bpy.context.scene.collection.children:
                     bpy.context.scene.collection.children.link(top_collection)
             else:
-                # if collection.name not in top_collection.children:
-                #     top_collection.children.link(collection)
                 if parent_collection is not None:
                     if collection.name not in parent_collection.children:
                         parent_collection.children.link(collection)
