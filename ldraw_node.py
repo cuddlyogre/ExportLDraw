@@ -16,6 +16,7 @@ from .geometry_data import GeometryData
 from . import texmap
 
 part_count = 0
+current_step_group = None
 current_step = 0
 current_frame = 0
 geometry_data_cache = dict()
@@ -34,6 +35,7 @@ gap_scale_matrix = None
 
 def reset_caches():
     global part_count
+    global current_step_group
     global current_step
     global current_frame
     global geometry_data_cache
@@ -49,6 +51,7 @@ def reset_caches():
     global gap_scale_matrix
 
     part_count = 0
+    current_step_group = None
     current_step = 0
     current_frame = 0
     geometry_data_cache = dict()
@@ -67,11 +70,14 @@ def reset_caches():
     scale = import_options.gap_scale
     gap_scale_matrix = mathutils.Matrix.Scale(scale, 4).freeze()
 
-    if import_options.meta_step:
-        set_step()
+    set_step()
 
 
 def set_step():
+    if not import_options.meta_step:
+        return
+
+    global current_step_group
     global current_step
     global current_frame
 
@@ -81,6 +87,19 @@ def set_step():
     current_step += 1
     if import_options.set_timelime_markers:
         bpy.context.scene.timeline_markers.new("STEP", frame=current_frame)
+
+    if import_options.meta_step_groups:
+        collection_name = f"Steps"
+        if collection_name not in bpy.data.collections:
+            c = bpy.data.collections.new(collection_name)
+            bpy.context.scene.collection.children.link(c)
+        steps_collection = bpy.data.collections[collection_name]
+
+        collection_name = f"Step {str(current_step)}"
+        if collection_name not in bpy.data.collections:
+            c = bpy.data.collections.new(collection_name)
+            steps_collection.children.link(c)
+        current_step_group = bpy.data.collections[collection_name]
 
 
 # obj.show_name = True
@@ -216,8 +235,7 @@ class LDrawNode:
 
         if self.file is None:
             if self.meta_command == "step":
-                if import_options.meta_step:
-                    set_step()
+                set_step()
             elif self.meta_command == "save":
                 if import_options.meta_save:
                     if import_options.set_timelime_markers:
@@ -521,6 +539,9 @@ class LDrawNode:
             # https://b3d.interplanety.org/en/how-to-get-global-vertex-coordinates/
             collection.objects.link(obj)
 
+            if current_step_group is not None:
+                current_step_group.objects.link(obj)
+
             if import_options.meta_group:
                 if next_collection is not None:
                     next_collection.objects.link(obj)
@@ -544,6 +565,9 @@ class LDrawNode:
                     handle_meta_step(obj)
 
                 collection.objects.link(edge_obj)
+
+                if current_step_group is not None:
+                    current_step_group.objects.link(obj)
 
                 if import_options.meta_group:
                     if next_collection is not None:

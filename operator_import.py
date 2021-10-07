@@ -37,6 +37,7 @@ default_settings = {
     'meta_group': import_options.defaults['meta_group'],
     'meta_print_write': import_options.defaults['meta_print_write'],
     'meta_step': import_options.defaults['meta_step'],
+    'meta_step_groups': import_options.defaults['meta_step_groups'],
     'meta_clear': import_options.defaults['meta_clear'],
     'meta_pause': import_options.defaults['meta_pause'],
     'meta_save': import_options.defaults['meta_save'],
@@ -262,6 +263,12 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         default=get_setting('meta_step'),
     )
 
+    meta_step_groups: bpy.props.BoolProperty(
+        name="STEP Groups",
+        description="Create collections for individual steps",
+        default=get_setting('meta_step_groups'),
+    )
+
     meta_clear: bpy.props.BoolProperty(
         name="CLEAR",
         description="Process CLEAR meta command",
@@ -385,6 +392,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
             'meta_group': self.meta_group,
             'meta_print_write': self.meta_print_write,
             'meta_step': self.meta_step,
+            'meta_step_groups': self.meta_step_groups,
             'meta_clear': self.meta_clear,
             'meta_pause': self.meta_pause,
             'meta_save': self.meta_save,
@@ -422,6 +430,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         import_options.meta_group = self.meta_group
         import_options.meta_print_write = self.meta_print_write
         import_options.meta_step = self.meta_step
+        import_options.meta_step_groups = self.meta_step_groups
         import_options.meta_clear = self.meta_clear
         import_options.meta_pause = self.meta_pause
         import_options.meta_save = self.meta_save
@@ -499,6 +508,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         box.prop(self, "meta_group")
         box.prop(self, "meta_print_write")
         box.prop(self, "meta_step")
+        box.prop(self, "meta_step_groups")
         box.prop(self, "frames_per_step")
         box.prop(self, "set_end_frame")
         box.prop(self, "meta_clear")
