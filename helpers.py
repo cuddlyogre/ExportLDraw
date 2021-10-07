@@ -7,6 +7,11 @@ import codecs
 pp = pprint.PrettyPrinter(indent=4, width=120)
 
 
+def get_params(line, command):
+    l = " ".join(line.split())[len(command):].split()
+    return [x.lower() for x in l]
+
+
 def split_line(line):
     return line.strip().split()
 

@@ -94,16 +94,14 @@ def load_materials(file):
     colors = {}
     group_name = 'blank'
     for line in file.lines:
-        params = helpers.parse_line(line, 17)
-        if params is None:
-            continue
-
         clean_line = helpers.clean_line(line)
+
         if clean_line.startswith('0 // LDraw'):
             group_name = clean_line
             colors[group_name] = []
         elif clean_line.startswith("0 !COLOUR"):
-            colors[group_name].append(ldraw_colors.parse_color(params))
+            _params = helpers.get_params(clean_line, "0 !COLOUR ")
+            colors[group_name].append(ldraw_colors.parse_color(_params))
 
     j = 0
     for collection_name, codes in colors.items():

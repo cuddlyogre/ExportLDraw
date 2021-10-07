@@ -7,6 +7,7 @@ import bpy
 import mathutils
 
 from . import blender_materials
+from . import ldraw_colors
 from . import import_options
 from . import matrices
 from . import special_bricks

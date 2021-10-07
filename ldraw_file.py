@@ -150,10 +150,6 @@ class LDrawFile:
         # print(ldraw_file)
         return ldraw_file
 
-    def get_params(self, line, command):
-        l = " ".join(line.split())[len(command):].split()
-        return [x.lower() for x in l]
-
     def parse_file(self):
         for line in self.lines:
             clean_line = helpers.clean_line(line)
@@ -175,7 +171,7 @@ class LDrawFile:
             elif clean_line.startswith("0 Un-official "):
                 self.determine_part_type(clean_line, "0 Un-official ")
             elif clean_line.startswith("0 !COLOUR "):
-                _params = self.get_params(clean_line, "0 !COLOUR ")
+                _params = helpers.get_params(clean_line, "0 !COLOUR ")
                 ldraw_colors.parse_color(_params)
             elif clean_line.startswith("0 STEP"):
                 ldraw_node = LDrawNode()
@@ -269,7 +265,7 @@ class LDrawFile:
                 ldraw_node.meta_command = "group_end"
                 self.child_nodes.append(ldraw_node)
             elif clean_line.startswith("0 !LEOCAD CAMERA "):
-                _params = self.get_params(clean_line, "0 !LEOCAD CAMERA ")
+                _params = helpers.get_params(clean_line, "0 !LEOCAD CAMERA ")
                 if self.camera is None:
                     self.camera = ldraw_camera.LDrawCamera()
 
@@ -322,7 +318,7 @@ class LDrawFile:
                         _params = _params[1:]
             elif clean_line.startswith("0 !TEXMAP "):
                 # https://www.ldraw.org/documentation/ldraw-org-file-format-standards/language-extension-for-texture-mapping.html
-                params = self.get_params(clean_line, "0 !TEXMAP ")
+                params = helpers.get_params(clean_line, "0 !TEXMAP ")
 
                 if self.texmap_start:
                     if params[0].lower() in ["fallback"]:
@@ -455,7 +451,7 @@ class LDrawFile:
             self.child_nodes.append(ldraw_node)
 
     def determine_part_type(self, clean_line, command):
-        _params = self.get_params(clean_line, command)
+        _params = helpers.get_params(clean_line, command)
         part_type = _params[0]
         if 'subpart' in part_type:
             self.part_type = "subpart"
