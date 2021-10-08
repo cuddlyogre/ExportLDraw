@@ -210,7 +210,6 @@ class LDrawNode:
         self.matrix = matrices.identity
         self.meta_command = None
         self.meta_args = dict()
-        self.bfc_winding = "CCW"
 
     def load(self, parent_matrix=matrices.identity, color_code="16", geometry_data=None, parent_collection=None, is_edge_logo=False):
         global part_count

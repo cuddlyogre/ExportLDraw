@@ -66,11 +66,6 @@ class LDrawFile:
         self.texmap_next = False
         self.texmap_fallback = False
 
-        self.bfc_certified = None
-        self.bfc_winding = "CCW"
-        self.bfc_culling = True
-        self.bfc_inverted = False
-
         self.camera = None
 
     def __str__(self):
@@ -194,37 +189,6 @@ class LDrawFile:
                 ldraw_node.meta_command = "print"
                 ldraw_node.meta_args = clean_line.split(maxsplit=2)[2]
                 self.child_nodes.append(ldraw_node)
-            elif clean_line.startswith('0 BFC '):
-                if self.bfc_certified is False:
-                    continue
-
-                if clean_line == '0 BFC NOCERTIFY':
-                    if self.bfc_certified is None:
-                        self.bfc_certified = False
-                else:
-                    if self.bfc_certified is None:
-                        self.bfc_certified = True
-
-                    if clean_line in ['0 BFC CERTIFY', '0 BFC CERTIFY CCW']:
-                        self.bfc_winding = "CCW"
-                    elif clean_line == '0 BFC CERTIFY CW':
-                        self.bfc_winding = "CW"
-                    elif clean_line == '0 BFC CW':
-                        self.bfc_winding = "CW"
-                    elif clean_line == '0 BFC CCW':
-                        self.bfc_winding = "CCW"
-                    elif clean_line == '0 BFC CLIP':
-                        self.bfc_culling = True
-                    elif clean_line in ['0 BFC CLIP CW', '0 BFC CW CLIP']:
-                        self.bfc_winding = "CW"
-                        self.bfc_culling = True
-                    elif clean_line in ['0 BFC CLIP CCW', '0 BFC CCW CLIP']:
-                        self.bfc_winding = "CCW"
-                        self.bfc_culling = True
-                    elif clean_line == '0 BFC NOCLIP':
-                        self.bfc_culling = False
-                    elif clean_line == '0 BFC INVERTNEXT':
-                        self.bfc_inverted = True
             elif clean_line.startswith("0 !LDCAD GROUP_DEF "):
                 # http://www.melkert.net/LDCad/tech/meta
                 params = re.search(r"\S+\s+\S+\s+\S+\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])", clean_line)
