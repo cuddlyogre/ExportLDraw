@@ -92,13 +92,9 @@ def __create_node_based_material(key, color, use_edge_color=False, part_slopes=N
 
     if is_transparent:
         material.blend_method = "BLEND"
-        # material.refraction_depth = 0.1
-        material.refraction_depth = 1.0
-        # material.use_backface_culling = False
-        material.use_backface_culling = True
-        # material.show_transparent_back = False
+        material.refraction_depth = 0.5
+        material.use_backface_culling = False
         material.show_transparent_back = True
-        # material.use_screen_refraction = False
         material.use_screen_refraction = True
 
     if color.name == "Milky_White":
