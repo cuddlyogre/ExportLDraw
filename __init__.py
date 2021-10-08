@@ -17,7 +17,6 @@ if "bpy" in locals():
     importlib.reload(blender_materials)
     importlib.reload(blender_import)
     importlib.reload(downloader)
-    importlib.reload(face_info)
     importlib.reload(filesystem)
     importlib.reload(geometry_data)
     importlib.reload(helpers)
@@ -25,6 +24,7 @@ if "bpy" in locals():
     importlib.reload(ldraw_colors)
     importlib.reload(ldraw_export)
     importlib.reload(ldraw_file)
+    importlib.reload(ldraw_geometry)
     importlib.reload(ldraw_node)
     importlib.reload(ldraw_part_types)
     importlib.reload(matrices)
@@ -40,7 +40,6 @@ else:
     from . import blender_materials
     from . import blender_import
     from . import downloader
-    from . import face_info
     from . import filesystem
     from . import geometry_data
     from . import helpers
@@ -48,6 +47,7 @@ else:
     from . import ldraw_colors
     from . import ldraw_export
     from . import ldraw_file
+    from . import ldraw_geometry
     from . import ldraw_node
     from . import ldraw_part_types
     from . import matrices
