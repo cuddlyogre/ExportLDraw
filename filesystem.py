@@ -4,8 +4,6 @@ import glob
 from sys import platform
 from pathlib import Path
 
-from . import helpers
-
 defaults = dict()
 defaults['ldraw_path'] = ''
 defaults['prefer_unofficial'] = False
