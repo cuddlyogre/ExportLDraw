@@ -135,10 +135,9 @@ def export_polygons(obj, lines):
         length = len(polygon.vertices)
         line_type = None
         if length == 3:
-            line_type = 3
+            line_type = "3"
         elif length == 4:
-            line_type = 4
-
+            line_type = "4"
         if line_type is None:
             continue
 
@@ -162,7 +161,7 @@ def export_polygons(obj, lines):
         else:
             color_code = obj_color.code
 
-        line = [str(line_type), color_code]
+        line = [line_type, color_code]
 
         for v in polygon.vertices:
             for vv in mesh.vertices[v].co:
