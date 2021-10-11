@@ -11,10 +11,20 @@ from . import ldraw_export
 class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
     """Export an LDraw model File."""
 
-    bl_idname = "export.ldraw"
+    bl_idname = "ldraw_exporter.export_operator"
     bl_label = "Export LDraw"
     bl_options = {'PRESET'}
-    filename_ext = ""
+
+    filename_ext: bpy.props.EnumProperty(
+        name='File extension',
+        description='Choose File Format:',
+        items=(
+            ('.dat', 'dat', 'Export as part'),
+            ('.ldr', 'ldr', 'Export as model'),
+            # ('.mpd', 'mpd', 'Export as multi-part document'),
+        ),
+        default='.dat',
+    )
 
     filter_glob: bpy.props.StringProperty(
         name="Extensions",
@@ -30,7 +40,7 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
 
     use_alt_colors: bpy.props.BoolProperty(
         name="Use alternate colors",
-        options={'HIDDEN'},
+        # options={'HIDDEN'},
         description="Use LDCfgalt.ldr",
         default=True,
     )
@@ -96,18 +106,10 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
         ),
     )
 
-    prefer_unofficial: bpy.props.BoolProperty(
-        name="Prefer unofficial parts",
-        options={'HIDDEN'},
-        description="Search for unofficial parts first",
-        default=False,
-    )
-
     def execute(self, context):
         start = time.monotonic()
 
         filesystem.ldraw_path = self.ldraw_path
-        filesystem.prefer_unofficial = self.prefer_unofficial
         filesystem.resolution = self.resolution
         ldraw_colors.use_alt_colors = self.use_alt_colors
 
@@ -133,23 +135,56 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
         return {'FINISHED'}
 
     def draw(self, context):
+        space_factor = 0.3
+
         layout = self.layout
-        layout.use_property_split = True
 
-        box = layout.box()
+        col = layout.column()
+        col.prop(self, "ldraw_path")
 
-        box.label(text="LDraw filepath:", icon='FILEBROWSER')
-        box.prop(self, "ldraw_path")
+        layout.separator(factor=space_factor)
+        row = layout.row()
+        row.label(text="File Format:")
+        row.prop(self, "filename_ext", expand=True)
 
-        box.label(text="Export Options")
-        box.prop(self, "selection_only")
-        # box.prop(self, "use_alt_colors")
-        box.prop(self, "export_precision")
-        box.prop(self, "prefer_unofficial")
+        layout.separator(factor=space_factor)
+        col = layout.column()
+        col.label(text="Export Options")
+        col.prop(self, "selection_only")
+        col.prop(self, "use_alt_colors")
+        col.prop(self, "export_precision")
 
-        box.label(text="Cleanup Options")
-        box.prop(self, "remove_doubles")
-        box.prop(self, "merge_distance")
-        box.prop(self, "recalculate_normals")
-        box.prop(self, "triangulate")
-        box.prop(self, "ngon_handling")
+        layout.separator(factor=space_factor)
+        col = layout.column()
+        col.label(text="Cleanup Options")
+        col.prop(self, "remove_doubles")
+        col.prop(self, "merge_distance")
+        col.prop(self, "recalculate_normals")
+        col.prop(self, "triangulate")
+        col.prop(self, "ngon_handling")
+
+
+def build_export_menu(self, context):
+    self.layout.operator(EXPORT_OT_do_ldraw_export.bl_idname, text="LDraw (.mpd/.ldr/.l3b/.dat)")
+
+
+classesToRegister = [
+    EXPORT_OT_do_ldraw_export,
+]
+
+# https://wiki.blender.org/wiki/Reference/Release_Notes/2.80/Python_API/Addons
+registerClasses, unregisterClasses = bpy.utils.register_classes_factory(classesToRegister)
+
+
+def register():
+    bpy.utils.register_class(EXPORT_OT_do_ldraw_export)
+    bpy.types.TOPBAR_MT_file_export.append(build_export_menu)
+
+
+def unregister():
+    bpy.utils.unregister_class(EXPORT_OT_do_ldraw_export)
+    bpy.types.TOPBAR_MT_file_export.remove(build_export_menu)
+
+
+if __name__ == "__main__":
+    register()

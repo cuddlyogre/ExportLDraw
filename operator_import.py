@@ -100,7 +100,7 @@ def save_settings():
         Path(config_path).mkdir(parents=True, exist_ok=True)
         settings_path = os.path.join(config_path, 'import_options.json')
 
-        with open(settings_path, 'w') as file:
+        with open(settings_path, 'w', newline="\n") as file:
             file.write(json.dumps(settings))
     except Exception as e:
         print(e)
@@ -109,7 +109,7 @@ def save_settings():
 class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
     """Import an LDraw model File."""
 
-    bl_idname = "import.ldraw"
+    bl_idname = "ldraw_exporter.import_operator"
     bl_label = "Import LDraw"
     bl_options = {'PRESET', 'UNDO'}
     filename_ext = ""
@@ -128,7 +128,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
 
     use_alt_colors: bpy.props.BoolProperty(
         name="Use alternate colors",
-        options={'HIDDEN'},
+        # options={'HIDDEN'},
         description="Use LDCfgalt.ldr",
         default=get_setting('use_alt_colors'),
     )
@@ -473,53 +473,88 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
 
     # https://docs.blender.org/api/current/bpy.types.UILayout.html
     def draw(self, context):
+        space_factor = 0.3
+
         layout = self.layout
-        layout.use_property_split = True
 
-        box = layout.box()
+        col = layout.column()
+        col.prop(self, "ldraw_path")
 
-        box.label(text="LDraw filepath:", icon='FILEBROWSER')
-        box.prop(self, "ldraw_path")
+        layout.separator(factor=space_factor)
+        col = layout.column()
+        col.label(text="Import Options")
+        col.prop(self, "use_alt_colors")
+        col.prop(self, "resolution")
+        col.prop(self, "display_logo")
+        col.prop(self, "chosen_logo")
+        col.prop(self, "profile")
 
-        box.label(text="Import Options")
-        # box.prop(self, "use_alt_colors")
-        box.prop(self, "resolution", expand=True)
-        box.prop(self, "display_logo")
-        box.prop(self, "chosen_logo")
-        box.prop(self, "profile")
+        layout.separator(factor=space_factor)
+        col = layout.column()
+        col.label(text="Scaling Options")
+        col.prop(self, "import_scale")
+        col.prop(self, "parent_to_empty")
+        col.prop(self, "make_gaps")
+        col.prop(self, "gap_scale")
+        col.prop(self, "gap_target")
+        col.prop(self, "gap_scale_strategy")
 
-        box.label(text="Scaling Options")
-        box.prop(self, "import_scale")
-        box.prop(self, "parent_to_empty")
-        box.prop(self, "make_gaps")
-        box.prop(self, "gap_scale")
-        box.prop(self, "gap_target")
-        box.prop(self, "gap_scale_strategy")
+        layout.separator(factor=space_factor)
+        col = layout.column()
+        col.label(text="Cleanup Options")
+        col.prop(self, "remove_doubles")
+        col.prop(self, "merge_distance")
+        col.prop(self, "smooth_type")
+        col.prop(self, "shade_smooth")
+        col.prop(self, "recalculate_normals")
+        col.prop(self, "triangulate")
 
-        box.label(text="Cleanup Options")
-        box.prop(self, "remove_doubles")
-        box.prop(self, "merge_distance")
-        box.prop(self, "smooth_type")
-        box.prop(self, "shade_smooth")
-        box.prop(self, "recalculate_normals")
-        box.prop(self, "triangulate")
+        layout.separator(factor=space_factor)
+        col = layout.column()
+        col.label(text="Meta Commands")
+        col.prop(self, "meta_group")
+        col.prop(self, "meta_print_write")
+        col.prop(self, "meta_step")
+        col.prop(self, "meta_step_groups")
+        col.prop(self, "frames_per_step")
+        col.prop(self, "set_end_frame")
+        col.prop(self, "meta_clear")
+        # col.prop(self, "meta_pause")
+        col.prop(self, "meta_save")
+        col.prop(self, "set_timelime_markers")
 
-        box.label(text="Meta Commands")
-        box.prop(self, "meta_group")
-        box.prop(self, "meta_print_write")
-        box.prop(self, "meta_step")
-        box.prop(self, "meta_step_groups")
-        box.prop(self, "frames_per_step")
-        box.prop(self, "set_end_frame")
-        box.prop(self, "meta_clear")
-        # box.prop(self, "meta_pause")
-        box.prop(self, "meta_save")
-        box.prop(self, "set_timelime_markers")
+        layout.separator(factor=space_factor)
+        col = layout.column()
+        col.label(text="Extras")
+        col.prop(self, "sharpen_edges")
+        col.prop(self, "use_freestyle_edges")
+        col.prop(self, "import_edges")
+        # col.prop(self, "treat_shortcut_as_model")
+        col.prop(self, "prefer_unofficial")
+        col.prop(self, "no_studs")
 
-        box.label(text="Extras")
-        box.prop(self, "sharpen_edges")
-        box.prop(self, "use_freestyle_edges")
-        box.prop(self, "import_edges")
-        # box.prop(self, "treat_shortcut_as_model")
-        box.prop(self, "prefer_unofficial")
-        box.prop(self, "no_studs")
+
+def build_import_menu(self, context):
+    self.layout.operator(IMPORT_OT_do_ldraw_import.bl_idname, text="LDraw (.mpd/.ldr/.l3b/.dat)")
+
+
+classesToRegister = [
+    IMPORT_OT_do_ldraw_import,
+]
+
+# https://wiki.blender.org/wiki/Reference/Release_Notes/2.80/Python_API/Addons
+registerClasses, unregisterClasses = bpy.utils.register_classes_factory(classesToRegister)
+
+
+def register():
+    bpy.utils.register_class(IMPORT_OT_do_ldraw_import)
+    bpy.types.TOPBAR_MT_file_import.append(build_import_menu)
+
+
+def unregister():
+    bpy.utils.unregister_class(IMPORT_OT_do_ldraw_import)
+    bpy.types.TOPBAR_MT_file_import.remove(build_import_menu)
+
+
+if __name__ == "__main__":
+    register()

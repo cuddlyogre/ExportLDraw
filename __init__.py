@@ -59,31 +59,15 @@ else:
     from . import strings
     from . import texmap
 
-import bpy
-
-
-def build_import_menu(self, context):
-    self.layout.operator(operator_import.IMPORT_OT_do_ldraw_import.bl_idname, text="LDraw (.mpd/.ldr/.l3b/.dat)")
-
-
-def build_export_menu(self, context):
-    self.layout.operator(operator_export.EXPORT_OT_do_ldraw_export.bl_idname, text="LDraw (.mpd/.ldr/.l3b/.dat)")
-
 
 def register():
-    bpy.utils.register_class(operator_import.IMPORT_OT_do_ldraw_import)
-    bpy.types.TOPBAR_MT_file_import.append(build_import_menu)
-
-    bpy.utils.register_class(operator_export.EXPORT_OT_do_ldraw_export)
-    bpy.types.TOPBAR_MT_file_export.append(build_export_menu)
+    operator_import.register()
+    operator_export.register()
 
 
 def unregister():
-    bpy.utils.unregister_class(operator_import.IMPORT_OT_do_ldraw_import)
-    bpy.types.TOPBAR_MT_file_import.remove(build_import_menu)
-
-    bpy.utils.unregister_class(operator_export.EXPORT_OT_do_ldraw_export)
-    bpy.types.TOPBAR_MT_file_export.remove(build_export_menu)
+    operator_import.unregister()
+    operator_export.unregister()
 
 
 if __name__ == "__main__":
