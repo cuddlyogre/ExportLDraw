@@ -1,15 +1,14 @@
 import csv
 import io
-import pprint
 import re
 import codecs
 
-pp = pprint.PrettyPrinter(indent=4, width=120)
 
-
-def get_params(line, command):
+def get_params(line, command, lowercase=True):
     l = " ".join(line.split())[len(command):].split()
-    return [x.lower() for x in l]
+    if lowercase:
+        return [x.lower() for x in l]
+    return l
 
 
 def split_line(line):

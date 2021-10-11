@@ -27,7 +27,7 @@ def get_color(color_code):
     global bad_color
     if bad_color is None:
         clean_line = "0 !COLOUR Bad_Color CODE -9999 VALUE #FF0000 EDGE #00FF00"
-        params = helpers.get_params(clean_line, "0 !COLOUR ")
+        params = helpers.get_params(clean_line, "0 !COLOUR ", lowercase=False)
         color_code = parse_color(params)
         bad_color = colors[color_code]
 
@@ -155,51 +155,55 @@ class LDrawColor:
         name = params[0]
         self.name = name
 
-        i = params.index("code")
-        code = params[i + 1]
+        # Tags are case-insensitive.
+        # https://www.ldraw.org/article/299
+        lparams = [x.lower() for x in params]
+
+        i = lparams.index("code")
+        code = lparams[i + 1]
         self.code = code
 
-        i = params.index("value")
-        value = params[i + 1]
+        i = lparams.index("value")
+        value = lparams[i + 1]
         rgba = get_color_value(value, linear)
         self.color = rgba
 
-        i = params.index("edge")
-        edge = params[i + 1]
+        i = lparams.index("edge")
+        edge = lparams[i + 1]
         e_rgba = get_color_value(edge, linear)
         self.edge_color = e_rgba
 
         # [ALPHA a] [LUMINANCE l] [ CHROME | PEARLESCENT | RUBBER | MATTE_METALLIC | METAL | MATERIAL <params> ]
         alpha = 255
-        if "alpha" in params:
-            i = params.index("alpha")
-            alpha = int(params[i + 1])
+        if "alpha" in lparams:
+            i = lparams.index("alpha")
+            alpha = int(lparams[i + 1])
         self.alpha = alpha / 255
 
         luminance = 0
-        if "luminance" in params:
-            i = params.index("luminance")
-            luminance = int(params[i + 1])
+        if "luminance" in lparams:
+            i = lparams.index("luminance")
+            luminance = int(lparams[i + 1])
         self.luminance = luminance
 
         material_name = None
         for _material in materials:
-            if _material in params:
+            if _material in lparams:
                 material_name = _material
                 break
         self.material_name = material_name
 
         # MATERIAL SPECKLE VALUE #898788 FRACTION 0.4               MINSIZE 1    MAXSIZE 3
         # MATERIAL GLITTER VALUE #FFFFFF FRACTION 0.8 VFRACTION 0.6 MINSIZE 0.02 MAXSIZE 0.1
-        if "material" in params:
-            i = params.index("material")
-            material_parts = params[i:]
+        if "material" in lparams:
+            i = lparams.index("material")
+            material_parts = lparams[i:]
 
             material_name = material_parts[1]
             self.material_name = material_name
 
-            i = params.index("value")
-            material_value = params[i + 1]
+            i = lparams.index("value")
+            material_value = lparams[i + 1]
             material_rgba = get_color_value(material_value, linear)
             self.material_color = material_rgba
 

@@ -100,7 +100,7 @@ def load_materials(file):
             group_name = clean_line
             colors[group_name] = []
         elif clean_line.startswith("0 !COLOUR"):
-            _params = helpers.get_params(clean_line, "0 !COLOUR ")
+            _params = helpers.get_params(clean_line, "0 !COLOUR ", lowercase=False)
             colors[group_name].append(ldraw_colors.parse_color(_params))
 
     j = 0
@@ -125,8 +125,8 @@ def load_materials(file):
             for f in bm.faces:
                 f.smooth = True
 
-            mesh = bpy.data.meshes.new(f"{prefix}_{str(color_code)}")
-            mesh[strings.ldraw_color_code_key] = str(color_code)
+            mesh = bpy.data.meshes.new(f"{prefix}_{color_code}")
+            mesh[strings.ldraw_color_code_key] = color_code
 
             material = blender_materials.get_material(color_code)
 
@@ -139,17 +139,18 @@ def load_materials(file):
             bm.faces.ensure_lookup_table()
             bm.verts.ensure_lookup_table()
             bm.edges.ensure_lookup_table()
-
             bm.to_mesh(mesh)
             bm.clear()
             bm.free()
 
             mesh.validate()
             mesh.update(calc_edges=True)
+
             obj = bpy.data.objects.new(mesh.name, mesh)
             obj.modifiers.new("Subdivision", type='SUBSURF')
             obj.location.x = i * 3
             obj.location.y = -j * 3
             # obj.rotation_euler.z = math.radians(90)
+
             collection.objects.link(obj)
         j += 1
