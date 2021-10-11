@@ -1,7 +1,5 @@
 import bpy
 import bmesh
-import math
-import mathutils
 
 from . import strings
 from . import export_options
@@ -19,16 +17,17 @@ def clean_mesh(obj):
     bm = bmesh.new()
     bm.from_object(obj, bpy.context.evaluated_depsgraph_get())
 
-    reverse_rotation = mathutils.Matrix.Rotation(math.radians(90), 4, 'X')
-    bm.transform(reverse_rotation @ obj.matrix_world)
+    bm.transform(matrices.reverse_rotation)
 
+    faces = None
     if export_options.triangulate:
-        bmesh.ops.triangulate(bm, faces=bm.faces[:], quad_method='BEAUTY', ngon_method='BEAUTY')
+        faces = bm.faces
     elif export_options.ngon_handling == "triangulate":
         faces = []
         for f in bm.faces:
             if len(f.verts) > 4:
                 faces.append(f)
+    if faces is not None:
         bmesh.ops.triangulate(bm, faces=faces, quad_method='BEAUTY', ngon_method='BEAUTY')
 
     if export_options.remove_doubles:
@@ -71,7 +70,6 @@ def export_subfiles(obj, lines, is_model=False):
     if strings.ldraw_color_code_key in obj:
         color_code = str(obj[strings.ldraw_color_code_key])
         color = ldraw_colors.get_color(color_code)
-
     color_code = color.code
 
     precision = export_options.export_precision
@@ -120,6 +118,7 @@ def export_subfiles(obj, lines, is_model=False):
 
 
 def export_polygons(obj, lines):
+    # obj is an empty
     if obj.data is None:
         return False
 
@@ -222,22 +221,13 @@ def do_export(filepath):
             hlines = header_text.lines
             if hlines[-1].body == "\n":
                 hlines.pop()
-            for part_line in hlines:
-                lines.append(part_line.body)
 
-                line = part_line.body
-
-                params = helpers.parse_line(line, 17)
-
-                if params is None:
-                    continue
-
-                if params[0] == "0":
-                    if params[1].lower() in ["!ldraw_org"]:
-                        if params[2].lower() in ["lcad"]:
-                            part_type = params[3].lower()
-                        else:
-                            part_type = params[2].lower()
+            for hline in hlines:
+                line = hline.body
+                clean_line = helpers.clean_line(line)
+                lines.append(clean_line)
+                if clean_line.startswith("0 !LDRAW_ORG "):
+                    part_type = ldraw_file.determine_part_type(clean_line, "0 !LDRAW_ORG ")
 
     is_model = part_type in ldraw_part_types.model_types
 
@@ -287,7 +277,7 @@ def do_export(filepath):
         joined_part_lines.append(" ".join(line))
     lines.extend(joined_part_lines)
 
-    with open(filepath, 'w') as file:
+    with open(filepath, 'w', newline="\n") as file:
         for line in lines:
             file.write(line)
             if line != "\n":
