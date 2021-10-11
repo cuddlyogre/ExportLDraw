@@ -190,7 +190,7 @@ def export_polygons(obj, lines):
 # conditional lines => line type 5 and ngons, aren't handled
 # header file is determined by strings.ldraw_filename_key of active object
 # if strings.ldraw_export_polygons_key == 1 current object being iterated will be exported as line type 2,3,4
-# otherwise line type 2
+# otherwise line type 1
 def do_export(filepath):
     filesystem.build_search_paths()
     ldraw_file.read_color_table()
