@@ -46,6 +46,22 @@ def read_color_table():
         return
 
 
+def determine_part_type(clean_line, command):
+    _params = helpers.get_params(clean_line, command)
+    part_type = _params[0]
+    if "subpart" in part_type:
+        return "subpart"
+    elif "primitive" in part_type:
+        return "primitive"
+    elif "model" in part_type:
+        return "model"
+    elif "shortcut" in part_type:
+        return "shortcut"
+    elif "part" in part_type:
+        return "part"
+    return "part"
+
+
 class LDrawFile:
     def __init__(self, filename):
         self.filepath = None
@@ -156,17 +172,17 @@ class LDrawFile:
             elif clean_line.lower().startswith("0 Author: ".lower()):
                 self.author = clean_line.split(maxsplit=2)[2]
             elif clean_line.startswith("0 !LDRAW_ORG "):
-                self.determine_part_type(clean_line, "0 !LDRAW_ORG ")
+                self.part_type = determine_part_type(clean_line, "0 !LDRAW_ORG ")
             elif clean_line.startswith("0 LDRAW_ORG "):
-                self.determine_part_type(clean_line, "0 LDRAW_ORG ")
+                self.part_type = determine_part_type(clean_line, "0 LDRAW_ORG ")
             elif clean_line.startswith("0 Official LCAD "):
-                self.determine_part_type(clean_line, "0 Official LCAD ")
+                self.part_type = determine_part_type(clean_line, "0 Official LCAD ")
             elif clean_line.startswith("0 Unofficial "):
-                self.determine_part_type(clean_line, "0 Unofficial ")
+                self.part_type = determine_part_type(clean_line, "0 Unofficial ")
             elif clean_line.startswith("0 Un-official "):
-                self.determine_part_type(clean_line, "0 Un-official ")
+                self.part_type = determine_part_type(clean_line, "0 Un-official ")
             elif clean_line.startswith("0 !COLOUR "):
-                _params = helpers.get_params(clean_line, "0 !COLOUR ")
+                _params = helpers.get_params(clean_line, "0 !COLOUR ", lowercase=False)
                 ldraw_colors.parse_color(_params)
             elif clean_line.startswith("0 STEP"):
                 ldraw_node = LDrawNode()
@@ -413,20 +429,6 @@ class LDrawFile:
             ldraw_node.line = ""
             ldraw_node.file = ldraw_file
             self.child_nodes.append(ldraw_node)
-
-    def determine_part_type(self, clean_line, command):
-        _params = helpers.get_params(clean_line, command)
-        part_type = _params[0]
-        if "subpart" in part_type:
-            self.part_type = "subpart"
-        elif "primitive" in part_type:
-            self.part_type = "primitive"
-        elif "model" in part_type:
-            self.part_type = "model"
-        elif "part" in part_type:
-            self.part_type = "part"
-        elif "shortcut" in part_type:
-            self.part_type = "shortcut"
 
     def set_texmap_end(self):
         if len(texmap.texmaps) < 1:
