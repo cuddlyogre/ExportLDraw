@@ -171,43 +171,77 @@ class LDrawFile:
             # process meta command in place if it only affects the file
             if clean_line.lower().startswith("0 Name: ".lower()):
                 self.name = clean_line.split(maxsplit=2)[2]
-            elif clean_line.lower().startswith("0 Author: ".lower()):
+                continue
+
+            if clean_line.lower().startswith("0 Author: ".lower()):
                 self.author = clean_line.split(maxsplit=2)[2]
-            elif clean_line.startswith("0 !LDRAW_ORG "):
+                continue
+
+            if clean_line.startswith("0 !LDRAW_ORG "):
+                _params = helpers.get_params(clean_line, "0 !LDRAW_ORG ")
+                part_type = _params[0]
                 self.part_type = determine_part_type(clean_line, "0 !LDRAW_ORG ")
-            elif clean_line.startswith("0 LDRAW_ORG "):
+                continue
+
+            if clean_line.startswith("0 LDRAW_ORG "):
+                _params = helpers.get_params(clean_line, "0 LDRAW_ORG ")
+                part_type = _params[0]
                 self.part_type = determine_part_type(clean_line, "0 LDRAW_ORG ")
-            elif clean_line.startswith("0 Official LCAD "):
+                continue
+
+            if clean_line.startswith("0 Official LCAD "):
+                _params = helpers.get_params(clean_line, "0 Official LCAD ")
+                part_type = _params[0]
                 self.part_type = determine_part_type(clean_line, "0 Official LCAD ")
-            elif clean_line.startswith("0 Unofficial "):
+                continue
+
+            if clean_line.startswith("0 Unofficial "):
+                _params = helpers.get_params(clean_line, "0 Unofficial ")
+                part_type = _params[0]
                 self.part_type = determine_part_type(clean_line, "0 Unofficial ")
-            elif clean_line.startswith("0 Un-official "):
+                continue
+
+            if clean_line.startswith("0 Un-official "):
+                _params = helpers.get_params(clean_line, "0 Un-official ")
+                part_type = _params[0]
                 self.part_type = determine_part_type(clean_line, "0 Un-official ")
-            elif clean_line.startswith("0 !COLOUR "):
+                continue
+
+            if clean_line.startswith("0 !COLOUR "):
                 _params = helpers.get_params(clean_line, "0 !COLOUR ", lowercase=False)
                 ldraw_colors.parse_color(_params)
-            elif clean_line.startswith("0 STEP"):
+                continue
+
+            if clean_line.startswith("0 STEP"):
                 ldraw_node = LDrawNode()
                 ldraw_node.line = clean_line
                 ldraw_node.meta_command = "step"
                 self.child_nodes.append(ldraw_node)
-            elif clean_line.startswith("0 SAVE"):
+                continue
+
+            if clean_line.startswith("0 SAVE"):
                 ldraw_node = LDrawNode()
                 ldraw_node.line = clean_line
                 ldraw_node.meta_command = "save"
                 self.child_nodes.append(ldraw_node)
-            elif clean_line.startswith("0 CLEAR"):
+                continue
+
+            if clean_line.startswith("0 CLEAR"):
                 ldraw_node = LDrawNode()
                 ldraw_node.line = clean_line
                 ldraw_node.meta_command = "clear"
                 self.child_nodes.append(ldraw_node)
-            elif clean_line in ["0 PRINT", "0 WRITE"]:
+                continue
+
+            if clean_line in ["0 PRINT", "0 WRITE"]:
                 ldraw_node = LDrawNode()
                 ldraw_node.line = clean_line
                 ldraw_node.meta_command = "print"
                 ldraw_node.meta_args = clean_line.split(maxsplit=2)[2]
                 self.child_nodes.append(ldraw_node)
-            elif clean_line.startswith("0 !LDCAD GROUP_DEF "):
+                continue
+
+            if clean_line.startswith("0 !LDCAD GROUP_DEF "):
                 # http://www.melkert.net/LDCad/tech/meta
                 params = re.search(r"\S+\s+\S+\s+\S+\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])", clean_line)
 
@@ -222,7 +256,9 @@ class LDrawFile:
                 ldraw_node.meta_args["name"] = name_args[2]
 
                 self.child_nodes.append(ldraw_node)
-            elif clean_line.startswith("0 !LDCAD GROUP_NXT "):
+                continue
+
+            if clean_line.startswith("0 !LDCAD GROUP_NXT "):
                 params = re.search(r"\S+\s+\S+\s+\S+\s+(\[.*\])\s+(\[.*\])", clean_line)
 
                 ldraw_node = LDrawNode()
@@ -233,7 +269,9 @@ class LDrawFile:
                 ldraw_node.meta_args["id"] = id_args[2]
 
                 self.child_nodes.append(ldraw_node)
-            elif clean_line.startswith("0 !LEOCAD GROUP BEGIN "):
+                continue
+
+            if clean_line.startswith("0 !LEOCAD GROUP BEGIN "):
                 # https://www.leocad.org/docs/meta.html
                 name_args = clean_line.split(maxsplit=4)
                 ldraw_node = LDrawNode()
@@ -241,12 +279,16 @@ class LDrawFile:
                 ldraw_node.meta_command = "group_begin"
                 ldraw_node.meta_args["name"] = name_args[4]
                 self.child_nodes.append(ldraw_node)
-            elif clean_line.startswith("0 !LEOCAD GROUP END"):
+                continue
+
+            if clean_line.startswith("0 !LEOCAD GROUP END"):
                 ldraw_node = LDrawNode()
                 ldraw_node.line = clean_line
                 ldraw_node.meta_command = "group_end"
                 self.child_nodes.append(ldraw_node)
-            elif clean_line.startswith("0 !LEOCAD CAMERA "):
+                continue
+
+            if clean_line.startswith("0 !LEOCAD CAMERA "):
                 _params = helpers.get_params(clean_line, "0 !LEOCAD CAMERA ")
                 if self.camera is None:
                     self.camera = ldraw_camera.LDrawCamera()
@@ -298,7 +340,9 @@ class LDrawFile:
                         self.camera = None
                     else:
                         _params = _params[1:]
-            elif clean_line.startswith("0 !TEXMAP "):
+                continue
+
+            if clean_line.startswith("0 !TEXMAP "):
                 # https://www.ldraw.org/documentation/ldraw-org-file-format-standards/language-extension-for-texture-mapping.html
                 params = helpers.get_params(clean_line, "0 !TEXMAP ")
 
@@ -381,7 +425,9 @@ class LDrawFile:
                         if texmap.texmap is not None:
                             texmap.texmaps.append(texmap.texmap)
                         texmap.texmap = new_texmap
-            elif self.texmap_start:
+                continue
+
+            if self.texmap_start:
                 if clean_line.startswith('0 !: '):
                     # remove 0 !: from line so that it can be parsed like a normal line
                     _clean_line = clean_line[len('0 !: '):].strip()
@@ -392,8 +438,12 @@ class LDrawFile:
                 if self.texmap_next:
                     self.set_texmap_end()
                 continue
-            elif clean_line.startswith("0"):
-                # every other line type 0 happens here
+
+            if not self.texmap_fallback and self.parse_geometry_line(clean_line):
+                continue
+
+            # every other line type 0 happens here
+            if clean_line.startswith("0"):
                 if self.texmap_next:
                     # if 0 line and texmap next, error
                     # also error
@@ -402,10 +452,7 @@ class LDrawFile:
                     continue
                 if self.description is None:
                     self.description = clean_line.split(maxsplit=1)[1]
-            else:
-                # everything not line type 1 happens here
-                if not self.texmap_fallback:
-                    self.parse_geometry_line(clean_line)
+                continue
 
         if self.extra_geometry is not None or self.extra_child_nodes is not None:
             _key = []
@@ -508,6 +555,7 @@ class LDrawFile:
                 self.extra_child_nodes.append(ldraw_node)
             else:
                 self.child_nodes.append(ldraw_node)
+            return True
         elif params[0] in ["2", "3", "4", "5"]:
             # add geometry that is in a model or shortcut file to a file
             # object so that it will be parsed
