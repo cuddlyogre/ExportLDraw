@@ -46,8 +46,8 @@ class TexMap:
         bc = c - b
         ac = c - a
 
-        texmap_cross = ab.cross(ac)
-        texmap_normal = texmap_cross / texmap_cross.length
+        # texmap_cross = ab.cross(ac)
+        # texmap_normal = texmap_cross / texmap_cross.length
 
         p1_length = ab.length
         p1_normal = ab / p1_length
