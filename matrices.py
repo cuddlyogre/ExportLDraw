@@ -146,6 +146,13 @@ def mt4(matrix):
         return matrix
 
 
+# https://bluebubblebee.medium.com/lets-talk-about-the-dot-product-in-videogames-67d833872820
+# The dot product is also the cosine of the angle that both vector form, divided by their length
+# dotProduct(v0, v1) === cos(angle_between_v0_and_v1) / (length(v1) * length(v2))
+def dot_product(v0, v1):
+    return v0[0] * v1[0] + v0[1] * v1[1] + v0[2] * v1[2]
+
+
 # https://stackoverflow.com/a/48266808
 def unit_vector(vector):
     """ Returns the unit vector of the vector."""
