@@ -30,7 +30,7 @@ def do_import(filepath):
     if file is None:
         return
 
-    if file.name.lower() in [x.lower() for x in ['LDCfgalt.ldr', 'LDConfig.ldr']]:
+    if file.is_configuration():
         load_materials(file)
         return
 
@@ -122,6 +122,10 @@ def load_materials(file):
                 prefix = 'cube'
                 bmesh.ops.create_cube(bm, size=1.0)
 
+            bm.faces.ensure_lookup_table()
+            bm.verts.ensure_lookup_table()
+            bm.edges.ensure_lookup_table()
+
             for f in bm.faces:
                 f.smooth = True
 
@@ -136,9 +140,6 @@ def load_materials(file):
             for face in bm.faces:
                 face.material_index = mesh.materials.find(material.name)
 
-            bm.faces.ensure_lookup_table()
-            bm.verts.ensure_lookup_table()
-            bm.edges.ensure_lookup_table()
             bm.to_mesh(mesh)
             bm.clear()
             bm.free()

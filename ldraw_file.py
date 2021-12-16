@@ -49,7 +49,9 @@ def read_color_table():
 def determine_part_type(clean_line, command):
     _params = helpers.get_params(clean_line, command)
     part_type = _params[0]
-    if "subpart" in part_type:
+    if "configuration" in part_type:
+        return "configuration"
+    elif "subpart" in part_type:
         return "subpart"
     elif "primitive" in part_type:
         return "primitive"
@@ -515,6 +517,11 @@ class LDrawFile:
                 self.extra_geometry.parse_face(params, texmap.texmap)
             else:
                 self.geometry.parse_face(params, texmap.texmap)
+
+            return True
+
+    def is_configuration(self):
+        return self.part_type in ldraw_part_types.configuration_types
 
     # this allows shortcuts to be split into their individual parts if desired
     def is_like_model(self):
