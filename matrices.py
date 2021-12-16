@@ -92,13 +92,13 @@ def cross(a, b):
         return a.cross(b)
 
 
-# mathutils.Matrix.Identity(4)
-identity = Matrix((
-    (1.0, 0.0, 0.0, 0.0),
-    (0.0, 1.0, 0.0, 0.0),
-    (0.0, 0.0, 1.0, 0.0),
-    (0.0, 0.0, 0.0, 1.0)
-)).freeze()
+identity = mathutils.Matrix.Identity(4).freeze()
+# identity = Matrix((
+#     (1.0, 0.0, 0.0, 0.0),
+#     (0.0, 1.0, 0.0, 0.0),
+#     (0.0, 0.0, 1.0, 0.0),
+#     (0.0, 0.0, 0.0, 1.0)
+# )).freeze()
 
 rotation = mathutils.Matrix.Rotation(math.radians(-90), 4, 'X').freeze()
 # rotation = Matrix((
