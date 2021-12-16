@@ -73,6 +73,7 @@ class LDrawFile:
         self.name = os.path.basename(filename)
         self.author = None
         self.part_type = None
+        self.actual_part_type = None
 
         self.child_nodes = []
         self.geometry = LDrawGeometry()
@@ -180,30 +181,35 @@ class LDrawFile:
             if clean_line.startswith("0 !LDRAW_ORG "):
                 _params = helpers.get_params(clean_line, "0 !LDRAW_ORG ")
                 part_type = _params[0]
+                self.actual_part_type = part_type
                 self.part_type = determine_part_type(clean_line, "0 !LDRAW_ORG ")
                 continue
 
             if clean_line.startswith("0 LDRAW_ORG "):
                 _params = helpers.get_params(clean_line, "0 LDRAW_ORG ")
                 part_type = _params[0]
+                self.actual_part_type = part_type
                 self.part_type = determine_part_type(clean_line, "0 LDRAW_ORG ")
                 continue
 
             if clean_line.startswith("0 Official LCAD "):
                 _params = helpers.get_params(clean_line, "0 Official LCAD ")
                 part_type = _params[0]
+                self.actual_part_type = part_type
                 self.part_type = determine_part_type(clean_line, "0 Official LCAD ")
                 continue
 
             if clean_line.startswith("0 Unofficial "):
                 _params = helpers.get_params(clean_line, "0 Unofficial ")
                 part_type = _params[0]
+                self.actual_part_type = part_type
                 self.part_type = determine_part_type(clean_line, "0 Unofficial ")
                 continue
 
             if clean_line.startswith("0 Un-official "):
                 _params = helpers.get_params(clean_line, "0 Un-official ")
                 part_type = _params[0]
+                self.actual_part_type = part_type
                 self.part_type = determine_part_type(clean_line, "0 Un-official ")
                 continue
 
