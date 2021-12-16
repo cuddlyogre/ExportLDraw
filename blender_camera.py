@@ -22,16 +22,11 @@ def look_at(obj, target_location, up_vector):
     up = back.cross(right)
     up = up.normalized()
 
-    row1 = [right[0], up[0], back[0], obj.location[0]]
-    row2 = [right[1], up[1], back[1], obj.location[1]]
-    row3 = [right[2], up[2], back[2], obj.location[2]]
-    row4 = [0.0, 0.0, 0.0, 1.0]
-
     obj.matrix_world = mathutils.Matrix((
-        row1,
-        row2,
-        row3,
-        row4
+        [right[0], up[0], back[0], obj.location[0]],
+        [right[1], up[1], back[1], obj.location[1]],
+        [right[2], up[2], back[2], obj.location[2]],
+        [0.0, 0.0, 0.0, 1.0],
     ))
 
 
