@@ -1,4 +1,4 @@
-LDraw Handler for Blender 2.82+, written by Matthew Morrison [cuddlyogre] - cuddlyogre@gmail.com - www.cuddlyogre.com
+LDraw Handler for Blender 2.82+ and 3.0+, written by Matthew Morrison [cuddlyogre] - cuddlyogre@gmail.com - www.cuddlyogre.com
 
 ##### Pull requests and examples of this plugin in action are welcome.
 
@@ -171,3 +171,11 @@ __File > Export > LDraw (.mpd/.ldr/.l3b/.dat)__
 **Triangulate mesh:** Triangulate the mesh. Turns quads and ngons into tris.  
 **Ngon handling:** If there is an ngon, what to do with it. Skip ignores any ngons. Triangulate splits them into
 triangles.
+
+### Development
+
+If you want to make changes to the plugin, this will help  
+```pip install fake-bpy-module-2.82```  
+```pip install fake-bpy-module-2.93```  
+```pip install fake-bpy-module-3.0```  
+More information here: https://github.com/nutti/fake-bpy-module
