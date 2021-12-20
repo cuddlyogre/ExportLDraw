@@ -153,5 +153,8 @@ def load_materials(file):
             obj.location.y = -j * 3
             # obj.rotation_euler.z = math.radians(90)
 
+            color = ldraw_colors.get_color(color_code)
+            obj.color = color.color + (color.alpha,)
+
             collection.objects.link(obj)
         j += 1
