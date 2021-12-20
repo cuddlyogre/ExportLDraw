@@ -170,15 +170,6 @@ def __node_lego_transparent(nodes, color, x, y):
     return node
 
 
-def __node_lego_glass(nodes, color, x, y):
-    node = nodes.new("ShaderNodeGroup")
-    node.name = "glass"
-    node.node_tree = bpy.data.node_groups["LEGO Glass"]
-    node.location = x, y
-    node.inputs["Color"].default_value = color
-    return node
-
-
 def __node_lego_rubber(nodes, color, x, y):
     node = nodes.new("ShaderNodeGroup")
     node.name = "rubber"
