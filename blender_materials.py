@@ -91,11 +91,8 @@ def __create_node_based_material(key, color, use_edge_color=False, part_slopes=N
     material[strings.ldraw_color_name_key] = color.name
 
     if is_transparent:
-        material.blend_method = "BLEND"
-        material.refraction_depth = 0.5
-        material.use_backface_culling = False
-        material.show_transparent_back = True
         material.use_screen_refraction = True
+        material.refraction_depth = 0.5
 
     if color.name == "Milky_White":
         __create_cycles_milky_white(nodes, links, diff_color)
