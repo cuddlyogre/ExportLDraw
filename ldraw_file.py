@@ -102,6 +102,8 @@ class LDrawFile:
                             break
 
                         clean_line = helpers.clean_line(line)
+                        strip_line = line.strip()
+
                         if clean_line == "":
                             continue
 
@@ -111,7 +113,7 @@ class LDrawFile:
 
                             no_file = False
 
-                            mpd_filename = clean_line.split(maxsplit=2)[2].lower()
+                            mpd_filename = strip_line.split(maxsplit=2)[2].lower()
                             if first_mpd_filename is None:
                                 first_mpd_filename = mpd_filename
 
@@ -157,11 +159,11 @@ class LDrawFile:
             strip_line = line.strip()
 
             if clean_line.lower().startswith("0 Name: ".lower()):
-                self.name = clean_line.split(maxsplit=2)[2]
+                self.name = strip_line.split(maxsplit=2)[2]
                 continue
 
             if clean_line.lower().startswith("0 Author: ".lower()):
-                self.author = clean_line.split(maxsplit=2)[2]
+                self.author = strip_line.split(maxsplit=2)[2]
                 continue
 
             if clean_line.startswith("0 !LDRAW_ORG "):
@@ -189,9 +191,8 @@ class LDrawFile:
                 self.part_type = LDrawFile.determine_part_type(self.actual_part_type)
                 continue
 
-            command = "0 !COLOUR "
             if clean_line.startswith("0 !COLOUR "):
-                _params = helpers.get_params(clean_line, command, lowercase=False)
+                _params = helpers.get_params(clean_line, "0 !COLOUR ", lowercase=False)
                 ldraw_colors.parse_color(_params)
                 continue
 
