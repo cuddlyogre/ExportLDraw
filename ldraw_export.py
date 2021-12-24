@@ -223,10 +223,15 @@ def do_export(filepath):
 
             for hline in hlines:
                 line = hline.body
+                lines.append(line)
+
                 clean_line = helpers.clean_line(line)
-                lines.append(clean_line)
+                strip_line = line.strip()
+
                 if clean_line.startswith("0 !LDRAW_ORG "):
-                    part_type = ldraw_file.determine_part_type(clean_line, "0 !LDRAW_ORG ")
+                    actual_part_type = strip_line.lower().split(maxsplit=2)[2]
+                    part_type = ldraw_file.LDrawFile.determine_part_type(actual_part_type)
+                    continue
 
     is_model = part_type in ldraw_part_types.model_types
 
