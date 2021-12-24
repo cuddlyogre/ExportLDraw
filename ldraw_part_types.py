@@ -11,3 +11,4 @@ stud_names = [
 ]
 edge_logo_names = ["logo.dat", "logo2.dat"]
 logo_names = ["logo3.dat", "logo4.dat", "logo5.dat"]
+logos = ["logo", "logo2", "logo3", "logo4", "logo5", "high-contrast"]

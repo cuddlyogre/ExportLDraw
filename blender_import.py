@@ -12,6 +12,7 @@ from . import helpers
 from . import ldraw_colors
 from . import strings
 from . import texmap
+from . import special_bricks
 
 
 def do_import(filepath):
@@ -23,6 +24,7 @@ def do_import(filepath):
     ldraw_camera.reset_caches()
     texmap.reset_caches()
     filesystem.build_search_paths(parent_filepath=filepath)
+    special_bricks.reset()
     ldraw_file.read_color_table()
     blender_materials.create_blender_node_groups()
 

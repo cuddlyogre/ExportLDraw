@@ -46,24 +46,6 @@ def read_color_table():
         return
 
 
-def determine_part_type(clean_line, command):
-    _params = helpers.get_params(clean_line, command)
-    part_type = _params[0]
-    if "configuration" in part_type:
-        return "configuration"
-    elif "subpart" in part_type:
-        return "subpart"
-    elif "primitive" in part_type:
-        return "primitive"
-    elif "model" in part_type:
-        return "model"
-    elif "shortcut" in part_type:
-        return "shortcut"
-    elif "part" in part_type:
-        return "part"
-    return "part"
-
-
 class LDrawFile:
     def __init__(self, filename):
         self.filepath = None
@@ -72,12 +54,16 @@ class LDrawFile:
         self.description = None
         self.name = os.path.basename(filename)
         self.author = None
+        # default part_type of ldraw_file is None, which should mean "model" - see ldraw_part_types.model_types
+        # it is far more likely that a part type will not be specified in models since they are are more likely
+        # to be authored by a user outside of specifications
         self.part_type = None
         self.actual_part_type = None
 
+        self.lines = []
+
         self.child_nodes = []
         self.geometry = LDrawGeometry()
-        self.lines = []
         self.extra_child_nodes = None
         self.extra_geometry = None
 
@@ -88,13 +74,12 @@ class LDrawFile:
         self.camera = None
 
     def __str__(self):
-        x = [
+        return "\n".join([
             f"filename: {self.filename}",
             f"description: {self.description}",
             f"name: {self.name}",
             f"author: {self.author}",
-        ]
-        return "\n".join(x)
+        ])
 
     @classmethod
     def get_file(cls, filename):
@@ -116,7 +101,7 @@ class LDrawFile:
                         if not line:
                             break
 
-                        clean_line = line.strip()
+                        clean_line = helpers.clean_line(line)
                         if clean_line == "":
                             continue
 
@@ -144,11 +129,11 @@ class LDrawFile:
                                 current_file = None
 
                             elif current_file is not None:
-                                current_file.lines.append(clean_line)
+                                current_file.lines.append(line)
                         else:
                             if filename not in file_lines_cache:
                                 file_lines_cache[filename] = LDrawFile(filename)
-                            file_lines_cache[filename].lines.append(clean_line)
+                            file_lines_cache[filename].lines.append(line)
                     if current_file is not None:
                         file_lines_cache[current_file.filename] = current_file
             except Exception as e:
@@ -164,12 +149,13 @@ class LDrawFile:
         # print(ldraw_file)
         return ldraw_file
 
+    # create meta nodes when those commands affect the scene
+    # process meta command in place if it only affects the file
     def parse_file(self):
         for line in self.lines:
             clean_line = helpers.clean_line(line)
+            strip_line = line.strip()
 
-            # create meta nodes when those commands affect the scene
-            # process meta command in place if it only affects the file
             if clean_line.lower().startswith("0 Name: ".lower()):
                 self.name = clean_line.split(maxsplit=2)[2]
                 continue
@@ -179,42 +165,33 @@ class LDrawFile:
                 continue
 
             if clean_line.startswith("0 !LDRAW_ORG "):
-                _params = helpers.get_params(clean_line, "0 !LDRAW_ORG ")
-                part_type = _params[0]
-                self.actual_part_type = part_type
-                self.part_type = determine_part_type(clean_line, "0 !LDRAW_ORG ")
+                self.actual_part_type = strip_line.split(maxsplit=2)[2].lower()
+                self.part_type = LDrawFile.determine_part_type(self.actual_part_type)
                 continue
 
             if clean_line.startswith("0 LDRAW_ORG "):
-                _params = helpers.get_params(clean_line, "0 LDRAW_ORG ")
-                part_type = _params[0]
-                self.actual_part_type = part_type
-                self.part_type = determine_part_type(clean_line, "0 LDRAW_ORG ")
+                self.actual_part_type = strip_line.split(maxsplit=2)[2].lower()
+                self.part_type = LDrawFile.determine_part_type(self.actual_part_type)
                 continue
 
             if clean_line.startswith("0 Official LCAD "):
-                _params = helpers.get_params(clean_line, "0 Official LCAD ")
-                part_type = _params[0]
-                self.actual_part_type = part_type
-                self.part_type = determine_part_type(clean_line, "0 Official LCAD ")
+                self.actual_part_type = strip_line.split(maxsplit=3)[3].lower()
+                self.part_type = LDrawFile.determine_part_type(self.actual_part_type)
                 continue
 
             if clean_line.startswith("0 Unofficial "):
-                _params = helpers.get_params(clean_line, "0 Unofficial ")
-                part_type = _params[0]
-                self.actual_part_type = part_type
-                self.part_type = determine_part_type(clean_line, "0 Unofficial ")
+                self.actual_part_type = strip_line.split(maxsplit=2)[2].lower()
+                self.part_type = LDrawFile.determine_part_type(self.actual_part_type)
                 continue
 
             if clean_line.startswith("0 Un-official "):
-                _params = helpers.get_params(clean_line, "0 Un-official ")
-                part_type = _params[0]
-                self.actual_part_type = part_type
-                self.part_type = determine_part_type(clean_line, "0 Un-official ")
+                self.actual_part_type = strip_line.split(maxsplit=2)[2].lower()
+                self.part_type = LDrawFile.determine_part_type(self.actual_part_type)
                 continue
 
+            command = "0 !COLOUR "
             if clean_line.startswith("0 !COLOUR "):
-                _params = helpers.get_params(clean_line, "0 !COLOUR ", lowercase=False)
+                _params = helpers.get_params(clean_line, command, lowercase=False)
                 ldraw_colors.parse_color(_params)
                 continue
 
@@ -243,35 +220,35 @@ class LDrawFile:
                 ldraw_node = LDrawNode()
                 ldraw_node.line = clean_line
                 ldraw_node.meta_command = "print"
-                ldraw_node.meta_args = clean_line.split(maxsplit=2)[2]
+                ldraw_node.meta_args["message"] = clean_line.split(maxsplit=2)[2]
                 self.child_nodes.append(ldraw_node)
                 continue
 
             if clean_line.startswith("0 !LDCAD GROUP_DEF "):
                 # http://www.melkert.net/LDCad/tech/meta
-                params = re.search(r"\S+\s+\S+\s+\S+\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])", clean_line)
+                _params = re.search(r"\S+\s+\S+\s+\S+\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])", clean_line)
 
                 ldraw_node = LDrawNode()
                 ldraw_node.line = clean_line
                 ldraw_node.meta_command = "group_def"
 
-                id_args = re.search(r"\[(.*)=(.*)\]", params[2])
+                id_args = re.search(r"\[(.*)=(.*)\]", _params[2])
                 ldraw_node.meta_args["id"] = id_args[2]
 
-                name_args = re.search(r"\[(.*)=(.*)\]", params[4])
+                name_args = re.search(r"\[(.*)=(.*)\]", _params[4])
                 ldraw_node.meta_args["name"] = name_args[2]
 
                 self.child_nodes.append(ldraw_node)
                 continue
 
             if clean_line.startswith("0 !LDCAD GROUP_NXT "):
-                params = re.search(r"\S+\s+\S+\s+\S+\s+(\[.*\])\s+(\[.*\])", clean_line)
+                _params = re.search(r"\S+\s+\S+\s+\S+\s+(\[.*\])\s+(\[.*\])", clean_line)
 
                 ldraw_node = LDrawNode()
                 ldraw_node.line = clean_line
                 ldraw_node.meta_command = "group_nxt"
 
-                id_args = re.search(r"\[(.*)=(.*)\]", params[1])
+                id_args = re.search(r"\[(.*)=(.*)\]", _params[1])
                 ldraw_node.meta_args["id"] = id_args[2]
 
                 self.child_nodes.append(ldraw_node)
@@ -350,22 +327,22 @@ class LDrawFile:
 
             if clean_line.startswith("0 !TEXMAP "):
                 # https://www.ldraw.org/documentation/ldraw-org-file-format-standards/language-extension-for-texture-mapping.html
-                params = helpers.get_params(clean_line, "0 !TEXMAP ")
+                _params = helpers.get_params(clean_line, "0 !TEXMAP ")
 
                 if self.texmap_start:
-                    if params[0].lower() in ["fallback"]:
+                    if _params[0].lower() in ["fallback"]:
                         self.texmap_fallback = True
-                    elif params[0].lower() in ["end"]:
+                    elif _params[0].lower() in ["end"]:
                         self.set_texmap_end()
-                elif params[0].lower() in ["start", "next"]:
-                    if params[0].lower() == "start":
+                elif _params[0].lower() in ["start", "next"]:
+                    if _params[0].lower() == "start":
                         self.texmap_start = True
-                    elif params[0].lower() == "next":
+                    elif _params[0].lower() == "next":
                         self.texmap_next = True
                     self.texmap_fallback = False
 
                     new_texmap = None
-                    method = params[1].lower()
+                    method = _params[1].lower()
                     if method in ['planar']:
                         _params = clean_line[len("0 !TEXMAP "):].split(maxsplit=11)  # planar
 
@@ -448,7 +425,7 @@ class LDrawFile:
             if not self.texmap_fallback and self.parse_geometry_line(clean_line):
                 continue
 
-            # every other line type 0 happens here
+            # this goes last so that description will be properly detected
             if clean_line.startswith("0"):
                 if self.texmap_next:
                     # if 0 line and texmap next, error
@@ -485,6 +462,23 @@ class LDrawFile:
             ldraw_node.file = ldraw_file
             self.child_nodes.append(ldraw_node)
 
+    # if there's a line type specified, determine what that type is
+    @classmethod
+    def determine_part_type(cls, actual_part_type):
+        if "primitive" in actual_part_type:
+            return "primitive"
+        elif "subpart" in actual_part_type:
+            return "subpart"
+        elif "part" in actual_part_type:
+            return "part"
+        elif "shortcut" in actual_part_type:
+            return "shortcut"
+        elif "model" in actual_part_type:
+            return "model"
+        elif "configuration" in actual_part_type:
+            return "configuration"
+        return "part"
+
     def set_texmap_end(self):
         if len(texmap.texmaps) < 1:
             texmap.texmap = None
@@ -495,11 +489,11 @@ class LDrawFile:
         self.texmap_fallback = False
 
     def parse_geometry_line(self, clean_line):
-        params = clean_line.split(maxsplit=14)
-        if params[0] == "1":
-            color_code = params[1]
+        _params = clean_line.split(maxsplit=14)
+        if _params[0] == "1":
+            color_code = _params[1]
 
-            (x, y, z, a, b, c, d, e, f, g, h, i) = map(float, params[2:14])
+            (x, y, z, a, b, c, d, e, f, g, h, i) = map(float, _params[2:14])
             matrix = mathutils.Matrix((
                 (a, b, c, x),
                 (d, e, f, y),
@@ -507,7 +501,7 @@ class LDrawFile:
                 (0, 0, 0, 1)
             ))
 
-            filename = params[14].lower()
+            filename = _params[14].lower()
 
             # filename = "stud-logo.dat"
             # parts = filename.split(".") => ["stud-logo", "dat"]
@@ -517,12 +511,12 @@ class LDrawFile:
             # chosen_logo = special_bricks.chosen_logo => "logo5"
             # ext = parts[1] => "dat"
             # filename = f"{stud_name}-{chosen_logo}.{ext}" => "stud-logo5.dat"
-            if import_options.display_logo and self.is_stud():
+            if import_options.display_logo and filename in ldraw_part_types.stud_names:
                 parts = filename.split(".")
                 name = parts[0]
                 name_parts = name.split('-')
                 stud_name = name_parts[0]
-                chosen_logo = special_bricks.chosen_logo
+                chosen_logo = import_options.chosen_logo
                 ext = parts[1]
                 filename = f"{stud_name}-{chosen_logo}.{ext}"
 
@@ -539,12 +533,12 @@ class LDrawFile:
             if key not in file_cache:
                 ldraw_file = LDrawFile.get_file(filename)
                 if ldraw_file is None:
-                    return
+                    return True
                 file_cache[key] = ldraw_file
             ldraw_file = file_cache[key]
 
             if import_options.no_studs and ldraw_file.is_like_stud():
-                return
+                return True
 
             ldraw_node = LDrawNode()
             ldraw_node.line = clean_line
@@ -562,17 +556,17 @@ class LDrawFile:
             else:
                 self.child_nodes.append(ldraw_node)
             return True
-        elif params[0] in ["2", "3", "4", "5"]:
+        elif _params[0] in ["2", "3", "4", "5"]:
             # add geometry that is in a model or shortcut file to a file
             # object so that it will be parsed
             if self.is_like_model():
                 if self.extra_geometry is None:
                     self.extra_geometry = LDrawGeometry()
-                self.extra_geometry.parse_face(params, texmap.texmap)
+                self.extra_geometry.parse_face(_params, texmap.texmap)
             else:
-                self.geometry.parse_face(params, texmap.texmap)
-
+                self.geometry.parse_face(_params, texmap.texmap)
             return True
+        return False
 
     def is_configuration(self):
         return self.part_type in ldraw_part_types.configuration_types

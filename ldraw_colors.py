@@ -27,18 +27,17 @@ def get_color(color_code):
     global bad_color
     if bad_color is None:
         clean_line = "0 !COLOUR Bad_Color CODE -9999 VALUE #FF0000 EDGE #00FF00"
-        params = helpers.get_params(clean_line, "0 !COLOUR ", lowercase=False)
-        color_code = parse_color(params)
+        _params = helpers.get_params(clean_line, "0 !COLOUR ", lowercase=False)
+        color_code = parse_color(_params)
         bad_color = colors[color_code]
 
     print(f"Bad color code: {color_code}")
-    color_code = bad_color.code
-    return colors[color_code]
+    return colors[bad_color.code]
 
 
-def parse_color(params):
+def parse_color(_params):
     color = LDrawColor()
-    color.parse_color(params)
+    color.parse_color_params(_params)
     colors[color.code] = color
     return color.code
 
@@ -148,16 +147,16 @@ class LDrawColor:
         self.material_minsize = None
         self.material_maxsize = None
 
-    def parse_color(self, params, linear=True):
+    def parse_color_params(self, _params, linear=True):
         # name CODE x VALUE v EDGE e required
         # 0 !COLOUR Black CODE 0 VALUE #1B2A34 EDGE #2B4354
 
-        name = params[0]
+        name = _params[0]
         self.name = name
 
         # Tags are case-insensitive.
         # https://www.ldraw.org/article/299
-        lparams = [x.lower() for x in params]
+        lparams = [x.lower() for x in _params]
 
         i = lparams.index("code")
         code = lparams[i + 1]

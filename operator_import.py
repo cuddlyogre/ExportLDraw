@@ -1,16 +1,15 @@
 import time
 import bpy
 import os
-import json
 from bpy_extras.io_utils import ImportHelper
-from pathlib import Path
 
+from . import helpers
 from . import import_options
 from . import filesystem
 from . import ldraw_colors
 from . import ldraw_node
 from . import blender_import
-from . import special_bricks
+from . import ldraw_part_types
 
 import cProfile
 import pstats
@@ -29,7 +28,7 @@ default_settings = {
     'merge_distance': import_options.defaults['merge_distance'],
     'shade_smooth': import_options.defaults['shade_smooth'],
     'display_logo': import_options.defaults['display_logo'],
-    'chosen_logo': special_bricks.defaults['chosen_logo'],
+    'chosen_logo': import_options.defaults['chosen_logo'],
     'make_gaps': import_options.defaults['make_gaps'],
     'gap_scale': import_options.defaults['gap_scale'],
     'no_studs': import_options.defaults['no_studs'],
@@ -73,37 +72,22 @@ def get_setting(key):
         return default
 
 
+def ensure_settings():
+    this_script_dir = os.path.dirname(os.path.realpath(__file__))
+    config_path = os.path.join(this_script_dir, 'config')
+    settings_path = os.path.join(config_path, 'import_options.json')
+    if not os.path.isfile(settings_path):
+        helpers.write_json('config', 'import_options.json', default_settings)
+
+
 def load_settings():
-    try:
-        global settings
-        this_script_dir = os.path.dirname(os.path.realpath(__file__))
-        config_path = os.path.join(this_script_dir, 'config')
-        Path(config_path).mkdir(parents=True, exist_ok=True)
-        settings_path = os.path.join(config_path, 'import_options.json')
-
-        if not os.path.isfile(settings_path):
-            settings = default_settings
-            save_settings()
-
-        if os.path.isfile(settings_path):
-            with open(settings_path, 'r') as file:
-                settings = json.load(file)
-    except Exception as e:
-        print(e)
-        settings = default_settings
+    ensure_settings()
+    global settings
+    settings = helpers.read_json('config', 'import_options.json', default_settings)
 
 
 def save_settings():
-    try:
-        this_script_dir = os.path.dirname(os.path.realpath(__file__))
-        config_path = os.path.join(this_script_dir, 'config')
-        Path(config_path).mkdir(parents=True, exist_ok=True)
-        settings_path = os.path.join(config_path, 'import_options.json')
-
-        with open(settings_path, 'w', newline="\n") as file:
-            file.write(json.dumps(settings))
-    except Exception as e:
-        print(e)
+    helpers.write_json('config', 'import_options.json', settings)
 
 
 class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
@@ -176,7 +160,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         name="Chosen logo",
         description="Use this logo on studs",
         default=get_setting('chosen_logo'),
-        items=list(((l, l, l) for l in special_bricks.logos)),
+        items=list(((l, l, l) for l in ldraw_part_types.logos)),
     )
 
     smooth_type: bpy.props.EnumProperty(
@@ -456,8 +440,8 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator, ImportHelper):
         blender_import.do_import(bpy.path.abspath(self.filepath))
         if self.profile:
             profiler.disable()
-            pstats.Stats(profiler).sort_stats('tottime').print_stats()
-            # pstats.Stats(profiler).sort_stats('cumtime').print_stats()
+            # pstats.Stats(profiler).sort_stats('tottime').print_stats()
+            pstats.Stats(profiler).sort_stats('cumtime').print_stats()
 
         print("")
         print("======Import Complete======")

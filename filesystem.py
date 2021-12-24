@@ -15,16 +15,16 @@ resolution = defaults['resolution']
 
 search_paths = []
 texture_paths = []
-all_files = {}
+lowercase_paths = {}
 
 
 def reset_caches():
     global search_paths
     global texture_paths
-    global all_files
+    global lowercase_paths
     search_paths = []
     texture_paths = []
-    all_files = {}
+    lowercase_paths = {}
 
 
 def append_search_path(path):
@@ -33,8 +33,10 @@ def append_search_path(path):
 
 
 def locate_ldraw():
+    ldraw_folder_name = 'ldraw'
+
     home = str(Path.home())
-    ldraw_path = os.path.join(home, 'ldraw')
+    ldraw_path = os.path.join(home, ldraw_folder_name)
     if os.path.isdir(ldraw_path):
         return ldraw_path
 
@@ -46,7 +48,7 @@ def locate_ldraw():
         # OS X
     elif platform == "win32":
         for drive_letter in string.ascii_lowercase:
-            ldraw_path = os.path.join(os.path.join(f"{drive_letter}:\\", 'ldraw'))
+            ldraw_path = os.path.join(os.path.join(f"{drive_letter}:\\", ldraw_folder_name))
             if os.path.isdir(ldraw_path):
                 return ldraw_path
 
@@ -54,12 +56,12 @@ def locate_ldraw():
 
 
 def build_lowercase_paths():
-    global all_files
-    all_files = {}
+    global lowercase_paths
+    lowercase_paths = {}
 
     for path in search_paths:
         for file in glob.glob(os.path.join(path[0], path[1])):
-            all_files[file.lower()] = file
+            lowercase_paths[file.lower()] = file
 
 
 def build_search_paths(parent_filepath=None):
@@ -114,28 +116,13 @@ def append_unofficial_paths():
 
 # https://stackoverflow.com/a/8462613
 def path_lowercase(path):
-    if path.lower() in all_files:
-        return all_files[path.lower()]
+    if path.lower() in lowercase_paths:
+        return lowercase_paths[path.lower()]
     return path
 
 
-def read_file(filepath):
-    lines = []
-    try:
-        with open(filepath, mode='r', encoding='utf-8') as file:
-            while True:
-                line = file.readline()
-                if not line:
-                    break
-                clean_line = line.strip()
-                lines.append(clean_line)
-    except Exception as e:
-        print(e)
-    return lines
-
-
 def locate(filename):
-    part_path = filename.replace("\\", "/")
+    part_path = filename.replace("\\", os.path.sep).replace("/", os.path.sep)
     part_path = os.path.expanduser(part_path)
 
     # full path was specified

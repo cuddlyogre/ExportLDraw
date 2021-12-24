@@ -27,8 +27,10 @@ class LDrawGeometry:
         self.face_vert_count = 0
         self.line_vert_count = 0
 
-    def parse_face(self, params, texmap=None):
-        line_type = params[0]
+    def parse_face(self, _params, texmap=None):
+        line_type = _params[0]
+
+        color_code = _params[1]
 
         if line_type == "2":
             vert_count = 2
@@ -43,13 +45,11 @@ class LDrawGeometry:
 
         verts = []
         for i in range(vert_count):
-            x = float(params[i * 3 + 2])
-            y = float(params[i * 3 + 3])
-            z = float(params[i * 3 + 4])
+            x = float(_params[i * 3 + 2])
+            y = float(_params[i * 3 + 3])
+            z = float(_params[i * 3 + 4])
             vertex = mathutils.Vector((x, y, z))
             verts.append(vertex)
-
-        color_code = params[1]
 
         if line_type == "2":
             self.edge_vert_count += len(verts)

@@ -66,9 +66,17 @@ def reset_caches():
 
     scale = import_options.import_scale
     import_scale_matrix = mathutils.Matrix.Scale(scale, 4).freeze()
+    # Matrix(((0.2, 0.0, 0.0, 0.0),
+    #         (0.0, 0.2, 0.0, 0.0),
+    #         (0.0, 0.0, 0.2, 0.0),
+    #         (0.0, 0.0, 0.0, 1.0)))
 
     scale = import_options.gap_scale
     gap_scale_matrix = mathutils.Matrix.Scale(scale, 4).freeze()
+    # Matrix(((0.997, 0.0, 0.0, 0.0),
+    #         (0.0, 0.997, 0.0, 0.0),
+    #         (0.0, 0.0, 0.997, 0.0),
+    #         (0.0, 0.0, 0.0, 1.0)))
 
     set_step()
 
@@ -245,7 +253,7 @@ class LDrawNode:
                             ob.keyframe_insert(data_path="hide_viewport")
             elif self.meta_command == "print":
                 if import_options.meta_print_write:
-                    print(self.meta_args)
+                    print(self.meta_args["message"])
             elif self.meta_command.startswith("group") and import_options.meta_group:
                 if self.meta_command == "group_def":
                     collection_name = self.meta_args["name"]
@@ -372,6 +380,8 @@ class LDrawNode:
                 mesh.name = key
                 mesh[strings.ldraw_filename_key] = self.file.name
 
+                # https://blender.stackexchange.com/questions/50160/scripting-low-level-join-meshes-elements-hopefully-with-bmesh
+                # https://blender.stackexchange.com/questions/188039/how-to-join-only-two-objects-to-create-a-new-object-using-python
                 # FIXME: 31313 - Mindstorms EV3 - Spike3r.mpd - "31313 - 13710ac01.dat"
                 # FIXME: if not treat_shortcut_as_model, texmap uvs may be incorrect, caused by unexpected part transform?
                 # FIXME: move uv unwrap to after obj[strings.ldraw_filename_key] = self.file.name
