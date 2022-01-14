@@ -116,6 +116,7 @@ reverse_rotation = mathutils.Matrix.Rotation(math.radians(90), 4, 'X').freeze()
 #     (0.0, 0.0, 0.0, 1.0)
 # ))
 
+# used for changing windings?
 reflection = Matrix((
     (1.0, 0.0, 0.0, 0.0),
     (0.0, 1.0, 0.0, 0.0),

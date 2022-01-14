@@ -502,6 +502,13 @@ class LDrawFile:
                 (0, 0, 0, 1)
             ))
 
+            # matrix = mathutils.Matrix((
+            #     (a, d, g, 0),
+            #     (b, e, h, 0),
+            #     (c, f, i, 0),
+            #     (x, y, z, 1)
+            # ))
+
             filename = _params[14].lower()
 
             # filename = "stud-logo.dat"

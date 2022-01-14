@@ -27,7 +27,7 @@ class LDrawGeometry:
         self.face_vert_count = 0
         self.line_vert_count = 0
 
-    def parse_face(self, _params, texmap=None):
+    def parse_face(self, _params, texmap=None, inverted=False):
         line_type = _params[0]
 
         color_code = _params[1]
@@ -45,9 +45,14 @@ class LDrawGeometry:
 
         verts = []
         for i in range(vert_count):
-            x = float(_params[i * 3 + 2])
-            y = float(_params[i * 3 + 3])
-            z = float(_params[i * 3 + 4])
+            if inverted:
+                z = float(_params[i * 3 + 4])
+                y = float(_params[i * 3 + 3])
+                x = float(_params[i * 3 + 2])
+            else:
+                x = float(_params[i * 3 + 2])
+                y = float(_params[i * 3 + 3])
+                z = float(_params[i * 3 + 4])
             vertex = mathutils.Vector((x, y, z))
             verts.append(vertex)
 
