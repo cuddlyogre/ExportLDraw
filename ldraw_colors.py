@@ -3,138 +3,34 @@
 import math
 import struct
 
-from . import helpers
-
-defaults = dict()
-defaults['use_alt_colors'] = True
-
-use_alt_colors = defaults['use_alt_colors']
-
-colors = {}
-bad_color = None
-materials = ["chrome", "pearlescent", "rubber", "matte_metallic", "metal"]
-
-
-def reset_caches():
-    global colors
-    colors = {}
-
-
-def get_color(color_code):
-    if color_code in colors:
-        return colors[color_code]
-
-    global bad_color
-    if bad_color is None:
-        clean_line = "0 !COLOUR Bad_Color CODE -9999 VALUE #FF0000 EDGE #00FF00"
-        _params = helpers.get_params(clean_line, "0 !COLOUR ", lowercase=False)
-        color_code = parse_color(_params)
-        bad_color = colors[color_code]
-
-    print(f"Bad color code: {color_code}")
-    return colors[bad_color.code]
-
-
-def parse_color(_params):
-    color = LDrawColor()
-    color.parse_color_params(_params)
-    colors[color.code] = color
-    return color.code
-
-
-def lighten_rgba(color, scale):
-    # Moves the linear RGB values closer to white
-    # scale = 0 means full white
-    # scale = 1 means color stays same
-    color = ((1.0 - color[0]) * scale,
-             (1.0 - color[1]) * scale,
-             (1.0 - color[2]) * scale,
-             color[3])
-    return (
-        __clamp(1.0 - color[0]),
-        __clamp(1.0 - color[1]),
-        __clamp(1.0 - color[2]),
-        color[3]
-    )
-
-
-# wp-content/plugins/woocommerce/includes/wc-formatting-functions.php
-# line 779
-def is_dark(color):
-    r = color[0]
-    g = color[1]
-    b = color[2]
-
-    # Measure the perceived brightness of color
-    brightness = math.sqrt(0.299 * r * r + 0.587 * g * g + 0.114 * b * b)
-
-    # Dark colors have white lines
-    return brightness < 0.02
-
-
-def __is_int(s):
-    try:
-        int(s)
-        return True
-    except ValueError:
-        return False
-
-
-def __srgb_to_rgb_value(value):
-    # See https://en.wikipedia.org/wiki/SRGB#The_reverse_transformation
-    if value < 0.04045:
-        return value / 12.92
-    return ((value + 0.055) / 1.055) ** 2.4
-
-
-def srgb_to_linear_rgb(srgb_color):
-    # See https://en.wikipedia.org/wiki/SRGB#The_reverse_transformation
-    (sr, sg, sb) = srgb_color
-    r = __srgb_to_rgb_value(sr)
-    g = __srgb_to_rgb_value(sg)
-    b = __srgb_to_rgb_value(sb)
-    return r, g, b
-
-
-def hex_digits_to_linear_rgba(hex_digits):
-    srgb = hex_digits_to_srgb(hex_digits)
-    linear_rgb = srgb_to_linear_rgb(srgb)
-    return linear_rgb[0], linear_rgb[1], linear_rgb[2]
-
-
-def hex_digits_to_srgb(hex_digits):
-    # String is "RRGGBB" format
-    int_tuple = struct.unpack("BBB", bytes.fromhex(hex_digits))
-    srgb = tuple([val / 255 for val in int_tuple])
-    return srgb[0], srgb[1], srgb[2]
-
-
-def get_color_value(value, linear=True):
-    hex_digits = extract_hex_digits(value)
-
-    if linear:
-        return hex_digits_to_linear_rgba(hex_digits)
-    else:
-        return hex_digits_to_srgb(hex_digits)
-
-
-def extract_hex_digits(hex_digits):
-    if hex_digits.startswith('#'):
-        return hex_digits[1:]
-    else:
-        return hex_digits
-
-
-def __clamp(value):
-    return max(min(value, 1.0), 0.0)
+try:
+    from . import helpers
+except ImportError as e:
+    import helpers
 
 
 class LDrawColor:
+    defaults = {}
+
+    defaults['use_alt_colors'] = True
+    use_alt_colors = defaults['use_alt_colors']
+
+    __colors = {}
+    __bad_color = None
+
+    @classmethod
+    def reset_caches(cls):
+        cls.__colors = {}
+        cls.__bad_color = None
+
     def __init__(self):
         self.name = None
         self.code = None
         self.color = None
+        self.color_d = None
+        self.color_a = None
         self.edge_color = None
+        self.edge_color_d = None
         self.alpha = None
         self.luminance = None
         self.material_name = None
@@ -147,7 +43,46 @@ class LDrawColor:
         self.material_minsize = None
         self.material_maxsize = None
 
-    def parse_color_params(self, _params, linear=True):
+    @classmethod
+    def parse_color(cls, _params):
+        color = cls()
+        color.__parse_color_params(_params)
+        cls.__colors[color.code] = color
+        return color.code
+
+    @classmethod
+    def get_color(cls, color_code):
+        if color_code in cls.__colors:
+            return cls.__colors[color_code]
+
+        if cls.__bad_color is None:
+            clean_line = "0 !COLOUR Bad_Color CODE -9999 VALUE #FF0000 EDGE #00FF00"
+            _params = helpers.get_params(clean_line, "0 !COLOUR ", lowercase=False)
+            color_code = cls.parse_color(_params)
+            cls.__bad_color = cls.__colors[color_code]
+
+        print(f"Bad color code: {color_code}")
+        return cls.__colors[cls.__bad_color.code]
+
+    @classmethod
+    def lighten_rgba(cls, color, scale):
+        # Moves the linear RGB values closer to white
+        # scale = 0 means full white
+        # scale = 1 means color stays same
+        color = (
+            (1.0 - color[0]) * scale,
+            (1.0 - color[1]) * scale,
+            (1.0 - color[2]) * scale,
+            color[3]
+        )
+        return (
+            helpers.clamp(1.0 - color[0], 0.0, 1.0),
+            helpers.clamp(1.0 - color[1], 0.0, 1.0),
+            helpers.clamp(1.0 - color[2], 0.0, 1.0),
+            color[3]
+        )
+
+    def __parse_color_params(self, _params, linear=True):
         # name CODE x VALUE v EDGE e required
         # 0 !COLOUR Black CODE 0 VALUE #1B2A34 EDGE #2B4354
 
@@ -164,13 +99,15 @@ class LDrawColor:
 
         i = lparams.index("value")
         value = lparams[i + 1]
-        rgba = get_color_value(value, linear)
-        self.color = rgba
+        rgb = self.__get_color_value(value, linear)
+        self.color = rgb
+        self.color_d = rgb + (1.0,)
 
         i = lparams.index("edge")
         edge = lparams[i + 1]
-        e_rgba = get_color_value(edge, linear)
-        self.edge_color = e_rgba
+        e_rgb = self.__get_color_value(edge, linear)
+        self.edge_color = e_rgb
+        self.edge_color_d = e_rgb + (1.0,)
 
         # [ALPHA a] [LUMINANCE l] [ CHROME | PEARLESCENT | RUBBER | MATTE_METALLIC | METAL | MATERIAL <params> ]
         alpha = 255
@@ -178,6 +115,7 @@ class LDrawColor:
             i = lparams.index("alpha")
             alpha = int(lparams[i + 1])
         self.alpha = alpha / 255
+        self.color_a = rgb + (self.alpha,)
 
         luminance = 0
         if "luminance" in lparams:
@@ -186,7 +124,7 @@ class LDrawColor:
         self.luminance = luminance
 
         material_name = None
-        for _material in materials:
+        for _material in ["chrome", "pearlescent", "rubber", "matte_metallic", "metal"]:
             if _material in lparams:
                 material_name = _material
                 break
@@ -203,7 +141,7 @@ class LDrawColor:
 
             i = lparams.index("value")
             material_value = lparams[i + 1]
-            material_rgba = get_color_value(material_value, linear)
+            material_rgba = self.__get_color_value(material_value, linear)
             self.material_color = material_rgba
 
             material_alpha = 255
@@ -246,3 +184,70 @@ class LDrawColor:
                 i = material_parts.index("vfraction")
                 material_vfraction = float(material_parts[i + 1])
             self.material_vfraction = material_vfraction
+
+    # wp-content/plugins/woocommerce/includes/wc-formatting-functions.php
+    # line 779
+    @staticmethod
+    def __is_dark(color):
+        r = color[0]
+        g = color[1]
+        b = color[2]
+
+        # Measure the perceived brightness of color
+        brightness = math.sqrt(0.299 * r * r + 0.587 * g * g + 0.114 * b * b)
+
+        # Dark colors have white lines
+        return brightness < 0.02
+
+    @staticmethod
+    def __is_int(s):
+        try:
+            int(s)
+            return True
+        except ValueError:
+            return False
+
+    @classmethod
+    def __get_color_value(cls, value, linear=True):
+        hex_digits = cls.__extract_hex_digits(value)
+
+        if linear:
+            return cls.__hex_digits_to_linear_rgba(hex_digits)
+        else:
+            return cls.__hex_digits_to_srgb(hex_digits)
+
+    @staticmethod
+    def __srgb_to_rgb_value(value):
+        # See https://en.wikipedia.org/wiki/SRGB#The_reverse_transformation
+        if value < 0.04045:
+            return value / 12.92
+        return ((value + 0.055) / 1.055) ** 2.4
+
+    @classmethod
+    def __srgb_to_linear_rgb(cls, srgb_color):
+        # See https://en.wikipedia.org/wiki/SRGB#The_reverse_transformation
+        (sr, sg, sb) = srgb_color
+        r = cls.__srgb_to_rgb_value(sr)
+        g = cls.__srgb_to_rgb_value(sg)
+        b = cls.__srgb_to_rgb_value(sb)
+        return r, g, b
+
+    @classmethod
+    def __hex_digits_to_linear_rgba(cls, hex_digits):
+        srgb = cls.__hex_digits_to_srgb(hex_digits)
+        linear_rgb = cls.__srgb_to_linear_rgb(srgb)
+        return linear_rgb[0], linear_rgb[1], linear_rgb[2]
+
+    @staticmethod
+    def __hex_digits_to_srgb(hex_digits):
+        # String is "RRGGBB" format
+        int_tuple = struct.unpack("BBB", bytes.fromhex(hex_digits))
+        srgb = tuple([val / 255 for val in int_tuple])
+        return srgb[0], srgb[1], srgb[2]
+
+    @staticmethod
+    def __extract_hex_digits(hex_digits):
+        if hex_digits.startswith('#'):
+            return hex_digits[1:]
+        else:
+            return hex_digits

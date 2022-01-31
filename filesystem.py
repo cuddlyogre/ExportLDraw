@@ -4,138 +4,137 @@ import glob
 from sys import platform
 from pathlib import Path
 
-defaults = dict()
-defaults['ldraw_path'] = ''
-defaults['prefer_unofficial'] = False
-defaults['resolution'] = 'Standard'
 
-ldraw_path = defaults['ldraw_path']
-prefer_unofficial = defaults['prefer_unofficial']
-resolution = defaults['resolution']
+class FileSystem:
+    defaults = {}
 
-search_paths = []
-texture_paths = []
-lowercase_paths = {}
+    defaults['ldraw_path'] = ''
+    ldraw_path = defaults['ldraw_path']
 
+    defaults['prefer_unofficial'] = False
+    prefer_unofficial = defaults['prefer_unofficial']
 
-def reset_caches():
-    global search_paths
-    global texture_paths
-    global lowercase_paths
-    search_paths = []
-    texture_paths = []
-    lowercase_paths = {}
+    defaults['resolution'] = 'Standard'
+    resolution = defaults['resolution']
 
+    __search_paths = []
+    __texture_paths = []
+    __lowercase_paths = {}
 
-def append_search_path(path):
-    if path[0] != "" and os.path.isdir(path[0]):
-        search_paths.append(path)
+    @classmethod
+    def reset_caches(cls):
+        cls.__search_paths = []
+        cls.__texture_paths = []
+        cls.__lowercase_paths = {}
 
+    @staticmethod
+    def locate_ldraw():
+        ldraw_folder_name = 'ldraw'
 
-def locate_ldraw():
-    ldraw_folder_name = 'ldraw'
+        home = str(Path.home())
+        ldraw_path = os.path.join(home, ldraw_folder_name)
+        if os.path.isdir(ldraw_path):
+            return ldraw_path
 
-    home = str(Path.home())
-    ldraw_path = os.path.join(home, ldraw_folder_name)
-    if os.path.isdir(ldraw_path):
-        return ldraw_path
+        if platform == "linux" or platform == "linux2":
+            pass
+            # linux
+        elif platform == "darwin":
+            pass
+            # OS X
+        elif platform == "win32":
+            for drive_letter in string.ascii_lowercase:
+                ldraw_path = os.path.join(os.path.join(f"{drive_letter}:\\", ldraw_folder_name))
+                if os.path.isdir(ldraw_path):
+                    return ldraw_path
+        return ""
 
-    if platform == "linux" or platform == "linux2":
-        pass
-        # linux
-    elif platform == "darwin":
-        pass
-        # OS X
-    elif platform == "win32":
-        for drive_letter in string.ascii_lowercase:
-            ldraw_path = os.path.join(os.path.join(f"{drive_letter}:\\", ldraw_folder_name))
-            if os.path.isdir(ldraw_path):
-                return ldraw_path
+    @classmethod
+    def build_search_paths(cls, parent_filepath=None):
+        cls.reset_caches()
 
-    return ""
+        # https://forums.ldraw.org/thread-24495-post-40577.html#pid40577
+        # append top level file's directory
+        if parent_filepath is not None:
+            cls.__append_search_path((os.path.dirname(parent_filepath), '**/*'))
+            cls.__append_search_path((os.path.dirname(parent_filepath), '*'))
 
+        cls.__append_search_path((os.path.join(cls.ldraw_path), '*'))
 
-def build_lowercase_paths():
-    global lowercase_paths
-    lowercase_paths = {}
+        if cls.prefer_unofficial:
+            cls.__append_unofficial_paths()
+            cls.__append_official_paths()
+        else:
+            cls.__append_official_paths()
+            cls.__append_unofficial_paths()
 
-    for path in search_paths:
-        for file in glob.glob(os.path.join(path[0], path[1])):
-            lowercase_paths[file.lower()] = file
+        cls.__build_lowercase_paths()
 
+    @classmethod
+    def locate(cls, filename):
+        part_path = filename.replace("\\", os.path.sep).replace("/", os.path.sep)
+        part_path = os.path.expanduser(part_path)
 
-def build_search_paths(parent_filepath=None):
-    reset_caches()
+        # full path was specified
+        if os.path.isfile(part_path):
+            return part_path
 
-    # https://forums.ldraw.org/thread-24495-post-40577.html#pid40577
-    # append top level file's directory
-    if parent_filepath is not None:
-        append_search_path((os.path.dirname(parent_filepath), '**/*'))
-        append_search_path((os.path.dirname(parent_filepath), '*'))
+        for path in cls.__search_paths:
+            full_path = os.path.join(path[0], part_path)
+            full_path = cls.__path_lowercase(full_path)
+            if os.path.isfile(full_path):
+                return full_path
 
-    append_search_path((os.path.join(ldraw_path), '*'))
+        # TODO: requests retrieve missing items from ldraw.org
 
-    if prefer_unofficial:
-        append_unofficial_paths()
-        append_official_paths()
-    else:
-        append_official_paths()
-        append_unofficial_paths()
+        print(f"missing {filename}")
+        return None
 
-    build_lowercase_paths()
+    @classmethod
+    def __append_search_path(cls, path):
+        if path[0] != "" and os.path.isdir(path[0]):
+            cls.__search_paths.append(path)
 
+    @classmethod
+    def __build_lowercase_paths(cls):
+        cls.__lowercase_paths = {}
 
-def append_paths(folder=''):
-    append_search_path((os.path.join(ldraw_path, folder, "models"), '**/*'))
-    append_search_path((os.path.join(ldraw_path, folder, "models"), '*'))
+        for path in cls.__search_paths:
+            for file in glob.glob(os.path.join(path[0], path[1])):
+                cls.__lowercase_paths[file.lower()] = file
 
-    append_search_path((os.path.join(ldraw_path, folder, "parts", "textures"), '**/*'))
-    append_search_path((os.path.join(ldraw_path, folder, "parts", "textures"), '*'))
+    @classmethod
+    def __append_paths(cls, folder=''):
+        cls.__append_search_path((os.path.join(cls.ldraw_path, folder, "models"), '**/*'))
+        cls.__append_search_path((os.path.join(cls.ldraw_path, folder, "models"), '*'))
 
-    append_search_path((os.path.join(ldraw_path, folder, "parts"), '**/*'))
-    append_search_path((os.path.join(ldraw_path, folder, "parts"), '*'))
+        cls.__append_search_path((os.path.join(cls.ldraw_path, folder, "parts", "textures"), '**/*'))
+        cls.__append_search_path((os.path.join(cls.ldraw_path, folder, "parts", "textures"), '*'))
 
-    if resolution == "High":
-        append_search_path((os.path.join(ldraw_path, folder, "p", "48"), '**/*'))
-        append_search_path((os.path.join(ldraw_path, folder, "p", "48"), '*'))
-    elif resolution == "Low":
-        append_search_path((os.path.join(ldraw_path, folder, "p", "8"), '**/*'))
-        append_search_path((os.path.join(ldraw_path, folder, "p", "8"), '*'))
+        cls.__append_search_path((os.path.join(cls.ldraw_path, folder, "parts"), '**/*'))
+        cls.__append_search_path((os.path.join(cls.ldraw_path, folder, "parts"), '*'))
 
-    append_search_path((os.path.join(ldraw_path, folder, "p"), '**/*'))
-    append_search_path((os.path.join(ldraw_path, folder, "p"), '*'))
+        if cls.resolution == "High":
+            cls.__append_search_path((os.path.join(cls.ldraw_path, folder, "p", "48"), '**/*'))
+            cls.__append_search_path((os.path.join(cls.ldraw_path, folder, "p", "48"), '*'))
+        elif cls.resolution == "Low":
+            cls.__append_search_path((os.path.join(cls.ldraw_path, folder, "p", "8"), '**/*'))
+            cls.__append_search_path((os.path.join(cls.ldraw_path, folder, "p", "8"), '*'))
 
+        cls.__append_search_path((os.path.join(cls.ldraw_path, folder, "p"), '**/*'))
+        cls.__append_search_path((os.path.join(cls.ldraw_path, folder, "p"), '*'))
 
-def append_official_paths():
-    append_paths()
+    @classmethod
+    def __append_official_paths(cls):
+        cls.__append_paths()
 
+    @classmethod
+    def __append_unofficial_paths(cls):
+        cls.__append_paths(folder="unofficial")
 
-def append_unofficial_paths():
-    append_paths(folder="unofficial")
-
-
-# https://stackoverflow.com/a/8462613
-def path_lowercase(path):
-    if path.lower() in lowercase_paths:
-        return lowercase_paths[path.lower()]
-    return path
-
-
-def locate(filename):
-    part_path = filename.replace("\\", os.path.sep).replace("/", os.path.sep)
-    part_path = os.path.expanduser(part_path)
-
-    # full path was specified
-    if os.path.isfile(part_path):
-        return part_path
-
-    for path in search_paths:
-        full_path = os.path.join(path[0], part_path)
-        full_path = path_lowercase(full_path)
-        if os.path.isfile(full_path):
-            return full_path
-
-    # TODO: requests retrieve missing items from ldraw.org
-
-    print(f"missing {filename}")
-    return None
+    @classmethod
+    # https://stackoverflow.com/a/8462613
+    def __path_lowercase(cls, path):
+        if path.lower() in cls.__lowercase_paths:
+            return cls.__lowercase_paths[path.lower()]
+        return path

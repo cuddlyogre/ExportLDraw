@@ -1,54 +1,52 @@
 import bpy
 import bmesh
 
-from . import blender_materials
-from . import import_options
-from . import ldraw_file
-from . import ldraw_node
-from . import ldraw_camera
-from . import filesystem
+from .blender_materials import BlenderMaterials
+from .import_options import ImportOptions
+from .ldraw_file import LDrawFile
+from .ldraw_node import LDrawNode
+from .ldraw_camera import LDrawCamera
+from .filesystem import FileSystem
 from . import blender_camera
+from .ldraw_colors import LDrawColor
+from .texmap import TexMap
 from . import helpers
-from . import ldraw_colors
 from . import strings
-from . import texmap
-from . import special_bricks
 
 
 def do_import(filepath):
     print(filepath)  # TODO: multiple filepaths?
 
-    scene_setup()
-    ldraw_file.reset_caches()
-    ldraw_node.reset_caches()
-    ldraw_camera.reset_caches()
-    texmap.reset_caches()
-    filesystem.build_search_paths(parent_filepath=filepath)
-    special_bricks.reset()
-    ldraw_file.read_color_table()
-    blender_materials.create_blender_node_groups()
+    __scene_setup()
+    LDrawFile.reset_caches()
+    LDrawNode.reset_caches()
+    LDrawCamera.reset_caches()
+    TexMap.reset_caches()
+    FileSystem.build_search_paths(parent_filepath=filepath)
+    LDrawFile.read_color_table()
+    BlenderMaterials.create_blender_node_groups()
 
-    file = ldraw_file.LDrawFile.get_file(filepath)
-    if file is None:
+    ldraw_file = LDrawFile.get_file(filepath)
+    if ldraw_file is None:
         return
 
-    if file.is_configuration():
-        load_materials(file)
+    if ldraw_file.is_configuration():
+        __load_materials(ldraw_file)
         return
 
-    root_node = ldraw_node.LDrawNode()
+    root_node = LDrawNode()
     root_node.is_root = True
-    root_node.file = file
+    root_node.file = ldraw_file
     root_node.load()
 
-    if import_options.meta_step:
-        if import_options.set_end_frame:
-            bpy.context.scene.frame_end = ldraw_node.current_frame + import_options.frames_per_step
+    if ImportOptions.meta_step:
+        if ImportOptions.set_end_frame:
+            bpy.context.scene.frame_end = LDrawNode.current_frame + ImportOptions.frames_per_step
             bpy.context.scene.frame_set(bpy.context.scene.frame_end)
 
     max_clip_end = 0
-    for camera in ldraw_camera.cameras:
-        camera = blender_camera.create_camera(camera, empty=ldraw_node.top_empty, collection=ldraw_node.top_collection)
+    for camera in LDrawCamera.cameras:
+        camera = blender_camera.create_camera(camera, empty=LDrawNode.top_empty, collection=LDrawNode.top_collection)
         if bpy.context.scene.camera is None:
             if camera.data.clip_end > max_clip_end:
                 max_clip_end = camera.data.clip_end
@@ -62,17 +60,19 @@ def do_import(filepath):
                         space.clip_end = max_clip_end
 
 
-def scene_setup():
+def __scene_setup():
     bpy.context.scene.eevee.use_ssr = True
     bpy.context.scene.eevee.use_ssr_refraction = True
     bpy.context.scene.eevee.use_taa_reprojection = True
 
     # https://blender.stackexchange.com/a/146838
-    if import_options.use_freestyle_edges:
+    if ImportOptions.use_freestyle_edges:
         bpy.context.scene.render.use_freestyle = True
-        if len(bpy.context.view_layer.freestyle_settings.linesets) < 1:
-            bpy.context.view_layer.freestyle_settings.linesets.new("LDraw LineSet")
-        lineset = bpy.context.view_layer.freestyle_settings.linesets[0]
+        linesets = bpy.context.view_layer.freestyle_settings.linesets
+        if len(linesets) < 1:
+            linesets.new("LDraw LineSet")
+        lineset = linesets[0]
+        # lineset.linestyle.color = color.edge_color
         lineset.select_by_visibility = True
         lineset.select_by_edge_types = True
         lineset.select_by_face_marks = False
@@ -92,7 +92,7 @@ def scene_setup():
         lineset.select_material_boundary = False
 
 
-def load_materials(file):
+def __load_materials(file):
     colors = {}
     group_name = 'blank'
     for line in file.lines:
@@ -106,7 +106,7 @@ def load_materials(file):
 
         if clean_line.startswith("0 !COLOUR"):
             _params = helpers.get_params(clean_line, "0 !COLOUR ", lowercase=False)
-            colors[group_name].append(ldraw_colors.parse_color(_params))
+            colors[group_name].append(LDrawColor.parse_color(_params))
             continue
 
     j = 0
@@ -138,7 +138,7 @@ def load_materials(file):
             mesh = bpy.data.meshes.new(f"{prefix}_{color_code}")
             mesh[strings.ldraw_color_code_key] = color_code
 
-            material = blender_materials.get_material(color_code)
+            material = BlenderMaterials.get_material(color_code)
 
             # https://blender.stackexchange.com/questions/23905/select-faces-depending-on-material
             if material.name not in mesh.materials:
@@ -154,13 +154,16 @@ def load_materials(file):
             mesh.update(calc_edges=True)
 
             obj = bpy.data.objects.new(mesh.name, mesh)
+            obj[strings.ldraw_filename_key] = file.name
+            obj[strings.ldraw_color_code_key] = color_code
+
             obj.modifiers.new("Subdivision", type='SUBSURF')
             obj.location.x = i * 3
             obj.location.y = -j * 3
             # obj.rotation_euler.z = math.radians(90)
 
-            color = ldraw_colors.get_color(color_code)
-            obj.color = color.color + (color.alpha,)
+            color = LDrawColor.get_color(color_code)
+            obj.color = color.color_a
 
             collection.objects.link(obj)
         j += 1

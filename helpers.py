@@ -5,6 +5,7 @@ import codecs
 import json
 from pathlib import Path
 import os
+import base64
 
 
 # remove multiple spaces
@@ -68,9 +69,29 @@ def read_json(folder, filename, default=None):
         this_script_dir = os.path.dirname(os.path.realpath(__file__))
         folder = os.path.join(this_script_dir, folder)
         file_path = os.path.join(folder, filename)
-
         with open(file_path, 'r', encoding='utf-8') as file:
             return json.load(file)
     except Exception as e:
         print(e)
         return default
+
+
+def clamp(num, min_value, max_value):
+    return max(min(num, max_value), min_value)
+
+
+# TODO: will be used for stud.io parts that have textures
+# TexMap.base64_to_png(filename, img_data)
+def base64_to_png(filename, img_data):
+    if type(img_data) is str:
+        img_data = bytes(img_data.encode())
+    this_script_dir = os.path.dirname(os.path.realpath(__file__))
+    with open(os.path.join(this_script_dir, f"{filename}.png"), "wb") as fh:
+        fh.write(base64.decodebytes(img_data))
+
+
+if __name__ == "__main__":
+    filename = 'test'
+    # 2x2 transparent
+    img_data = 'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAC0lEQVQIHWNgQAcAABIAAYAUyswAAAAASUVORK5CYII='
+    base64_to_png(filename, img_data)

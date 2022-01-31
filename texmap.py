@@ -1,18 +1,8 @@
 import math
 import mathutils
 import uuid
-import base64
-import os
 
-texmaps = []
-texmap = None
-
-
-def reset_caches():
-    global texmaps
-    global texmap
-    texmaps = []
-    texmap = None
+from . import helpers
 
 
 # https://github.com/trevorsandy/lpub3d/blob/e7c39cd3df518cf16521dc2c057a9f125cc3b5c3/lclib/common/lc_meshloader.h#L56
@@ -20,24 +10,32 @@ def reset_caches():
 # https://github.com/trevorsandy/lpub3d/blob/e7c39cd3df518cf16521dc2c057a9f125cc3b5c3/lclib/common/lc_meshloader.cpp#L1486
 # https://stackoverflow.com/questions/53970131/how-to-find-the-clockwise-angle-between-two-vectors-in-python#53970746
 class TexMap:
+    texmaps = []
+    texmap = None
+
+    @staticmethod
+    def reset_caches():
+        TexMap.texmaps = []
+        TexMap.texmap = None
+
     def __init__(self, method, parameters, texture, glossmap=''):
         self.id = str(uuid.uuid4())
         self.method = method
         self.parameters = parameters
         self.texture = texture
         self.glossmap = glossmap
-        self.uvs = dict()
+        self.uvs = {}
 
     def uv_unwrap_face(self, bm, face):
         if self.method in ['planar']:
-            self.map_planar(bm, face)
+            self.__map_planar(bm, face)
         elif self.method in ['cylindrical']:
-            self.map_cylindrical(bm, face)
+            self.__map_cylindrical(bm, face)
         elif self.method in ['spherical']:
-            self.map_spherical(bm, face)
+            self.__map_spherical(bm, face)
 
     # negative v because blender uv starts at bottom left of image, LDraw orientation of up=-y so use top left
-    def map_planar(self, bm, face):
+    def __map_planar(self, bm, face):
         a = self.parameters[0]
         b = self.parameters[1]
         c = self.parameters[2]
@@ -79,7 +77,7 @@ class TexMap:
             uv = self.uvs[p_str]
             loop[uv_layer].uv = uv
 
-    def map_cylindrical(self, bm, face):
+    def __map_cylindrical(self, bm, face):
         a = self.parameters[0]
         b = self.parameters[1]
         c = self.parameters[2]
@@ -108,14 +106,14 @@ class TexMap:
                 dot_plane_2 = mathutils.Vector(tuple(point_in_plane_1) + (1.0,)).dot(plane_2)
 
                 _angle_1 = math.atan2(dot_plane_2, dot_front_plane) / math.pi * angle_1
-                du = self.clamp(0.5 + 0.5 * _angle_1, 0, 1)
+                du = helpers.clamp(0.5 + 0.5 * _angle_1, 0, 1)
                 dv = dot_plane_1 / up_length
                 uv = [du, -dv]
                 self.uvs[p_str] = uv
             uv = self.uvs[p_str]
             loop[uv_layer].uv = uv
 
-    def map_spherical(self, bm, face):
+    def __map_spherical(self, bm, face):
         a = self.parameters[0]
         b = self.parameters[1]
         c = self.parameters[2]
@@ -154,22 +152,3 @@ class TexMap:
                 self.uvs[p_str] = uv
             uv = self.uvs[p_str]
             loop[uv_layer].uv = uv
-
-    def clamp(self, num, min_value, max_value):
-        return max(min(num, max_value), min_value)
-
-    # TODO: will be used for stud.io parts that have textures
-    # TexMap.base64_to_png(filename, img_data)
-    @staticmethod
-    def base64_to_png(filename, img_data):
-        if type(img_data) is str:
-            img_data = bytes(img_data.encode())
-        this_script_dir = os.path.dirname(os.path.realpath(__file__))
-        with open(os.path.join(this_script_dir, f"{filename}.png"), "wb") as fh:
-            fh.write(base64.decodebytes(img_data))
-
-
-if __name__ == "__main__":
-    filename = 'test'
-    img_data = 'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAC0lEQVQIHWNgQAcAABIAAYAUyswAAAAASUVORK5CYII='
-    TexMap.base64_to_png(filename, img_data)

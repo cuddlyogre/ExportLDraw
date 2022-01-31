@@ -2,32 +2,7 @@ import bpy
 import math
 import mathutils
 
-from . import import_options
-
-
-def look_at(obj, target_location, up_vector):
-    # back vector is a vector pointing from the target to the camera
-    back = obj.location - target_location
-    back = back.normalized()
-
-    # If our back and up vectors are very close to pointing the same way (or opposite), choose a different up_vector
-    if abs(back.dot(up_vector)) > 0.9999:
-        up_vector = mathutils.Vector((0.0, 0.0, 1.0))
-        if abs(back.dot(up_vector)) > 0.9999:
-            up_vector = mathutils.Vector((1.0, 0.0, 0.0))
-
-    right = up_vector.cross(back)
-    right = right.normalized()
-
-    up = back.cross(right)
-    up = up.normalized()
-
-    obj.matrix_world = mathutils.Matrix((
-        [right[0], up[0], back[0], obj.location[0]],
-        [right[1], up[1], back[1], obj.location[1]],
-        [right[2], up[2], back[2], obj.location[2]],
-        [0.0, 0.0, 0.0, 1.0],
-    ))
+from .import_options import ImportOptions
 
 
 def create_camera(camera, empty=None, collection=None):
@@ -40,20 +15,20 @@ def create_camera(camera, empty=None, collection=None):
     blender_camera.clip_start = camera.z_near
     blender_camera.clip_end = camera.z_far
 
-    blender_camera.clip_start = blender_camera.clip_start * import_options.import_scale
-    blender_camera.clip_end = blender_camera.clip_end * import_options.import_scale
+    blender_camera.clip_start = blender_camera.clip_start * ImportOptions.import_scale
+    blender_camera.clip_end = blender_camera.clip_end * ImportOptions.import_scale
 
-    camera.position[0] = camera.position[0] * import_options.import_scale
-    camera.position[1] = camera.position[1] * import_options.import_scale
-    camera.position[2] = camera.position[2] * import_options.import_scale
+    camera.position[0] = camera.position[0] * ImportOptions.import_scale
+    camera.position[1] = camera.position[1] * ImportOptions.import_scale
+    camera.position[2] = camera.position[2] * ImportOptions.import_scale
 
-    camera.target_position[0] = camera.target_position[0] * import_options.import_scale
-    camera.target_position[1] = camera.target_position[1] * import_options.import_scale
-    camera.target_position[2] = camera.target_position[2] * import_options.import_scale
+    camera.target_position[0] = camera.target_position[0] * ImportOptions.import_scale
+    camera.target_position[1] = camera.target_position[1] * ImportOptions.import_scale
+    camera.target_position[2] = camera.target_position[2] * ImportOptions.import_scale
 
-    camera.up_vector[0] = camera.up_vector[0] * import_options.import_scale
-    camera.up_vector[1] = camera.up_vector[1] * import_options.import_scale
-    camera.up_vector[2] = camera.up_vector[2] * import_options.import_scale
+    camera.up_vector[0] = camera.up_vector[0] * ImportOptions.import_scale
+    camera.up_vector[1] = camera.up_vector[1] * ImportOptions.import_scale
+    camera.up_vector[2] = camera.up_vector[2] * ImportOptions.import_scale
 
     if camera.orthographic:
         distance = camera.position - camera.target_position
@@ -87,6 +62,31 @@ def create_camera(camera, empty=None, collection=None):
     if obj.parent is not None:
         obj.matrix_parent_inverse = obj.parent.matrix_world.inverted()
 
-    look_at(obj, camera.target_position, camera.up_vector)
+    __look_at(obj, camera.target_position, camera.up_vector)
 
     return obj
+
+
+def __look_at(obj, target_location, up_vector):
+    # back vector is a vector pointing from the target to the camera
+    back = obj.location - target_location
+    back = back.normalized()
+
+    # If our back and up vectors are very close to pointing the same way (or opposite), choose a different up_vector
+    if abs(back.dot(up_vector)) > 0.9999:
+        up_vector = mathutils.Vector((0.0, 0.0, 1.0))
+        if abs(back.dot(up_vector)) > 0.9999:
+            up_vector = mathutils.Vector((1.0, 0.0, 0.0))
+
+    right = up_vector.cross(back)
+    right = right.normalized()
+
+    up = back.cross(right)
+    up = up.normalized()
+
+    obj.matrix_world = mathutils.Matrix((
+        [right[0], up[0], back[0], obj.location[0]],
+        [right[1], up[1], back[1], obj.location[1]],
+        [right[2], up[2], back[2], obj.location[2]],
+        [0.0, 0.0, 0.0, 1.0],
+    ))

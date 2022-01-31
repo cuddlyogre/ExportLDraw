@@ -1,6 +1,6 @@
 import mathutils
 
-from . import import_options
+from .import_options import ImportOptions
 
 
 class FaceInfo:
@@ -63,8 +63,14 @@ class LDrawGeometry:
             self.face_vert_count += len(verts)
             self.face_infos.append(FaceInfo(color_code, verts, texmap=texmap))
         elif line_type == "4":
+            # bowtie quads - https://wiki.ldraw.org/wiki/LDraw_Files_Requirements#Complex_quadrilaterals
+            vA = (verts[1] - verts[0]).cross(verts[2] - verts[0])
+            vB = (verts[2] - verts[1]).cross(verts[3] - verts[1])
+            if vA.dot(vB) < 0:
+                verts[2], verts[3] = verts[3], verts[2]
+
             self.face_vert_count += len(verts)
-            if import_options.triangulate:
+            if ImportOptions.triangulate:
                 verts1 = [verts[0], verts[1], verts[2]]
                 self.face_infos.append(FaceInfo(color_code, verts1, texmap=texmap))
                 verts2 = [verts[2], verts[3], verts[0]]

@@ -2,9 +2,9 @@ import time
 import bpy
 from bpy_extras.io_utils import ExportHelper
 
-from . import export_options
-from . import filesystem
-from . import ldraw_colors
+from .export_options import ExportOptions
+from .filesystem import FileSystem
+from .ldraw_colors import LDrawColor
 from . import ldraw_export
 
 
@@ -35,7 +35,7 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
     ldraw_path: bpy.props.StringProperty(
         name="LDraw path",
         description="Full filepath to the LDraw Parts Library (download from http://www.ldraw.org)",
-        default=filesystem.locate_ldraw(),
+        default=FileSystem.locate_ldraw(),
     )
 
     use_alt_colors: bpy.props.BoolProperty(
@@ -65,7 +65,7 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
 
     remove_doubles: bpy.props.BoolProperty(
         name="Remove doubles",
-        description="Merge overlapping verices",
+        description="Merge overlapping vertices",
         default=True,
     )
 
@@ -107,26 +107,26 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
     )
 
     def execute(self, context):
-        start = time.monotonic()
+        start = time.perf_counter()
 
-        filesystem.ldraw_path = self.ldraw_path
-        filesystem.resolution = self.resolution
-        ldraw_colors.use_alt_colors = self.use_alt_colors
+        FileSystem.ldraw_path = self.ldraw_path
+        FileSystem.resolution = self.resolution
+        LDrawColor.use_alt_colors = self.use_alt_colors
 
-        export_options.selection_only = self.selection_only
-        export_options.export_precision = self.export_precision
-        export_options.remove_doubles = self.remove_doubles
-        export_options.merge_distance = self.merge_distance
-        export_options.recalculate_normals = self.recalculate_normals
-        export_options.triangulate = self.triangulate
-        export_options.ngon_handling = self.ngon_handling
+        ExportOptions.selection_only = self.selection_only
+        ExportOptions.export_precision = self.export_precision
+        ExportOptions.remove_doubles = self.remove_doubles
+        ExportOptions.merge_distance = self.merge_distance
+        ExportOptions.recalculate_normals = self.recalculate_normals
+        ExportOptions.triangulate = self.triangulate
+        ExportOptions.ngon_handling = self.ngon_handling
 
         ldraw_export.do_export(bpy.path.abspath(self.filepath))
 
         print("")
         print("======Export Complete======")
         print(self.filepath)
-        end = time.monotonic()
+        end = time.perf_counter()
         elapsed = (end - start)
         print(f"elapsed: {elapsed}")
         print("===========================")

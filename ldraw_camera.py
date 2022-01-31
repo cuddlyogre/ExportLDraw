@@ -1,15 +1,14 @@
 import mathutils
 
-cameras = []
-
-
-def reset_caches():
-    global cameras
-    cameras = []
-
 
 class LDrawCamera:
     """Data about a camera"""
+
+    cameras = []
+
+    @classmethod
+    def reset_caches(cls):
+        cls.cameras = []
 
     def __init__(self):
         self.hidden = False
