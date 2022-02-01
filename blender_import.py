@@ -13,6 +13,8 @@ from .texmap import TexMap
 from . import helpers
 from . import strings
 
+from . import group
+
 
 def do_import(filepath):
     print(filepath)  # TODO: multiple filepaths?
@@ -111,11 +113,7 @@ def __load_materials(file):
 
     j = 0
     for collection_name, codes in colors.items():
-        if collection_name not in bpy.data.collections:
-            bpy.data.collections.new(collection_name)
-        collection = bpy.data.collections[collection_name]
-        if collection_name not in bpy.context.scene.collection.children:
-            bpy.context.scene.collection.children.link(collection)
+        collection = group.get_collection(collection_name, bpy.context.scene.collection)
 
         for i, color_code in enumerate(codes):
             bm = bmesh.new()
@@ -165,5 +163,5 @@ def __load_materials(file):
             color = LDrawColor.get_color(color_code)
             obj.color = color.color_a
 
-            collection.objects.link(obj)
+            group.link_obj(collection, obj)
         j += 1

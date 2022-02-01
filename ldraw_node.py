@@ -1,5 +1,4 @@
 import math
-import os
 import uuid
 
 import bpy
@@ -13,6 +12,8 @@ from .texmap import TexMap
 from .geometry_data import GeometryData
 from . import special_bricks
 from . import strings
+
+from . import group
 
 
 class LDrawNode:
@@ -99,13 +100,13 @@ class LDrawNode:
 
         # if top_collection is none then this is the beginning of the import, so collection/parent_collection will be none
         if LDrawNode.top_collection is None:
-            collection = self.__create_file_collection(bpy.context.scene.collection)
+            collection = group.get_filename_collection(self.file.name, bpy.context.scene.collection)
             LDrawNode.top_collection = collection
 
         if self.file.is_model():
             # if parent_collection is not None, this is a nested model
             if parent_collection is not None:
-                collection = self.__create_file_collection(parent_collection)
+                collection = group.get_filename_collection(self.file.name, parent_collection)
         elif self.file.is_shortcut():
             # TODO: instead of adding to group, parent to empty
             pass
@@ -189,19 +190,9 @@ class LDrawNode:
     def __create_groups_collection(cls):
         if ImportOptions.meta_group:
             collection_name = 'Groups'
-            if collection_name not in bpy.data.collections:
-                c = bpy.data.collections.new(collection_name)
-                bpy.context.scene.collection.children.link(c)
-            cls.__groups_collection = bpy.data.collections[collection_name]
-
-    def __create_file_collection(self, host_collection):
-        collection_name = os.path.basename(self.file.name[:63])
-        if collection_name not in bpy.data.collections:
-            bpy.data.collections.new(collection_name)
-        collection = bpy.data.collections[collection_name]
-        if collection.name not in host_collection.children:
-            host_collection.children.link(collection)
-        return collection
+            host_collection = bpy.context.scene.collection
+            c = group.get_collection(collection_name, host_collection)
+            cls.__groups_collection = c
 
     # https://b3d.interplanety.org/en/how-to-get-global-vertex-coordinates/
     # https://blender.stackexchange.com/questions/50160/scripting-low-level-join-meshes-elements-hopefully-with-bmesh
@@ -213,25 +204,31 @@ class LDrawNode:
     def __process_bmesh(self, bm, mesh, geometry_data):
         for fd in geometry_data.face_data:
             for fi in fd.face_infos:
-                verts = []
-                for vertex in fi.vertices:
-                    vert = fd.matrix @ vertex
-                    bm_vert = bm.verts.new(vert)
-                    verts.append(bm_vert)
-                face = bm.faces.new(verts)
-
-                color_code = fd.color_code
-                if fi.color_code != "16":
-                    color_code = fi.color_code
-
-                self.__process_bmesh_face(bm, mesh, face, color_code, fi.texmap)
+                face = self.__create_bmesh_face(bm, fd, fi)
+                self.__process_bmesh_face(bm, mesh, face, fd, fi)
         bm.faces.ensure_lookup_table()
         bm.verts.ensure_lookup_table()
         bm.edges.ensure_lookup_table()
 
         self.__clean_bmesh(bm)
 
-    def __process_bmesh_face(self, bm, mesh, face, color_code, texmap):
+    @staticmethod
+    def __create_bmesh_face(bm, fd, fi):
+        verts = []
+        for vertex in fi.vertices:
+            vert = fd.matrix @ vertex
+            bm_vert = bm.verts.new(vert)
+            verts.append(bm_vert)
+        face = bm.faces.new(verts)
+        return face
+
+    def __process_bmesh_face(self, bm, mesh, face, fd, fi):
+        color_code = fd.color_code
+        if fi.color_code != "16":
+            color_code = fi.color_code
+
+        texmap = fi.texmap
+
         face.smooth = ImportOptions.shade_smooth
 
         part_slopes = special_bricks.get_part_slopes(self.file.name)
@@ -339,7 +336,7 @@ class LDrawNode:
             mesh.transform(cls.__gap_scale_matrix)
 
     def __process_top_object(self, mesh, parent_matrix, color_code, collection):
-        obj = self.__do_create_object(mesh)
+        obj = bpy.data.objects.new(mesh.name, mesh)
         obj[strings.ldraw_filename_key] = self.file.name
         obj[strings.ldraw_color_code_key] = color_code
 
@@ -355,7 +352,7 @@ class LDrawNode:
 
         self.__meta_step(obj)
 
-        self.__link_obj_to_collection(obj, collection)
+        self.__link_obj_to_collection(collection, obj)
         return obj
 
     def __process_top_object_matrix(self, obj, parent_matrix):
@@ -364,7 +361,7 @@ class LDrawNode:
         if ImportOptions.parent_to_empty:
             if LDrawNode.top_empty is None:
                 LDrawNode.top_empty = bpy.data.objects.new(LDrawNode.top_collection.name, None)
-                LDrawNode.top_collection.objects.link(LDrawNode.top_empty)
+                group.link_obj(LDrawNode.top_collection, LDrawNode.top_empty)
 
             LDrawNode.top_empty.matrix_world = transform_matrix
             obj.matrix_world = matrix
@@ -385,7 +382,7 @@ class LDrawNode:
                     cls.__gap_scale_empty.use_fake_user = True
                     matrix_world = cls.__gap_scale_empty.matrix_world @ cls.__gap_scale_matrix
                     cls.__gap_scale_empty.matrix_world = matrix_world
-                    cls.top_collection.objects.link(cls.__gap_scale_empty)
+                    group.link_obj(cls.top_collection, cls.__gap_scale_empty)
                 copy_scale_constraint = obj.constraints.new("COPY_SCALE")
                 copy_scale_constraint.target = cls.__gap_scale_empty
                 copy_scale_constraint.target.parent = cls.top_empty
@@ -416,7 +413,7 @@ class LDrawNode:
         if ImportOptions.import_edges:
             edge_key = f"e_{key}"
             edge_mesh = bpy.data.meshes[edge_key]
-            edge_obj = self.__do_create_object(edge_mesh)
+            edge_obj = bpy.data.objects.new(edge_mesh.name, edge_mesh)
             edge_obj[strings.ldraw_filename_key] = f"{self.file.name}_edges"
             edge_obj[strings.ldraw_color_code_key] = color_code
 
@@ -425,61 +422,26 @@ class LDrawNode:
 
             self.__meta_step(edge_obj)
 
-            self.__link_obj_to_collection(edge_obj, collection)
+            self.__link_obj_to_collection(collection, edge_obj)
 
             edge_obj.parent = obj
             edge_obj.matrix_world = obj.matrix_world
 
-    # obj.show_name = True
-    @staticmethod
-    def __do_create_object(mesh):
-        if ImportOptions.instancing:
-            if mesh.name not in bpy.data.objects:
-                bpy.data.objects.new(mesh.name, mesh)
-            instanced_obj = bpy.data.objects[mesh.name]
-
-            collection_name = 'Parts'
-            if collection_name not in bpy.data.collections:
-                parts_collection = bpy.data.collections.new(collection_name)
-                bpy.context.scene.collection.children.link(parts_collection)
-                parts_collection.hide_viewport = True
-                parts_collection.hide_render = True
-            parts_collection = bpy.data.collections[collection_name]
-
-            collection_name = mesh.name
-            if collection_name not in bpy.data.collections:
-                part_collection = bpy.data.collections.new(collection_name)
-                parts_collection.children.link(part_collection)
-            part_collection = bpy.data.collections[collection_name]
-
-            if instanced_obj.name not in part_collection.objects:
-                part_collection.objects.link(instanced_obj)
-
-            obj = bpy.data.objects.new(mesh.name, None)
-            obj.instance_type = 'COLLECTION'
-            obj.instance_collection = part_collection
-        else:
-            obj = bpy.data.objects.new(mesh.name, mesh)
-        return obj
-
     @classmethod
-    def __link_obj_to_collection(cls, obj, collection):
-        if obj.name not in collection:
-            collection.objects.link(obj)
+    def __link_obj_to_collection(cls, collection, obj):
+        group.link_obj(collection, obj)
 
         if cls.__current_step_group is not None:
-            cls.__current_step_group.objects.link(obj)
+            group.link_obj(cls.__current_step_group, obj)
 
         if ImportOptions.meta_group:
             if cls.__next_collection is not None:
-                cls.__next_collection.objects.link(obj)
+                group.link_obj(cls.__next_collection, obj)
             else:
                 collection_name = 'Ungrouped'
-                if collection_name not in bpy.data.collections:
-                    c = bpy.data.collections.new(collection_name)
-                    cls.__groups_collection.children.link(c)
-                ungrouped_collection = bpy.data.collections[collection_name]
-                ungrouped_collection.objects.link(obj)
+                host_collection = cls.__groups_collection
+                c = group.get_collection(collection_name, host_collection)
+                group.link_obj(c, obj)
 
     @classmethod
     def __set_step(cls):
@@ -496,16 +458,13 @@ class LDrawNode:
 
         if ImportOptions.meta_step_groups:
             collection_name = f"Steps"
-            if collection_name not in bpy.data.collections:
-                c = bpy.data.collections.new(collection_name)
-                bpy.context.scene.collection.children.link(c)
-            steps_collection = bpy.data.collections[collection_name]
+            host_collection = bpy.context.scene.collection
+            parts_collection = group.get_collection(collection_name, host_collection)
 
             collection_name = f"Step {str(cls.__current_step)}"
-            if collection_name not in bpy.data.collections:
-                c = bpy.data.collections.new(collection_name)
-                steps_collection.children.link(c)
-            cls.__current_step_group = bpy.data.collections[collection_name]
+            host_collection = parts_collection
+            c = group.get_collection(collection_name, host_collection)
+            cls.__current_step_group = c
 
     def __meta_commands(self):
         if self.file is not None:
@@ -572,11 +531,10 @@ class LDrawNode:
             print(self.meta_args["message"])
 
     def __meta_group_def(self):
-        collection_name = self.meta_args["name"]
-        LDrawNode.__collection_id_map[self.meta_args["id"]] = collection_name
-        if collection_name not in bpy.data.collections:
-            c = bpy.data.collections.new(collection_name)
-            LDrawNode.__groups_collection.children.link(c)
+        LDrawNode.__collection_id_map[self.meta_args["id"]] = self.meta_args["name"]
+        collection_name = LDrawNode.__collection_id_map[self.meta_args["id"]]
+        host_collection = LDrawNode.__groups_collection
+        group.get_collection(collection_name, host_collection)
 
     def __meta_group_nxt(self):
         if self.meta_args["id"] in LDrawNode.__collection_id_map:
@@ -595,16 +553,20 @@ class LDrawNode:
     def __meta_group_begin(self):
         if LDrawNode.__next_collection is not None:
             LDrawNode.__next_collections.append(LDrawNode.__next_collection)
-        collection_name = self.meta_args["name"]
-        if collection_name not in bpy.data.collections:
-            c = bpy.data.collections.new(collection_name)
-            LDrawNode.__groups_collection.children.link(c)
-        LDrawNode.__next_collection = bpy.data.collections[collection_name]
-        if len(LDrawNode.__next_collections) > 0:
-            LDrawNode.__next_collections[-1].children.link(LDrawNode.__next_collection)
 
-    def __meta_group_end(self):
+        collection_name = self.meta_args["name"]
+        host_collection = LDrawNode.__groups_collection
+        c = group.get_collection(collection_name, host_collection)
+        LDrawNode.__next_collection = c
+
         if len(LDrawNode.__next_collections) > 0:
-            LDrawNode.__next_collection = LDrawNode.__next_collections.pop()
+            collection = LDrawNode.__next_collection
+            host_collection = LDrawNode.__next_collections[-1]
+            group.link_child(collection, host_collection)
+
+    @classmethod
+    def __meta_group_end(cls):
+        if len(cls.__next_collections) > 0:
+            cls.__next_collection = cls.__next_collections.pop()
         else:
-            LDrawNode.__next_collection = None
+            cls.__next_collection = None

@@ -19,6 +19,7 @@ _modules = [
     'export_options',
     'filesystem',
     'geometry_data',
+    'group',
     'helpers',
     'import_options',
     'import_settings',

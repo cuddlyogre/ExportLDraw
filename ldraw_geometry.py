@@ -64,10 +64,10 @@ class LDrawGeometry:
             self.face_infos.append(FaceInfo(color_code, verts, texmap=texmap))
         elif line_type == "4":
             # bowtie quads - https://wiki.ldraw.org/wiki/LDraw_Files_Requirements#Complex_quadrilaterals
-            vA = (verts[1] - verts[0]).cross(verts[2] - verts[0])
-            vB = (verts[2] - verts[1]).cross(verts[3] - verts[1])
-            if vA.dot(vB) < 0:
-                verts[2], verts[3] = verts[3], verts[2]
+            # vA = (verts[1] - verts[0]).cross(verts[2] - verts[0])
+            # vB = (verts[2] - verts[1]).cross(verts[3] - verts[1])
+            # if vA.dot(vB) < 0:
+            #     verts[2], verts[3] = verts[3], verts[2]
 
             self.face_vert_count += len(verts)
             if ImportOptions.triangulate:

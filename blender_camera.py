@@ -3,6 +3,7 @@ import math
 import mathutils
 
 from .import_options import ImportOptions
+from . import group
 
 
 def create_camera(camera, empty=None, collection=None):
@@ -46,8 +47,7 @@ def create_camera(camera, empty=None, collection=None):
 
     if collection is None:
         collection = bpy.context.scene.collection
-    if obj.name not in collection:
-        collection.objects.link(obj)
+    group.link_obj(collection, obj)
 
     # https://blender.stackexchange.com/a/72899
     # https://blender.stackexchange.com/a/154926

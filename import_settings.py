@@ -48,7 +48,6 @@ class ImportSettings:
         'recalculate_normals': ImportOptions.defaults['recalculate_normals'],
         'triangulate': ImportOptions.defaults['triangulate'],
         'sharpen_edges': ImportOptions.defaults['sharpen_edges'],
-        'instancing': ImportOptions.defaults['instancing'],
     }
 
     default_settings = {**filesystem_defaults, **ldraw_color_defaults, **import_options_defaults}

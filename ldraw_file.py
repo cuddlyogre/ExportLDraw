@@ -267,7 +267,8 @@ class LDrawFile:
             self.actual_part_type = strip_line.split(maxsplit=3)[2]
         self.part_type = self.determine_part_type(self.actual_part_type)
 
-    def __line_color(self, clean_line):
+    @staticmethod
+    def __line_color(clean_line):
         _params = helpers.get_params(clean_line, "0 !COLOUR ", lowercase=False)
         LDrawColor.parse_color(_params)
 

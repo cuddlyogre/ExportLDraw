@@ -90,6 +90,3 @@ class ImportOptions:
 
     defaults['sharpen_edges'] = True
     sharpen_edges = defaults['sharpen_edges']
-
-    defaults['instancing'] = False
-    instancing = defaults['instancing']
