@@ -191,43 +191,27 @@ def __export_subfiles(obj, lines, is_model=False):
         precision = obj[strings.ldraw_export_precision_key]
 
     if is_model:
-        aa = __identity @ __reverse_rotation @ obj.matrix_world
-
-        a = __fix_round(aa[0][0], precision)
-        b = __fix_round(aa[0][1], precision)
-        c = __fix_round(aa[0][2], precision)
-        x = __fix_round(aa[0][3], precision)
-
-        d = __fix_round(aa[1][0], precision)
-        e = __fix_round(aa[1][1], precision)
-        f = __fix_round(aa[1][2], precision)
-        y = __fix_round(aa[1][3], precision)
-
-        g = __fix_round(aa[2][0], precision)
-        h = __fix_round(aa[2][1], precision)
-        i = __fix_round(aa[2][2], precision)
-        z = __fix_round(aa[2][3], precision)
-
-        line = f"1 {color_code} {x} {y} {z} {a} {b} {c} {d} {e} {f} {g} {h} {i} {name}"
+        aa = __reverse_rotation @ obj.matrix_world
     else:
-        aa = obj.matrix_world
+        aa = obj.matrix_world @ __reverse_rotation
 
-        a = __fix_round(aa[0][0], precision)
-        b = __fix_round(aa[0][1], precision)
-        c = __fix_round(-aa[0][2], precision)
-        x = __fix_round(aa[0][3], precision)
+    a = __fix_round(aa[0][0], precision)
+    b = __fix_round(aa[0][1], precision)
+    c = __fix_round(aa[0][2], precision)
+    x = __fix_round(aa[0][3], precision)
 
-        d = __fix_round(aa[1][0], precision)
-        e = __fix_round(aa[1][1], precision)
-        f = __fix_round(-aa[1][2], precision)
-        y = __fix_round(aa[1][3], precision)
+    d = __fix_round(aa[1][0], precision)
+    e = __fix_round(aa[1][1], precision)
+    f = __fix_round(aa[1][2], precision)
+    y = __fix_round(aa[1][3], precision)
 
-        g = __fix_round(-aa[2][0], precision)
-        h = __fix_round(-aa[2][1], precision)
-        i = __fix_round(aa[2][2], precision)
-        z = __fix_round(-aa[2][3], precision)
+    g = __fix_round(aa[2][0], precision)
+    h = __fix_round(aa[2][1], precision)
+    i = __fix_round(aa[2][2], precision)
+    z = __fix_round(aa[2][3], precision)
 
-        line = f"1 {color_code} {x} {z} {y} {a} {c} {b} {g} {i} {h} {d} {f} {e} {name}"
+    line = f"1 {color_code} {x} {y} {z} {a} {b} {c} {d} {e} {f} {g} {h} {i} {name}"
+
     lines.append(line)
 
 
