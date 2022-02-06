@@ -7,6 +7,8 @@ from pathlib import Path
 import os
 import base64
 
+from .definitions import APP_ROOT
+
 
 # remove multiple spaces
 def clean_line(line):
@@ -53,8 +55,7 @@ def fix_string_encoding(string):
 
 def write_json(folder, filename, dictionary):
     try:
-        this_script_dir = os.path.dirname(os.path.realpath(__file__))
-        folder = os.path.join(this_script_dir, folder)
+        folder = os.path.join(APP_ROOT, folder)
         Path(folder).mkdir(parents=True, exist_ok=True)
         file_path = os.path.join(folder, filename)
 
@@ -66,8 +67,7 @@ def write_json(folder, filename, dictionary):
 
 def read_json(folder, filename, default=None):
     try:
-        this_script_dir = os.path.dirname(os.path.realpath(__file__))
-        folder = os.path.join(this_script_dir, folder)
+        folder = os.path.join(APP_ROOT, folder)
         file_path = os.path.join(folder, filename)
         with open(file_path, 'r', encoding='utf-8') as file:
             return json.load(file)

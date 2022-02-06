@@ -2,6 +2,7 @@ import bpy
 import os
 import uuid
 
+from .definitions import APP_ROOT
 from .ldraw_colors import LDrawColor
 from .filesystem import FileSystem
 from . import strings
@@ -18,8 +19,7 @@ class BlenderMaterials:
     @classmethod
     def create_blender_node_groups(cls):
         cls.reset_caches()
-        this_script_dir = os.path.dirname(os.path.realpath(__file__))
-        path = os.path.join(this_script_dir, 'materials', 'all_monkeys.blend')
+        path = os.path.join(APP_ROOT, 'materials', 'all_monkeys.blend')
         with bpy.data.libraries.load(path, link=False) as (data_from, data_to):
             data_to.node_groups = data_from.node_groups
         for node_group in data_to.node_groups:

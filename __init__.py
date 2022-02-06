@@ -16,6 +16,7 @@ _modules = [
     'blender_camera',
     'blender_import',
     'blender_materials',
+    'definitions',
     'export_options',
     'filesystem',
     'geometry_data',
