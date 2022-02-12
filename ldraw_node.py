@@ -189,7 +189,6 @@ class LDrawNode:
         helpers.finish_mesh(mesh)
 
         self.__process_mesh(mesh)
-        # self.__process_mesh_faces(mesh)
 
         return mesh
 
@@ -253,26 +252,6 @@ class LDrawNode:
 
         if ImportOptions.recalculate_normals:
             bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
-
-    # this isn't used presently, but may be someday
-    # if ImportOptions.slope_faces:
-    #     part_slopes = None
-    # else:
-    # def __process_mesh_faces(self, mesh):
-    #     return
-    #     for face in mesh.polygons:
-    #         self.process_mesh_face(mesh, face)
-    #
-    # # this has to go after normals are recalculated or else the normals aren't right
-    # def process_mesh_face(self, mesh, face):
-    #     face.use_smooth = False
-    #
-    #     if ImportOptions.slope_faces:
-    #         if special_bricks.is_slope_face(self.file.name, face):
-    #             material = BlenderMaterials.get_material("4")
-    #             if material.name not in mesh.materials:
-    #                 mesh.materials.append(material)
-    #             face.material_index = mesh.materials.find(material.name)
 
     # bpy.context.object.data.edges[6].use_edge_sharp = True
     # Create kd tree for fast "find nearest points" calculation

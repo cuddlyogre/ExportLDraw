@@ -79,9 +79,6 @@ class ImportOptions:
     defaults['use_freestyle_edges'] = False
     use_freestyle_edges = defaults['use_freestyle_edges']
 
-    defaults['slope_faces'] = False
-    slope_faces = defaults['slope_faces']
-
     defaults['import_scale'] = 0.02
     import_scale = defaults['import_scale']
 
