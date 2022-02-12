@@ -567,7 +567,6 @@ class LDrawFile:
         self.texmap_fallback = False
 
     def __parse_geometry_line(self, clean_line):
-        self.geometry_line_count += 1
         _params = clean_line.split(maxsplit=14)
         if _params[0] == "1":
             color_code = _params[1]
