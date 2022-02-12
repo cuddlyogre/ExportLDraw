@@ -153,88 +153,49 @@ class LDrawFile:
             clean_line = helpers.clean_line(line)
             strip_line = line.strip()
 
-            if clean_line.lower().startswith("0 Name: ".lower()):
-                self.__line_name(strip_line)
+            if self.__line_name(clean_line, strip_line):
                 continue
 
-            if clean_line.lower().startswith("0 Author: ".lower()):
-                self.__line_author(strip_line)
+            if self.__line_author(clean_line, strip_line):
                 continue
 
-            if clean_line.startswith("0 !LDRAW_ORG "):
-                self.__line_part_type(strip_line)
+            if self.__line_part_type(clean_line, strip_line):
                 continue
 
-            if clean_line.startswith("0 LDRAW_ORG "):
-                self.__line_part_type(strip_line)
+            if self.__line_color(clean_line):
                 continue
 
-            if clean_line.startswith("0 Official LCAD "):
-                self.__line_part_type(strip_line, lcad=True)
+            if self.__line_step(clean_line):
                 continue
 
-            if clean_line.startswith("0 Unofficial "):
-                self.__line_part_type(strip_line)
+            if self.__line_save(clean_line):
                 continue
 
-            if clean_line.startswith("0 Un-official "):
-                self.__line_part_type(strip_line)
+            if self.__line_clear(clean_line):
                 continue
 
-            if clean_line.startswith("0 !COLOUR "):
-                self.__line_color(clean_line)
+            if self.__line_print(clean_line):
                 continue
 
-            if clean_line.startswith("0 STEP"):
-                self.__line_step(clean_line)
+            if self.__line_ldcad(clean_line):
                 continue
 
-            if clean_line.startswith("0 SAVE"):
-                self.__line_save(clean_line)
+            if self.__line_leocad(clean_line):
                 continue
 
-            if clean_line.startswith("0 CLEAR"):
-                self.__line_clear(clean_line)
-                continue
-
-            if clean_line in ["0 PRINT", "0 WRITE"]:
-                self.__line_print(clean_line)
-                continue
-
-            if clean_line.startswith("0 !LDCAD GROUP_DEF "):
-                self.__line_ldcad_group_def(clean_line)
-                continue
-
-            if clean_line.startswith("0 !LDCAD GROUP_NXT "):
-                self.__line_ldcad_group_nxt(clean_line)
-                continue
-
-            if clean_line.startswith("0 !LEOCAD GROUP BEGIN "):
-                self.__line_leocad_group_begin(clean_line)
-                continue
-
-            if clean_line.startswith("0 !LEOCAD GROUP END"):
-                self.__line_leocad_group_end(clean_line)
-                continue
-
-            if clean_line.startswith("0 !LEOCAD CAMERA "):
-                self.__line_leocad_camera(clean_line)
-                continue
-
-            if clean_line.startswith("0 !TEXMAP "):
-                self.__line_texmap(clean_line)
+            if self.__line_texmap(clean_line):
                 continue
 
             if self.texmap_start:
                 self.__texmap_start(clean_line)
                 continue
 
-            if not self.texmap_fallback and self.__parse_geometry_line(clean_line):
-                continue
+            if not self.texmap_fallback:
+                if self.__parse_geometry_line(clean_line):
+                    continue
 
             # this goes last so that description will be properly detected
-            if clean_line.startswith("0"):
-                self.__line_comment(clean_line, strip_line)
+            if self.__line_comment(clean_line, strip_line):
                 continue
 
         if self.extra_geometry is not None or self.extra_child_nodes is not None:
@@ -254,50 +215,109 @@ class LDrawFile:
         key = LDrawFile.__key_map[_key]
         return key
 
-    def __line_name(self, strip_line):
+    def __line_name(self, clean_line, strip_line):
+        if not clean_line.lower().startswith("0 Name: ".lower()):
+            return False
+
         self.name = strip_line.split(maxsplit=2)[2]
 
-    def __line_author(self, strip_line):
+        return True
+
+    def __line_author(self, clean_line, strip_line):
+        if not clean_line.lower().startswith("0 Author: ".lower()):
+            return False
+
         self.author = strip_line.split(maxsplit=2)[2]
 
-    def __line_part_type(self, strip_line, lcad=False):
-        if lcad:
+        return True
+
+    def __line_part_type(self, clean_line, strip_line):
+        if not (clean_line.startswith("0 !LDRAW_ORG ") or
+                clean_line.startswith("0 LDRAW_ORG ") or
+                clean_line.startswith("0 Official LCAD ") or
+                clean_line.startswith("0 Unofficial ") or
+                clean_line.startswith("0 Un-official ")):
+            return False
+
+        if clean_line.startswith("0 Official LCAD "):
             self.actual_part_type = strip_line.split(maxsplit=4)[3]
         else:
             self.actual_part_type = strip_line.split(maxsplit=3)[2]
         self.part_type = self.determine_part_type(self.actual_part_type)
 
+        return True
+
     @staticmethod
     def __line_color(clean_line):
+        if not clean_line.startswith("0 !COLOUR "):
+            return False
+
         _params = helpers.get_params(clean_line, "0 !COLOUR ", lowercase=False)
         LDrawColor.parse_color(_params)
 
+        return True
+
     def __line_step(self, clean_line):
+        if not clean_line.startswith("0 STEP"):
+            return False
+
         ldraw_node = LDrawNode()
         ldraw_node.line = clean_line
         ldraw_node.meta_command = "step"
         self.child_nodes.append(ldraw_node)
 
+        return True
+
     def __line_save(self, clean_line):
+        if not clean_line.startswith("0 SAVE"):
+            return False
+
         ldraw_node = LDrawNode()
         ldraw_node.line = clean_line
         ldraw_node.meta_command = "save"
         self.child_nodes.append(ldraw_node)
 
+        return True
+
     def __line_clear(self, clean_line):
+        if not clean_line.startswith("0 CLEAR"):
+            return False
+
         ldraw_node = LDrawNode()
         ldraw_node.line = clean_line
         ldraw_node.meta_command = "clear"
         self.child_nodes.append(ldraw_node)
 
+        return True
+
     def __line_print(self, clean_line):
+        if clean_line not in ["0 PRINT", "0 WRITE"]:
+            return False
+
         ldraw_node = LDrawNode()
         ldraw_node.line = clean_line
         ldraw_node.meta_command = "print"
         ldraw_node.meta_args["message"] = clean_line.split(maxsplit=2)[2]
         self.child_nodes.append(ldraw_node)
 
+        return True
+
+    def __line_ldcad(self, clean_line):
+        if not clean_line.startswith("0 !LDCAD "):
+            return False
+
+        if not self.__line_ldcad_group_def(clean_line):
+            return False
+
+        if not self.__line_ldcad_group_nxt(clean_line):
+            return False
+
+        return True
+
     def __line_ldcad_group_def(self, clean_line):
+        if not clean_line.startswith("0 !LDCAD GROUP_DEF "):
+            return False
+
         # http://www.melkert.net/LDCad/tech/meta
         _params = re.search(r"\S+\s+\S+\s+\S+\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])", clean_line)
         ldraw_node = LDrawNode()
@@ -309,7 +329,12 @@ class LDrawFile:
         ldraw_node.meta_args["name"] = name_args[2]
         self.child_nodes.append(ldraw_node)
 
+        return True
+
     def __line_ldcad_group_nxt(self, clean_line):
+        if not clean_line.startswith("0 !LDCAD GROUP_NXT "):
+            return False
+
         _params = re.search(r"\S+\s+\S+\s+\S+\s+(\[.*\])\s+(\[.*\])", clean_line)
         ldraw_node = LDrawNode()
         ldraw_node.line = clean_line
@@ -318,7 +343,27 @@ class LDrawFile:
         ldraw_node.meta_args["id"] = id_args[2]
         self.child_nodes.append(ldraw_node)
 
+        return True
+
+    def __line_leocad(self, clean_line):
+        if not clean_line.startswith("0 !LEOCAD "):
+            return False
+
+        if not self.__line_leocad_group_begin(clean_line):
+            return False
+
+        if not self.__line_leocad_group_end(clean_line):
+            return False
+
+        if not self.__line_leocad_camera(clean_line):
+            return False
+
+        return True
+
     def __line_leocad_group_begin(self, clean_line):
+        if not clean_line.startswith("0 !LEOCAD GROUP BEGIN "):
+            return False
+
         # https://www.leocad.org/docs/meta.html
         name_args = clean_line.split(maxsplit=4)
         ldraw_node = LDrawNode()
@@ -327,13 +372,23 @@ class LDrawFile:
         ldraw_node.meta_args["name"] = name_args[4]
         self.child_nodes.append(ldraw_node)
 
+        return True
+
     def __line_leocad_group_end(self, clean_line):
+        if not clean_line.startswith("0 !LEOCAD GROUP END"):
+            return False
+
         ldraw_node = LDrawNode()
         ldraw_node.line = clean_line
         ldraw_node.meta_command = "group_end"
         self.child_nodes.append(ldraw_node)
 
+        return True
+
     def __line_leocad_camera(self, clean_line):
+        if not clean_line.startswith("0 !LEOCAD CAMERA "):
+            return False
+
         _params = helpers.get_params(clean_line, "0 !LEOCAD CAMERA ")
         if self.camera is None:
             self.camera = LDrawCamera()
@@ -385,9 +440,15 @@ class LDrawFile:
             else:
                 _params = _params[1:]
 
+        return True
+
     def __line_texmap(self, clean_line):
+        if not clean_line.startswith("0 !TEXMAP "):
+            return False
+
         # https://www.ldraw.org/documentation/ldraw-org-file-format-standards/language-extension-for-texture-mapping.html
         _params = helpers.get_params(clean_line, "0 !TEXMAP ")
+
         if self.texmap_start:
             if _params[0].lower() in ["fallback"]:
                 self.texmap_fallback = True
@@ -468,7 +529,12 @@ class LDrawFile:
                     TexMap.texmaps.append(TexMap.texmap)
                 TexMap.texmap = new_texmap
 
+        return True
+
     def __line_comment(self, clean_line, strip_line):
+        if not clean_line.startswith("0"):
+            return False
+
         if self.texmap_next:
             """"""
             # if 0 line and texmap next, error
@@ -477,6 +543,8 @@ class LDrawFile:
             """"""
         elif self.description is None:
             self.description = strip_line.split(maxsplit=1)[1]
+
+        return True
 
     def __texmap_start(self, clean_line):
         if clean_line.startswith("0 !: "):
@@ -489,15 +557,17 @@ class LDrawFile:
             self.__set_texmap_end()
 
     def __set_texmap_end(self):
-        if len(TexMap.texmaps) < 1:
-            TexMap.texmap = None
-        else:
+        try:
             TexMap.texmap = TexMap.texmaps.pop()
+        except Exception as e:
+            TexMap.texmap = None
+
         self.texmap_start = False
         self.texmap_next = False
         self.texmap_fallback = False
 
     def __parse_geometry_line(self, clean_line):
+        self.geometry_line_count += 1
         _params = clean_line.split(maxsplit=14)
         if _params[0] == "1":
             color_code = _params[1]
@@ -538,12 +608,12 @@ class LDrawFile:
 
             key = self.__build_key(filename)
 
-            if key not in LDrawFile.__file_cache:
+            ldraw_file = LDrawFile.__file_cache.get(key)
+            if ldraw_file is None:
                 ldraw_file = LDrawFile.get_file(filename)
                 if ldraw_file is None:
                     return True
                 LDrawFile.__file_cache[key] = ldraw_file
-            ldraw_file = LDrawFile.__file_cache[key]
 
             if ImportOptions.no_studs and ldraw_file.is_like_stud():
                 return True

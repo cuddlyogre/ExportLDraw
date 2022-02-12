@@ -5,15 +5,15 @@ import bpy
 import bmesh
 import mathutils
 
+from . import group
+from . import special_bricks
+from . import strings
 from .blender_materials import BlenderMaterials
+from .geometry_data import GeometryData
 from .import_options import ImportOptions
 from .ldraw_colors import LDrawColor
 from .texmap import TexMap
-from .geometry_data import GeometryData
-from . import special_bricks
-from . import strings
-
-from . import group
+from . import helpers
 
 
 class LDrawNode:
@@ -44,7 +44,11 @@ class LDrawNode:
     __auto_smooth_angle = math.radians(__auto_smooth_angle)
 
     __identity = mathutils.Matrix.Identity(4).freeze()
-    __rotation = mathutils.Matrix.Rotation(math.radians(-90), 4, 'X').freeze()
+    # https://www.ldraw.org/article/218.html#coords
+    # LDraw uses a right-handed co-ordinate system where -Y is "up".
+    # https://en.wikibooks.org/wiki/Blender_3D:_Noob_to_Pro/Understanding_Coordinates
+    # Blender uses a right-handed co-ordinate system where +Z is "up"
+    __rotation = mathutils.Matrix.Rotation(math.radians(-90), 4, 'X').freeze()  # rotate -90 degrees on X axis to make -Y up
     __import_scale_matrix = mathutils.Matrix.Scale(ImportOptions.import_scale, 4).freeze()
     __gap_scale_matrix = mathutils.Matrix.Scale(ImportOptions.gap_scale, 4).freeze()
 
@@ -173,16 +177,17 @@ class LDrawNode:
 
     def create_mesh(self, key, geometry_data):
         bm = bmesh.new()
+
         mesh = bpy.data.meshes.new(key)
         mesh.name = key
         mesh[strings.ldraw_filename_key] = self.file.name
+
         self.__process_bmesh(bm, mesh, geometry_data)
         self.__process_bmesh_edges(key, bm, geometry_data)
-        bm.to_mesh(mesh)
-        bm.clear()
-        bm.free()
-        mesh.update()
-        mesh.validate()
+
+        helpers.finish_bmesh(bm, mesh)
+        helpers.finish_mesh(mesh)
+
         self.__process_mesh(mesh)
         return mesh
 
@@ -202,15 +207,15 @@ class LDrawNode:
     # FIXME: if not treat_shortcut_as_model, texmap uvs may be incorrect, caused by unexpected part transform?
     # FIXME: move uv unwrap to after obj[strings.ldraw_filename_key] = self.file.name
     def __process_bmesh(self, bm, mesh, geometry_data):
+        self.__process_bmesh_faces(geometry_data, bm, mesh)
+        helpers.ensure_bmesh(bm)
+        self.__clean_bmesh(bm)
+
+    def __process_bmesh_faces(self, geometry_data, bm, mesh):
         for fd in geometry_data.face_data:
             for fi in fd.face_infos:
                 face = self.__create_bmesh_face(bm, fd, fi)
                 self.__process_bmesh_face(bm, mesh, face, fd, fi)
-        bm.faces.ensure_lookup_table()
-        bm.verts.ensure_lookup_table()
-        bm.edges.ensure_lookup_table()
-
-        self.__clean_bmesh(bm)
 
     @staticmethod
     def __create_bmesh_face(bm, fd, fi):
@@ -227,18 +232,16 @@ class LDrawNode:
         if fi.color_code != "16":
             color_code = fi.color_code
 
-        texmap = fi.texmap
-
-        face.smooth = ImportOptions.shade_smooth
-
         part_slopes = special_bricks.get_part_slopes(self.file.name)
-        material = BlenderMaterials.get_material(color_code, part_slopes=part_slopes, texmap=texmap)
+        material = BlenderMaterials.get_material(color_code, part_slopes=part_slopes, texmap=fi.texmap)
         if material.name not in mesh.materials:
             mesh.materials.append(material)
+
+        face.smooth = ImportOptions.shade_smooth
         face.material_index = mesh.materials.find(material.name)
 
-        if texmap is not None:
-            texmap.uv_unwrap_face(bm, face)
+        if fi.texmap is not None:
+            fi.texmap.uv_unwrap_face(bm, face)
 
     @staticmethod
     def __clean_bmesh(bm):
@@ -260,18 +263,17 @@ class LDrawNode:
         kd.balance()
         return kd
 
-    @classmethod
-    def __process_bmesh_edges(cls, key, bm, geometry_data):
-        kd = cls.__build_kd(bm)
+    def __process_bmesh_edges(self, key, bm, geometry_data):
+        kd = self.__build_kd(bm)
 
         # increase the distance to look for edges to merge
         # merge line type 2 edges at a greater distance than mesh edges
         distance = ImportOptions.merge_distance
         distance = ImportOptions.merge_distance * 2
 
-        e_edges, e_faces, e_verts, edge_indices = cls.__build_edge_data(geometry_data, kd, distance)
-        cls.__create_edge_mesh(key, e_edges, e_faces, e_verts)
-        cls.__remove_bmesh_doubles(bm, edge_indices, distance)
+        e_edges, e_faces, e_verts, edge_indices = self.__build_edge_data(geometry_data, kd, distance)
+        self.__create_edge_mesh(key, e_edges, e_faces, e_verts)
+        self.__remove_bmesh_doubles(bm, edge_indices, distance)
 
     @staticmethod
     def __build_edge_data(geometry_data, kd, distance):
@@ -357,7 +359,7 @@ class LDrawNode:
 
     def __process_top_object_matrix(self, obj, parent_matrix):
         matrix = parent_matrix @ self.matrix
-        transform_matrix = LDrawNode.__identity @ LDrawNode.__rotation @ LDrawNode.__import_scale_matrix
+        transform_matrix = LDrawNode.__rotation @ LDrawNode.__import_scale_matrix
         if ImportOptions.parent_to_empty:
             if LDrawNode.top_empty is None:
                 LDrawNode.top_empty = bpy.data.objects.new(LDrawNode.top_collection.name, None)
@@ -396,18 +398,18 @@ class LDrawNode:
             edge_modifier.use_edge_angle = True
             edge_modifier.split_angle = cls.__auto_smooth_angle
 
-    @classmethod
-    def __create_edge_mesh(cls, key, e_edges, e_faces, e_verts):
+    def __create_edge_mesh(self, key, e_edges, e_faces, e_verts):
         if ImportOptions.import_edges:
             edge_key = f"e_{key}"
             edge_mesh = bpy.data.meshes.new(edge_key)
             edge_mesh.name = edge_key
+            edge_mesh[strings.ldraw_filename_key] = self.file.name
+
             edge_mesh.from_pydata(e_verts, e_edges, e_faces)
-            edge_mesh.update()
-            edge_mesh.validate()
+            helpers.finish_mesh(edge_mesh)
 
             if ImportOptions.make_gaps and ImportOptions.gap_target == "mesh":
-                edge_mesh.transform(cls.__gap_scale_matrix)
+                edge_mesh.transform(self.__gap_scale_matrix)
 
     def __process_top_edges(self, key, obj, color_code, collection):
         if ImportOptions.import_edges:

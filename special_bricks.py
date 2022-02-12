@@ -342,11 +342,11 @@ def is_slope_face(filename, face):
 
     # Clamp value to range -1 to 1 (ensure we are in the strict range of the acos function, taking account of rounding errors)
     cosine = min(max(face_normal.y, -1.0), 1.0)
-    rad_angle = math.acos(cosine)
-    deg_angle = math.degrees(rad_angle)
-
+    up_angle = math.acos(cosine)
     # Calculate angle of face normal to the ground (-90 to 90 degrees)
-    angle_to_ground_degrees = deg_angle - 90
+    floor = math.radians(-90)
+    rad_angle = up_angle + floor
+    angle_to_ground_degrees = math.degrees(rad_angle)
 
     # debugPrint("Angle to ground {0}".format(angleToGroundDegrees))
     # print(cosine)

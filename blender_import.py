@@ -126,9 +126,7 @@ def __load_materials(file):
                 prefix = 'cube'
                 bmesh.ops.create_cube(bm, size=1.0)
 
-            bm.faces.ensure_lookup_table()
-            bm.verts.ensure_lookup_table()
-            bm.edges.ensure_lookup_table()
+            helpers.ensure_bmesh(bm)
 
             for f in bm.faces:
                 f.smooth = True
@@ -144,9 +142,7 @@ def __load_materials(file):
             for face in bm.faces:
                 face.material_index = mesh.materials.find(material.name)
 
-            bm.to_mesh(mesh)
-            bm.clear()
-            bm.free()
+            helpers.finish_bmesh(bm, mesh)
 
             mesh.validate()
             mesh.update(calc_edges=True)
@@ -158,7 +154,6 @@ def __load_materials(file):
             obj.modifiers.new("Subdivision", type='SUBSURF')
             obj.location.x = i * 3
             obj.location.y = -j * 3
-            # obj.rotation_euler.z = math.radians(90)
 
             color = LDrawColor.get_color(color_code)
             obj.color = color.color_a

@@ -266,13 +266,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         default=ImportSettings.get_setting('sharpen_edges'),
     )
 
-    instancing: bpy.props.BoolProperty(
-        name="Instance parts",
-        options={'HIDDEN'},
-        description="Use collection instancing",
-        default=ImportSettings.get_setting('instancing'),
-    )
-
     profile: bpy.props.BoolProperty(
         name="Profile",
         description="Profile import performance",
@@ -296,7 +289,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
             import pstats
 
             from pathlib import Path
-            this_script_dir = os.path.dirname(os.path.realpath(__file__))
             prof_output = os.path.join(Path.home(), 'export_ldraw_import.prof')
 
             with cProfile.Profile() as profiler:

@@ -11,7 +11,6 @@ from .export_options import ExportOptions
 from . import helpers
 from . import ldraw_part_types
 
-__identity = mathutils.Matrix.Identity(4).freeze()
 __reverse_rotation = mathutils.Matrix.Rotation(math.radians(90), 4, 'X').freeze()
 
 
@@ -151,9 +150,7 @@ def __clean_mesh(obj):
         bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
 
     mesh = obj.data.copy()
-    bm.to_mesh(mesh)
-    bm.clear()
-    bm.free()
+    helpers.finish_bmesh(bm, mesh)
     return mesh
 
 
