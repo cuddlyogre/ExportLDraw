@@ -16,17 +16,17 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
     bl_options = {'PRESET', 'UNDO'}
     filename_ext = ""
 
+    filter_glob: bpy.props.StringProperty(
+        name="Extensions",
+        options={'HIDDEN'},
+        default="*.mpd;*.ldr;*.dat",
+    )
+
     filepath: bpy.props.StringProperty(
         name="File Path",
         description="Filepath used for importing the file",
         maxlen=1024,
         subtype='FILE_PATH',
-    )
-
-    filter_glob: bpy.props.StringProperty(
-        name="Extensions",
-        options={'HIDDEN'},
-        default="*.mpd;*.ldr;*.dat",
     )
 
     ldraw_path: bpy.props.StringProperty(
