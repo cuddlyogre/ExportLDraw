@@ -10,14 +10,6 @@ from . import helpers
 # https://github.com/trevorsandy/lpub3d/blob/e7c39cd3df518cf16521dc2c057a9f125cc3b5c3/lclib/common/lc_meshloader.cpp#L1486
 # https://stackoverflow.com/questions/53970131/how-to-find-the-clockwise-angle-between-two-vectors-in-python#53970746
 class TexMap:
-    texmaps = []
-    texmap = None
-
-    @staticmethod
-    def reset_caches():
-        TexMap.texmaps = []
-        TexMap.texmap = None
-
     def __init__(self, method, parameters, texture, glossmap=''):
         self.id = str(uuid.uuid4())
         self.method = method

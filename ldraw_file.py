@@ -19,12 +19,16 @@ class LDrawFile:
     __file_lines_cache = {}
     __file_cache = {}
     __key_map = {}
+    __texmaps = []
+    __texmap = None
 
     @classmethod
     def reset_caches(cls):
         cls.__file_lines_cache = {}
         cls.__file_cache = {}
         cls.__key_map = {}
+        cls.__texmaps = []
+        cls.__texmap = None
 
     def __init__(self, filename):
         self.filepath = None
@@ -201,18 +205,18 @@ class LDrawFile:
         if self.extra_geometry is not None or self.extra_child_nodes is not None:
             self.__handle_extra_geometry()
 
-    @staticmethod
-    def __build_key(filename, extra=False):
+    @classmethod
+    def __build_key(cls, filename, extra=False):
         _key = []
         _key.append(filename)
         if extra:
             _key.append("extra")
-        if TexMap.texmap is not None:
-            _key.append(TexMap.texmap.id)
+        if cls.__texmap is not None:
+            _key.append(cls.__texmap.id)
         _key = "_".join([str(k).lower() for k in _key])
-        if _key not in LDrawFile.__key_map:
-            LDrawFile.__key_map[_key] = str(uuid.uuid4())
-        key = LDrawFile.__key_map[_key]
+        if _key not in cls.__key_map:
+            cls.__key_map[_key] = str(uuid.uuid4())
+        key = cls.__key_map[_key]
         return key
 
     def __line_name(self, clean_line, strip_line):
@@ -525,11 +529,28 @@ class LDrawFile:
                 )
 
             if new_texmap is not None:
-                if TexMap.texmap is not None:
-                    TexMap.texmaps.append(TexMap.texmap)
-                TexMap.texmap = new_texmap
+                if LDrawFile.__texmap is not None:
+                    LDrawFile.__texmaps.append(LDrawFile.__texmap)
+                LDrawFile.__texmap = new_texmap
 
         return True
+
+    def __texmap_start(self, clean_line):
+        # remove 0 !: from line so that it can be parsed like a normal line
+        clean_line = clean_line.lstrip('0 !: ')
+        self.__parse_geometry_line(clean_line)
+        if self.texmap_next:
+            self.__set_texmap_end()
+
+    def __set_texmap_end(self):
+        try:
+            LDrawFile.__texmap = LDrawFile.__texmaps.pop()
+        except Exception as e:
+            LDrawFile.__texmap = None
+
+        self.texmap_start = False
+        self.texmap_next = False
+        self.texmap_fallback = False
 
     def __line_comment(self, clean_line, strip_line):
         if not clean_line.startswith("0"):
@@ -545,26 +566,6 @@ class LDrawFile:
             self.description = strip_line.split(maxsplit=1)[1]
 
         return True
-
-    def __texmap_start(self, clean_line):
-        if clean_line.startswith("0 !: "):
-            # remove 0 !: from line so that it can be parsed like a normal line
-            _clean_line = clean_line[len("0 !: "):].strip()
-            self.__parse_geometry_line(_clean_line)
-        else:
-            self.__parse_geometry_line(clean_line)
-        if self.texmap_next:
-            self.__set_texmap_end()
-
-    def __set_texmap_end(self):
-        try:
-            TexMap.texmap = TexMap.texmaps.pop()
-        except Exception as e:
-            TexMap.texmap = None
-
-        self.texmap_start = False
-        self.texmap_next = False
-        self.texmap_fallback = False
 
     def __parse_geometry_line(self, clean_line):
         if self.__line_subfile(clean_line):

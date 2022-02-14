@@ -9,7 +9,6 @@ from .ldraw_camera import LDrawCamera
 from .filesystem import FileSystem
 from . import blender_camera
 from .ldraw_colors import LDrawColor
-from .texmap import TexMap
 from . import helpers
 from . import strings
 
@@ -23,7 +22,6 @@ def do_import(filepath):
     LDrawFile.reset_caches()
     LDrawNode.reset_caches()
     LDrawCamera.reset_caches()
-    TexMap.reset_caches()
     FileSystem.build_search_paths(parent_filepath=filepath)
     LDrawFile.read_color_table()
     BlenderMaterials.create_blender_node_groups()

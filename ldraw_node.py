@@ -12,7 +12,6 @@ from .blender_materials import BlenderMaterials
 from .geometry_data import GeometryData
 from .import_options import ImportOptions
 from .ldraw_colors import LDrawColor
-from .texmap import TexMap
 from . import helpers
 
 
@@ -157,8 +156,6 @@ class LDrawNode:
 
         obj = self.__process_top_object(mesh, parent_matrix, color_code, collection)
         self.__process_top_edges(key, obj, color_code, collection)
-
-        TexMap.reset_caches()  # or else the previous part's texmap is applied to this part
 
         return self
 
