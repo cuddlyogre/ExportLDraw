@@ -567,83 +567,96 @@ class LDrawFile:
         self.texmap_fallback = False
 
     def __parse_geometry_line(self, clean_line):
-        _params = clean_line.split(maxsplit=14)
-        if _params[0] == "1":
-            color_code = _params[1]
-
-            (x, y, z, a, b, c, d, e, f, g, h, i) = map(float, _params[2:14])
-            matrix = mathutils.Matrix((
-                (a, b, c, x),
-                (d, e, f, y),
-                (g, h, i, z),
-                (0, 0, 0, 1)
-            ))
-
-            # matrix = mathutils.Matrix((
-            #     (a, d, g, 0),
-            #     (b, e, h, 0),
-            #     (c, f, i, 0),
-            #     (x, y, z, 1)
-            # ))
-
-            filename = _params[14].lower()
-
-            # filename = "stud-logo.dat"
-            # parts = filename.split(".") => ["stud-logo", "dat"]
-            # name = parts[0] => "stud-logo"
-            # name_parts = name.split('-') => ["stud", "logo"]
-            # stud_name = name_parts[0] => "stud"
-            # chosen_logo = special_bricks.chosen_logo => "logo5"
-            # ext = parts[1] => "dat"
-            # filename = f"{stud_name}-{chosen_logo}.{ext}" => "stud-logo5.dat"
-            if ImportOptions.display_logo and filename in ldraw_part_types.stud_names:
-                parts = filename.split(".")
-                name = parts[0]
-                name_parts = name.split('-')
-                stud_name = name_parts[0]
-                chosen_logo = ImportOptions.chosen_logo
-                ext = parts[1]
-                filename = f"{stud_name}-{chosen_logo}.{ext}"
-
-            key = self.__build_key(filename)
-
-            ldraw_file = LDrawFile.__file_cache.get(key)
-            if ldraw_file is None:
-                ldraw_file = LDrawFile.get_file(filename)
-                if ldraw_file is None:
-                    return True
-                LDrawFile.__file_cache[key] = ldraw_file
-
-            if ImportOptions.no_studs and ldraw_file.is_like_stud():
-                return True
-
-            ldraw_node = LDrawNode()
-            ldraw_node.line = clean_line
-            ldraw_node.file = ldraw_file
-            ldraw_node.color_code = color_code
-            ldraw_node.matrix = matrix
-
-            # if any line in a model file is a subpart, treat that model as a part,
-            # otherwise subparts are not parsed correctly
-            # if subpart found, create new LDrawNode with those subparts and add that to child_nodes
-            if self.is_like_model() and (ldraw_file.is_subpart() or ldraw_file.is_primitive()):
-                if self.extra_child_nodes is None:
-                    self.extra_child_nodes = []
-                self.extra_child_nodes.append(ldraw_node)
-            else:
-                self.child_nodes.append(ldraw_node)
+        if self.__line_subfile(clean_line):
             return True
-        elif _params[0] in ["2", "3", "4", "5"]:
-            # add geometry that is in a model or shortcut file to a file
-            # object so that it will be parsed
-            if self.is_like_model():
-                if self.extra_geometry is None:
-                    self.extra_geometry = LDrawGeometry()
-                self.extra_geometry.parse_face(_params, TexMap.texmap)
-            else:
-                self.geometry.parse_face(_params, TexMap.texmap)
+        if self.__line_geometry(clean_line):
             return True
         return False
+
+    def __line_subfile(self, clean_line):
+        _params = clean_line.split(maxsplit=14)
+        if _params[0] != "1":
+            return False
+
+        color_code = _params[1]
+
+        (x, y, z, a, b, c, d, e, f, g, h, i) = map(float, _params[2:14])
+        matrix = mathutils.Matrix((
+            (a, b, c, x),
+            (d, e, f, y),
+            (g, h, i, z),
+            (0, 0, 0, 1)
+        ))
+
+        # matrix = mathutils.Matrix((
+        #     (a, d, g, 0),
+        #     (b, e, h, 0),
+        #     (c, f, i, 0),
+        #     (x, y, z, 1)
+        # ))
+
+        filename = _params[14].lower()
+
+        # filename = "stud-logo.dat"
+        # parts = filename.split(".") => ["stud-logo", "dat"]
+        # name = parts[0] => "stud-logo"
+        # name_parts = name.split('-') => ["stud", "logo"]
+        # stud_name = name_parts[0] => "stud"
+        # chosen_logo = special_bricks.chosen_logo => "logo5"
+        # ext = parts[1] => "dat"
+        # filename = f"{stud_name}-{chosen_logo}.{ext}" => "stud-logo5.dat"
+        if ImportOptions.display_logo and filename in ldraw_part_types.stud_names:
+            parts = filename.split('.')
+            name = parts[0]
+            name_parts = name.split('-')
+            stud_name = name_parts[0]
+            chosen_logo = ImportOptions.chosen_logo
+            ext = parts[1]
+            filename = f"{stud_name}-{chosen_logo}.{ext}"
+
+        key = self.__build_key(filename)
+
+        ldraw_file = LDrawFile.__file_cache.get(key)
+        if ldraw_file is None:
+            ldraw_file = LDrawFile.get_file(filename)
+            if ldraw_file is None:
+                return True
+            LDrawFile.__file_cache[key] = ldraw_file
+
+        if ImportOptions.no_studs and ldraw_file.is_like_stud():
+            return True
+
+        ldraw_node = LDrawNode()
+        ldraw_node.line = clean_line
+        ldraw_node.file = ldraw_file
+        ldraw_node.color_code = color_code
+        ldraw_node.matrix = matrix
+
+        # if any line in a model file is a subpart, treat that model as a part,
+        # otherwise subparts are not parsed correctly
+        # if subpart found, create new LDrawNode with those subparts and add that to child_nodes
+        if self.is_like_model() and (ldraw_file.is_subpart() or ldraw_file.is_primitive()):
+            if self.extra_child_nodes is None:
+                self.extra_child_nodes = []
+            self.extra_child_nodes.append(ldraw_node)
+        else:
+            self.child_nodes.append(ldraw_node)
+        return True
+
+    def __line_geometry(self, clean_line):
+        _params = clean_line.split(maxsplit=14)
+        if _params[0] not in ["2", "3", "4", "5"]:
+            return False
+
+        # add geometry that is in a model or shortcut file to a file
+        # object so that it will be parsed
+        if self.is_like_model():
+            if self.extra_geometry is None:
+                self.extra_geometry = LDrawGeometry()
+            self.extra_geometry.parse_face(_params, LDrawFile.__texmap)
+        else:
+            self.geometry.parse_face(_params, LDrawFile.__texmap)
+        return True
 
     def __handle_extra_geometry(self):
         key = self.__build_key(self.filename, extra=True)
