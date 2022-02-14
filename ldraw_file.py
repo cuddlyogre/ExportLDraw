@@ -310,13 +310,13 @@ class LDrawFile:
         if not clean_line.startswith("0 !LDCAD "):
             return False
 
-        if not self.__line_ldcad_group_def(clean_line):
-            return False
+        if self.__line_ldcad_group_def(clean_line):
+            return True
 
-        if not self.__line_ldcad_group_nxt(clean_line):
-            return False
+        if self.__line_ldcad_group_nxt(clean_line):
+            return True
 
-        return True
+        return False
 
     def __line_ldcad_group_def(self, clean_line):
         if not clean_line.startswith("0 !LDCAD GROUP_DEF "):
@@ -353,16 +353,16 @@ class LDrawFile:
         if not clean_line.startswith("0 !LEOCAD "):
             return False
 
-        if not self.__line_leocad_group_begin(clean_line):
-            return False
+        if self.__line_leocad_group_begin(clean_line):
+            return True
 
-        if not self.__line_leocad_group_end(clean_line):
-            return False
+        if self.__line_leocad_group_end(clean_line):
+            return True
 
-        if not self.__line_leocad_camera(clean_line):
-            return False
+        if self.__line_leocad_camera(clean_line):
+            return True
 
-        return True
+        return False
 
     def __line_leocad_group_begin(self, clean_line):
         if not clean_line.startswith("0 !LEOCAD GROUP BEGIN "):
@@ -394,6 +394,7 @@ class LDrawFile:
             return False
 
         _params = helpers.get_params(clean_line, "0 !LEOCAD CAMERA ")
+
         if self.camera is None:
             self.camera = LDrawCamera()
         # https://www.leocad.org/docs/meta.html
@@ -409,21 +410,21 @@ class LDrawFile:
             elif _params[0] == "zfar":
                 self.camera.z_far = float(_params[1])
                 _params = _params[2:]
-            elif _params[0] in ["position", "target_position", "up_vector"]:
+            elif _params[0] == "position":
                 (x, y, z) = map(float, _params[1:4])
                 vector = mathutils.Vector((x, y, z))
-
-                if _params[0] == "position":
-                    self.camera.position = vector
-
-                elif _params[0] == "target_position":
-                    self.camera.target_position = vector
-
-                elif _params[0] == "up_vector":
-                    self.camera.up_vector = vector
-
+                self.camera.position = vector
                 _params = _params[4:]
-
+            elif _params[0] == "target_position":
+                (x, y, z) = map(float, _params[1:4])
+                vector = mathutils.Vector((x, y, z))
+                self.camera.target_position = vector
+                _params = _params[4:]
+            elif _params[0] == "up_vector":
+                (x, y, z) = map(float, _params[1:4])
+                vector = mathutils.Vector((x, y, z))
+                self.camera.up_vector = vector
+                _params = _params[4:]
             elif _params[0] == "orthographic":
                 self.camera.orthographic = True
                 _params = _params[1:]
@@ -439,7 +440,12 @@ class LDrawFile:
                 # By definition this is the last of the parameters
                 _params = []
 
-                LDrawCamera.cameras.append(self.camera)
+                ldraw_node = LDrawNode()
+                ldraw_node.line = clean_line
+                ldraw_node.meta_command = "camera"
+                ldraw_node.meta_args["camera"] = self.camera
+                self.child_nodes.append(ldraw_node)
+
                 self.camera = None
             else:
                 _params = _params[1:]

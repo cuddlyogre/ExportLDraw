@@ -24,6 +24,7 @@ class LDrawNode:
     top_collection = None
     current_frame = 0
     top_empty = None
+    cameras = []
 
     __groups_collection = None
     __gap_scale_empty = None
@@ -57,6 +58,7 @@ class LDrawNode:
         cls.top_collection = None
         cls.current_frame = 0
         cls.top_empty = None
+        cls.cameras = []
 
         cls.__groups_collection = None
         cls.__gap_scale_empty = None
@@ -488,6 +490,8 @@ class LDrawNode:
                     self.__meta_group_begin()
                 elif self.meta_command == "group_end":
                     self.__meta_group_end()
+        elif self.meta_command == "camera":
+            self.__meta_camera()
         return True
 
     # https://docs.blender.org/api/current/bpy.types.bpy_struct.html#bpy.types.bpy_struct.keyframe_insert
@@ -570,3 +574,7 @@ class LDrawNode:
             cls.__next_collection = cls.__next_collections.pop()
         else:
             cls.__next_collection = None
+
+    def __meta_camera(self):
+        print(self.meta_args)
+        LDrawNode.cameras.append(self.meta_args["camera"])

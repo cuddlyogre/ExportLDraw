@@ -5,7 +5,6 @@ from .blender_materials import BlenderMaterials
 from .import_options import ImportOptions
 from .ldraw_file import LDrawFile
 from .ldraw_node import LDrawNode
-from .ldraw_camera import LDrawCamera
 from .filesystem import FileSystem
 from . import blender_camera
 from .ldraw_colors import LDrawColor
@@ -21,7 +20,6 @@ def do_import(filepath):
     __scene_setup()
     LDrawFile.reset_caches()
     LDrawNode.reset_caches()
-    LDrawCamera.reset_caches()
     FileSystem.build_search_paths(parent_filepath=filepath)
     LDrawFile.read_color_table()
     BlenderMaterials.create_blender_node_groups()
@@ -45,7 +43,7 @@ def do_import(filepath):
             bpy.context.scene.frame_set(bpy.context.scene.frame_end)
 
     max_clip_end = 0
-    for camera in LDrawCamera.cameras:
+    for camera in LDrawNode.cameras:
         camera = blender_camera.create_camera(camera, empty=LDrawNode.top_empty, collection=LDrawNode.top_collection)
         if bpy.context.scene.camera is None:
             if camera.data.clip_end > max_clip_end:
