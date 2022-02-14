@@ -190,13 +190,8 @@ class LDrawFile:
             if self.__line_texmap(clean_line):
                 continue
 
-            if self.texmap_start:
-                self.__texmap_start(clean_line)
+            if self.__parse_geometry_line(clean_line):
                 continue
-
-            if not self.texmap_fallback:
-                if self.__parse_geometry_line(clean_line):
-                    continue
 
             # this goes last so that description will be properly detected
             if self.__line_comment(clean_line, strip_line):
@@ -474,7 +469,7 @@ class LDrawFile:
             new_texmap = None
             method = _params[1].lower()
             if method in ['planar']:
-                _params = clean_line[len("0 !TEXMAP "):].split(maxsplit=11)  # planar
+                _params = clean_line.lstrip("0 !TEXMAP ").split(maxsplit=11)  # planar
 
                 (x1, y1, z1, x2, y2, z2, x3, y3, z3) = map(float, _params[2:11])
 
@@ -493,7 +488,7 @@ class LDrawFile:
                     glossmap=glossmap,
                 )
             elif method in ['cylindrical']:
-                _params = clean_line[len("0 !TEXMAP "):].split(maxsplit=12)  # cylindrical
+                _params = clean_line.lstrip("0 !TEXMAP ").split(maxsplit=12)  # cylindrical
 
                 (x1, y1, z1, x2, y2, z2, x3, y3, z3, a) = map(float, _params[2:12])
 
@@ -513,7 +508,7 @@ class LDrawFile:
                     glossmap=glossmap,
                 )
             elif method in ['spherical']:
-                _params = clean_line[len("0 !TEXMAP "):].split(maxsplit=13)  # spherical
+                _params = clean_line.lstrip("0 !TEXMAP ").split(maxsplit=13)  # spherical
 
                 (x1, y1, z1, x2, y2, z2, x3, y3, z3, a, b) = map(float, _params[2:13])
 
@@ -541,13 +536,6 @@ class LDrawFile:
 
         return True
 
-    def __texmap_start(self, clean_line):
-        # remove 0 !: from line so that it can be parsed like a normal line
-        clean_line = clean_line.lstrip('0 !: ')
-        self.__parse_geometry_line(clean_line)
-        if self.texmap_next:
-            self.__set_texmap_end()
-
     def __set_texmap_end(self):
         try:
             LDrawFile.__texmap = LDrawFile.__texmaps.pop()
@@ -558,26 +546,19 @@ class LDrawFile:
         self.texmap_next = False
         self.texmap_fallback = False
 
-    def __line_comment(self, clean_line, strip_line):
-        if not clean_line.startswith("0"):
-            return False
-
-        if self.texmap_next:
-            """"""
-            # if 0 line and texmap next, error
-            # also error
-        elif clean_line.startswith("0 //"):
-            """"""
-        elif self.description is None:
-            self.description = strip_line.split(maxsplit=1)[1]
-
-        return True
-
     def __parse_geometry_line(self, clean_line):
-        if self.__line_subfile(clean_line):
+        if self.texmap_fallback:
             return True
-        if self.__line_geometry(clean_line):
+
+        if self.texmap_start:
+            # remove 0 !: from line so that it can be parsed like a normal line
+            clean_line = clean_line.lstrip("0 !: ")
+
+        if self.__line_subfile(clean_line) or self.__line_geometry(clean_line):
+            if self.texmap_next:
+                self.__set_texmap_end()
             return True
+
         return False
 
     def __line_subfile(self, clean_line):
@@ -663,6 +644,21 @@ class LDrawFile:
             self.extra_geometry.parse_face(_params, LDrawFile.__texmap)
         else:
             self.geometry.parse_face(_params, LDrawFile.__texmap)
+        return True
+
+    def __line_comment(self, clean_line, strip_line):
+        if not clean_line.startswith("0"):
+            return False
+
+        if self.texmap_next:
+            """"""
+            # if 0 line and texmap next, error
+            # also error
+        elif clean_line.startswith("0 //"):
+            """"""
+        elif self.description is None:
+            self.description = strip_line.split(maxsplit=1)[1]
+
         return True
 
     def __handle_extra_geometry(self):
