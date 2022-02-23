@@ -16,7 +16,7 @@ from . import ldraw_part_types
 
 
 class LDrawFile:
-    __file_lines_cache = {}
+    __raw_files = {}
     __file_cache = {}
     __key_map = {}
     __texmaps = []
@@ -24,7 +24,7 @@ class LDrawFile:
 
     @classmethod
     def reset_caches(cls):
-        cls.__file_lines_cache = {}
+        cls.__raw_files = {}
         cls.__file_cache = {}
         cls.__key_map = {}
         cls.__texmaps = []
@@ -83,7 +83,7 @@ class LDrawFile:
     @classmethod
     def get_file(cls, filename):
         filepath = None
-        if filename not in cls.__file_lines_cache:
+        if filename not in cls.__raw_files:
             # TODO: if missing, use a,b,c,etc parts if available
             filepath = FileSystem.locate(filename)
             if filepath is None:
@@ -117,7 +117,7 @@ class LDrawFile:
                                 first_mpd_filename = mpd_filename
 
                             if current_file is not None:
-                                cls.__file_lines_cache[current_file.filename] = current_file
+                                cls.__raw_files[current_file.filename] = current_file
                             current_file = cls(mpd_filename)
                         elif is_mpd:
                             if no_file:
@@ -126,17 +126,17 @@ class LDrawFile:
                             if clean_line.startswith("0 NOFILE"):
                                 no_file = True
                                 if current_file is not None:
-                                    cls.__file_lines_cache[current_file.filename] = current_file
+                                    cls.__raw_files[current_file.filename] = current_file
                                 current_file = None
 
                             elif current_file is not None:
                                 current_file.lines.append(line)
                         else:
-                            if filename not in cls.__file_lines_cache:
-                                cls.__file_lines_cache[filename] = cls(filename)
-                            cls.__file_lines_cache[filename].lines.append(line)
+                            if filename not in cls.__raw_files:
+                                cls.__raw_files[filename] = cls(filename)
+                            cls.__raw_files[filename].lines.append(line)
                     if current_file is not None:
-                        cls.__file_lines_cache[current_file.filename] = current_file
+                        cls.__raw_files[current_file.filename] = current_file
             except Exception as e:
                 print(e)
 
@@ -145,7 +145,7 @@ class LDrawFile:
 
         ldraw_file = cls(filename)
         ldraw_file.filepath = filepath
-        ldraw_file.lines = cls.__file_lines_cache[filename].lines
+        ldraw_file.lines = cls.__raw_files[filename].lines
         ldraw_file.__parse_file()
         # print(ldraw_file)
         return ldraw_file
