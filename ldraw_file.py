@@ -33,6 +33,7 @@ class LDrawFile:
     def __init__(self, filename):
         self.filepath = None
         self.filename = filename
+        self.lines = []
 
         self.description = None
         self.name = os.path.basename(filename)
@@ -42,8 +43,6 @@ class LDrawFile:
         # to be authored by a user outside of specifications
         self.part_type = None
         self.actual_part_type = None
-
-        self.lines = []
 
         self.child_nodes = []
         self.geometry = LDrawGeometry()
