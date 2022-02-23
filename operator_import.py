@@ -9,7 +9,7 @@ from . import ldraw_part_types
 
 
 class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
-    """Import an LDraw model File."""
+    """Import an LDraw model File"""
 
     bl_idname = "ldraw_exporter.import_operator"
     bl_label = "Import LDraw"
