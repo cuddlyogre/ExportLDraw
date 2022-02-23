@@ -47,7 +47,6 @@ class LDrawFile:
         self.child_nodes = []
         self.geometry = LDrawGeometry()
         self.extra_child_nodes = None
-        self.extra_geometry = None
 
         self.texmap_start = False
         self.texmap_next = False
@@ -196,8 +195,7 @@ class LDrawFile:
             if self.__line_comment(clean_line, strip_line):
                 continue
 
-        if self.extra_geometry is not None or self.extra_child_nodes is not None:
-            self.__handle_extra_geometry()
+        self.__handle_extra_geometry()
 
     @classmethod
     def __build_key(cls, filename, extra=False):
@@ -624,11 +622,21 @@ class LDrawFile:
 
         # if any line in a model file is a subpart, treat that model as a part,
         # otherwise subparts are not parsed correctly
-        # if subpart found, create new LDrawNode with those subparts and add that to child_nodes
+        # 10252 - 10252_towel.dat in 10252-1 - Volkswagen Beetle.mpd
         if self.is_like_model() and (ldraw_file.is_subpart() or ldraw_file.is_primitive()):
-            if self.extra_child_nodes is None:
-                self.extra_child_nodes = []
-            self.extra_child_nodes.append(ldraw_node)
+            treat_models_with_subparts_as_parts = True
+            # if False, if subpart found, create new LDrawNode with those subparts and add that to child_nodes
+            # this has the effect of splitting shortcuts into their constituent parts
+            # parts like u9158.dat and 99141c01.dat are split into several smaller parts
+            # if True, combines models that have subparts and primitives into a single part
+            if treat_models_with_subparts_as_parts:
+                self.actual_part_type = 'part'
+                self.part_type = self.determine_part_type(self.actual_part_type)
+                self.child_nodes.append(ldraw_node)
+            else:
+                if self.extra_child_nodes is None:
+                    self.extra_child_nodes = []
+                self.extra_child_nodes.append(ldraw_node)
         else:
             self.child_nodes.append(ldraw_node)
         return True
@@ -638,14 +646,7 @@ class LDrawFile:
         if _params[0] not in ["2", "3", "4", "5"]:
             return False
 
-        # add geometry that is in a model or shortcut file to a file
-        # object so that it will be parsed
-        if self.is_like_model():
-            if self.extra_geometry is None:
-                self.extra_geometry = LDrawGeometry()
-            self.extra_geometry.parse_face(_params, LDrawFile.__texmap)
-        else:
-            self.geometry.parse_face(_params, LDrawFile.__texmap)
+        self.geometry.parse_face(_params, LDrawFile.__texmap)
         return True
 
     def __line_comment(self, clean_line, strip_line):
@@ -664,20 +665,21 @@ class LDrawFile:
         return True
 
     def __handle_extra_geometry(self):
-        key = self.__build_key(self.filename, extra=True)
-        if key not in LDrawFile.__file_cache:
-            filename = f"{self.name}_extra"
-            ldraw_file = LDrawFile(filename)
-            ldraw_file.actual_part_type = "Extra_Data_Part"
-            ldraw_file.part_type = self.determine_part_type(ldraw_file.actual_part_type)
-            ldraw_file.child_nodes = (self.extra_child_nodes or [])
-            ldraw_file.geometry = (self.extra_geometry or LDrawGeometry())
-            LDrawFile.__file_cache[key] = ldraw_file
-        ldraw_file = LDrawFile.__file_cache[key]
-        ldraw_node = LDrawNode()
-        ldraw_node.line = ""
-        ldraw_node.file = ldraw_file
-        self.child_nodes.append(ldraw_node)
+        if self.extra_child_nodes is not None:
+            key = self.__build_key(self.filename, extra=True)
+            if key not in LDrawFile.__file_cache:
+                filename = f"{self.name}_extra"
+                ldraw_file = LDrawFile(filename)
+                ldraw_file.actual_part_type = "Extra_Data_Part"
+                ldraw_file.part_type = self.determine_part_type(ldraw_file.actual_part_type)
+                ldraw_file.child_nodes = self.extra_child_nodes
+                ldraw_file.geometry = LDrawGeometry()
+                LDrawFile.__file_cache[key] = ldraw_file
+            ldraw_file = LDrawFile.__file_cache[key]
+            ldraw_node = LDrawNode()
+            ldraw_node.line = ""
+            ldraw_node.file = ldraw_file
+            self.child_nodes.append(ldraw_node)
 
     # if there's a line type specified, determine what that type is
     @staticmethod

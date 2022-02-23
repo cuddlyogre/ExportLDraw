@@ -108,11 +108,13 @@ class LDrawNode:
             collection = group.get_filename_collection(self.file.name, bpy.context.scene.collection)
             LDrawNode.top_collection = collection
 
-        if self.file.is_model():
+        # if a file has geometry, treat it like a part
+        # otherwise that geometry won't be rendered
+        if self.file.is_model() and self.file.geometry.vert_count() == 0:
             # if parent_collection is not None, this is a nested model
             if parent_collection is not None:
                 collection = group.get_filename_collection(self.file.name, parent_collection)
-        elif self.file.is_shortcut():
+        elif self.file.is_shortcut() and self.file.geometry.vert_count() == 0:
             # TODO: instead of adding to group, parent to empty
             pass
         elif geometry_data is None:  # top-level part

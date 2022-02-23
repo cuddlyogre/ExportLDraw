@@ -27,6 +27,9 @@ class LDrawGeometry:
         self.face_vert_count = 0
         self.line_vert_count = 0
 
+    def vert_count(self):
+        return self.edge_vert_count + self.face_vert_count + self.line_vert_count
+
     def parse_face(self, _params, texmap=None, inverted=False):
         line_type = _params[0]
 
