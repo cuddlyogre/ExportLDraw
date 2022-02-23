@@ -209,9 +209,12 @@ class LDrawFile:
         if cls.__texmap is not None:
             _key.append(cls.__texmap.id)
         _key = "_".join([str(k).lower() for k in _key])
-        if _key not in cls.__key_map:
+
+        key = cls.__key_map.get(_key)
+        if key is None:
             cls.__key_map[_key] = str(uuid.uuid4())
-        key = cls.__key_map[_key]
+            key = cls.__key_map.get(_key)
+
         return key
 
     def __line_name(self, clean_line, strip_line):

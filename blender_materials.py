@@ -29,12 +29,7 @@ class BlenderMaterials:
     def get_material(cls, color_code, use_edge_color=False, part_slopes=None, texmap=None):
         color = LDrawColor.get_color(color_code)
 
-        _key = cls.__build_key(color, use_edge_color, part_slopes, texmap)
-
-        key = cls.__key_map.get(_key)
-        if key is None:
-            cls.__key_map[_key] = str(uuid.uuid4())
-            key = cls.__key_map.get(_key)
+        key = cls.__build_key(color, use_edge_color, part_slopes, texmap)
 
         # Reuse current material if it exists, otherwise create a new material
         material = bpy.data.materials.get(key)
@@ -44,8 +39,8 @@ class BlenderMaterials:
         material = cls.__create_node_based_material(key, color, use_edge_color=use_edge_color, part_slopes=part_slopes, texmap=texmap)
         return material
 
-    @staticmethod
-    def __build_key(color, use_edge_color, part_slopes, texmap):
+    @classmethod
+    def __build_key(cls, color, use_edge_color, part_slopes, texmap):
         _key = []
         _key.append("LDraw Material")
         _key.append(color.code)
@@ -59,9 +54,14 @@ class BlenderMaterials:
         if texmap is not None:
             texmap_suffix = "_".join([str(k) for k in [texmap.method, texmap.texture, texmap.glossmap] if k != ''])
             _key.append(texmap_suffix)
-        _key = " ".join([str(k) for k in _key])
-        # _key = re.sub(r"[^a-z0-9._]", "-", _key)
-        return _key
+        _key = "_".join([str(k).lower() for k in _key])
+
+        key = cls.__key_map.get(_key)
+        if key is None:
+            cls.__key_map[_key] = str(uuid.uuid4())
+            key = cls.__key_map.get(_key)
+
+        return key
 
     @classmethod
     def __create_node_based_material(cls, key, color, use_edge_color=False, part_slopes=None, texmap=None):

@@ -161,17 +161,19 @@ class LDrawNode:
 
         return self
 
-    @staticmethod
-    def __build_key(filename, color_code, matrix):
+    @classmethod
+    def __build_key(cls, filename, color_code, matrix):
         _key = []
         _key.append(filename)
         _key.append(color_code)
         _key.append(hash(matrix.freeze()))
         _key = "_".join([str(k).lower() for k in _key])
 
-        if _key not in LDrawNode.__key_map:
-            LDrawNode.__key_map[_key] = str(uuid.uuid4())
-        key = LDrawNode.__key_map[_key]
+        key = cls.__key_map.get(_key)
+        if key is None:
+            cls.__key_map[_key] = str(uuid.uuid4())
+            key = cls.__key_map.get(_key)
+
         return key
 
     def create_mesh(self, key, geometry_data):
