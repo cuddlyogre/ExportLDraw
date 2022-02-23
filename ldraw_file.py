@@ -677,6 +677,24 @@ class LDrawFile:
         ldraw_node.file = ldraw_file
         self.child_nodes.append(ldraw_node)
 
+    # if there's a line type specified, determine what that type is
+    @staticmethod
+    def determine_part_type(actual_part_type):
+        _actual_part_type = actual_part_type.lower()
+        if "primitive" in _actual_part_type:
+            return "primitive"
+        elif "subpart" in _actual_part_type:
+            return "subpart"
+        elif "part" in _actual_part_type:
+            return "part"
+        elif "shortcut" in _actual_part_type:
+            return "shortcut"
+        elif "model" in _actual_part_type:
+            return "model"
+        elif "configuration" in _actual_part_type:
+            return "configuration"
+        return "part"
+
     def is_configuration(self):
         return self.part_type in ldraw_part_types.configuration_types
 
@@ -710,21 +728,3 @@ class LDrawFile:
 
     def is_logo(self):
         return self.name in ldraw_part_types.logo_names
-
-    # if there's a line type specified, determine what that type is
-    @staticmethod
-    def determine_part_type(actual_part_type):
-        _actual_part_type = actual_part_type.lower()
-        if "primitive" in _actual_part_type:
-            return "primitive"
-        elif "subpart" in _actual_part_type:
-            return "subpart"
-        elif "part" in _actual_part_type:
-            return "part"
-        elif "shortcut" in _actual_part_type:
-            return "shortcut"
-        elif "model" in _actual_part_type:
-            return "model"
-        elif "configuration" in _actual_part_type:
-            return "configuration"
-        return "part"
