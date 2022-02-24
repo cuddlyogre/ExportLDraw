@@ -33,7 +33,6 @@ class LDrawNode:
     __end_next_collection = False
     __current_step = 0
     __current_step_group = None
-    __geometry_data_cache = {}
     __collection_id_map = {}
     __key_map = {}
 
@@ -67,11 +66,12 @@ class LDrawNode:
         cls.__end_next_collection = False
         cls.__current_step = 0
         cls.__current_step_group = None
-        cls.__geometry_data_cache = {}
         cls.__collection_id_map = {}
         cls.__key_map = {}
 
         cls.__set_step()
+
+        cls.__create_groups_collection()
 
     def __init__(self):
         self.is_root = False
@@ -86,18 +86,10 @@ class LDrawNode:
         if parent_matrix is None:
             parent_matrix = self.__identity
 
-        self.__create_groups_collection()
-
-        if self.__meta_commands():
-            return
-
         # set the working color code to this file's
         # color code if it isn't color code 16
         if self.color_code != "16":
             color_code = self.color_code
-
-        if self.file.is_edge_logo():
-            is_edge_logo = True
 
         top = False
         matrix = parent_matrix @ self.matrix
@@ -118,50 +110,63 @@ class LDrawNode:
             # TODO: instead of adding to group, parent to empty
             pass
         elif geometry_data is None:  # top-level part
-            geometry_data = GeometryData()
-            matrix = self.__identity
-            top = True
             LDrawNode.part_count += 1
+            top = True
+            matrix = self.__identity
+            geometry_data = GeometryData()
 
-        key = self.__build_key(self.file.name, color_code, matrix)
-
-        if key in LDrawNode.__geometry_data_cache:
-            geometry_data = LDrawNode.__geometry_data_cache[key]
-        else:
-            if geometry_data is not None:
-                if (not is_edge_logo) or (is_edge_logo and ImportOptions.display_logo):
-                    geometry_data.add_edge_data(matrix, color_code, self.file.geometry)
-                geometry_data.add_face_data(matrix, color_code, self.file.geometry)
-                geometry_data.add_line_data(matrix, color_code, self.file.geometry)
-
-            for child_node in self.file.child_nodes:
-                child_node.load(
-                    parent_matrix=matrix,
-                    color_code=color_code,
-                    geometry_data=geometry_data,
-                    parent_collection=collection,
-                    is_edge_logo=is_edge_logo,
-                )
-
-                self.__meta_root_group_nxt(child_node)
-
-            # without "if top:"
-            # 10030-1 - Imperial Star Destroyer - UCS.mpd top back of the bridge - 3794a.dat renders incorrectly
-            if top:
-                LDrawNode.__geometry_data_cache[key] = geometry_data
-
-        # TODO: use ldraw_color_code mesh attribute and materials to allow for the same mesh data with different colors
-        if not top:
-            return
+        key = self.__build_key(self.file.name, color_code)
 
         mesh = bpy.data.meshes.get(key)
         if mesh is None:
-            mesh = self.create_mesh(key, geometry_data)
+            if self.meta_command is not None:
+                if self.meta_command == "step":
+                    self.__set_step()
+                elif self.meta_command == "save":
+                    self.__meta_save()
+                elif self.meta_command == "clear":
+                    self.__meta_clear()
+                elif self.meta_command == "print":
+                    self.__meta_print()
+                elif self.meta_command.startswith("group"):
+                    if ImportOptions.meta_group:
+                        if self.meta_command == "group_def":
+                            self.__meta_group_def()
+                        elif self.meta_command == "group_nxt":
+                            self.__meta_group_nxt()
+                        elif self.meta_command == "group_begin":
+                            self.__meta_group_begin()
+                        elif self.meta_command == "group_end":
+                            self.__meta_group_end()
+                elif self.meta_command == "camera":
+                    self.__meta_camera()
+            else:
+                if self.file.is_edge_logo():
+                    is_edge_logo = True
 
-        obj = self.__process_top_object(mesh, parent_matrix, color_code, collection)
-        self.__process_top_edges(key, obj, color_code, collection)
+                if geometry_data is not None:
+                    if (not is_edge_logo) or (is_edge_logo and ImportOptions.display_logo):
+                        geometry_data.add_edge_data(matrix, color_code, self.file.geometry)
+                    geometry_data.add_face_data(matrix, color_code, self.file.geometry)
+                    geometry_data.add_line_data(matrix, color_code, self.file.geometry)
 
-        return self
+                for child_node in self.file.child_nodes:
+                    child_node.load(
+                        parent_matrix=matrix,
+                        color_code=color_code,
+                        geometry_data=geometry_data,
+                        parent_collection=collection,
+                        is_edge_logo=is_edge_logo,
+                    )
+
+                    self.__meta_root_group_nxt(child_node)
+
+        if top:
+            if mesh is None:
+                mesh = self.create_mesh(key, geometry_data)
+
+            obj = self.__process_top_object(mesh, parent_matrix, color_code, collection)
+            self.__process_top_edges(key, obj, color_code, collection)
 
     @classmethod
     def __build_key(cls, filename, color_code, matrix):
@@ -471,32 +476,6 @@ class LDrawNode:
             host_collection = parts_collection
             c = group.get_collection(collection_name, host_collection)
             cls.__current_step_group = c
-
-    def __meta_commands(self):
-        if self.file is not None:
-            return False
-
-        if self.meta_command == "step":
-            self.__set_step()
-        elif self.meta_command == "save":
-            self.__meta_save()
-        elif self.meta_command == "clear":
-            self.__meta_clear()
-        elif self.meta_command == "print":
-            self.__meta_print()
-        elif self.meta_command.startswith("group"):
-            if ImportOptions.meta_group:
-                if self.meta_command == "group_def":
-                    self.__meta_group_def()
-                elif self.meta_command == "group_nxt":
-                    self.__meta_group_nxt()
-                elif self.meta_command == "group_begin":
-                    self.__meta_group_begin()
-                elif self.meta_command == "group_end":
-                    self.__meta_group_end()
-        elif self.meta_command == "camera":
-            self.__meta_camera()
-        return True
 
     # https://docs.blender.org/api/current/bpy.types.bpy_struct.html#bpy.types.bpy_struct.keyframe_insert
     # https://docs.blender.org/api/current/bpy.types.Scene.html?highlight=frame_set#bpy.types.Scene.frame_set

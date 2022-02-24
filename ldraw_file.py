@@ -261,6 +261,7 @@ class LDrawFile:
             return False
 
         ldraw_node = LDrawNode()
+        ldraw_node.file = self
         ldraw_node.line = clean_line
         ldraw_node.meta_command = "step"
         self.child_nodes.append(ldraw_node)
@@ -272,6 +273,7 @@ class LDrawFile:
             return False
 
         ldraw_node = LDrawNode()
+        ldraw_node.file = self
         ldraw_node.line = clean_line
         ldraw_node.meta_command = "save"
         self.child_nodes.append(ldraw_node)
@@ -283,6 +285,7 @@ class LDrawFile:
             return False
 
         ldraw_node = LDrawNode()
+        ldraw_node.file = self
         ldraw_node.line = clean_line
         ldraw_node.meta_command = "clear"
         self.child_nodes.append(ldraw_node)
@@ -294,6 +297,7 @@ class LDrawFile:
             return False
 
         ldraw_node = LDrawNode()
+        ldraw_node.file = self
         ldraw_node.line = clean_line
         ldraw_node.meta_command = "print"
         ldraw_node.meta_args["message"] = clean_line.split(maxsplit=2)[2]
@@ -320,6 +324,7 @@ class LDrawFile:
         # http://www.melkert.net/LDCad/tech/meta
         _params = re.search(r"\S+\s+\S+\s+\S+\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])", clean_line)
         ldraw_node = LDrawNode()
+        ldraw_node.file = self
         ldraw_node.line = clean_line
         ldraw_node.meta_command = "group_def"
         id_args = re.search(r"\[(.*)=(.*)\]", _params[2])
@@ -336,6 +341,7 @@ class LDrawFile:
 
         _params = re.search(r"\S+\s+\S+\s+\S+\s+(\[.*\])\s+(\[.*\])", clean_line)
         ldraw_node = LDrawNode()
+        ldraw_node.file = self
         ldraw_node.line = clean_line
         ldraw_node.meta_command = "group_nxt"
         id_args = re.search(r"\[(.*)=(.*)\]", _params[1])
@@ -366,6 +372,7 @@ class LDrawFile:
         # https://www.leocad.org/docs/meta.html
         name_args = clean_line.split(maxsplit=4)
         ldraw_node = LDrawNode()
+        ldraw_node.file = self
         ldraw_node.line = clean_line
         ldraw_node.meta_command = "group_begin"
         ldraw_node.meta_args["name"] = name_args[4]
@@ -378,6 +385,7 @@ class LDrawFile:
             return False
 
         ldraw_node = LDrawNode()
+        ldraw_node.file = self
         ldraw_node.line = clean_line
         ldraw_node.meta_command = "group_end"
         self.child_nodes.append(ldraw_node)
@@ -436,6 +444,7 @@ class LDrawFile:
                 _params = []
 
                 ldraw_node = LDrawNode()
+                ldraw_node.file = self
                 ldraw_node.line = clean_line
                 ldraw_node.meta_command = "camera"
                 ldraw_node.meta_args["camera"] = self.camera
@@ -615,8 +624,8 @@ class LDrawFile:
             return True
 
         ldraw_node = LDrawNode()
-        ldraw_node.line = clean_line
         ldraw_node.file = ldraw_file
+        ldraw_node.line = clean_line
         ldraw_node.color_code = color_code
         ldraw_node.matrix = matrix
 
@@ -677,8 +686,8 @@ class LDrawFile:
                 LDrawFile.__file_cache[key] = ldraw_file
             ldraw_file = LDrawFile.__file_cache[key]
             ldraw_node = LDrawNode()
-            ldraw_node.line = ""
             ldraw_node.file = ldraw_file
+            ldraw_node.line = ""
             self.child_nodes.append(ldraw_node)
 
     # if there's a line type specified, determine what that type is
