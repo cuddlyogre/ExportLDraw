@@ -1,7 +1,5 @@
 import mathutils
 
-from .import_options import ImportOptions
-
 
 class FaceInfo:
     """
@@ -12,6 +10,9 @@ class FaceInfo:
         self.color_code = color_code
         self.vertices = vertices
         self.texmap = texmap
+
+    def vert_count(self):
+        return len(self.vertices)
 
 
 class LDrawGeometry:
@@ -60,26 +61,22 @@ class LDrawGeometry:
             verts.append(vertex)
 
         if line_type == "2":
-            self.edge_vert_count += len(verts)
-            self.edge_infos.append(FaceInfo(color_code, verts))
+            face_info = FaceInfo(color_code, verts)
+            self.edge_vert_count += face_info.vert_count()
+            self.edge_infos.append(face_info)
+            return face_info
         elif line_type == "3":
-            self.face_vert_count += len(verts)
-            self.face_infos.append(FaceInfo(color_code, verts, texmap=texmap))
+            face_info = FaceInfo(color_code, verts, texmap=texmap)
+            self.face_vert_count += face_info.vert_count()
+            self.face_infos.append(face_info)
+            return face_info
         elif line_type == "4":
-            # bowtie quads - https://wiki.ldraw.org/wiki/LDraw_Files_Requirements#Complex_quadrilaterals
-            # vA = (verts[1] - verts[0]).cross(verts[2] - verts[0])
-            # vB = (verts[2] - verts[1]).cross(verts[3] - verts[1])
-            # if vA.dot(vB) < 0:
-            #     verts[2], verts[3] = verts[3], verts[2]
-
-            self.face_vert_count += len(verts)
-            if ImportOptions.triangulate:
-                verts1 = [verts[0], verts[1], verts[2]]
-                self.face_infos.append(FaceInfo(color_code, verts1, texmap=texmap))
-                verts2 = [verts[2], verts[3], verts[0]]
-                self.face_infos.append(FaceInfo(color_code, verts2, texmap=texmap))
-            else:
-                self.face_infos.append(FaceInfo(color_code, verts, texmap=texmap))
+            face_info = FaceInfo(color_code, verts, texmap=texmap)
+            self.face_vert_count += face_info.vert_count()
+            self.face_infos.append(face_info)
+            return face_info
         elif line_type == "5":
-            self.line_vert_count += len(verts)
-            self.line_infos.append(FaceInfo(color_code, verts))
+            face_info = FaceInfo(color_code, verts)
+            self.line_vert_count += face_info.vert_count()
+            self.line_infos.append(face_info)
+            return face_info

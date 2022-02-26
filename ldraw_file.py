@@ -300,7 +300,7 @@ class LDrawFile:
         ldraw_node.file = self
         ldraw_node.line = clean_line
         ldraw_node.meta_command = "print"
-        ldraw_node.meta_args["message"] = clean_line.split(maxsplit=2)[2]
+        ldraw_node.meta_args = clean_line.split(maxsplit=2)[2]
         self.child_nodes.append(ldraw_node)
 
         return True
@@ -447,7 +447,7 @@ class LDrawFile:
                 ldraw_node.file = self
                 ldraw_node.line = clean_line
                 ldraw_node.meta_command = "camera"
-                ldraw_node.meta_args["camera"] = self.camera
+                ldraw_node.meta_args = self.camera
                 self.child_nodes.append(ldraw_node)
 
                 self.camera = None
@@ -585,13 +585,6 @@ class LDrawFile:
             (0, 0, 0, 1)
         ))
 
-        # matrix = mathutils.Matrix((
-        #     (a, d, g, 0),
-        #     (b, e, h, 0),
-        #     (c, f, i, 0),
-        #     (x, y, z, 1)
-        # ))
-
         filename = _params[14].lower()
 
         # filename = "stud-logo.dat"
@@ -620,12 +613,10 @@ class LDrawFile:
                 return True
             LDrawFile.__file_cache[key] = ldraw_file
 
-        if ImportOptions.no_studs and ldraw_file.is_like_stud():
-            return True
-
         ldraw_node = LDrawNode()
         ldraw_node.file = ldraw_file
         ldraw_node.line = clean_line
+        ldraw_node.meta_command = "subfile"
         ldraw_node.color_code = color_code
         ldraw_node.matrix = matrix
 
@@ -655,7 +646,15 @@ class LDrawFile:
         if _params[0] not in ["2", "3", "4", "5"]:
             return False
 
-        self.geometry.parse_face(_params, LDrawFile.__texmap)
+        face_info = self.geometry.parse_face(_params, LDrawFile.__texmap)
+
+        ldraw_node = LDrawNode()
+        ldraw_node.file = self
+        ldraw_node.line = clean_line
+        ldraw_node.meta_command = _params[0]
+        ldraw_node.meta_args = face_info
+        self.child_nodes.append(ldraw_node)
+
         return True
 
     def __line_comment(self, clean_line, strip_line):

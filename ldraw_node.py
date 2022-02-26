@@ -82,14 +82,14 @@ class LDrawNode:
         self.meta_command = None
         self.meta_args = {}
 
-    def load(self, parent_matrix=None, color_code="16", geometry_data=None, parent_collection=None, is_edge_logo=False):
-        if parent_matrix is None:
-            parent_matrix = self.__identity
-
+    def load(self, color_code="16", parent_matrix=None, geometry_data=None, parent_collection=None):
         # set the working color code to this file's
         # color code if it isn't color code 16
         if self.color_code != "16":
             color_code = self.color_code
+
+        if parent_matrix is None:
+            parent_matrix = self.__identity
 
         top = False
         matrix = parent_matrix @ self.matrix
@@ -119,62 +119,46 @@ class LDrawNode:
 
         mesh = bpy.data.meshes.get(key)
         if mesh is None:
-            if self.meta_command is not None:
-                if self.meta_command == "step":
-                    self.__set_step()
-                elif self.meta_command == "save":
-                    self.__meta_save()
-                elif self.meta_command == "clear":
-                    self.__meta_clear()
-                elif self.meta_command == "print":
-                    self.__meta_print()
-                elif self.meta_command.startswith("group"):
-                    if ImportOptions.meta_group:
-                        if self.meta_command == "group_def":
-                            self.__meta_group_def()
-                        elif self.meta_command == "group_nxt":
-                            self.__meta_group_nxt()
-                        elif self.meta_command == "group_begin":
-                            self.__meta_group_begin()
-                        elif self.meta_command == "group_end":
-                            self.__meta_group_end()
-                elif self.meta_command == "camera":
-                    self.__meta_camera()
+            if not ImportOptions.display_logo and self.file.is_edge_logo():
+                pass
+            elif ImportOptions.no_studs and self.file.is_like_stud():
+                pass
             else:
-                if self.file.is_edge_logo():
-                    is_edge_logo = True
-
-                if geometry_data is not None:
-                    if (not is_edge_logo) or (is_edge_logo and ImportOptions.display_logo):
-                        geometry_data.add_edge_data(matrix, color_code, self.file.geometry)
-                    geometry_data.add_face_data(matrix, color_code, self.file.geometry)
-                    geometry_data.add_line_data(matrix, color_code, self.file.geometry)
-
                 for child_node in self.file.child_nodes:
-                    child_node.load(
-                        parent_matrix=matrix,
-                        color_code=color_code,
-                        geometry_data=geometry_data,
-                        parent_collection=collection,
-                        is_edge_logo=is_edge_logo,
-                    )
-
-                    self.__meta_root_group_nxt(child_node)
+                    if child_node.meta_command == "step":
+                        self.__set_step()
+                    elif child_node.meta_command == "save":
+                        child_node.__meta_save()
+                    elif child_node.meta_command == "clear":
+                        child_node.__meta_clear()
+                    elif child_node.meta_command == "print":
+                        child_node.__meta_print()
+                    elif child_node.meta_command.startswith("group"):
+                        child_node.__meta_group()
+                    elif child_node.meta_command == "camera":
+                        child_node.__meta_camera()
+                    elif child_node.meta_command == "2":
+                        child_node.__meta_edge(color_code, matrix, geometry_data)
+                    elif child_node.meta_command in ["3", "4"]:
+                        child_node.__meta_face(color_code, matrix, geometry_data)
+                    elif child_node.meta_command == "5":
+                        child_node.__meta_line(color_code, matrix, geometry_data)
+                    elif child_node.meta_command == "subfile":
+                        self.__meta_subfile(child_node, color_code, matrix, geometry_data, collection)
 
         if top:
             if mesh is None:
-                mesh = self.create_mesh(key, geometry_data)
-
+                mesh = self.__create_mesh(key, geometry_data)
             obj = self.__process_top_object(mesh, parent_matrix, color_code, collection)
             self.__process_top_edges(key, obj, color_code, collection)
 
     @classmethod
-    def __build_key(cls, filename, color_code, matrix):
+    def __build_key(cls, filename, color_code):
         _key = []
         _key.append(filename)
         _key.append(color_code)
-        _key.append(hash(matrix.freeze()))
         _key = "_".join([str(k).lower() for k in _key])
+        return _key
 
         key = cls.__key_map.get(_key)
         if key is None:
@@ -183,7 +167,7 @@ class LDrawNode:
 
         return key
 
-    def create_mesh(self, key, geometry_data):
+    def __create_mesh(self, key, geometry_data):
         bm = bmesh.new()
 
         mesh = bpy.data.meshes.new(key)
@@ -222,35 +206,29 @@ class LDrawNode:
 
     def __process_bmesh_faces(self, geometry_data, bm, mesh):
         for fd in geometry_data.face_data:
-            for fi in fd.face_infos:
-                face = self.__create_bmesh_face(bm, fd, fi)
-                self.__process_bmesh_face(bm, mesh, face, fd, fi)
+            face_info = fd.face_info
 
-    @staticmethod
-    def __create_bmesh_face(bm, fd, fi):
-        verts = []
-        for vertex in fi.vertices:
-            vert = fd.matrix @ vertex
-            bm_vert = bm.verts.new(vert)
-            verts.append(bm_vert)
-        face = bm.faces.new(verts)
-        return face
+            verts = []
+            for vertex in face_info.vertices:
+                vert = fd.matrix @ vertex
+                bm_vert = bm.verts.new(vert)
+                verts.append(bm_vert)
+            face = bm.faces.new(verts)
 
-    def __process_bmesh_face(self, bm, mesh, face, fd, fi):
-        color_code = fd.color_code
-        if fi.color_code != "16":
-            color_code = fi.color_code
+            color_code = fd.color_code
+            if face_info.color_code != "16":
+                color_code = face_info.color_code
 
-        part_slopes = special_bricks.get_part_slopes(self.file.name)
-        material = BlenderMaterials.get_material(color_code, part_slopes=part_slopes, texmap=fi.texmap)
-        if material.name not in mesh.materials:
-            mesh.materials.append(material)
+            part_slopes = special_bricks.get_part_slopes(self.file.name)
+            material = BlenderMaterials.get_material(color_code, part_slopes=part_slopes, texmap=face_info.texmap)
+            if material.name not in mesh.materials:
+                mesh.materials.append(material)
 
-        face.smooth = ImportOptions.shade_smooth
-        face.material_index = mesh.materials.find(material.name)
+            face.smooth = ImportOptions.shade_smooth
+            face.material_index = mesh.materials.find(material.name)
 
-        if fi.texmap is not None:
-            fi.texmap.uv_unwrap_face(bm, face)
+            if face_info.texmap is not None:
+                face_info.texmap.uv_unwrap_face(bm, face)
 
     @staticmethod
     def __clean_bmesh(bm):
@@ -295,24 +273,25 @@ class LDrawNode:
 
         i = 0
         for ed in geometry_data.edge_data:
-            for fi in ed.face_infos:
-                edge_verts = []
-                face_indices = []
-                for vertex in fi.vertices:
-                    vert = ed.matrix @ vertex
-                    e_verts.append(vert)
-                    edge_verts.append(vert)
-                    face_indices.append(i)
-                    i += 1
-                e_faces.append(face_indices)
+            face_info = ed.face_info
 
-                if ImportOptions.remove_doubles:
-                    edges0 = [index for (co, index, dist) in kd.find_range(edge_verts[0], distance)]
-                    edges1 = [index for (co, index, dist) in kd.find_range(edge_verts[1], distance)]
-                    for e0 in edges0:
-                        for e1 in edges1:
-                            edge_indices.add((e0, e1))
-                            edge_indices.add((e1, e0))
+            edge_verts = []
+            face_indices = []
+            for vertex in face_info.vertices:
+                vert = ed.matrix @ vertex
+                e_verts.append(vert)
+                edge_verts.append(vert)
+                face_indices.append(i)
+                i += 1
+            e_faces.append(face_indices)
+
+            if ImportOptions.remove_doubles:
+                edges0 = [index for (co, index, dist) in kd.find_range(edge_verts[0], distance)]
+                edges1 = [index for (co, index, dist) in kd.find_range(edge_verts[1], distance)]
+                for e0 in edges0:
+                    for e1 in edges1:
+                        edge_indices.add((e0, e1))
+                        edge_indices.add((e1, e0))
 
         return e_edges, e_faces, e_verts, edge_indices
 
@@ -515,7 +494,18 @@ class LDrawNode:
 
     def __meta_print(self):
         if ImportOptions.meta_print_write:
-            print(self.meta_args["message"])
+            print(self.meta_args)
+
+    def __meta_group(self):
+        if ImportOptions.meta_group:
+            if self.meta_command == "group_def":
+                self.__meta_group_def()
+            elif self.meta_command == "group_nxt":
+                self.__meta_group_nxt()
+            elif self.meta_command == "group_begin":
+                self.__meta_group_begin()
+            elif self.meta_command == "group_end":
+                self.__meta_group_end()
 
     def __meta_group_def(self):
         LDrawNode.__collection_id_map[self.meta_args["id"]] = self.meta_args["name"]
@@ -561,3 +551,34 @@ class LDrawNode:
     def __meta_camera(self):
         print(self.meta_args)
         LDrawNode.cameras.append(self.meta_args["camera"])
+
+    def __meta_edge(self, color_code, matrix, geometry_data):
+        geometry_data.add_edge_data(
+            color_code=color_code,
+            matrix=matrix,
+            face_info=self.meta_args,
+        )
+
+    def __meta_face(self, color_code, matrix, geometry_data):
+        geometry_data.add_face_data(
+            color_code=color_code,
+            matrix=matrix,
+            face_info=self.meta_args,
+        )
+
+    def __meta_line(self, color_code, matrix, geometry_data):
+        geometry_data.add_line_data(
+            color_code=color_code,
+            matrix=matrix,
+            face_info=self.meta_args,
+        )
+
+    def __meta_subfile(self, child_node, color_code, matrix, geometry_data, collection):
+        child_node.load(
+            color_code=color_code,
+            parent_matrix=matrix,
+            geometry_data=geometry_data,
+            parent_collection=collection
+        )
+
+        self.__meta_root_group_nxt(child_node)
