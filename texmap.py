@@ -10,20 +10,29 @@ from . import helpers
 # https://github.com/trevorsandy/lpub3d/blob/e7c39cd3df518cf16521dc2c057a9f125cc3b5c3/lclib/common/lc_meshloader.cpp#L1486
 # https://stackoverflow.com/questions/53970131/how-to-find-the-clockwise-angle-between-two-vectors-in-python#53970746
 class TexMap:
-    def __init__(self, method, parameters, texture, glossmap=''):
+    def __init__(self, method):
         self.id = str(uuid.uuid4())
         self.method = method
-        self.parameters = parameters
-        self.texture = texture
-        self.glossmap = glossmap
+        self.parameters = None
+        self.texture = None
+        self.glossmap = None
         self.uvs = {}
 
+    def is_planar(self):
+        return self.method == 'PLANAR'
+
+    def is_cylindrical(self):
+        return self.method == 'CYLINDRICAL'
+
+    def is_spherical(self):
+        return self.method == 'SPHERICAL'
+
     def uv_unwrap_face(self, bm, face):
-        if self.method in ['planar']:
+        if self.is_planar():
             self.__map_planar(bm, face)
-        elif self.method in ['cylindrical']:
+        elif self.is_cylindrical():
             self.__map_cylindrical(bm, face)
-        elif self.method in ['spherical']:
+        elif self.is_spherical():
             self.__map_spherical(bm, face)
 
     # negative v because blender uv starts at bottom left of image, LDraw orientation of up=-y so use top left

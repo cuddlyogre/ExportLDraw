@@ -461,87 +461,77 @@ class LDrawFile:
             return False
 
         # https://www.ldraw.org/documentation/ldraw-org-file-format-standards/language-extension-for-texture-mapping.html
-        _params = helpers.get_params(clean_line, "0 !TEXMAP ")
 
         if self.texmap_start:
-            if _params[0].lower() in ["fallback"]:
+            if clean_line == "0 !TEXMAP FALLBACK":
                 self.texmap_fallback = True
-            elif _params[0].lower() in ["end"]:
+            elif clean_line == "0 !TEXMAP END":
                 self.__set_texmap_end()
-        elif _params[0].lower() in ["start", "next"]:
-            if _params[0].lower() == "start":
+        elif clean_line.startswith("0 !TEXMAP START ") or clean_line.startswith("0 !TEXMAP NEXT "):
+            if clean_line.startswith("0 !TEXMAP START "):
                 self.texmap_start = True
-            elif _params[0].lower() == "next":
+            elif clean_line.startswith("0 !TEXMAP NEXT "):
                 self.texmap_next = True
             self.texmap_fallback = False
 
-            new_texmap = None
-            method = _params[1].lower()
-            if method in ['planar']:
-                _params = clean_line.lstrip("0 !TEXMAP ").split(maxsplit=11)  # planar
+            method = clean_line.split()[3]
 
-                (x1, y1, z1, x2, y2, z2, x3, y3, z3) = map(float, _params[2:11])
+            new_texmap = TexMap(method=method)
+            if new_texmap.is_planar():
+                _params = clean_line.split(maxsplit=13)  # planar
 
-                texture_params = helpers.parse_csv_line(_params[11], 2)
-                texture = texture_params[0]
-                glossmap = texture_params[1]
-
-                new_texmap = TexMap(
-                    method=method,
-                    parameters=[
-                        mathutils.Vector((x1, y1, z1)),
-                        mathutils.Vector((x2, y2, z2)),
-                        mathutils.Vector((x3, y3, z3)),
-                    ],
-                    texture=texture,
-                    glossmap=glossmap,
-                )
-            elif method in ['cylindrical']:
-                _params = clean_line.lstrip("0 !TEXMAP ").split(maxsplit=12)  # cylindrical
-
-                (x1, y1, z1, x2, y2, z2, x3, y3, z3, a) = map(float, _params[2:12])
-
-                texture_params = helpers.parse_csv_line(_params[12], 2)
-                texture = texture_params[0]
-                glossmap = texture_params[1]
-
-                new_texmap = TexMap(
-                    method=method,
-                    parameters=[
-                        mathutils.Vector((x1, y1, z1)),
-                        mathutils.Vector((x2, y2, z2)),
-                        mathutils.Vector((x3, y3, z3)),
-                        a,
-                    ],
-                    texture=texture,
-                    glossmap=glossmap,
-                )
-            elif method in ['spherical']:
-                _params = clean_line.lstrip("0 !TEXMAP ").split(maxsplit=13)  # spherical
-
-                (x1, y1, z1, x2, y2, z2, x3, y3, z3, a, b) = map(float, _params[2:13])
+                (x1, y1, z1, x2, y2, z2, x3, y3, z3) = map(float, _params[4:13])
 
                 texture_params = helpers.parse_csv_line(_params[13], 2)
                 texture = texture_params[0]
                 glossmap = texture_params[1]
 
-                new_texmap = TexMap(
-                    method=method,
-                    parameters=[
-                        mathutils.Vector((x1, y1, z1)),
-                        mathutils.Vector((x2, y2, z2)),
-                        mathutils.Vector((x3, y3, z3)),
-                        a,
-                        b,
-                    ],
-                    texture=texture,
-                    glossmap=glossmap,
-                )
+                new_texmap.parameters = [
+                    mathutils.Vector((x1, y1, z1)),
+                    mathutils.Vector((x2, y2, z2)),
+                    mathutils.Vector((x3, y3, z3)),
+                ]
+                new_texmap.texture = texture
+                new_texmap.glossmap = glossmap
+            elif new_texmap.is_cylindrical():
+                _params = clean_line.split(maxsplit=14)  # cylindrical
 
-            if new_texmap is not None:
-                if LDrawFile.__texmap is not None:
-                    LDrawFile.__texmaps.append(LDrawFile.__texmap)
-                LDrawFile.__texmap = new_texmap
+                (x1, y1, z1, x2, y2, z2, x3, y3, z3, a) = map(float, _params[4:14])
+
+                texture_params = helpers.parse_csv_line(_params[14], 2)
+                texture = texture_params[0]
+                glossmap = texture_params[1]
+
+                new_texmap.parameters = [
+                    mathutils.Vector((x1, y1, z1)),
+                    mathutils.Vector((x2, y2, z2)),
+                    mathutils.Vector((x3, y3, z3)),
+                    a,
+                ]
+                new_texmap.texture = texture
+                new_texmap.glossmap = glossmap
+            elif new_texmap.is_spherical():
+                _params = clean_line.split(maxsplit=15)  # spherical
+
+                (x1, y1, z1, x2, y2, z2, x3, y3, z3, a, b) = map(float, _params[4:15])
+
+                texture_params = helpers.parse_csv_line(_params[15], 2)
+                texture = texture_params[0]
+                glossmap = texture_params[1]
+
+                new_texmap.parameters = [
+                    mathutils.Vector((x1, y1, z1)),
+                    mathutils.Vector((x2, y2, z2)),
+                    mathutils.Vector((x3, y3, z3)),
+                    a,
+                    b,
+                ]
+                new_texmap.texture = texture
+                new_texmap.glossmap = glossmap
+
+            if LDrawFile.__texmap is not None:
+                LDrawFile.__texmaps.append(LDrawFile.__texmap)
+            LDrawFile.__texmap = new_texmap
 
         return True
 
