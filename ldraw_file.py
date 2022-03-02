@@ -7,7 +7,6 @@ from .import_options import ImportOptions
 from .filesystem import FileSystem
 from .ldraw_node import LDrawNode
 from .ldraw_geometry import LDrawGeometry
-from .texmap import TexMap
 from .ldraw_colors import LDrawColor
 from .ldraw_camera import LDrawCamera
 
@@ -19,16 +18,12 @@ class LDrawFile:
     __raw_files = {}
     __file_cache = {}
     __key_map = {}
-    __texmaps = []
-    __texmap = None
 
     @classmethod
     def reset_caches(cls):
         cls.__raw_files = {}
         cls.__file_cache = {}
         cls.__key_map = {}
-        cls.__texmaps = []
-        cls.__texmap = None
 
     def __init__(self, filename):
         self.filepath = None
@@ -47,10 +42,6 @@ class LDrawFile:
         self.child_nodes = []
         self.geometry = LDrawGeometry()
         self.extra_child_nodes = None
-
-        self.texmap_start = False
-        self.texmap_next = False
-        self.texmap_fallback = False
 
         self.camera = None
 
@@ -203,8 +194,6 @@ class LDrawFile:
         _key.append(filename)
         if extra:
             _key.append("extra")
-        if cls.__texmap is not None:
-            _key.append(cls.__texmap.id)
         _key = "_".join([str(k).lower() for k in _key])
 
         key = cls.__key_map.get(_key)
@@ -460,110 +449,27 @@ class LDrawFile:
         if not clean_line.startswith("0 !TEXMAP "):
             return False
 
-        # https://www.ldraw.org/documentation/ldraw-org-file-format-standards/language-extension-for-texture-mapping.html
-
-        if self.texmap_start:
-            if clean_line == "0 !TEXMAP FALLBACK":
-                self.texmap_fallback = True
-            elif clean_line == "0 !TEXMAP END":
-                self.__set_texmap_end()
-        elif clean_line.startswith("0 !TEXMAP START ") or clean_line.startswith("0 !TEXMAP NEXT "):
-            if clean_line.startswith("0 !TEXMAP START "):
-                self.texmap_start = True
-            elif clean_line.startswith("0 !TEXMAP NEXT "):
-                self.texmap_next = True
-            self.texmap_fallback = False
-
-            method = clean_line.split()[3]
-
-            new_texmap = TexMap(method=method)
-            if new_texmap.is_planar():
-                _params = clean_line.split(maxsplit=13)  # planar
-
-                (x1, y1, z1, x2, y2, z2, x3, y3, z3) = map(float, _params[4:13])
-
-                texture_params = helpers.parse_csv_line(_params[13], 2)
-                texture = texture_params[0]
-                glossmap = texture_params[1]
-
-                new_texmap.parameters = [
-                    mathutils.Vector((x1, y1, z1)),
-                    mathutils.Vector((x2, y2, z2)),
-                    mathutils.Vector((x3, y3, z3)),
-                ]
-                new_texmap.texture = texture
-                new_texmap.glossmap = glossmap
-            elif new_texmap.is_cylindrical():
-                _params = clean_line.split(maxsplit=14)  # cylindrical
-
-                (x1, y1, z1, x2, y2, z2, x3, y3, z3, a) = map(float, _params[4:14])
-
-                texture_params = helpers.parse_csv_line(_params[14], 2)
-                texture = texture_params[0]
-                glossmap = texture_params[1]
-
-                new_texmap.parameters = [
-                    mathutils.Vector((x1, y1, z1)),
-                    mathutils.Vector((x2, y2, z2)),
-                    mathutils.Vector((x3, y3, z3)),
-                    a,
-                ]
-                new_texmap.texture = texture
-                new_texmap.glossmap = glossmap
-            elif new_texmap.is_spherical():
-                _params = clean_line.split(maxsplit=15)  # spherical
-
-                (x1, y1, z1, x2, y2, z2, x3, y3, z3, a, b) = map(float, _params[4:15])
-
-                texture_params = helpers.parse_csv_line(_params[15], 2)
-                texture = texture_params[0]
-                glossmap = texture_params[1]
-
-                new_texmap.parameters = [
-                    mathutils.Vector((x1, y1, z1)),
-                    mathutils.Vector((x2, y2, z2)),
-                    mathutils.Vector((x3, y3, z3)),
-                    a,
-                    b,
-                ]
-                new_texmap.texture = texture
-                new_texmap.glossmap = glossmap
-
-            if LDrawFile.__texmap is not None:
-                LDrawFile.__texmaps.append(LDrawFile.__texmap)
-            LDrawFile.__texmap = new_texmap
+        ldraw_node = LDrawNode()
+        ldraw_node.file = self
+        ldraw_node.line = clean_line
+        ldraw_node.meta_command = "texmap"
+        self.child_nodes.append(ldraw_node)
 
         return True
 
-    def __set_texmap_end(self):
-        try:
-            LDrawFile.__texmap = LDrawFile.__texmaps.pop()
-        except Exception as e:
-            LDrawFile.__texmap = None
-
-        self.texmap_start = False
-        self.texmap_next = False
-        self.texmap_fallback = False
-
     def __parse_geometry_line(self, clean_line):
-        if self.texmap_fallback:
-            return True
-
-        if self.texmap_start:
-            # remove 0 !: from line so that it can be parsed like a normal line
-            clean_line = clean_line.lstrip("0 !: ")
+        clean_line = clean_line.lstrip("0 !: ")
 
         if self.__line_subfile(clean_line) or self.__line_geometry(clean_line):
-            if self.texmap_next:
-                self.__set_texmap_end()
             return True
 
         return False
 
     def __line_subfile(self, clean_line):
-        _params = clean_line.split(maxsplit=14)
-        if _params[0] != "1":
+        if not clean_line.startswith("1 "):
             return False
+
+        _params = clean_line.split(maxsplit=14)
 
         color_code = _params[1]
 
@@ -618,6 +524,7 @@ class LDrawFile:
             # if False, if subpart found, create new LDrawNode with those subparts and add that to child_nodes
             # this has the effect of splitting shortcuts into their constituent parts
             # parts like u9158.dat and 99141c01.dat are split into several smaller parts
+            # texmaps might not render properly in this instance
             # if True, combines models that have subparts and primitives into a single part
             if treat_models_with_subparts_as_parts:
                 self.actual_part_type = 'part'
@@ -632,11 +539,17 @@ class LDrawFile:
         return True
 
     def __line_geometry(self, clean_line):
-        _params = clean_line.split(maxsplit=14)
-        if _params[0] not in ["2", "3", "4", "5"]:
+        if not (
+                clean_line.startswith("2 ") or
+                clean_line.startswith("3 ") or
+                clean_line.startswith("4 ") or
+                clean_line.startswith("5 ")
+        ):
             return False
 
-        face_info = self.geometry.parse_face(_params, LDrawFile.__texmap)
+        _params = clean_line.split(maxsplit=14)
+
+        face_info = self.geometry.parse_face(_params)
 
         ldraw_node = LDrawNode()
         ldraw_node.file = self
@@ -651,11 +564,7 @@ class LDrawFile:
         if not clean_line.startswith("0"):
             return False
 
-        if self.texmap_next:
-            """"""
-            # if 0 line and texmap next, error
-            # also error
-        elif clean_line.startswith("0 //"):
+        if clean_line.startswith("0 //"):
             """"""
         elif self.description is None:
             self.description = strip_line.split(maxsplit=1)[1]
@@ -677,6 +586,7 @@ class LDrawFile:
             ldraw_node = LDrawNode()
             ldraw_node.file = ldraw_file
             ldraw_node.line = ""
+            ldraw_node.meta_command = "subfile"
             self.child_nodes.append(ldraw_node)
 
     # if there's a line type specified, determine what that type is

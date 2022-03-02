@@ -12,6 +12,7 @@ from .blender_materials import BlenderMaterials
 from .geometry_data import GeometryData
 from .import_options import ImportOptions
 from .ldraw_colors import LDrawColor
+from .texmap import TexMap
 from . import helpers
 
 
@@ -35,6 +36,9 @@ class LDrawNode:
     __current_step_group = None
     __collection_id_map = {}
     __key_map = {}
+
+    __texmaps = []
+    __texmap = None
 
     __auto_smooth_angle = 31
     __auto_smooth_angle = 44.97
@@ -69,6 +73,9 @@ class LDrawNode:
         cls.__collection_id_map = {}
         cls.__key_map = {}
 
+        cls.__texmaps = []
+        cls.__texmap = None
+
         cls.__set_step()
 
         cls.__create_groups_collection()
@@ -81,6 +88,10 @@ class LDrawNode:
         self.matrix = self.__identity
         self.meta_command = None
         self.meta_args = {}
+
+        self.texmap_start = False
+        self.texmap_next = False
+        self.texmap_fallback = False
 
     def load(self, color_code="16", parent_matrix=None, geometry_data=None, parent_collection=None):
         # set the working color code to this file's
@@ -102,13 +113,10 @@ class LDrawNode:
 
         # if a file has geometry, treat it like a part
         # otherwise that geometry won't be rendered
-        if self.file.is_model() and self.file.geometry.vert_count() == 0:
+        if self.file.is_like_model() and self.file.geometry.vert_count() == 0:
             # if parent_collection is not None, this is a nested model
             if parent_collection is not None:
                 collection = group.get_filename_collection(self.file.name, parent_collection)
-        elif self.file.is_shortcut() and self.file.geometry.vert_count() == 0:
-            # TODO: instead of adding to group, parent to empty
-            pass
         elif geometry_data is None:  # top-level part
             LDrawNode.part_count += 1
             top = True
@@ -125,6 +133,9 @@ class LDrawNode:
                 pass
             else:
                 for child_node in self.file.child_nodes:
+                    if self.texmap_next:
+                        self.__set_texmap_end()
+
                     if child_node.meta_command == "step":
                         self.__set_step()
                     elif child_node.meta_command == "save":
@@ -137,15 +148,17 @@ class LDrawNode:
                         child_node.__meta_group()
                     elif child_node.meta_command == "camera":
                         child_node.__meta_camera()
-                    elif child_node.meta_command == "2":
-                        child_node.__meta_edge(color_code, matrix, geometry_data)
-                    elif child_node.meta_command in ["3", "4"]:
-                        child_node.__meta_face(color_code, matrix, geometry_data)
-                    elif child_node.meta_command == "5":
-                        child_node.__meta_line(color_code, matrix, geometry_data)
-                    elif child_node.meta_command == "subfile":
-                        self.__meta_subfile(child_node, color_code, matrix, geometry_data, collection)
-
+                    elif child_node.meta_command == "texmap":
+                        self.__meta_texmap(child_node, matrix)
+                    elif not self.texmap_fallback:
+                        if child_node.meta_command == "2":
+                            child_node.__meta_edge(color_code, matrix, geometry_data)
+                        elif child_node.meta_command in ["3", "4"]:
+                            child_node.__meta_face(color_code, matrix, geometry_data)
+                        elif child_node.meta_command == "5":
+                            child_node.__meta_line(color_code, matrix, geometry_data)
+                        elif child_node.meta_command == "subfile":
+                            self.__meta_subfile(child_node, color_code, matrix, geometry_data, collection)
         if top:
             if mesh is None:
                 mesh = self.__create_mesh(key, geometry_data)
@@ -220,15 +233,15 @@ class LDrawNode:
                 color_code = face_info.color_code
 
             part_slopes = special_bricks.get_part_slopes(self.file.name)
-            material = BlenderMaterials.get_material(color_code, part_slopes=part_slopes, texmap=face_info.texmap)
+            material = BlenderMaterials.get_material(color_code, part_slopes=part_slopes, texmap=fd.texmap)
             if material.name not in mesh.materials:
                 mesh.materials.append(material)
 
             face.smooth = ImportOptions.shade_smooth
             face.material_index = mesh.materials.find(material.name)
 
-            if face_info.texmap is not None:
-                face_info.texmap.uv_unwrap_face(bm, face)
+            if fd.texmap is not None:
+                fd.texmap.uv_unwrap_face(bm, face)
 
     @staticmethod
     def __clean_bmesh(bm):
@@ -552,6 +565,91 @@ class LDrawNode:
         print(self.meta_args)
         LDrawNode.cameras.append(self.meta_args["camera"])
 
+    # https://www.ldraw.org/documentation/ldraw-org-file-format-standards/language-extension-for-texture-mapping.html
+    def __meta_texmap(self, child_node, matrix):
+        clean_line = child_node.line
+
+        if self.texmap_start:
+            if clean_line == "0 !TEXMAP FALLBACK":
+                self.texmap_fallback = True
+            elif clean_line == "0 !TEXMAP END":
+                self.__set_texmap_end()
+        elif clean_line.startswith("0 !TEXMAP START ") or clean_line.startswith("0 !TEXMAP NEXT "):
+            if clean_line.startswith("0 !TEXMAP START "):
+                self.texmap_start = True
+            elif clean_line.startswith("0 !TEXMAP NEXT "):
+                self.texmap_next = True
+            self.texmap_fallback = False
+
+            method = clean_line.split()[3]
+
+            new_texmap = TexMap(method=method)
+            if new_texmap.is_planar():
+                _params = clean_line.split(maxsplit=13)  # planar
+
+                (x1, y1, z1, x2, y2, z2, x3, y3, z3) = map(float, _params[4:13])
+
+                texture_params = helpers.parse_csv_line(_params[13], 2)
+                texture = texture_params[0]
+                glossmap = texture_params[1]
+
+                new_texmap.parameters = [
+                    matrix @ mathutils.Vector((x1, y1, z1)),
+                    matrix @ mathutils.Vector((x2, y2, z2)),
+                    matrix @ mathutils.Vector((x3, y3, z3)),
+                ]
+                new_texmap.texture = texture
+                new_texmap.glossmap = glossmap
+            elif new_texmap.is_cylindrical():
+                _params = clean_line.split(maxsplit=14)  # cylindrical
+
+                (x1, y1, z1, x2, y2, z2, x3, y3, z3, a) = map(float, _params[4:14])
+
+                texture_params = helpers.parse_csv_line(_params[14], 2)
+                texture = texture_params[0]
+                glossmap = texture_params[1]
+
+                new_texmap.parameters = [
+                    matrix @ mathutils.Vector((x1, y1, z1)),
+                    matrix @ mathutils.Vector((x2, y2, z2)),
+                    matrix @ mathutils.Vector((x3, y3, z3)),
+                    a,
+                ]
+                new_texmap.texture = texture
+                new_texmap.glossmap = glossmap
+            elif new_texmap.is_spherical():
+                _params = clean_line.split(maxsplit=15)  # spherical
+
+                (x1, y1, z1, x2, y2, z2, x3, y3, z3, a, b) = map(float, _params[4:15])
+
+                texture_params = helpers.parse_csv_line(_params[15], 2)
+                texture = texture_params[0]
+                glossmap = texture_params[1]
+
+                new_texmap.parameters = [
+                    matrix @ mathutils.Vector((x1, y1, z1)),
+                    matrix @ mathutils.Vector((x2, y2, z2)),
+                    matrix @ mathutils.Vector((x3, y3, z3)),
+                    a,
+                    b,
+                ]
+                new_texmap.texture = texture
+                new_texmap.glossmap = glossmap
+
+            if LDrawNode.__texmap is not None:
+                LDrawNode.__texmaps.append(LDrawNode.__texmap)
+            LDrawNode.__texmap = new_texmap
+
+    def __set_texmap_end(self):
+        try:
+            LDrawNode.__texmap = LDrawNode.__texmaps.pop()
+        except Exception as e:
+            LDrawNode.__texmap = None
+
+        self.texmap_start = False
+        self.texmap_next = False
+        self.texmap_fallback = False
+
     def __meta_edge(self, color_code, matrix, geometry_data):
         geometry_data.add_edge_data(
             color_code=color_code,
@@ -564,6 +662,7 @@ class LDrawNode:
             color_code=color_code,
             matrix=matrix,
             face_info=self.meta_args,
+            texmap=LDrawNode.__texmap
         )
 
     def __meta_line(self, color_code, matrix, geometry_data):

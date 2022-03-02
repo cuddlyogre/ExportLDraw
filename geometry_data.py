@@ -3,10 +3,11 @@ class FaceData:
     The data required to transform a file's face info into the needed mesh part.
     """
 
-    def __init__(self, color_code, matrix, face_info):
+    def __init__(self, color_code, matrix, face_info, texmap=None):
         self.matrix = matrix
         self.color_code = color_code
         self.face_info = face_info
+        self.texmap = texmap
 
 
 class GeometryData:
@@ -30,12 +31,13 @@ class GeometryData:
             face_info=face_info
         ))
 
-    def add_face_data(self, matrix, color_code, face_info):
+    def add_face_data(self, matrix, color_code, face_info, texmap=None):
         self.face_vert_count += face_info.vert_count()
         self.face_data.append(FaceData(
             color_code=color_code,
             matrix=matrix,
-            face_info=face_info
+            face_info=face_info,
+            texmap=texmap
         ))
 
     def add_line_data(self, matrix, color_code, face_info):

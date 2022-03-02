@@ -6,10 +6,9 @@ class FaceInfo:
     A file's face information. The raw model data before any transforms.
     """
 
-    def __init__(self, color_code, vertices, texmap=None):
+    def __init__(self, color_code, vertices):
         self.color_code = color_code
         self.vertices = vertices
-        self.texmap = texmap
 
     def vert_count(self):
         return len(self.vertices)
@@ -31,7 +30,7 @@ class LDrawGeometry:
     def vert_count(self):
         return self.edge_vert_count + self.face_vert_count + self.line_vert_count
 
-    def parse_face(self, _params, texmap=None, inverted=False):
+    def parse_face(self, _params, inverted=False):
         line_type = _params[0]
 
         color_code = _params[1]
@@ -66,12 +65,12 @@ class LDrawGeometry:
             self.edge_infos.append(face_info)
             return face_info
         elif line_type == "3":
-            face_info = FaceInfo(color_code, verts, texmap=texmap)
+            face_info = FaceInfo(color_code, verts)
             self.face_vert_count += face_info.vert_count()
             self.face_infos.append(face_info)
             return face_info
         elif line_type == "4":
-            face_info = FaceInfo(color_code, verts, texmap=texmap)
+            face_info = FaceInfo(color_code, verts)
             self.face_vert_count += face_info.vert_count()
             self.face_infos.append(face_info)
             return face_info
