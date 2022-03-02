@@ -171,7 +171,6 @@ class LDrawNode:
         _key.append(filename)
         _key.append(color_code)
         _key = "_".join([str(k).lower() for k in _key])
-        return _key
 
         key = cls.__key_map.get(_key)
         if key is None:
