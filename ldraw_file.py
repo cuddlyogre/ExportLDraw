@@ -235,6 +235,7 @@ class LDrawFile:
 
         return True
 
+    # TODO: add collection of colors specific to this file
     @staticmethod
     def __line_color(clean_line):
         if not clean_line.startswith("0 !COLOUR "):
