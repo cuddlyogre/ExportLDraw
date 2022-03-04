@@ -26,7 +26,8 @@ BlenderArtists thread, but most of it is unchanged. - https://blenderartists.org
 You are able to choose the logo you want to show on studs, or no logo or stud at all.
 
 Importing TEXMAP is fully supported. This includes planar, cylindrical, and spherical. The DATA meta command is
-relatively new compared to TEXMAP support, so it's not supported, yet.  
+relatively new compared to TEXMAP support, so it's not supported, yet. Thanks to https://github.com/trevorsandy/lpub3d 
+for the cylindrical and spherical math. 
 ![Examples of TEXMAP using 27062.dat and 27062p01.dat](examples/import/texmap.jpg)
 
 Eevee and Cycles are both supported.  
@@ -44,10 +45,10 @@ The ability to replace selected parts with different resolution parts is on my T
 earlier has a lot of gaps in the tires and fender because the model is built with parts with different resolutions.
 
 Names of parts and mesh data are uuid strings due to a 64 character string limit for names of items in blender. This is
-not ideal, but the LDraw filename is stored in the **ldraw_filename** custom property of the object/mesh.
+not ideal, but the LDraw filename is stored in the ldraw_filename custom property of the object/mesh.
 
-Stud.io parts can be used if you set the LDraw path value to the Stud.io **ldraw** folder location. Stud.io texture 
-support is in development. It is completely different from the official **TEXMAP** standard, but close enough that I can
+Stud.io parts can be used if you set the LDraw path value to the Stud.io ldraw folder location. Stud.io texture 
+support is in development. It is completely different from the official TEXMAP standard, but close enough that I can
 use a lot of the same logic. I've figured out the standard, but the structure of the import loop had to be rewritten to
 allow it.
 
@@ -92,7 +93,7 @@ to test on, so on Mac OS, this value will be blank.
 **Part resolution:** The quality of parts to use. Low resolution is quicker to import, but doesn't look as good. High
 resolution looks better but take longer to import.  
 **Display logo:** Display the logo on the stud.  
-**Chosen logo:** Which logo to display. logo and logo2 aren't used and are only included for completeness.
+**Chosen logo:** Which logo to display. logo and logo2 aren't used and are only included for completeness.  
 **Profile:** Runs cProfile during import. Saves **export_ldraw_import.prof** to the user's home folder. This file can be
 viewed with **snakeviz**.
 
@@ -132,8 +133,8 @@ be scaled to adjust to gaps between parts.
 **Debug text:** Render debug text to the system console.  
 **Import edges:** Import LDraw edges as edges.  
 **Treat shortcut parts as models:** Treat shortcut parts as if they were models by splitting them into their constituent
-parts instead of merging them.
-**Freestyle edges:** Render LDraw edges using freestyle.
+parts instead of merging them.  
+**Freestyle edges:** Render LDraw edges using freestyle.  
 **Prefer unofficial parts:** If a part is in both the unofficial and official library, use the unofficial one.  
 **No studs:** Don't import studs. Not particularly useful but is neat to see.  
 
