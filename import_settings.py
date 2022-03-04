@@ -47,7 +47,6 @@ class ImportSettings:
         'treat_shortcut_as_model': ImportOptions.defaults['treat_shortcut_as_model'],
         'recalculate_normals': ImportOptions.defaults['recalculate_normals'],
         'triangulate': ImportOptions.defaults['triangulate'],
-        'sharpen_edges': ImportOptions.defaults['sharpen_edges'],
     }
 
     default_settings = {**filesystem_defaults, **ldraw_color_defaults, **import_options_defaults}

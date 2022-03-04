@@ -87,6 +87,3 @@ class ImportOptions:
 
     defaults['treat_shortcut_as_model'] = True  # TODO: parent to empty at median of group
     treat_shortcut_as_model = defaults['treat_shortcut_as_model']
-
-    defaults['sharpen_edges'] = True
-    sharpen_edges = defaults['sharpen_edges']

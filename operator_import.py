@@ -260,12 +260,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         default=ImportSettings.get_setting('triangulate'),
     )
 
-    sharpen_edges: bpy.props.BoolProperty(
-        name="Sharpen edges",
-        description="Make imported LDraw edges sharp",
-        default=ImportSettings.get_setting('sharpen_edges'),
-    )
-
     profile: bpy.props.BoolProperty(
         name="Profile",
         description="Profile import performance",
@@ -367,10 +361,9 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         layout.separator(factor=space_factor)
         col = layout.column()
         col.label(text="Extras")
-        col.prop(self, "sharpen_edges")
         col.prop(self, "use_freestyle_edges")
         col.prop(self, "import_edges")
-        # col.prop(self, "treat_shortcut_as_model")
+        col.prop(self, "treat_shortcut_as_model")
         col.prop(self, "prefer_unofficial")
         col.prop(self, "no_studs")
 
