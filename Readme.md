@@ -1,31 +1,59 @@
-LDraw Handler for Blender 2.82+ and 3.0+, written by Matthew Morrison [cuddlyogre] - cuddlyogre@gmail.com - www.cuddlyogre.com
+LDraw Handler for Blender 2.82+ and 3.0+, written by 
+Matthew Morrison [cuddlyogre] - cuddlyogre@gmail.com - www.cuddlyogre.com
 
 ##### Pull requests and examples of this plugin in action are welcome.
 
-I essentially learned Python by dissecting and studying https://github.com/TobyLobster/ImportLDraw, and it inspired me to make my own. This plugin wouldn't exist without this one.
+I essentially learned Python by dissecting and studying https://github.com/TobyLobster/ImportLDraw, and it inspired me 
+to make my own. This plugin wouldn't exist without that one.
 
 I built this plugin with performance and compatibility in mind.
 
 https://omr.ldraw.org/files/337 loads in about 13 seconds.  
-https://omr.ldraw.org/files/338 has incorrectly written parts and MLCad parts that import correctly
+https://omr.ldraw.org/files/338 has incorrectly written parts - 10252 - 10252_towel.dat is written as a model - and 
+MLCad parts that import correctly.
 
 It handles MLCad parts, LDCad projects, ldr, and mpd. It also processes most official META commands. For instance, STEP
 will set keyframes so you can watch the model be built. Theoretically, you could build an entire animation in an MPD
 file if you did it right. LeoCAD and LDCad groups are supported. LeoCAD cameras are supported as well. If you have
 LSynth parts installed, it will import those as well.
 
-BFC meta commands aren't parsed at all. I chose to rely on recalculate normals to handle face normals. This may change as development continues.
+BFC meta commands aren't parsed at all. I chose to rely on recalculate normals to handle face normals. This may change 
+as development continues, if for not other reason than to say that I did it.
 
-Materials were taken almost wholesale from TobyLobster's plugin. I added my own glass material that was taken from a BlenderArtists thread, but most of it is unchanged.
+Materials were taken almost wholesale from TobyLobster's plugin. I added my own glass material that was taken from a 
+BlenderArtists thread, but most of it is unchanged. - https://blenderartists.org/t/realistic-glass-in-eevee/1149937/19
 
 You are able to choose the logo you want to show on studs, or no logo or stud at all.
 
-It works with Eevee and Cycles right out of the gate.
+Importing TEXMAP is fully supported. This includes planar, cylindrical, and spherical. The DATA meta command is
+relatively new compared to TEXMAP support, so it's not supported, yet.  
+![Examples of TEXMAP using 27062.dat and 27062p01.dat](examples/import/texmap.jpg)
 
-TEXMAP support is really all that's missing spec wise. It's very complicated and I welcome any help you can give.
+Eevee and Cycles are both supported.  
+**EEvee**  
+![Examples of Eevee import](examples/import/eevee.jpg)
+**Cycles**  
+![Examples of Cycles import](examples/import/cycles.jpg)
+
+Sloped parts also have a slope texture applied to them. I have done my best to ensure that all parts in the list are
+supposed to be textured and that the angles are correct. The slope angles can be adjusted in the object's material 
+settings.
+![Examples of sloped parts](examples/import/slope.jpg)
 
 The ability to replace selected parts with different resolution parts is on my TODO list. For instances, 338 from
 earlier has a lot of gaps in the tires and fender because the model is built with parts with different resolutions.
+
+Names of parts and mesh data are uuid strings due to a 64 character string limit for names of items in blender. This is
+not ideal, but the LDraw filename is stored in the **ldraw_filename** custom property of the object/mesh.
+
+Stud.io parts can be used if you set the LDraw path value to the Stud.io **ldraw** folder location. Stud.io texture 
+support is in development. It is completely different from the official **TEXMAP** standard, but close enough that I can
+use a lot of the same logic. I've figured out the standard, but the structure of the import loop had to be rewritten to
+allow it.
+
+**A note about Stud.io projects**  
+Stud.io project files are in actuality just password-protected zip files, but due to regulations related to DRM, 
+importing Stud.io projects will not ever be implemented here, even though it would be relatively trivial. 
 
 ### Notes
 
@@ -52,7 +80,7 @@ viewport and change **End** to 10000m.
 __File > Import > LDraw (.mpd/.ldr/.l3b/.dat)__
 
 **config/import_options.json** Your import settings are saved here every time you import. If you run across any errors, 
-delete config/import_options.json from the plugin folder. The defaults are saved on the next import.
+delete config/import_options.json from the plugin folder. The defaults are saved and used immediately.
 
 **LDraw filepath:** The path to your LDraw folder. On Windows, the plugins searches the roots of A:-Z:
 for an LDraw folder (C:\ldraw). On Linux, it searches the home folder for an ldraw folder (~/ldraw). I don't have a Mac
@@ -65,6 +93,8 @@ to test on, so on Mac OS, this value will be blank.
 resolution looks better but take longer to import.  
 **Display logo:** Display the logo on the stud.  
 **Chosen logo:** Which logo to display. logo and logo2 aren't used and are only included for completeness.
+**Profile:** Runs cProfile during import. Saves **export_ldraw_import.prof** to the user's home folder. This file can be
+viewed with **snakeviz**.
 
 **Scaling Options**
 
@@ -97,13 +127,15 @@ be scaled to adjust to gaps between parts.
 
 **Extras**
 
-**Prefer unofficial parts:** If a part is in both the unofficial and official library, use the unofficial one.  
 **Import all materials:** Import all LDraw materials, not just the ones used by the model.  
 **Add subsurface:** Attach a subsurface shader node to materials.  
 **Debug text:** Render debug text to the system console.  
-**No studs:** Don't import studs. Not particularly useful but is neat to see.  
 **Import edges:** Import LDraw edges as edges.  
+**Treat shortcut parts as models:** Treat shortcut parts as if they were models by splitting them into their constituent
+parts instead of merging them.
 **Freestyle edges:** Render LDraw edges using freestyle.
+**Prefer unofficial parts:** If a part is in both the unofficial and official library, use the unofficial one.  
+**No studs:** Don't import studs. Not particularly useful but is neat to see.  
 
 # Exporting
 
