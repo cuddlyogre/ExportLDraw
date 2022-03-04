@@ -149,7 +149,7 @@ the workflow needs to be figured out for that to be any kind of fun.
 
 If you're building a part from absolute scratch, model it like you normally would.
 
-Strictly speaking, you don't _need_ to import anything, and could just use normals in their place with the proper
+Strictly speaking, you don't _need_ to import anything, and could just use empties in their place with the proper
 transforms but that is hard to work with. To make things easier to visualize, if you are building with subparts import
 those subparts as needed and apply rotation and clear scale. If you don't, subparts will be exported with an
 unpredictable rotation and scale.
