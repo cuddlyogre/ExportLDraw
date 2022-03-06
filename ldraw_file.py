@@ -119,9 +119,11 @@ class LDrawFile:
                             elif current_file is not None:
                                 current_file.lines.append(line)
                         else:
-                            if filename not in cls.__raw_files:
+                            current_file = cls.__raw_files.get(filename)
+                            if current_file is None:
                                 cls.__raw_files[filename] = cls(filename)
-                            cls.__raw_files[filename].lines.append(line)
+                                current_file = cls.__raw_files.get(filename)
+                            current_file.lines.append(line)
                     if current_file is not None:
                         cls.__raw_files[current_file.filename] = current_file
             except Exception as e:
