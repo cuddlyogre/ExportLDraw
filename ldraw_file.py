@@ -243,13 +243,19 @@ class LDrawFile:
         return True
 
     # TODO: add collection of colors specific to this file
-    @staticmethod
-    def __line_color(clean_line):
+    def __line_color(self, clean_line):
         if not clean_line.startswith("0 !COLOUR "):
             return False
 
         _params = helpers.get_params(clean_line, "0 !COLOUR ", lowercase=False)
-        LDrawColor.parse_color(_params)
+
+        if self.is_configuration():
+            LDrawColor.parse_color(_params)
+        else:
+            color = LDrawColor()
+            color.parse_color_params(_params)
+            # self.__colors[color.code] = color
+            """add this color to this file's colors"""
 
         return True
 

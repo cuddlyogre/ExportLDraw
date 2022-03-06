@@ -46,7 +46,7 @@ class LDrawColor:
     @classmethod
     def parse_color(cls, _params):
         color = cls()
-        color.__parse_color_params(_params)
+        color.parse_color_params(_params)
         cls.__colors[color.code] = color
         return color.code
 
@@ -82,7 +82,7 @@ class LDrawColor:
             color[3]
         )
 
-    def __parse_color_params(self, _params, linear=True):
+    def parse_color_params(self, _params, linear=True):
         # name CODE x VALUE v EDGE e required
         # 0 !COLOUR Black CODE 0 VALUE #1B2A34 EDGE #2B4354
 
