@@ -167,6 +167,12 @@ class LDrawFile:
             clean_line = helpers.clean_line(line)
             strip_line = line.strip()
 
+            if self.__line_description(strip_line):
+                continue
+
+            if self.__line_comment(clean_line):
+                continue
+
             if self.__line_name(clean_line, strip_line):
                 continue
 
@@ -203,10 +209,6 @@ class LDrawFile:
             if self.__parse_geometry_line(clean_line):
                 continue
 
-            # this goes last so that description will be properly detected
-            if self.__line_comment(clean_line, strip_line):
-                continue
-
         self.__handle_extra_geometry()
 
     @classmethod
@@ -223,6 +225,18 @@ class LDrawFile:
             key = cls.__key_map.get(_key)
 
         return key
+
+    # always return false so that the rest of the line types are parsed even if this is true
+    def __line_description(self, strip_line):
+        if self.description is None:
+            self.description = strip_line.split(maxsplit=1)[1]
+        return False
+
+    @staticmethod
+    def __line_comment(clean_line):
+        if clean_line.startswith("0 //"):
+            return True
+        return False
 
     def __line_name(self, clean_line, strip_line):
         if not clean_line.lower().startswith("0 Name: ".lower()):
@@ -577,17 +591,6 @@ class LDrawFile:
         ldraw_node.meta_command = _params[0]
         ldraw_node.meta_args = face_info
         self.child_nodes.append(ldraw_node)
-
-        return True
-
-    def __line_comment(self, clean_line, strip_line):
-        if not clean_line.startswith("0"):
-            return False
-
-        if clean_line.startswith("0 //"):
-            """"""
-        elif self.description is None:
-            self.description = strip_line.split(maxsplit=1)[1]
 
         return True
 
