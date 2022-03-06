@@ -543,6 +543,8 @@ class LDrawFile:
             filename = f"{stud_name}-{chosen_logo}.{ext}"
 
         ldraw_file = LDrawFile.get_cached_file(filename)
+        if ldraw_file is None:
+            return True
 
         ldraw_node = LDrawNode()
         ldraw_node.file = ldraw_file
