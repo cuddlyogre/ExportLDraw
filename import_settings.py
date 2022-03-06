@@ -45,6 +45,7 @@ class ImportSettings:
         'gap_target': ImportOptions.defaults['gap_target'],
         'gap_scale_strategy': ImportOptions.defaults['gap_scale_strategy'],
         'treat_shortcut_as_model': ImportOptions.defaults['treat_shortcut_as_model'],
+        'treat_models_with_subparts_as_parts': ImportOptions.defaults['treat_models_with_subparts_as_parts'],
         'recalculate_normals': ImportOptions.defaults['recalculate_normals'],
         'triangulate': ImportOptions.defaults['triangulate'],
     }

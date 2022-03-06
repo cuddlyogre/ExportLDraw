@@ -521,13 +521,12 @@ class LDrawFile:
         # otherwise subparts are not parsed correctly
         # 10252 - 10252_towel.dat in 10252-1 - Volkswagen Beetle.mpd
         if self.is_like_model() and (ldraw_file.is_subpart() or ldraw_file.is_primitive()):
-            treat_models_with_subparts_as_parts = True
             # if False, if subpart found, create new LDrawNode with those subparts and add that to child_nodes
             # this has the effect of splitting shortcuts into their constituent parts
             # parts like u9158.dat and 99141c01.dat are split into several smaller parts
             # texmaps might not render properly in this instance
             # if True, combines models that have subparts and primitives into a single part
-            if treat_models_with_subparts_as_parts:
+            if ImportOptions.treat_models_with_subparts_as_parts:
                 self.actual_part_type = 'part'
                 self.part_type = self.determine_part_type(self.actual_part_type)
                 self.child_nodes.append(ldraw_node)

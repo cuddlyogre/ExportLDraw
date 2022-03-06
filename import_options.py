@@ -87,3 +87,6 @@ class ImportOptions:
 
     defaults['treat_shortcut_as_model'] = True  # TODO: parent to empty at median of group
     treat_shortcut_as_model = defaults['treat_shortcut_as_model']
+
+    defaults['treat_models_with_subparts_as_parts'] = True  # TODO: parent to empty at median of group
+    treat_models_with_subparts_as_parts = defaults['treat_models_with_subparts_as_parts']
