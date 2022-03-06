@@ -27,6 +27,7 @@ class FileSystem:
         cls.__texture_paths = []
         cls.__lowercase_paths = {}
 
+    # TODO: add stud.io ldraw path - C:\Program Files\Studio 2.0\ldraw
     @staticmethod
     def locate_ldraw():
         ldraw_folder_name = 'ldraw'

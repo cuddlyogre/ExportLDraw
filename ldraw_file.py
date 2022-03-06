@@ -62,9 +62,6 @@ class LDrawFile:
         ldraw_file.author = self.author
         ldraw_file.part_type = self.part_type
         ldraw_file.actual_part_type = self.actual_part_type
-        ldraw_file.child_nodes = self.child_nodes
-        ldraw_file.geometry = self.geometry
-        ldraw_file.extra_child_nodes = self.extra_child_nodes
         return ldraw_file
 
     @classmethod
@@ -204,6 +201,9 @@ class LDrawFile:
                 continue
 
             if self.__line_texmap(clean_line):
+                continue
+
+            if self.__line_stud_io(clean_line, strip_line):
                 continue
 
             if self.__parse_geometry_line(clean_line):
@@ -498,6 +498,26 @@ class LDrawFile:
         self.child_nodes.append(ldraw_node)
 
         return True
+
+    def __line_stud_io(self, clean_line, strip_line):
+        if clean_line.startswith("0 PE_TEX_PATH "):
+            ldraw_node = LDrawNode()
+            ldraw_node.file = self
+            ldraw_node.line = clean_line
+            ldraw_node.meta_command = "pe_tex_path"
+            ldraw_node.meta_args = int(strip_line.split()[2])
+            self.child_nodes.append(ldraw_node)
+            return True
+
+        if clean_line.startswith("0 PE_TEX_INFO "):
+            ldraw_node = LDrawNode()
+            ldraw_node.file = self
+            ldraw_node.line = clean_line
+            ldraw_node.meta_command = "pe_tex_info"
+            self.child_nodes.append(ldraw_node)
+            return True
+
+        return False
 
     def __parse_geometry_line(self, clean_line):
         clean_line = clean_line.lstrip("0 !: ")

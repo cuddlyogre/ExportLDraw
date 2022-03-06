@@ -93,6 +93,10 @@ class LDrawNode:
         self.texmap_next = False
         self.texmap_fallback = False
 
+        self.pe_tex_path = None
+        self.pe_tex_infos = {}
+        self.geometry_line_count = -1
+
     def load(self, color_code="16", parent_matrix=None, geometry_data=None, parent_collection=None):
         # set the working color code to this file's
         # color code if it isn't color code 16
@@ -150,13 +154,17 @@ class LDrawNode:
                         child_node.__meta_camera()
                     elif child_node.meta_command == "texmap":
                         self.__meta_texmap(child_node, matrix)
+                    elif child_node.meta_command == "pe_tex_path":
+                        self.__meta_pe_tex_path(child_node)
+                    elif child_node.meta_command == "pe_tex_info":
+                        self.__meta_pe_tex_info(child_node, matrix)
                     elif not self.texmap_fallback:
                         if child_node.meta_command == "2":
-                            child_node.__meta_edge(color_code, matrix, geometry_data)
+                            self.__meta_edge(child_node, color_code, matrix, geometry_data)
                         elif child_node.meta_command in ["3", "4"]:
-                            child_node.__meta_face(color_code, matrix, geometry_data)
+                            self.__meta_face(child_node, color_code, matrix, geometry_data)
                         elif child_node.meta_command == "5":
-                            child_node.__meta_line(color_code, matrix, geometry_data)
+                            self.__meta_line(child_node, color_code, matrix, geometry_data)
                         elif child_node.meta_command == "subfile":
                             self.__meta_subfile(child_node, color_code, matrix, geometry_data, collection)
         if top:
@@ -561,7 +569,6 @@ class LDrawNode:
             cls.__next_collection = None
 
     def __meta_camera(self):
-        print(self.meta_args)
         LDrawNode.cameras.append(self.meta_args["camera"])
 
     # https://www.ldraw.org/documentation/ldraw-org-file-format-standards/language-extension-for-texture-mapping.html
@@ -639,6 +646,44 @@ class LDrawNode:
                 LDrawNode.__texmaps.append(LDrawNode.__texmap)
             LDrawNode.__texmap = new_texmap
 
+    # -1 is this file
+    # >= 0 is the nth geometry line where n = PE_TEX_PATH
+    def __meta_pe_tex_path(self, child_node):
+        self.pe_tex_path = child_node.meta_args
+
+    # PE_TEX_INFO bse64_str uses the file's uvs
+    # PE_TEX_INFO x,y,z,a,b,c,d,e,f,g,h,i,bl/tl,tr/br is matrix and plane coordinates for uv calculations
+    # if no matrix, identity @ rotation?
+    def __meta_pe_tex_info(self, child_node, matrix):
+        clean_line = child_node.line
+        _params = clean_line.split()
+
+        base64_str = None
+        if len(_params) == 3:  # this tex_info applies to
+            base64_str = _params[2]
+            matrix = self.__identity
+        else:
+            """
+            base64_str = _params[18]
+            (x, y, z, a, b, c, d, e, f, g, h, i, bl_x, bl_y, tr_x, tr_y) = map(float, _params[2:18])
+            matrix = mathutils.Matrix((
+                (a, b, c, x),
+                (d, e, f, y),
+                (g, h, i, z),
+                (0, 0, 0, 1)
+            ))
+            bl = mathutils.Vector((bl_x, bl_y))
+            tr = mathutils.Vector((tr_x, tr_y))
+            """
+
+        if base64_str is None:
+            return
+
+        from . import base64_handler
+        image = base64_handler.named_png_from_base64_str(f"{self.file.name}_{self.pe_tex_path}.png", base64_str)
+        self.pe_tex_infos[self.pe_tex_path] = image.name
+        self.pe_tex_path = None
+
     def __set_texmap_end(self):
         try:
             LDrawNode.__texmap = LDrawNode.__texmaps.pop()
@@ -649,26 +694,44 @@ class LDrawNode:
         self.texmap_next = False
         self.texmap_fallback = False
 
-    def __meta_edge(self, color_code, matrix, geometry_data):
+    def __meta_edge(self, child_node, color_code, matrix, geometry_data):
         geometry_data.add_edge_data(
             color_code=color_code,
             matrix=matrix,
-            face_info=self.meta_args,
+            face_info=child_node.meta_args,
         )
 
-    def __meta_face(self, color_code, matrix, geometry_data):
+    def __meta_face(self, child_node, color_code, matrix, geometry_data):
         geometry_data.add_face_data(
             color_code=color_code,
             matrix=matrix,
-            face_info=self.meta_args,
+            face_info=child_node.meta_args,
             texmap=LDrawNode.__texmap
         )
 
-    def __meta_line(self, color_code, matrix, geometry_data):
+        if -1 in self.pe_tex_infos:
+            clean_line = child_node.line
+            _params = clean_line.split()
+
+            # parse uv coordinates
+            face_info = child_node.meta_args
+            if face_info.vert_count() == 3:
+                (a1, a2, b1, b2, c1, c2) = map(float, _params[11:])
+                a = mathutils.Vector((a1, a2))
+                b = mathutils.Vector((b1, b2))
+                c = mathutils.Vector((c1, c1))
+            elif face_info.vert_count() == 4:
+                (a1, a2, b1, b2, c1, c2, d1, d2) = map(float, _params[14:])
+                a = mathutils.Vector((a1, a2))
+                b = mathutils.Vector((b1, b2))
+                c = mathutils.Vector((c1, c1))
+                d = mathutils.Vector((d1, d2))
+
+    def __meta_line(self, child_node, color_code, matrix, geometry_data):
         geometry_data.add_line_data(
             color_code=color_code,
             matrix=matrix,
-            face_info=self.meta_args,
+            face_info=child_node.meta_args,
         )
 
     def __meta_subfile(self, child_node, color_code, matrix, geometry_data, collection):

@@ -13,6 +13,7 @@ bl_info = {
 #############################################
 # support reloading sub-modules
 _modules = [
+    'base64_handler',
     'blender_camera',
     'blender_import',
     'blender_materials',
