@@ -65,9 +65,7 @@ class LDrawFile:
         else:
             filename = "LDConfig.ldr"
 
-        ldraw_file = cls.get_file(filename)
-        if ldraw_file is None:
-            return
+        LDrawFile.get_cached_file(filename)
 
     @classmethod
     def get_file(cls, filename):
@@ -137,6 +135,15 @@ class LDrawFile:
         ldraw_file.lines = cls.__raw_files[filename].lines
         ldraw_file.__parse_file()
         # print(ldraw_file)
+        return ldraw_file
+
+    @classmethod
+    def get_cached_file(cls, filename):
+        key = cls.__build_key(filename)
+        ldraw_file = LDrawFile.__file_cache.get(key)
+        if ldraw_file is None:
+            ldraw_file = LDrawFile.get_file(filename)
+            LDrawFile.__file_cache[key] = ldraw_file
         return ldraw_file
 
     # create meta nodes when those commands affect the scene
@@ -501,14 +508,7 @@ class LDrawFile:
             ext = parts[1]
             filename = f"{stud_name}-{chosen_logo}.{ext}"
 
-        key = self.__build_key(filename)
-
-        ldraw_file = LDrawFile.__file_cache.get(key)
-        if ldraw_file is None:
-            ldraw_file = LDrawFile.get_file(filename)
-            if ldraw_file is None:
-                return True
-            LDrawFile.__file_cache[key] = ldraw_file
+        ldraw_file = LDrawFile.get_cached_file(filename)
 
         ldraw_node = LDrawNode()
         ldraw_node.file = ldraw_file

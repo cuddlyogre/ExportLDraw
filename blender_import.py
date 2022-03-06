@@ -24,7 +24,7 @@ def do_import(filepath):
     LDrawFile.read_color_table()
     BlenderMaterials.create_blender_node_groups()
 
-    ldraw_file = LDrawFile.get_file(filepath)
+    ldraw_file = LDrawFile.get_cached_file(filepath)
     if ldraw_file is None:
         return
 
