@@ -26,8 +26,8 @@ class LDrawFile:
         cls.__key_map = {}
 
     def __init__(self, filename):
-        self.filepath = None
         self.filename = filename
+        self.filepath = None
         self.lines = []
 
         self.description = None
@@ -52,6 +52,20 @@ class LDrawFile:
             f"name: {self.name}",
             f"author: {self.author}",
         ])
+
+    def copy(self):
+        ldraw_file = LDrawFile(self.filename)
+        ldraw_file.filepath = self.filepath
+        ldraw_file.lines = self.lines
+        ldraw_file.description = self.description
+        ldraw_file.name = self.name
+        ldraw_file.author = self.author
+        ldraw_file.part_type = self.part_type
+        ldraw_file.actual_part_type = self.actual_part_type
+        ldraw_file.child_nodes = self.child_nodes
+        ldraw_file.geometry = self.geometry
+        ldraw_file.extra_child_nodes = self.extra_child_nodes
+        return ldraw_file
 
     @classmethod
     def read_color_table(cls):
@@ -132,9 +146,7 @@ class LDrawFile:
             if first_mpd_filename is not None:
                 filename = first_mpd_filename
 
-        ldraw_file = cls(filename)
-        ldraw_file.filepath = filepath
-        ldraw_file.lines = cls.__raw_files[filename].lines
+        ldraw_file = cls.__raw_files[filename].copy()
         ldraw_file.__parse_file()
         # print(ldraw_file)
         return ldraw_file
