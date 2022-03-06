@@ -32,6 +32,7 @@ _modules = [
     'ldraw_geometry',
     'ldraw_node',
     'ldraw_part_types',
+    'ldraw_props',
     'operator_export',
     'operator_import',
     'import_options',
@@ -60,11 +61,13 @@ import bpy
 
 
 def register():
+    ldraw_props.register()
     operator_import.register()
     operator_export.register()
 
 
 def unregister():
+    ldraw_props.unregister()
     operator_import.unregister()
     operator_export.unregister()
 

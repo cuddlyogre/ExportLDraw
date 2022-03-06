@@ -14,6 +14,7 @@ from .import_options import ImportOptions
 from .ldraw_colors import LDrawColor
 from .texmap import TexMap
 from . import helpers
+from . import ldraw_props
 
 
 class LDrawNode:
@@ -355,6 +356,8 @@ class LDrawNode:
         # Shading > Color > Object to see object colors
         color = LDrawColor.get_color(color_code)
         obj.color = color.color_a
+
+        ldraw_props.set_props(self, obj, color_code)
 
         self.__process_top_object_matrix(obj, parent_matrix)
         self.__process_top_object_gap(obj)
