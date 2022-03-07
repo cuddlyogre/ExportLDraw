@@ -35,6 +35,7 @@ _modules = [
     'ldraw_props',
     'operator_export',
     'operator_import',
+    'pe_texmap',
     'import_options',
     'export_options',
     'special_bricks',

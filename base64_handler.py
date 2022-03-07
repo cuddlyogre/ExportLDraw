@@ -7,10 +7,8 @@ import base64
 
 try:
     from .definitions import APP_ROOT
-    from . import base64_data
 except ImportError as e:
     from definitions import APP_ROOT
-    import base64_data
 
 
 # http://coreygoldberg.blogspot.com/2013/01/python-verify-png-file-and-get-image.html
@@ -65,21 +63,3 @@ def named_png_from_base64_str(filename, base64_str):
 def write_png_data(filename, data):
     with open(os.path.join(APP_ROOT, f"{filename}.png"), "wb") as fh:
         fh.write(data)
-
-
-if __name__ == '__main__':
-    base64_str = base64_data.pic0
-    base64_str = base64_data.pic
-    base64_str = base64_data.pic1
-    filename = 'test'
-
-    # info = get_image_info(img_data)
-    # print(is_png(img_data))
-    # img = image_from_data(filename, img_data, info[0], info[1])
-
-    # img = image_from_base64_str(filename, base64_str)
-    # bpy.ops.wm.save_as_mainfile(filepath=os.path.join(APP_ROOT, 'monkey.blend'))
-
-    # 2x2 transparent
-    img_data = base64_to_png_data(base64_str)
-    write_png_data(filename, img_data)

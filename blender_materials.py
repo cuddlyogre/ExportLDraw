@@ -26,21 +26,21 @@ class BlenderMaterials:
             node_group.use_fake_user = True
 
     @classmethod
-    def get_material(cls, color_code, use_edge_color=False, part_slopes=None, texmap=None):
+    def get_material(cls, color_code, use_edge_color=False, part_slopes=None, texmap=None, pe_texmap=None):
         color = LDrawColor.get_color(color_code)
 
-        key = cls.__build_key(color, use_edge_color, part_slopes, texmap)
+        key = cls.__build_key(color, use_edge_color, part_slopes, texmap, pe_texmap)
 
         # Reuse current material if it exists, otherwise create a new material
         material = bpy.data.materials.get(key)
         if material is not None:
             return material
 
-        material = cls.__create_node_based_material(key, color, use_edge_color=use_edge_color, part_slopes=part_slopes, texmap=texmap)
+        material = cls.__create_node_based_material(key, color, use_edge_color=use_edge_color, part_slopes=part_slopes, texmap=texmap, pe_texmap=pe_texmap)
         return material
 
     @classmethod
-    def __build_key(cls, color, use_edge_color, part_slopes, texmap):
+    def __build_key(cls, color, use_edge_color, part_slopes, texmap, pe_texmap):
         _key = []
         _key.append("LDraw Material")
         _key.append(color.code)
@@ -54,6 +54,8 @@ class BlenderMaterials:
         if texmap is not None:
             texmap_suffix = "_".join([str(k) for k in [texmap.method, texmap.texture, texmap.glossmap] if k != ''])
             _key.append(texmap_suffix)
+        if pe_texmap is not None:
+            _key.append(pe_texmap.texture)
         _key = "_".join([str(k).lower() for k in _key])
 
         key = cls.__key_map.get(_key)
@@ -64,7 +66,7 @@ class BlenderMaterials:
         return key
 
     @classmethod
-    def __create_node_based_material(cls, key, color, use_edge_color=False, part_slopes=None, texmap=None):
+    def __create_node_based_material(cls, key, color, use_edge_color=False, part_slopes=None, texmap=None, pe_texmap=None):
         """Set Cycles Material Values."""
 
         material = bpy.data.materials.new(key)
@@ -125,8 +127,8 @@ class BlenderMaterials:
         else:
             cls.__create_cycles_standard(nodes, links, diff_color)
 
-        if texmap is not None:
-            cls.__create_texmap_texture(nodes, links, diff_color, texmap)
+        if texmap is not None or pe_texmap is not None:
+            cls.__create_texmap_texture(nodes, links, diff_color, texmap, pe_texmap)
 
         if part_slopes is not None:
             cls.__create_cycles_slope_texture(nodes, links, part_slopes)
@@ -288,14 +290,18 @@ class BlenderMaterials:
         return None
 
     @classmethod
-    def __create_texmap_texture(cls, nodes, links, diff_color, texmap):
+    def __create_texmap_texture(cls, nodes, links, diff_color, texmap, pe_texmap):
         """Image texture for texmap"""
 
         target = cls.__get_group(nodes)
         if target is None:
             return
 
-        image_name = texmap.texture
+        image_name = None
+        if texmap is not None:
+            image_name = texmap.texture
+        elif pe_texmap is not None:
+            image_name = pe_texmap.texture
         if image_name is not None:
             texmap_image = cls.__node_tex_image(nodes, -500.0, 0.0)
             texmap_image.name = 'ldraw_texmap_image'
@@ -323,8 +329,10 @@ class BlenderMaterials:
             links.new(texmap_image.outputs["Alpha"], mix_rgb.inputs["Fac"])
             links.new(mix_rgb.outputs["Color"], target.inputs["Color"])
 
-        image_name = texmap.glossmap
-        if image_name != '':
+        image_name = None
+        if texmap is not None:
+            image_name = texmap.glossmap
+        if image_name is not None:
             glossmap_image = cls.__node_tex_image(nodes, -360.0, -280.0)
             glossmap_image.name = 'ldraw_glossmap_image'
             glossmap_image.interpolation = "Closest"

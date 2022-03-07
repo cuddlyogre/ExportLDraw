@@ -16,6 +16,7 @@ from .texmap import TexMap
 from . import helpers
 from . import ldraw_props
 from .ldraw_camera import LDrawCamera
+from .pe_texmap import PETexmap
 
 
 class LDrawNode:
@@ -218,9 +219,6 @@ class LDrawNode:
     # https://blender.stackexchange.com/questions/50160/scripting-low-level-join-meshes-elements-hopefully-with-bmesh
     # https://blender.stackexchange.com/questions/188039/how-to-join-only-two-objects-to-create-a-new-object-using-python
     # https://blender.stackexchange.com/questions/23905/select-faces-depending-on-material
-    # FIXME: 31313 - Mindstorms EV3 - Spike3r.mpd - "31313 - 13710ac01.dat"
-    # FIXME: if not treat_shortcut_as_model, texmap uvs may be incorrect, caused by unexpected part transform?
-    # FIXME: move uv unwrap to after obj[strings.ldraw_filename_key] = self.file.name
     def __process_bmesh(self, bm, mesh, geometry_data):
         self.__process_bmesh_faces(geometry_data, bm, mesh)
         helpers.ensure_bmesh(bm)
@@ -242,7 +240,7 @@ class LDrawNode:
                 color_code = face_info.color_code
 
             part_slopes = special_bricks.get_part_slopes(self.file.name)
-            material = BlenderMaterials.get_material(color_code, part_slopes=part_slopes, texmap=fd.texmap)
+            material = BlenderMaterials.get_material(color_code, part_slopes=part_slopes, texmap=fd.texmap, pe_texmap=fd.pe_texmap)
             if material.name not in mesh.materials:
                 mesh.materials.append(material)
 
@@ -251,6 +249,9 @@ class LDrawNode:
 
             if fd.texmap is not None:
                 fd.texmap.uv_unwrap_face(bm, face)
+
+            if fd.pe_texmap is not None:
+                fd.pe_texmap.uv_unwrap_face(bm, face)
 
     @staticmethod
     def __clean_bmesh(bm):
@@ -655,6 +656,8 @@ class LDrawNode:
                 texture_params = helpers.parse_csv_line(_params[13], 2)
                 texture = texture_params[0]
                 glossmap = texture_params[1]
+                if glossmap == '':
+                    glossmap = None
 
                 new_texmap.parameters = [
                     matrix @ mathutils.Vector((x1, y1, z1)),
@@ -671,6 +674,8 @@ class LDrawNode:
                 texture_params = helpers.parse_csv_line(_params[14], 2)
                 texture = texture_params[0]
                 glossmap = texture_params[1]
+                if glossmap == '':
+                    glossmap = None
 
                 new_texmap.parameters = [
                     matrix @ mathutils.Vector((x1, y1, z1)),
@@ -688,6 +693,8 @@ class LDrawNode:
                 texture_params = helpers.parse_csv_line(_params[15], 2)
                 texture = texture_params[0]
                 glossmap = texture_params[1]
+                if glossmap == '':
+                    glossmap = None
 
                 new_texmap.parameters = [
                     matrix @ mathutils.Vector((x1, y1, z1)),
@@ -722,13 +729,15 @@ class LDrawNode:
     # PE_TEX_INFO x,y,z,a,b,c,d,e,f,g,h,i,bl/tl,tr/br is matrix and plane coordinates for uv calculations
     # if no matrix, identity @ rotation?
     def __meta_pe_tex_info(self, child_node, matrix):
+        if self.pe_tex_path is None:
+            return
+
         clean_line = child_node.line
         _params = clean_line.split()
 
         base64_str = None
         if len(_params) == 3:  # this tex_info applies to
             base64_str = _params[2]
-            matrix = self.__identity
         else:
             """
             base64_str = _params[18]
@@ -759,30 +768,38 @@ class LDrawNode:
         )
 
     def __meta_face(self, child_node, color_code, matrix, geometry_data):
-        geometry_data.add_face_data(
-            color_code=color_code,
-            matrix=matrix,
-            face_info=child_node.meta_args,
-            texmap=LDrawNode.__texmap
-        )
-
+        # parse uv coordinates
+        # -1 means that the uvs apply to this file
+        pe_texmap = None
         if -1 in self.pe_tex_infos:
             clean_line = child_node.line
             _params = clean_line.split()
 
-            # parse uv coordinates
             face_info = child_node.meta_args
-            if face_info.vert_count() == 3:
-                (a1, a2, b1, b2, c1, c2) = map(float, _params[11:])
-                a = mathutils.Vector((a1, a2))
-                b = mathutils.Vector((b1, b2))
-                c = mathutils.Vector((c1, c1))
-            elif face_info.vert_count() == 4:
-                (a1, a2, b1, b2, c1, c2, d1, d2) = map(float, _params[14:])
-                a = mathutils.Vector((a1, a2))
-                b = mathutils.Vector((b1, b2))
-                c = mathutils.Vector((c1, c1))
-                d = mathutils.Vector((d1, d2))
+            vert_count = face_info.vert_count()
+
+            pe_texmap = PETexmap()
+            pe_texmap.texture = self.pe_tex_infos[-1]
+            if vert_count == 3:
+                for i in range(vert_count):
+                    x = round(float(_params[i * 2 + 11]), 3)
+                    y = round(float(_params[i * 2 + 12]), 3)
+                    uv = mathutils.Vector((x, y))
+                    pe_texmap.uvs.append(uv)
+            elif vert_count == 4:
+                for i in range(vert_count):
+                    x = round(float(_params[i * 2 + 13]), 3)
+                    y = round(float(_params[i * 2 + 14]), 3)
+                    uv = mathutils.Vector((x, y))
+                    pe_texmap.uvs.append(uv)
+
+        geometry_data.add_face_data(
+            color_code=color_code,
+            matrix=matrix,
+            face_info=child_node.meta_args,
+            texmap=LDrawNode.__texmap,
+            pe_texmap=pe_texmap,
+        )
 
     def __meta_line(self, child_node, color_code, matrix, geometry_data):
         geometry_data.add_line_data(
