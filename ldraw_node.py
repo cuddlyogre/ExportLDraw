@@ -146,13 +146,13 @@ class LDrawNode:
                     if child_node.meta_command == "step":
                         self.__set_step()
                     elif child_node.meta_command == "save":
-                        child_node.__meta_save()
+                        self.__meta_save()
                     elif child_node.meta_command == "clear":
-                        child_node.__meta_clear()
+                        self.__meta_clear()
                     elif child_node.meta_command == "print":
-                        child_node.__meta_print()
+                        self.__meta_print(child_node)
                     elif child_node.meta_command.startswith("group"):
-                        child_node.__meta_group()
+                        self.__meta_group(child_node)
                     elif child_node.meta_command == "leocad_camera":
                         self.__meta_leocad_camera(child_node, matrix)
                     elif child_node.meta_command == "texmap":
@@ -517,20 +517,20 @@ class LDrawNode:
                     ob.keyframe_insert(data_path="hide_render")
                     ob.keyframe_insert(data_path="hide_viewport")
 
-    def __meta_print(self):
+    def __meta_print(self, child_node):
         if ImportOptions.meta_print_write:
-            print(self.meta_args)
+            print(child_node.meta_args)
 
-    def __meta_group(self):
+    def __meta_group(self, child_node):
         if ImportOptions.meta_group:
-            if self.meta_command == "group_def":
-                self.__meta_group_def()
-            elif self.meta_command == "group_nxt":
-                self.__meta_group_nxt()
-            elif self.meta_command == "group_begin":
-                self.__meta_group_begin()
-            elif self.meta_command == "group_end":
-                self.__meta_group_end()
+            if child_node.meta_command == "group_def":
+                child_node.__meta_group_def()
+            elif child_node.meta_command == "group_nxt":
+                child_node.__meta_group_nxt()
+            elif child_node.meta_command == "group_begin":
+                child_node.__meta_group_begin()
+            elif child_node.meta_command == "group_end":
+                child_node.__meta_group_end()
 
     def __meta_group_def(self):
         LDrawNode.__collection_id_map[self.meta_args["id"]] = self.meta_args["name"]
