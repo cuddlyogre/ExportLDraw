@@ -8,7 +8,6 @@ from .filesystem import FileSystem
 from .ldraw_node import LDrawNode
 from .ldraw_geometry import LDrawGeometry
 from .ldraw_colors import LDrawColor
-from .ldraw_camera import LDrawCamera
 
 from . import helpers
 from . import ldraw_part_types
@@ -427,63 +426,11 @@ class LDrawFile:
         if not clean_line.startswith("0 !LEOCAD CAMERA "):
             return False
 
-        _params = helpers.get_params(clean_line, "0 !LEOCAD CAMERA ")
-
-        if self.camera is None:
-            self.camera = LDrawCamera()
-        # https://www.leocad.org/docs/meta.html
-        # "Camera commands can be grouped in the same line"
-        # _params = _params[1:] at the end bumps promotes _params[2] to _params[1]
-        while len(_params) > 0:
-            if _params[0] == "fov":
-                self.camera.fov = float(_params[1])
-                _params = _params[2:]
-            elif _params[0] == "znear":
-                self.camera.z_near = float(_params[1])
-                _params = _params[2:]
-            elif _params[0] == "zfar":
-                self.camera.z_far = float(_params[1])
-                _params = _params[2:]
-            elif _params[0] == "position":
-                (x, y, z) = map(float, _params[1:4])
-                vector = mathutils.Vector((x, y, z))
-                self.camera.position = vector
-                _params = _params[4:]
-            elif _params[0] == "target_position":
-                (x, y, z) = map(float, _params[1:4])
-                vector = mathutils.Vector((x, y, z))
-                self.camera.target_position = vector
-                _params = _params[4:]
-            elif _params[0] == "up_vector":
-                (x, y, z) = map(float, _params[1:4])
-                vector = mathutils.Vector((x, y, z))
-                self.camera.up_vector = vector
-                _params = _params[4:]
-            elif _params[0] == "orthographic":
-                self.camera.orthographic = True
-                _params = _params[1:]
-            elif _params[0] == "hidden":
-                self.camera.hidden = True
-                _params = _params[1:]
-            elif _params[0] == "name":
-                # "0 !LEOCAD CAMERA NAME Camera  2".split("NAME ")[1] => "Camera  2"
-                # "NAME Camera  2".split("NAME ")[1] => "Camera  2"
-                name_args = clean_line.split("NAME ")
-                self.camera.name = name_args[1]
-
-                # By definition this is the last of the parameters
-                _params = []
-
-                ldraw_node = LDrawNode()
-                ldraw_node.file = self
-                ldraw_node.line = clean_line
-                ldraw_node.meta_command = "camera"
-                ldraw_node.meta_args = self.camera
-                self.child_nodes.append(ldraw_node)
-
-                self.camera = None
-            else:
-                _params = _params[1:]
+        ldraw_node = LDrawNode()
+        ldraw_node.file = self
+        ldraw_node.line = clean_line
+        ldraw_node.meta_command = "leocad_camera"
+        self.child_nodes.append(ldraw_node)
 
         return True
 

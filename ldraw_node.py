@@ -15,6 +15,7 @@ from .ldraw_colors import LDrawColor
 from .texmap import TexMap
 from . import helpers
 from . import ldraw_props
+from .ldraw_camera import LDrawCamera
 
 
 class LDrawNode:
@@ -151,8 +152,8 @@ class LDrawNode:
                         child_node.__meta_print()
                     elif child_node.meta_command.startswith("group"):
                         child_node.__meta_group()
-                    elif child_node.meta_command == "camera":
-                        child_node.__meta_camera()
+                    elif child_node.meta_command == "leocad_camera":
+                        self.__meta_leocad_camera(child_node, matrix)
                     elif child_node.meta_command == "texmap":
                         self.__meta_texmap(child_node, matrix)
                     elif child_node.meta_command == "pe_tex_path":
@@ -571,8 +572,61 @@ class LDrawNode:
         else:
             cls.__next_collection = None
 
-    def __meta_camera(self):
-        LDrawNode.cameras.append(self.meta_args["camera"])
+    def __meta_leocad_camera(self, child_node, matrix):
+        clean_line = child_node.line
+        _params = helpers.get_params(clean_line, "0 !LEOCAD CAMERA ")
+
+        if self.camera is None:
+            self.camera = LDrawCamera()
+
+        # https://www.leocad.org/docs/meta.html
+        # "Camera commands can be grouped in the same line"
+        # _params = _params[1:] at the end bumps promotes _params[2] to _params[1]
+        while len(_params) > 0:
+            if _params[0] == "fov":
+                self.camera.fov = float(_params[1])
+                _params = _params[2:]
+            elif _params[0] == "znear":
+                self.camera.z_near = float(_params[1])
+                _params = _params[2:]
+            elif _params[0] == "zfar":
+                self.camera.z_far = float(_params[1])
+                _params = _params[2:]
+            elif _params[0] == "position":
+                (x, y, z) = map(float, _params[1:4])
+                vector = mathutils.Vector((x, y, z))
+                self.camera.position = vector
+                _params = _params[4:]
+            elif _params[0] == "target_position":
+                (x, y, z) = map(float, _params[1:4])
+                vector = mathutils.Vector((x, y, z))
+                self.camera.target_position = vector
+                _params = _params[4:]
+            elif _params[0] == "up_vector":
+                (x, y, z) = map(float, _params[1:4])
+                vector = mathutils.Vector((x, y, z))
+                self.camera.up_vector = vector
+                _params = _params[4:]
+            elif _params[0] == "orthographic":
+                self.camera.orthographic = True
+                _params = _params[1:]
+            elif _params[0] == "hidden":
+                self.camera.hidden = True
+                _params = _params[1:]
+            elif _params[0] == "name":
+                # "0 !LEOCAD CAMERA NAME Camera  2".split("NAME ")[1] => "Camera  2"
+                # "NAME Camera  2".split("NAME ")[1] => "Camera  2"
+                name_args = clean_line.split("NAME ")
+                self.camera.name = name_args[1]
+
+                # By definition this is the last of the parameters
+                _params = []
+
+                print(self.camera.position)
+                LDrawNode.cameras.append(self.camera)
+                self.camera = None
+            else:
+                _params = _params[1:]
 
     # https://www.ldraw.org/documentation/ldraw-org-file-format-standards/language-extension-for-texture-mapping.html
     def __meta_texmap(self, child_node, matrix):
