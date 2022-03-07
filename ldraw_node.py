@@ -703,6 +703,16 @@ class LDrawNode:
                 LDrawNode.__texmaps.append(LDrawNode.__texmap)
             LDrawNode.__texmap = new_texmap
 
+    def __set_texmap_end(self):
+        try:
+            LDrawNode.__texmap = LDrawNode.__texmaps.pop()
+        except IndexError as e:
+            LDrawNode.__texmap = None
+
+        self.texmap_start = False
+        self.texmap_next = False
+        self.texmap_fallback = False
+
     # -1 is this file
     # >= 0 is the nth geometry line where n = PE_TEX_PATH
     def __meta_pe_tex_path(self, child_node):
@@ -740,16 +750,6 @@ class LDrawNode:
         image = base64_handler.named_png_from_base64_str(f"{self.file.name}_{self.pe_tex_path}.png", base64_str)
         self.pe_tex_infos[self.pe_tex_path] = image.name
         self.pe_tex_path = None
-
-    def __set_texmap_end(self):
-        try:
-            LDrawNode.__texmap = LDrawNode.__texmaps.pop()
-        except Exception as e:
-            LDrawNode.__texmap = None
-
-        self.texmap_start = False
-        self.texmap_next = False
-        self.texmap_fallback = False
 
     def __meta_edge(self, child_node, color_code, matrix, geometry_data):
         geometry_data.add_edge_data(
