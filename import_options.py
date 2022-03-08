@@ -4,7 +4,7 @@ class ImportOptions:
     defaults['remove_doubles'] = True
     remove_doubles = defaults['remove_doubles']
 
-    defaults['recalculate_normals'] = True
+    defaults['recalculate_normals'] = False
     recalculate_normals = defaults['recalculate_normals']
 
     defaults['merge_distance'] = 0.05
@@ -12,6 +12,9 @@ class ImportOptions:
 
     defaults['triangulate'] = False
     triangulate = defaults['triangulate']
+
+    defaults['meta_bfc'] = True
+    meta_bfc = defaults['meta_bfc']
 
     defaults['meta_group'] = True
     meta_group = defaults['meta_group']

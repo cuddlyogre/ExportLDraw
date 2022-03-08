@@ -154,6 +154,12 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         max=1.0,
     )
 
+    meta_bfc: bpy.props.BoolProperty(
+        name="BFC",
+        description="Process BFC meta commands",
+        default=ImportSettings.get_setting('meta_bfc'),
+    )
+
     meta_print_write: bpy.props.BoolProperty(
         name="PRINT/WRITE",
         description="Process PRINT/WRITE meta command",
@@ -260,7 +266,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
 
     recalculate_normals: bpy.props.BoolProperty(
         name="Recalculate normals",
-        description="Recalculate normals",
+        description="Recalculate normals. Not recommended if BFC processing is active",
         default=ImportSettings.get_setting('recalculate_normals'),
     )
 
@@ -357,6 +363,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         layout.separator(factor=space_factor)
         col = layout.column()
         col.label(text="Meta Commands")
+        col.prop(self, "meta_bfc")
         col.prop(self, "meta_group")
         col.prop(self, "meta_print_write")
         col.prop(self, "meta_step")

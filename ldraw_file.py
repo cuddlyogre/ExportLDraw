@@ -193,6 +193,16 @@ class LDrawFile:
                 self.help.append(strip_line.split(maxsplit=2)[2])
                 continue
 
+            if strip_line.startswith("0 BFC"):
+                _params = strip_line.split(maxsplit=4)
+
+                ldraw_node = LDrawNode()
+                ldraw_node.file = self
+                ldraw_node.line = clean_line
+                ldraw_node.meta_command = "bfc"
+                ldraw_node.meta_args = strip_line.split(maxsplit=2)[2]
+                self.child_nodes.append(ldraw_node)
+
             if strip_line.startswith("0 !CATEGORY "):
                 self.category = strip_line.split(maxsplit=2)[2]
                 continue

@@ -27,6 +27,7 @@ class ImportSettings:
         'gap_scale': ImportOptions.defaults['gap_scale'],
         'no_studs': ImportOptions.defaults['no_studs'],
         'set_timeline_markers': ImportOptions.defaults['set_timeline_markers'],
+        'meta_bfc': ImportOptions.defaults['meta_bfc'],
         'meta_group': ImportOptions.defaults['meta_group'],
         'meta_print_write': ImportOptions.defaults['meta_print_write'],
         'meta_step': ImportOptions.defaults['meta_step'],

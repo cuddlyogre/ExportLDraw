@@ -102,7 +102,7 @@ class LDrawNode:
         self.pe_tex_infos = {}
         self.geometry_line_count = -1
 
-    def load(self, color_code="16", parent_matrix=None, geometry_data=None, parent_collection=None):
+    def load(self, color_code="16", parent_matrix=None, geometry_data=None, parent_collection=None, accum_cull=True, accum_invert=False):
         # set the working color code to this file's
         # color code if it isn't color code 16
         if self.color_code != "16":
@@ -141,11 +141,63 @@ class LDrawNode:
             elif ImportOptions.no_studs and self.file.is_like_stud():
                 pass
             else:
+                # https://www.ldraw.org/article/415.html#processing
+                local_cull = True
+                winding = "CCW"
+                certified = self.file.is_like_model() or self.file.is_part() or None
+                invert_next = False
+
                 for child_node in self.file.child_nodes:
                     if self.texmap_next:
                         self.__set_texmap_end()
 
-                    if child_node.meta_command == "step":
+                    if child_node.meta_command == "bfc":
+                        if not ImportOptions.meta_bfc:
+                            continue
+
+                        clean_line = child_node.line
+                        _params = clean_line.split()
+
+                        if certified is None:
+                            certified = True
+                            if _params[2] == "NOCERTIFY":
+                                certified = False
+
+                        if "CERTIFY" in _params:
+                            certified = True
+
+                        if "NOCERTIFY" in _params:
+                            certified = False
+
+                        if "CLIP" in _params:
+                            local_cull = True
+
+                        if "NOCLIP" in _params:
+                            local_cull = False
+
+                        if "CCW" in _params:
+                            if accum_invert:
+                                winding = "CW"
+                            else:
+                                winding = "CCW"
+                        if "CW" in _params:
+                            if accum_invert:
+                                winding = "CCW"
+                            else:
+                                winding = "CW"
+
+                        if "INVERTNEXT" in _params:
+                            invert_next = True
+
+                        # https://www.ldraw.org/article/415.html#rendering
+                        if matrix.determinant() < 0:
+                            if not invert_next:
+                                if winding == "CW":
+                                    winding = "CCW"
+                                else:
+                                    winding = "CW"
+
+                    elif child_node.meta_command == "step":
                         self.__set_step()
                     elif child_node.meta_command == "save":
                         self.__meta_save()
@@ -165,13 +217,25 @@ class LDrawNode:
                         self.__meta_pe_tex_info(child_node, matrix)
                     elif not self.texmap_fallback:
                         if child_node.meta_command == "1":
-                            self.__meta_subfile(child_node, color_code, matrix, geometry_data, collection)
+                            if certified:
+                                self.__meta_subfile(child_node, color_code, matrix, geometry_data, collection, (accum_cull and local_cull), (accum_invert ^ invert_next))
+                            else:
+                                self.__meta_subfile(child_node, color_code, matrix, geometry_data, collection, False, (accum_invert ^ invert_next))
                         elif child_node.meta_command == "2":
                             self.__meta_edge(child_node, color_code, matrix, geometry_data)
                         elif child_node.meta_command in ["3", "4"]:
-                            self.__meta_face(child_node, color_code, matrix, geometry_data)
+                            if accum_cull and local_cull and certified:
+                                self.__meta_face(child_node, color_code, matrix, geometry_data, winding)
+                            else:
+                                self.__meta_face(child_node, color_code, matrix, geometry_data, None)
                         elif child_node.meta_command == "5":
                             self.__meta_line(child_node, color_code, matrix, geometry_data)
+
+                    if child_node.meta_command != "bfc":
+                        invert_next = False
+                    elif "INVERTNEXT" not in child_node.meta_args:
+                        invert_next = False
+
         if top:
             if mesh is None:
                 mesh = self.__create_mesh(key, geometry_data)
@@ -230,8 +294,18 @@ class LDrawNode:
         for fd in geometry_data.face_data:
             face_info = fd.face_info
 
+            # https://github.com/rredford/LdrawToObj/blob/802924fb8d42145c4f07c10824e3a7f2292a6717/LdrawData/LdrawToData.cs
+            vertices = face_info.vertices
+            if fd.winding == "CCW":
+                vertices = vertices
+            elif fd.winding == "CW":
+                if face_info.vert_count() == 3:
+                    vertices = [vertices[0], vertices[2], vertices[1]]
+                elif face_info.vert_count() == 4:
+                    vertices = [vertices[0], vertices[3], vertices[2], vertices[1]]
+
             verts = []
-            for vertex in face_info.vertices:
+            for vertex in vertices:
                 vert = fd.matrix @ vertex
                 bm_vert = bm.verts.new(vert)
                 verts.append(bm_vert)
@@ -257,10 +331,17 @@ class LDrawNode:
 
     @staticmethod
     def __clean_bmesh(bm):
+        # with bfc, merging duplicates will cause invisible faces in parts like
+        # 3623.dat that have 2 faces in the same place but facing opposite directions
+        # a compromise is
+        # for space in area.spaces:
+        #     space.shading.show_backface_culling = False
+        # so backfaces still show but with proper normals so shading is correct
         if ImportOptions.remove_doubles:
             # TODO: if vertices in sharp edge collection, do not add to merge collection
             bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=ImportOptions.merge_distance)
 
+        # recalculate_normals completely overwrites any bfc processing
         if ImportOptions.recalculate_normals:
             bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
 
@@ -761,12 +842,14 @@ class LDrawNode:
         self.pe_tex_infos[self.pe_tex_path] = image.name
         self.pe_tex_path = None
 
-    def __meta_subfile(self, child_node, color_code, matrix, geometry_data, collection):
+    def __meta_subfile(self, child_node, color_code, matrix, geometry_data, collection, accum_cull=True, accum_invert=False):
         child_node.load(
             color_code=color_code,
             parent_matrix=matrix,
             geometry_data=geometry_data,
-            parent_collection=collection
+            parent_collection=collection,
+            accum_cull=accum_cull,
+            accum_invert=accum_invert,
         )
 
         self.__meta_root_group_nxt(child_node)
@@ -778,7 +861,7 @@ class LDrawNode:
             face_info=child_node.meta_args,
         )
 
-    def __meta_face(self, child_node, color_code, matrix, geometry_data):
+    def __meta_face(self, child_node, color_code, matrix, geometry_data, winding):
         # parse uv coordinates
         # -1 means that the uvs apply to this file
         pe_texmap = None
@@ -808,6 +891,7 @@ class LDrawNode:
             color_code=color_code,
             matrix=matrix,
             face_info=child_node.meta_args,
+            winding=winding,
             texmap=LDrawNode.__texmap,
             pe_texmap=pe_texmap,
         )
