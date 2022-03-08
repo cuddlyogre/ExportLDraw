@@ -17,8 +17,11 @@ will set keyframes so you can watch the model be built. Theoretically, you could
 file if you did it right. LeoCAD and LDCad groups are supported. LeoCAD cameras are supported as well. If you have
 LSynth parts installed, it will import those as well.
 
-BFC meta commands aren't parsed at all. I chose to rely on recalculate normals to handle face normals. This may change 
-as development continues, if for not other reason than to say that I did it.
+BFC meta commands are processed by default. If you set backface culling to be on for materials or the scene, and you 
+imported with remove doubles on, some faces may be missing on parts like 3623.dat. This is due to two faces being in the
+same place but facing different directions. Merging doubles essentially removes one of those faces. If you want backface
+culling to be on, don't remove doubles. For best results, process BFC commands and remove doubles, while keeping 
+backface culling off.
 
 Materials were taken almost wholesale from TobyLobster's plugin. I added my own glass material that was taken from a 
 BlenderArtists thread, but most of it is unchanged. - https://blenderartists.org/t/realistic-glass-in-eevee/1149937/19
@@ -113,10 +116,12 @@ be scaled to adjust to gaps between parts.
 **Merge distance:** How close the vertices have to be to merge them.  
 **Smooth type:** Use either autosmooth or an edge split modifier to smooth part faces.  
 **Shade smooth:**  Use flat or smooth shading for part faces.  
-**Recalculate normals:** Recalculate normals during import to ensure all normals face outside.
+**Recalculate normals:** Recalculate normals during import to ensure all normals face outside. Completely overwrites any 
+BFC processing. It is recommended to keep unchecked if processing BFC commands is checked
 
 **Meta Commands** - Process LDraw META commands.
 
+**BFC:** Process BFC commands.  
 **GROUP:** Imports LeoCAD and LDCad groups.  
 **PRINT/WRITE:** Prints PRINT/WRITE META commands to the system console.  
 **STEP:** Adds a keyframe that shows the part at the moment in the timeline.  
