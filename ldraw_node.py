@@ -162,14 +162,14 @@ class LDrawNode:
                     elif child_node.meta_command == "pe_tex_info":
                         self.__meta_pe_tex_info(child_node, matrix)
                     elif not self.texmap_fallback:
-                        if child_node.meta_command == "2":
+                        if child_node.meta_command == "1":
+                            self.__meta_subfile(child_node, color_code, matrix, geometry_data, collection)
+                        elif child_node.meta_command == "2":
                             self.__meta_edge(child_node, color_code, matrix, geometry_data)
                         elif child_node.meta_command in ["3", "4"]:
                             self.__meta_face(child_node, color_code, matrix, geometry_data)
                         elif child_node.meta_command == "5":
                             self.__meta_line(child_node, color_code, matrix, geometry_data)
-                        elif child_node.meta_command == "subfile":
-                            self.__meta_subfile(child_node, color_code, matrix, geometry_data, collection)
         if top:
             if mesh is None:
                 mesh = self.__create_mesh(key, geometry_data)
@@ -759,6 +759,16 @@ class LDrawNode:
         self.pe_tex_infos[self.pe_tex_path] = image.name
         self.pe_tex_path = None
 
+    def __meta_subfile(self, child_node, color_code, matrix, geometry_data, collection):
+        child_node.load(
+            color_code=color_code,
+            parent_matrix=matrix,
+            geometry_data=geometry_data,
+            parent_collection=collection
+        )
+
+        self.__meta_root_group_nxt(child_node)
+
     def __meta_edge(self, child_node, color_code, matrix, geometry_data):
         geometry_data.add_edge_data(
             color_code=color_code,
@@ -806,13 +816,3 @@ class LDrawNode:
             matrix=matrix,
             face_info=child_node.meta_args,
         )
-
-    def __meta_subfile(self, child_node, color_code, matrix, geometry_data, collection):
-        child_node.load(
-            color_code=color_code,
-            parent_matrix=matrix,
-            geometry_data=geometry_data,
-            parent_collection=collection
-        )
-
-        self.__meta_root_group_nxt(child_node)

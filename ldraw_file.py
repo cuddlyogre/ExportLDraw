@@ -519,7 +519,7 @@ class LDrawFile:
         ldraw_node = LDrawNode()
         ldraw_node.file = ldraw_file
         ldraw_node.line = clean_line
-        ldraw_node.meta_command = "subfile"
+        ldraw_node.meta_command = "1"
         ldraw_node.color_code = color_code
         ldraw_node.matrix = matrix
 
@@ -581,7 +581,7 @@ class LDrawFile:
             ldraw_node = LDrawNode()
             ldraw_node.file = ldraw_file
             ldraw_node.line = ""
-            ldraw_node.meta_command = "subfile"
+            ldraw_node.meta_command = "1"
             self.child_nodes.append(ldraw_node)
 
     # if there's a line type specified, determine what that type is
