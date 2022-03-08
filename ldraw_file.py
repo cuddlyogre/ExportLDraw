@@ -469,7 +469,10 @@ class LDrawFile:
     def __parse_geometry_line(self, clean_line):
         clean_line = clean_line.lstrip("0 !: ")
 
-        if self.__line_subfile(clean_line) or self.__line_geometry(clean_line):
+        if self.__line_subfile(clean_line):
+            return True
+
+        if self.__line_geometry(clean_line):
             return True
 
         return False
