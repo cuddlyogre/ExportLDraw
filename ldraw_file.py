@@ -36,6 +36,12 @@ class LDrawFile:
         # to be authored by a user outside of specifications
         self.part_type = None
         self.actual_part_type = None
+        self.license = None
+        self.help = []
+        self.category = None
+        self.keywords = []
+        self.cmdline = None
+        self.history = []
 
         self.child_nodes = []
         self.geometry = LDrawGeometry()
@@ -177,6 +183,30 @@ class LDrawFile:
                 continue
 
             if self.__line_part_type(clean_line, strip_line):
+                continue
+
+            if strip_line.startswith("0 !LICENSE "):
+                self.license = strip_line.split(maxsplit=2)[2]
+                continue
+
+            if strip_line.startswith("0 !HELP "):
+                self.help.append(strip_line.split(maxsplit=2)[2])
+                continue
+
+            if strip_line.startswith("0 !CATEGORY "):
+                self.category = strip_line.split(maxsplit=2)[2]
+                continue
+
+            if strip_line.startswith("0 !KEYWORDS "):
+                self.keywords += strip_line.split(maxsplit=2)[2].split(',')
+                continue
+
+            if strip_line.startswith("0 !CMDLINE "):
+                self.cmdline = strip_line.split(maxsplit=2)[2]
+                continue
+
+            if strip_line.startswith("0 !HISTORY "):
+                self.history.append(strip_line.split(maxsplit=4)[2:])
                 continue
 
             if self.__line_color(clean_line):
