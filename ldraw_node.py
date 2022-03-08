@@ -623,7 +623,6 @@ class LDrawNode:
                 # By definition this is the last of the parameters
                 _params = []
 
-                print(self.camera.position)
                 LDrawNode.cameras.append(self.camera)
                 self.camera = None
             else:
