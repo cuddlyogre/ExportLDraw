@@ -92,6 +92,8 @@ class LDrawNode:
         self.meta_command = None
         self.meta_args = {}
 
+        self.camera = None
+
         self.texmap_start = False
         self.texmap_next = False
         self.texmap_fallback = False
