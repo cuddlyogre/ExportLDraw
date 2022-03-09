@@ -55,6 +55,12 @@ class LDrawColor:
         if color_code in cls.__colors:
             return cls.__colors[color_code]
 
+        if color_code.lower().startswith('0x2'):
+            clean_line = f"0 !COLOUR {color_code} CODE {color_code} VALUE #{color_code[3:]} EDGE #333333"
+            _params = helpers.get_params(clean_line, "0 !COLOUR ", lowercase=False)
+            color_code = cls.parse_color(_params)
+            return cls.__colors[color_code]
+
         if cls.__bad_color is None:
             clean_line = "0 !COLOUR Bad_Color CODE -9999 VALUE #FF0000 EDGE #00FF00"
             _params = helpers.get_params(clean_line, "0 !COLOUR ", lowercase=False)
