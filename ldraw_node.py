@@ -189,6 +189,14 @@ class LDrawNode:
                         if "INVERTNEXT" in _params:
                             invert_next = True
 
+                        # https://math.stackexchange.com/a/792591
+                        # A singular matrix, also known as a degenerate matrix, is a square matrix whose determinate is zero.
+                        # https://www.algebrapracticeproblems.com/singular-degenerate-matrix/
+                        # A singular (or degenerate) matrix is a square matrix whose inverse matrix cannot be calculated.
+                        # Therefore, the determinant of a singular matrix is equal to 0.
+                        if matrix.determinant() == 0:
+                            certified = False
+
                         # https://www.ldraw.org/article/415.html#rendering
                         if matrix.determinant() < 0:
                             if not invert_next:
