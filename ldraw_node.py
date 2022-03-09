@@ -369,8 +369,10 @@ class LDrawNode:
 
         # increase the distance to look for edges to merge
         # merge line type 2 edges at a greater distance than mesh edges
+        # the rounded part in the seat of 4079.dat has a gap just wide
+        # enough that 2x isn't enough
         distance = ImportOptions.merge_distance
-        distance = ImportOptions.merge_distance * 2
+        distance = ImportOptions.merge_distance * 2.1
 
         e_edges, e_faces, e_verts, edge_indices = self.__build_edge_data(geometry_data, kd, distance)
         self.__create_edge_mesh(key, e_edges, e_faces, e_verts)
