@@ -105,13 +105,13 @@ class LDrawColor:
 
         i = lparams.index("value")
         value = lparams[i + 1]
-        rgb = self.__get_color_value(value, linear)
+        rgb = self.get_color_value(value, linear)
         self.color = rgb
         self.color_d = rgb + (1.0,)
 
         i = lparams.index("edge")
         edge = lparams[i + 1]
-        e_rgb = self.__get_color_value(edge, linear)
+        e_rgb = self.get_color_value(edge, linear)
         self.edge_color = e_rgb
         self.edge_color_d = e_rgb + (1.0,)
 
@@ -147,7 +147,7 @@ class LDrawColor:
 
             i = lparams.index("value")
             material_value = lparams[i + 1]
-            material_rgba = self.__get_color_value(material_value, linear)
+            material_rgba = self.get_color_value(material_value, linear)
             self.material_color = material_rgba
 
             material_alpha = 255
@@ -214,7 +214,7 @@ class LDrawColor:
             return False
 
     @classmethod
-    def __get_color_value(cls, value, linear=True):
+    def get_color_value(cls, value, linear=True):
         hex_digits = cls.__extract_hex_digits(value)
 
         if linear:
@@ -222,21 +222,20 @@ class LDrawColor:
         else:
             return cls.__hex_digits_to_srgb(hex_digits)
 
-    @staticmethod
-    def __srgb_to_rgb_value(value):
-        # See https://en.wikipedia.org/wiki/SRGB#The_reverse_transformation
-        if value < 0.04045:
-            return value / 12.92
-        return ((value + 0.055) / 1.055) ** 2.4
-
     @classmethod
-    def __srgb_to_linear_rgb(cls, srgb_color):
-        # See https://en.wikipedia.org/wiki/SRGB#The_reverse_transformation
-        (sr, sg, sb) = srgb_color
-        r = cls.__srgb_to_rgb_value(sr)
-        g = cls.__srgb_to_rgb_value(sg)
-        b = cls.__srgb_to_rgb_value(sb)
-        return r, g, b
+    def get_rgb_color_value(cls, value):
+        hex_digits = cls.__extract_hex_digits(value)
+        rgb = cls.__hex_to_rgb(hex_digits)
+        return rgb
+
+    @staticmethod
+    def __extract_hex_digits(hex_digits):
+        if hex_digits.startswith('#'):
+            return hex_digits[1:]
+        elif hex_digits.lower().startswith('0x2'):
+            return hex_digits[3:]
+        else:
+            return hex_digits
 
     @classmethod
     def __hex_digits_to_linear_rgba(cls, hex_digits):
@@ -245,15 +244,39 @@ class LDrawColor:
         return linear_rgb[0], linear_rgb[1], linear_rgb[2]
 
     @staticmethod
-    def __hex_digits_to_srgb(hex_digits):
-        # String is "RRGGBB" format
-        int_tuple = struct.unpack("BBB", bytes.fromhex(hex_digits))
-        srgb = tuple([val / 255 for val in int_tuple])
-        return srgb[0], srgb[1], srgb[2]
+    def __hex_to_rgb(hex_digits):
+        return struct.unpack("BBB", bytes.fromhex(hex_digits))
 
     @staticmethod
-    def __extract_hex_digits(hex_digits):
-        if hex_digits.startswith('#'):
-            return hex_digits[1:]
-        else:
-            return hex_digits
+    def __rgb_to_srgb(ints):
+        srgb = tuple([val / 255 for val in ints])
+        return srgb
+
+    @classmethod
+    def __hex_digits_to_srgb(cls, hex_digits):
+        # String is "RRGGBB" format
+        int_tuple = cls.__hex_to_rgb(hex_digits)
+        return cls.__rgb_to_srgb(int_tuple)
+
+    @classmethod
+    def __srgb_to_linear_rgb(cls, srgb_color):
+        (sr, sg, sb) = srgb_color
+        r = cls.__srgb_to_rgb_value(sr)
+        g = cls.__srgb_to_rgb_value(sg)
+        b = cls.__srgb_to_rgb_value(sb)
+        return r, g, b
+
+    @staticmethod
+    def __srgb_to_rgb_value(value):
+        # See https://en.wikipedia.org/wiki/SRGB#The_reverse_transformation
+        if value < 0.04045:
+            return value / 12.92
+        return ((value + 0.055) / 1.055) ** 2.4
+
+
+if __name__ == "__main__":
+    hex_digits = "0x2062E92"
+    color_value = LDrawColor.get_color_value(hex_digits)
+    print(color_value)
+    color_value = LDrawColor.get_rgb_color_value(hex_digits)
+    print(color_value)
