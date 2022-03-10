@@ -100,7 +100,7 @@ class LDrawNode:
 
         self.pe_tex_path = None
         self.pe_tex_infos = {}
-        self.geometry_line_count = -1
+        self.subfile_line_index = -1
 
     def load(self, color_code="16", parent_matrix=None, geometry_data=None, parent_collection=None, accum_cull=True, accum_invert=False):
         # set the working color code to this file's
@@ -225,6 +225,7 @@ class LDrawNode:
                         self.__meta_pe_tex_info(child_node, matrix)
                     elif not self.texmap_fallback:
                         if child_node.meta_command == "1":
+                            self.subfile_line_index += 1
                             if certified:
                                 self.__meta_subfile(child_node, color_code, matrix, geometry_data, collection, (accum_cull and local_cull), (accum_invert ^ invert_next))
                             else:
