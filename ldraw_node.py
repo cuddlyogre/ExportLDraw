@@ -115,11 +115,6 @@ class LDrawNode:
         matrix = parent_matrix @ self.matrix
         collection = parent_collection
 
-        # if top_collection is none then this is the beginning of the import, so collection/parent_collection will be none
-        if LDrawNode.top_collection is None:
-            collection = group.get_filename_collection(self.file.name, bpy.context.scene.collection)
-            LDrawNode.top_collection = collection
-
         # if a file has geometry, treat it like a part
         # otherwise that geometry won't be rendered
         if self.file.is_like_model() and self.file.geometry.vert_count() == 0:
