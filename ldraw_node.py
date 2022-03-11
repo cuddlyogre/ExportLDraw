@@ -10,6 +10,7 @@ from . import special_bricks
 from . import strings
 from .blender_materials import BlenderMaterials
 from .geometry_data import GeometryData
+from .ldraw_geometry import FaceInfo
 from .import_options import ImportOptions
 from .ldraw_colors import LDrawColor
 from .texmap import TexMap
@@ -153,6 +154,7 @@ class LDrawNode:
                         clean_line = child_node.line
                         _params = clean_line.split()
 
+                        # https://www.ldraw.org/article/415.html#processing
                         if certified is None:
                             certified = True
                             if _params[2] == "NOCERTIFY":
@@ -184,21 +186,43 @@ class LDrawNode:
                         if "INVERTNEXT" in _params:
                             invert_next = True
 
-                        # https://math.stackexchange.com/a/792591
-                        # A singular matrix, also known as a degenerate matrix, is a square matrix whose determinate is zero.
-                        # https://www.algebrapracticeproblems.com/singular-degenerate-matrix/
-                        # A singular (or degenerate) matrix is a square matrix whose inverse matrix cannot be calculated.
-                        # Therefore, the determinant of a singular matrix is equal to 0.
-                        if matrix.determinant() == 0:
-                            certified = False
-
-                        # https://www.ldraw.org/article/415.html#rendering
+                        """
+                        https://www.ldraw.org/article/415.html#rendering
+                        If the rendering engine does not detect and adjust for reversed matrices, the winding of all polygons in
+                        the subfile will be switched, causing the subfile to be rendered incorrectly.
+    
+                        The typical method of determining that an orientation matrix is reversed is to calculate the determinant of
+                        the matrix. If the determinant is negative, then the matrix has been reversed.
+    
+                        The typical way to adjust for matrix reversals is to switch the expected winding of the polygon vertices.
+                        That is, if the file specifies the winding as CW and the orientation matrix is reversed, the rendering
+                        program would proceed as if the winding is CCW.
+    
+                        The INVERTNEXT option also reverses the winding of the polygons within the subpart or primitive.
+                        If the matrix applied to the subpart or primitive has itself been reversed the INVERTNEXT processing
+                        is done IN ADDITION TO the automatic inversion - the two effectively cancelling each other out.
+                        """
                         if matrix.determinant() < 0:
                             if not invert_next:
                                 if winding == "CW":
                                     winding = "CCW"
                                 else:
                                     winding = "CW"
+
+                        """
+                        https://www.ldraw.org/article/415.html#rendering
+                        Degenerate Matrices. Some orientation matrices do not allow calculation of a determinate.
+                        This calculation is central to BFC processing. If an orientation matrix for a subfile is
+                        degenerate, then culling will not be possible for that subfile.
+    
+                        https://math.stackexchange.com/a/792591
+                        A singular matrix, also known as a degenerate matrix, is a square matrix whose determinate is zero.
+                        https://www.algebrapracticeproblems.com/singular-degenerate-matrix/
+                        A singular (or degenerate) matrix is a square matrix whose inverse matrix cannot be calculated.
+                        Therefore, the determinant of a singular matrix is equal to 0.
+                        """
+                        if matrix.determinant() == 0:
+                            certified = False
 
                     elif child_node.meta_command == "step":
                         self.__set_step()
@@ -222,18 +246,56 @@ class LDrawNode:
                         if child_node.meta_command == "1":
                             self.subfile_line_index += 1
                             if certified:
-                                self.__meta_subfile(child_node, color_code, matrix, geometry_data, collection, (accum_cull and local_cull), (accum_invert ^ invert_next))
+                                self.__meta_subfile(
+                                    child_node,
+                                    color_code,
+                                    matrix,
+                                    geometry_data,
+                                    collection,
+                                    (accum_cull and local_cull),
+                                    (accum_invert ^ invert_next),
+                                )
                             else:
-                                self.__meta_subfile(child_node, color_code, matrix, geometry_data, collection, False, (accum_invert ^ invert_next))
+                                self.__meta_subfile(
+                                    child_node,
+                                    color_code,
+                                    matrix,
+                                    geometry_data,
+                                    collection,
+                                    False,
+                                    (accum_invert ^ invert_next),
+                                )
                         elif child_node.meta_command == "2":
-                            self.__meta_edge(child_node, color_code, matrix, geometry_data)
+                            self.__meta_edge(
+                                child_node,
+                                color_code,
+                                matrix,
+                                geometry_data,
+                            )
                         elif child_node.meta_command in ["3", "4"]:
                             if accum_cull and local_cull and certified:
-                                self.__meta_face(child_node, color_code, matrix, geometry_data, winding)
+                                self.__meta_face(
+                                    child_node,
+                                    color_code,
+                                    matrix,
+                                    geometry_data,
+                                    winding,
+                                )
                             else:
-                                self.__meta_face(child_node, color_code, matrix, geometry_data, None)
+                                self.__meta_face(
+                                    child_node,
+                                    color_code,
+                                    matrix,
+                                    geometry_data,
+                                    None,
+                                )
                         elif child_node.meta_command == "5":
-                            self.__meta_line(child_node, color_code, matrix, geometry_data)
+                            self.__meta_line(
+                                child_node,
+                                color_code,
+                                matrix,
+                                geometry_data,
+                            )
 
                     if child_node.meta_command != "bfc":
                         invert_next = False
@@ -294,16 +356,7 @@ class LDrawNode:
     def __process_bmesh_faces(self, geometry_data, bm, mesh):
         for fd in geometry_data.face_data:
             face_info = fd.face_info
-
-            # https://github.com/rredford/LdrawToObj/blob/802924fb8d42145c4f07c10824e3a7f2292a6717/LdrawData/LdrawToData.cs
             vertices = face_info.vertices
-            if fd.winding == "CCW":
-                vertices = vertices
-            elif fd.winding == "CW":
-                if face_info.vert_count() == 3:
-                    vertices = [vertices[0], vertices[2], vertices[1]]
-                elif face_info.vert_count() == 4:
-                    vertices = [vertices[0], vertices[3], vertices[2], vertices[1]]
 
             verts = []
             for vertex in vertices:
@@ -865,6 +918,8 @@ class LDrawNode:
         )
 
     def __meta_face(self, child_node, color_code, matrix, geometry_data, winding):
+        face_info = child_node.meta_args
+
         # parse uv coordinates
         # -1 means that the uvs apply to this file
         pe_texmap = None
@@ -872,7 +927,6 @@ class LDrawNode:
             clean_line = child_node.line
             _params = clean_line.split()
 
-            face_info = child_node.meta_args
             vert_count = face_info.vert_count()
 
             pe_texmap = PETexmap()
@@ -890,11 +944,21 @@ class LDrawNode:
                     uv = mathutils.Vector((x, y))
                     pe_texmap.uvs.append(uv)
 
+        vertices = face_info.vertices
+        # https://github.com/rredford/LdrawToObj/blob/802924fb8d42145c4f07c10824e3a7f2292a6717/LdrawData/LdrawToData.cs
+        if winding == "CCW":
+            pass
+        elif winding == "CW":
+            if face_info.vert_count() == 3:
+                vertices = [vertices[0], vertices[2], vertices[1]]
+            elif face_info.vert_count() == 4:
+                vertices = [vertices[0], vertices[3], vertices[2], vertices[1]]
+            face_info = FaceInfo(face_info.color_code, vertices)
+
         geometry_data.add_face_data(
             color_code=color_code,
             matrix=matrix,
-            face_info=child_node.meta_args,
-            winding=winding,
+            face_info=face_info,
             texmap=LDrawNode.__texmap,
             pe_texmap=pe_texmap,
         )
