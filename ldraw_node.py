@@ -104,6 +104,11 @@ class LDrawNode:
         self.subfile_line_index = -1
 
     def load(self, color_code="16", parent_matrix=None, geometry_data=None, parent_collection=None, accum_cull=True, accum_invert=False):
+        if self.file.is_edge_logo() and not ImportOptions.display_logo:
+            return
+        elif self.file.is_like_stud() and ImportOptions.no_studs:
+            return
+
         # set the working color code to this file's
         # color code if it isn't color code 16
         if self.color_code != "16":
@@ -132,175 +137,169 @@ class LDrawNode:
 
         mesh = bpy.data.meshes.get(key)
         if mesh is None:
-            if not ImportOptions.display_logo and self.file.is_edge_logo():
-                pass
-            elif ImportOptions.no_studs and self.file.is_like_stud():
-                pass
-            else:
-                # https://www.ldraw.org/article/415.html#processing
-                local_cull = True
-                winding = "CCW"
-                certified = self.file.is_like_model() or self.file.is_part() or None
-                invert_next = False
+            local_cull = True
+            winding = "CCW"
+            certified = self.file.is_like_model() or self.file.is_part() or None
+            invert_next = False
 
-                for child_node in self.file.child_nodes:
-                    if self.texmap_next:
-                        self.__set_texmap_end()
+            for child_node in self.file.child_nodes:
+                if self.texmap_next:
+                    self.__set_texmap_end()
 
-                    if child_node.meta_command == "bfc":
-                        if not ImportOptions.meta_bfc:
-                            continue
+                if child_node.meta_command == "bfc":
+                    if not ImportOptions.meta_bfc:
+                        continue
 
-                        clean_line = child_node.line
-                        _params = clean_line.split()
+                    clean_line = child_node.line
+                    _params = clean_line.split()
 
-                        # https://www.ldraw.org/article/415.html#processing
-                        if certified is None:
-                            certified = True
-                            if _params[2] == "NOCERTIFY":
-                                certified = False
-
-                        if "CERTIFY" in _params:
-                            certified = True
-
-                        if "NOCERTIFY" in _params:
+                    # https://www.ldraw.org/article/415.html#processing
+                    if certified is None:
+                        certified = True
+                        if _params[2] == "NOCERTIFY":
                             certified = False
 
-                        if "CLIP" in _params:
-                            local_cull = True
+                    if "CERTIFY" in _params:
+                        certified = True
 
-                        if "NOCLIP" in _params:
-                            local_cull = False
+                    if "NOCERTIFY" in _params:
+                        certified = False
 
-                        if "CCW" in _params:
-                            if accum_invert:
-                                winding = "CW"
-                            else:
+                    if "CLIP" in _params:
+                        local_cull = True
+
+                    if "NOCLIP" in _params:
+                        local_cull = False
+
+                    if "CCW" in _params:
+                        if accum_invert:
+                            winding = "CW"
+                        else:
+                            winding = "CCW"
+                    if "CW" in _params:
+                        if accum_invert:
+                            winding = "CCW"
+                        else:
+                            winding = "CW"
+
+                    if "INVERTNEXT" in _params:
+                        invert_next = True
+
+                    """
+                    https://www.ldraw.org/article/415.html#rendering
+                    If the rendering engine does not detect and adjust for reversed matrices, the winding of all polygons in
+                    the subfile will be switched, causing the subfile to be rendered incorrectly.
+
+                    The typical method of determining that an orientation matrix is reversed is to calculate the determinant of
+                    the matrix. If the determinant is negative, then the matrix has been reversed.
+
+                    The typical way to adjust for matrix reversals is to switch the expected winding of the polygon vertices.
+                    That is, if the file specifies the winding as CW and the orientation matrix is reversed, the rendering
+                    program would proceed as if the winding is CCW.
+
+                    The INVERTNEXT option also reverses the winding of the polygons within the subpart or primitive.
+                    If the matrix applied to the subpart or primitive has itself been reversed the INVERTNEXT processing
+                    is done IN ADDITION TO the automatic inversion - the two effectively cancelling each other out.
+                    """
+                    if matrix.determinant() < 0:
+                        if not invert_next:
+                            if winding == "CW":
                                 winding = "CCW"
-                        if "CW" in _params:
-                            if accum_invert:
-                                winding = "CCW"
                             else:
                                 winding = "CW"
 
-                        if "INVERTNEXT" in _params:
-                            invert_next = True
+                    """
+                    https://www.ldraw.org/article/415.html#rendering
+                    Degenerate Matrices. Some orientation matrices do not allow calculation of a determinate.
+                    This calculation is central to BFC processing. If an orientation matrix for a subfile is
+                    degenerate, then culling will not be possible for that subfile.
 
-                        """
-                        https://www.ldraw.org/article/415.html#rendering
-                        If the rendering engine does not detect and adjust for reversed matrices, the winding of all polygons in
-                        the subfile will be switched, causing the subfile to be rendered incorrectly.
-    
-                        The typical method of determining that an orientation matrix is reversed is to calculate the determinant of
-                        the matrix. If the determinant is negative, then the matrix has been reversed.
-    
-                        The typical way to adjust for matrix reversals is to switch the expected winding of the polygon vertices.
-                        That is, if the file specifies the winding as CW and the orientation matrix is reversed, the rendering
-                        program would proceed as if the winding is CCW.
-    
-                        The INVERTNEXT option also reverses the winding of the polygons within the subpart or primitive.
-                        If the matrix applied to the subpart or primitive has itself been reversed the INVERTNEXT processing
-                        is done IN ADDITION TO the automatic inversion - the two effectively cancelling each other out.
-                        """
-                        if matrix.determinant() < 0:
-                            if not invert_next:
-                                if winding == "CW":
-                                    winding = "CCW"
-                                else:
-                                    winding = "CW"
+                    https://math.stackexchange.com/a/792591
+                    A singular matrix, also known as a degenerate matrix, is a square matrix whose determinate is zero.
+                    https://www.algebrapracticeproblems.com/singular-degenerate-matrix/
+                    A singular (or degenerate) matrix is a square matrix whose inverse matrix cannot be calculated.
+                    Therefore, the determinant of a singular matrix is equal to 0.
+                    """
+                    if matrix.determinant() == 0:
+                        certified = False
 
-                        """
-                        https://www.ldraw.org/article/415.html#rendering
-                        Degenerate Matrices. Some orientation matrices do not allow calculation of a determinate.
-                        This calculation is central to BFC processing. If an orientation matrix for a subfile is
-                        degenerate, then culling will not be possible for that subfile.
-    
-                        https://math.stackexchange.com/a/792591
-                        A singular matrix, also known as a degenerate matrix, is a square matrix whose determinate is zero.
-                        https://www.algebrapracticeproblems.com/singular-degenerate-matrix/
-                        A singular (or degenerate) matrix is a square matrix whose inverse matrix cannot be calculated.
-                        Therefore, the determinant of a singular matrix is equal to 0.
-                        """
-                        if matrix.determinant() == 0:
-                            certified = False
-
-                    elif child_node.meta_command == "step":
-                        self.__set_step()
-                    elif child_node.meta_command == "save":
-                        self.__meta_save()
-                    elif child_node.meta_command == "clear":
-                        self.__meta_clear()
-                    elif child_node.meta_command == "print":
-                        self.__meta_print(child_node)
-                    elif child_node.meta_command.startswith("group"):
-                        self.__meta_group(child_node)
-                    elif child_node.meta_command == "leocad_camera":
-                        self.__meta_leocad_camera(child_node, matrix)
-                    elif child_node.meta_command == "texmap":
-                        self.__meta_texmap(child_node, matrix)
-                    elif child_node.meta_command == "pe_tex_path":
-                        self.__meta_pe_tex_path(child_node)
-                    elif child_node.meta_command == "pe_tex_info":
-                        self.__meta_pe_tex_info(child_node, matrix)
-                    elif not self.texmap_fallback:
-                        if child_node.meta_command == "1":
-                            self.subfile_line_index += 1
-                            if certified:
-                                self.__meta_subfile(
-                                    child_node,
-                                    color_code,
-                                    matrix,
-                                    geometry_data,
-                                    collection,
-                                    (accum_cull and local_cull),
-                                    (accum_invert ^ invert_next),
-                                )
-                            else:
-                                self.__meta_subfile(
-                                    child_node,
-                                    color_code,
-                                    matrix,
-                                    geometry_data,
-                                    collection,
-                                    False,
-                                    (accum_invert ^ invert_next),
-                                )
-                        elif child_node.meta_command == "2":
-                            self.__meta_edge(
+                elif child_node.meta_command == "step":
+                    self.__set_step()
+                elif child_node.meta_command == "save":
+                    self.__meta_save()
+                elif child_node.meta_command == "clear":
+                    self.__meta_clear()
+                elif child_node.meta_command == "print":
+                    self.__meta_print(child_node)
+                elif child_node.meta_command.startswith("group"):
+                    self.__meta_group(child_node)
+                elif child_node.meta_command == "leocad_camera":
+                    self.__meta_leocad_camera(child_node, matrix)
+                elif child_node.meta_command == "texmap":
+                    self.__meta_texmap(child_node, matrix)
+                elif child_node.meta_command == "pe_tex_path":
+                    self.__meta_pe_tex_path(child_node)
+                elif child_node.meta_command == "pe_tex_info":
+                    self.__meta_pe_tex_info(child_node, matrix)
+                elif not self.texmap_fallback:
+                    if child_node.meta_command == "1":
+                        self.subfile_line_index += 1
+                        if certified:
+                            self.__meta_subfile(
                                 child_node,
                                 color_code,
                                 matrix,
                                 geometry_data,
+                                collection,
+                                (accum_cull and local_cull),
+                                (accum_invert ^ invert_next),
                             )
-                        elif child_node.meta_command in ["3", "4"]:
-                            if accum_cull and local_cull and certified:
-                                self.__meta_face(
-                                    child_node,
-                                    color_code,
-                                    matrix,
-                                    geometry_data,
-                                    winding,
-                                )
-                            else:
-                                self.__meta_face(
-                                    child_node,
-                                    color_code,
-                                    matrix,
-                                    geometry_data,
-                                    None,
-                                )
-                        elif child_node.meta_command == "5":
-                            self.__meta_line(
+                        else:
+                            self.__meta_subfile(
                                 child_node,
                                 color_code,
                                 matrix,
                                 geometry_data,
+                                collection,
+                                False,
+                                (accum_invert ^ invert_next),
                             )
+                    elif child_node.meta_command == "2":
+                        self.__meta_edge(
+                            child_node,
+                            color_code,
+                            matrix,
+                            geometry_data,
+                        )
+                    elif child_node.meta_command in ["3", "4"]:
+                        if accum_cull and local_cull and certified:
+                            self.__meta_face(
+                                child_node,
+                                color_code,
+                                matrix,
+                                geometry_data,
+                                winding,
+                            )
+                        else:
+                            self.__meta_face(
+                                child_node,
+                                color_code,
+                                matrix,
+                                geometry_data,
+                                None,
+                            )
+                    elif child_node.meta_command == "5":
+                        self.__meta_line(
+                            child_node,
+                            color_code,
+                            matrix,
+                            geometry_data,
+                        )
 
-                    if child_node.meta_command != "bfc":
-                        invert_next = False
-                    elif "INVERTNEXT" not in child_node.meta_args:
-                        invert_next = False
+                if child_node.meta_command != "bfc":
+                    invert_next = False
+                elif "INVERTNEXT" not in child_node.meta_args:
+                    invert_next = False
 
         if top:
             if mesh is None:
