@@ -41,22 +41,18 @@ class BlenderMaterials:
 
     @classmethod
     def __build_key(cls, color, use_edge_color, part_slopes, texmap, pe_texmap):
-        _key = []
-        _key.append("LDraw Material")
-        _key.append(color.code)
-        _key.append(color.name)
+        _key = (color.name, color.code)
+
         if LDrawColor.use_alt_colors:
-            _key.append("alt")
+            _key += ("alt",)
         if use_edge_color:
-            _key.append("edge")
+            _key += ("edge",)
         if part_slopes is not None:
-            _key.append("_".join([str(k) for k in part_slopes]))
+            _key += (part_slopes,)
         if texmap is not None:
-            texmap_suffix = "_".join([str(k) for k in [texmap.method, texmap.texture, texmap.glossmap] if k != ''])
-            _key.append(texmap_suffix)
+            _key += ((texmap.method, texmap.texture, texmap.glossmap),)
         if pe_texmap is not None:
-            _key.append(pe_texmap.texture)
-        _key = "_".join([str(k).lower() for k in _key])
+            _key += (pe_texmap.texture,)
 
         key = cls.__key_map.get(_key)
         if key is None:
