@@ -132,7 +132,7 @@ class LDrawNode:
             matrix = self.__identity
             geometry_data = GeometryData()
 
-        key = self.__build_key(self.file.name, color_code)
+        key = self.__build_key(self.file.name, color_code, accum_cull, accum_invert)
 
         mesh = bpy.data.meshes.get(key)
         if mesh is None:
@@ -252,11 +252,8 @@ class LDrawNode:
             self.__process_top_edges(key, obj, color_code, collection)
 
     @classmethod
-    def __build_key(cls, filename, color_code):
-        _key = []
-        _key.append(filename)
-        _key.append(color_code)
-        _key = "_".join([str(k).lower() for k in _key])
+    def __build_key(cls, filename, color_code, accum_cull, accum_invert):
+        _key = (filename, color_code, accum_cull, accum_invert,)
 
         key = cls.__key_map.get(_key)
         if key is None:
