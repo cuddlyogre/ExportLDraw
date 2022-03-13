@@ -17,11 +17,10 @@ will set keyframes so you can watch the model be built. Theoretically, you could
 file if you did it right. LeoCAD and LDCad groups are supported. LeoCAD cameras are supported as well. If you have
 LSynth parts installed, it will import those as well.
 
-BFC meta commands are processed by default. If you set backface culling to be on for materials or the scene, and you 
-imported with remove doubles on, some faces may be missing on parts like 3623.dat. This is due to two faces being in the
-same place but facing different directions. Merging doubles essentially removes one of those faces. If you want backface
-culling to be on, don't remove doubles. For best results, process BFC commands and remove doubles, while keeping 
-backface culling off.
+BFC meta commands are processed by default. Don't recalculate normals, as this will undo all BFC processing that might 
+be done. All CERTIFY parts are handled properly. NOCERTIFY parts still need some work to allow for turning on backface 
+culling. Backface culling is per material, so if a part is not certified, you will need to create a material 
+specifically with backface culling off, or else there may be invisible faces.
 
 Materials were taken almost wholesale from TobyLobster's plugin. I added my own glass material that was taken from a 
 BlenderArtists thread, but most of it is unchanged. - https://blenderartists.org/t/realistic-glass-in-eevee/1149937/19
@@ -52,8 +51,7 @@ due to a more challenging part of the wholly undocumented pe_tex spec that Stud.
 Stud.io project files are in actuality just password-protected zip files, but due to regulations related to DRM, 
 importing Stud.io projects will not ever be implemented here, even though it would be relatively trivial. 
 
-
-Eevee and Cycles are both supported.  
+Eevee and Cycles are both supported.
 
 **EEvee**  
 ![Examples of Eevee import](examples/import/eevee.jpg)
@@ -67,7 +65,7 @@ settings.
 
 ![Examples of sloped parts](examples/import/slope.jpg)
 
-The ability to replace selected parts with different resolution parts is on my TODO list. For instances, 338 from
+The ability to replace selected parts with different resolution parts is on my TODO list. For instance, 338 from
 earlier has a lot of gaps in the tires and fender because the model is built with parts with different resolutions.
 
 Names of parts and mesh data are uuid strings due to a 64 character string limit for names of items in Blender. This is
