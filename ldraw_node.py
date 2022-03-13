@@ -90,6 +90,7 @@ class LDrawNode:
         self.line = ""
         self.color_code = "16"
         self.matrix = self.__identity
+        self.bfc_certified = None
         self.meta_command = None
         self.meta_args = {}
 
@@ -142,7 +143,7 @@ class LDrawNode:
         if mesh is None:
             local_cull = True
             winding = "CCW"
-            certified = self.file.is_like_model() or None
+            self.bfc_certified = self.file.is_like_model() or None
             invert_next = False
 
             for child_node in self.file.child_nodes:
@@ -157,16 +158,16 @@ class LDrawNode:
                     _params = clean_line.split()
 
                     # https://www.ldraw.org/article/415.html#processing
-                    if certified is None:
-                        certified = True
+                    if self.bfc_certified is None:
+                        self.bfc_certified = True
                         if _params[2] == "NOCERTIFY":
-                            certified = False
+                            self.bfc_certified = False
 
                     if "CERTIFY" in _params:
-                        certified = True
+                        self.bfc_certified = True
 
                     if "NOCERTIFY" in _params:
-                        certified = False
+                        self.bfc_certified = False
 
                     if "CLIP" in _params:
                         local_cull = True
@@ -224,7 +225,7 @@ class LDrawNode:
                     Therefore, the determinant of a singular matrix is equal to 0.
                     """
                     if matrix.determinant() == 0:
-                        certified = False
+                        self.bfc_certified = False
 
                 elif child_node.meta_command == "step":
                     self.__set_step()
@@ -249,7 +250,7 @@ class LDrawNode:
                 elif not self.texmap_fallback:
                     if child_node.meta_command == "1":
                         # TODO: subfile.load() as if it were the file being imported, then merge that mesh into the accumulated mesh
-                        if certified:
+                        if self.bfc_certified:
                             self.__meta_subfile(
                                 child_node,
                                 color_code,
@@ -277,7 +278,7 @@ class LDrawNode:
                             geometry_data,
                         )
                     elif child_node.meta_command in ["3", "4"]:
-                        if accum_cull and local_cull and certified:
+                        if accum_cull and local_cull and self.bfc_certified:
                             self.__meta_face(
                                 child_node,
                                 color_code,
@@ -374,7 +375,7 @@ class LDrawNode:
                 color_code = face_info.color_code
 
             part_slopes = special_bricks.get_part_slopes(self.file.name)
-            material = BlenderMaterials.get_material(color_code, part_slopes=part_slopes, texmap=fd.texmap, pe_texmap=fd.pe_texmap)
+            material = BlenderMaterials.get_material(color_code, part_slopes=part_slopes, texmap=fd.texmap, pe_texmap=fd.pe_texmap, use_backface_culling=self.bfc_certified)
             if material.name not in mesh.materials:
                 mesh.materials.append(material)
 

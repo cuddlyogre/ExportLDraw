@@ -26,22 +26,31 @@ class BlenderMaterials:
             node_group.use_fake_user = True
 
     @classmethod
-    def get_material(cls, color_code, use_edge_color=False, part_slopes=None, texmap=None, pe_texmap=None):
+    def get_material(cls, color_code, use_edge_color=False, part_slopes=None, texmap=None, pe_texmap=None, use_backface_culling=True):
         color = LDrawColor.get_color(color_code)
+        use_backface_culling = use_backface_culling is True
 
-        key = cls.__build_key(color, use_edge_color, part_slopes, texmap, pe_texmap)
+        key = cls.__build_key(color, use_edge_color, part_slopes, texmap, pe_texmap, use_backface_culling)
 
         # Reuse current material if it exists, otherwise create a new material
         material = bpy.data.materials.get(key)
         if material is not None:
             return material
 
-        material = cls.__create_node_based_material(key, color, use_edge_color=use_edge_color, part_slopes=part_slopes, texmap=texmap, pe_texmap=pe_texmap)
+        material = cls.__create_node_based_material(
+            key,
+            color,
+            use_edge_color=use_edge_color,
+            part_slopes=part_slopes,
+            texmap=texmap,
+            pe_texmap=pe_texmap,
+            use_backface_culling=use_backface_culling,
+        )
         return material
 
     @classmethod
-    def __build_key(cls, color, use_edge_color, part_slopes, texmap, pe_texmap):
-        _key = (color.name, color.code)
+    def __build_key(cls, color, use_edge_color, part_slopes, texmap, pe_texmap, use_backface_culling):
+        _key = (color.name, color.code, use_backface_culling)
 
         if LDrawColor.use_alt_colors:
             _key += ("alt",)
@@ -62,12 +71,13 @@ class BlenderMaterials:
         return key
 
     @classmethod
-    def __create_node_based_material(cls, key, color, use_edge_color=False, part_slopes=None, texmap=None, pe_texmap=None):
+    def __create_node_based_material(cls, key, color, use_edge_color=False, part_slopes=None, texmap=None, pe_texmap=None, use_backface_culling=True):
         """Set Cycles Material Values."""
 
         material = bpy.data.materials.new(key)
         material.use_fake_user = True
         material.use_nodes = True
+        material.use_backface_culling = use_backface_culling
 
         nodes = material.node_tree.nodes
         links = material.node_tree.links
