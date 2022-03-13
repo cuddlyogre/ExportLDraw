@@ -70,7 +70,7 @@ settings.
 The ability to replace selected parts with different resolution parts is on my TODO list. For instances, 338 from
 earlier has a lot of gaps in the tires and fender because the model is built with parts with different resolutions.
 
-Names of parts and mesh data are uuid strings due to a 64 character string limit for names of items in blender. This is
+Names of parts and mesh data are uuid strings due to a 64 character string limit for names of items in Blender. This is
 not ideal, but the LDraw filename is stored in the ldraw_filename custom property of the object/mesh.
 
 ### Notes
