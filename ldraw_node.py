@@ -142,7 +142,7 @@ class LDrawNode:
         if mesh is None:
             local_cull = True
             winding = "CCW"
-            certified = self.file.is_like_model() or self.file.is_part() or None
+            certified = self.file.is_like_model() or None
             invert_next = False
 
             for child_node in self.file.child_nodes:
