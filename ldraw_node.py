@@ -17,7 +17,7 @@ from .texmap import TexMap
 from . import helpers
 from . import ldraw_props
 from .ldraw_camera import LDrawCamera
-from .pe_texmap import PETexmap
+from .pe_texmap import PETexInfo, PETexmap
 
 
 class LDrawNode:
