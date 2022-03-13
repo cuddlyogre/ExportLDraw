@@ -101,9 +101,10 @@ class LDrawNode:
 
         self.pe_tex_path = None
         self.pe_tex_infos = {}
-        self.subfile_line_index = -1
+        self.pe_tex_info = None
+        self.subfile_line_index = 0
 
-    def load(self, color_code="16", parent_matrix=None, geometry_data=None, parent_collection=None, accum_cull=True, accum_invert=False):
+    def load(self, color_code="16", parent_matrix=None, geometry_data=None, parent_collection=None, accum_cull=True, accum_invert=False, pe_tex_info=None):
         if self.file.is_edge_logo() and not ImportOptions.display_logo:
             return
         elif self.file.is_like_stud() and ImportOptions.no_studs:
@@ -116,6 +117,8 @@ class LDrawNode:
 
         if parent_matrix is None:
             parent_matrix = self.__identity
+
+        self.pe_tex_info = pe_tex_info
 
         top = False
         matrix = parent_matrix @ self.matrix
@@ -895,9 +898,19 @@ class LDrawNode:
         from . import base64_handler
         image = base64_handler.named_png_from_base64_str(f"{self.file.name}_{self.pe_tex_path}.png", base64_str)
         self.pe_tex_infos[self.pe_tex_path] = image.name
+        if self.pe_tex_path == -1:
+            self.pe_tex_info = self.pe_tex_infos[self.pe_tex_path]
         self.pe_tex_path = None
 
     def __meta_subfile(self, child_node, color_code, matrix, geometry_data, collection, accum_cull=True, accum_invert=False):
+        # if we have a pe_tex_info, but no pe_tex meta commands have been parsed
+        # treat the pe_tex_info as the one to use
+        # custom minifig head > 3626tex.dat (has no pe_tex) > 3626texshell.dat
+        if len(self.pe_tex_infos) < 1 and self.pe_tex_info is not None:
+            pe_tex_info = self.pe_tex_info
+        else:
+            pe_tex_info = self.pe_tex_infos.get(self.subfile_line_index)
+
         child_node.load(
             color_code=color_code,
             parent_matrix=matrix,
@@ -905,8 +918,10 @@ class LDrawNode:
             parent_collection=collection,
             accum_cull=accum_cull,
             accum_invert=accum_invert,
+            pe_tex_info=pe_tex_info,
         )
 
+        self.subfile_line_index += 1
         self.__meta_root_group_nxt(child_node)
 
     def __meta_edge(self, child_node, color_code, matrix, geometry_data):
@@ -917,19 +932,18 @@ class LDrawNode:
         )
 
     def __meta_face(self, child_node, color_code, matrix, geometry_data, winding):
+        clean_line = child_node.line
+        _params = clean_line.split()
+
         face_info = child_node.meta_args
+        vert_count = face_info.vert_count()
 
-        # parse uv coordinates
-        # -1 means that the uvs apply to this file
         pe_texmap = None
-        if -1 in self.pe_tex_infos:
-            clean_line = child_node.line
-            _params = clean_line.split()
-
-            vert_count = face_info.vert_count()
-
+        # if we have uv data and a pe_tex_info, otherwise pass
+        # # custom minifig head > 3626tex.dat (has no pe_tex) > 3626texpole.dat (has no uv data)
+        if len(_params) > 14 and self.pe_tex_info is not None:
             pe_texmap = PETexmap()
-            pe_texmap.texture = self.pe_tex_infos[-1]
+            pe_texmap.texture = self.pe_tex_info
             if vert_count == 3:
                 for i in range(vert_count):
                     x = round(float(_params[i * 2 + 11]), 3)
