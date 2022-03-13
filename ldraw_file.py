@@ -484,7 +484,6 @@ class LDrawFile:
             ldraw_node.file = self
             ldraw_node.line = clean_line
             ldraw_node.meta_command = "pe_tex_path"
-            ldraw_node.meta_args = int(strip_line.split()[2])
             self.child_nodes.append(ldraw_node)
             return True
 
@@ -493,6 +492,15 @@ class LDrawFile:
             ldraw_node.file = self
             ldraw_node.line = clean_line
             ldraw_node.meta_command = "pe_tex_info"
+            self.child_nodes.append(ldraw_node)
+            return True
+
+        # TODO: find out what this does
+        if clean_line.startswith("0 0 PE_TEX_NEXT_SHEAR"):
+            ldraw_node = LDrawNode()
+            ldraw_node.file = self
+            ldraw_node.line = clean_line
+            ldraw_node.meta_command = "pe_tex_next_shear"
             self.child_nodes.append(ldraw_node)
             return True
 

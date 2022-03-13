@@ -99,7 +99,7 @@ class LDrawNode:
         self.texmap_next = False
         self.texmap_fallback = False
 
-        self.pe_tex_path = None
+        self.current_pe_tex_path = None
         self.pe_tex_infos = {}
         self.pe_tex_info = None
         self.subfile_line_index = 0
@@ -244,6 +244,8 @@ class LDrawNode:
                     self.__meta_pe_tex_path(child_node)
                 elif child_node.meta_command == "pe_tex_info":
                     self.__meta_pe_tex_info(child_node, matrix)
+                elif child_node.meta_command == "pe_tex_next_shear":
+                    """no idea"""
                 elif not self.texmap_fallback:
                     if child_node.meta_command == "1":
                         self.subfile_line_index += 1
@@ -863,23 +865,34 @@ class LDrawNode:
     # -1 is this file
     # >= 0 is the nth geometry line where n = PE_TEX_PATH
     def __meta_pe_tex_path(self, child_node):
-        self.pe_tex_path = child_node.meta_args
+        clean_line = child_node.line
+        _params = clean_line.split()
+
+        pe_tex_path = int(_params[2])
+
+        # if there are two pe_tex_paths, the second one is the subfile_line_index in that file
+        try:
+            pe_tex_path_1 = int(_params[2])
+        except IndexError as e:
+            pe_tex_path_1 = None
+
+        self.current_pe_tex_path = pe_tex_path
 
     # PE_TEX_INFO bse64_str uses the file's uvs
     # PE_TEX_INFO x,y,z,a,b,c,d,e,f,g,h,i,bl/tl,tr/br is matrix and plane coordinates for uv calculations
     # if no matrix, identity @ rotation?
     def __meta_pe_tex_info(self, child_node, matrix):
-        if self.pe_tex_path is None:
+        if self.current_pe_tex_path is None:
             return
 
         clean_line = child_node.line
         _params = clean_line.split()
 
+        pe_tex_info = PETexInfo()
         base64_str = None
         if len(_params) == 3:  # this tex_info applies to
             base64_str = _params[2]
-        else:
-            """
+        elif len(_params) == 19:
             base64_str = _params[18]
             (x, y, z, a, b, c, d, e, f, g, h, i, bl_x, bl_y, tr_x, tr_y) = map(float, _params[2:18])
             matrix = mathutils.Matrix((
@@ -890,17 +903,24 @@ class LDrawNode:
             ))
             bl = mathutils.Vector((bl_x, bl_y))
             tr = mathutils.Vector((tr_x, tr_y))
-            """
+
+            pe_tex_info.matrix = matrix
+            pe_tex_info.v1 = bl
+            pe_tex_info.v2 = tr
 
         if base64_str is None:
             return
 
         from . import base64_handler
-        image = base64_handler.named_png_from_base64_str(f"{self.file.name}_{self.pe_tex_path}.png", base64_str)
-        self.pe_tex_infos[self.pe_tex_path] = image.name
-        if self.pe_tex_path == -1:
-            self.pe_tex_info = self.pe_tex_infos[self.pe_tex_path]
-        self.pe_tex_path = None
+        image = base64_handler.named_png_from_base64_str(f"{self.file.name}_{self.current_pe_tex_path}.png", base64_str)
+
+        pe_tex_info.image = image.name
+
+        self.pe_tex_infos[self.current_pe_tex_path] = pe_tex_info
+
+        if self.current_pe_tex_path == -1:
+            self.pe_tex_info = self.pe_tex_infos[self.current_pe_tex_path]
+        self.current_pe_tex_path = None
 
     def __meta_subfile(self, child_node, color_code, matrix, geometry_data, collection, accum_cull=True, accum_invert=False):
         # if we have a pe_tex_info, but no pe_tex meta commands have been parsed
@@ -939,23 +959,24 @@ class LDrawNode:
         vert_count = face_info.vert_count()
 
         pe_texmap = None
-        # if we have uv data and a pe_tex_info, otherwise pass
-        # # custom minifig head > 3626tex.dat (has no pe_tex) > 3626texpole.dat (has no uv data)
-        if len(_params) > 14 and self.pe_tex_info is not None:
-            pe_texmap = PETexmap()
-            pe_texmap.texture = self.pe_tex_info
-            if vert_count == 3:
-                for i in range(vert_count):
-                    x = round(float(_params[i * 2 + 11]), 3)
-                    y = round(float(_params[i * 2 + 12]), 3)
-                    uv = mathutils.Vector((x, y))
-                    pe_texmap.uvs.append(uv)
-            elif vert_count == 4:
-                for i in range(vert_count):
-                    x = round(float(_params[i * 2 + 13]), 3)
-                    y = round(float(_params[i * 2 + 14]), 3)
-                    uv = mathutils.Vector((x, y))
-                    pe_texmap.uvs.append(uv)
+        if self.pe_tex_info is not None:
+            # if we have uv data and a pe_tex_info, otherwise pass
+            # # custom minifig head > 3626tex.dat (has no pe_tex) > 3626texpole.dat (has no uv data)
+            if len(_params) > 14:
+                pe_texmap = PETexmap()
+                pe_texmap.texture = self.pe_tex_info.image
+                if vert_count == 3:
+                    for i in range(vert_count):
+                        x = round(float(_params[i * 2 + 11]), 3)
+                        y = round(float(_params[i * 2 + 12]), 3)
+                        uv = mathutils.Vector((x, y))
+                        pe_texmap.uvs.append(uv)
+                elif vert_count == 4:
+                    for i in range(vert_count):
+                        x = round(float(_params[i * 2 + 13]), 3)
+                        y = round(float(_params[i * 2 + 14]), 3)
+                        uv = mathutils.Vector((x, y))
+                        pe_texmap.uvs.append(uv)
 
         vertices = face_info.vertices
         # https://github.com/rredford/LdrawToObj/blob/802924fb8d42145c4f07c10824e3a7f2292a6717/LdrawData/LdrawToData.cs
