@@ -1,7 +1,6 @@
 import os
 import re
 import mathutils
-import uuid
 
 from .import_options import ImportOptions
 from .filesystem import FileSystem
