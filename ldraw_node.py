@@ -248,7 +248,7 @@ class LDrawNode:
                     """no idea"""
                 elif not self.texmap_fallback:
                     if child_node.meta_command == "1":
-                        self.subfile_line_index += 1
+                        # TODO: subfile.load() as if it were the file being imported, then merge that mesh into the accumulated mesh
                         if certified:
                             self.__meta_subfile(
                                 child_node,
