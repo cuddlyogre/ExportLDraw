@@ -31,17 +31,40 @@ You are able to choose the logo you want to show on studs, or no logo or stud at
 Importing TEXMAP is fully supported. This includes planar, cylindrical, and spherical. The DATA meta command is
 relatively new compared to TEXMAP support, so it's not supported, yet. Thanks to https://github.com/trevorsandy/lpub3d 
 for the cylindrical and spherical math. 
+
 ![Examples of TEXMAP using 27062.dat and 27062p01.dat](examples/import/texmap.jpg)
 
+**Stud.io**  
+Stud.io parts can be used if you set the LDraw path value to the Stud.io ldraw folder location. On Windows, that should
+be **C:\Program Files\Studio 2.0\ldraw**
+
+Stud.io decals are mostly supported. There are some aspects of the spec I have to figure out still, but the current 
+level of support should be sufficient for most things. In this example, the textures on the hands are missing. This is 
+due to a more challenging part of the wholly undocumented pe_tex spec that Stud.io uses not yet being implemented.  
+
+**Part with decal in PartDesigner**
+![Image of PartDesigner](examples/import/stud_io.jpg)
+
+**The same part imported into Blender**
+![Image of PartDesigner](examples/import/stud_io_imported.jpg)
+
+**A note about Stud.io projects**  
+Stud.io project files are in actuality just password-protected zip files, but due to regulations related to DRM, 
+importing Stud.io projects will not ever be implemented here, even though it would be relatively trivial. 
+
+
 Eevee and Cycles are both supported.  
+
 **EEvee**  
 ![Examples of Eevee import](examples/import/eevee.jpg)
+
 **Cycles**  
 ![Examples of Cycles import](examples/import/cycles.jpg)
 
 Sloped parts also have a slope texture applied to them. I have done my best to ensure that all parts in the list are
 supposed to be textured and that the angles are correct. The slope angles can be adjusted in the object's material 
 settings.
+
 ![Examples of sloped parts](examples/import/slope.jpg)
 
 The ability to replace selected parts with different resolution parts is on my TODO list. For instances, 338 from
@@ -49,15 +72,6 @@ earlier has a lot of gaps in the tires and fender because the model is built wit
 
 Names of parts and mesh data are uuid strings due to a 64 character string limit for names of items in blender. This is
 not ideal, but the LDraw filename is stored in the ldraw_filename custom property of the object/mesh.
-
-Stud.io parts can be used if you set the LDraw path value to the Stud.io ldraw folder location. Stud.io texture 
-support is in development. It is completely different from the official TEXMAP standard, but close enough that I can
-use a lot of the same logic. I've figured out the standard, but the structure of the import loop had to be rewritten to
-allow it.
-
-**A note about Stud.io projects**  
-Stud.io project files are in actuality just password-protected zip files, but due to regulations related to DRM, 
-importing Stud.io projects will not ever be implemented here, even though it would be relatively trivial. 
 
 ### Notes
 
