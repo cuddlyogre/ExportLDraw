@@ -499,7 +499,7 @@ class LDrawFile:
         return False
 
     def __parse_geometry_line(self, clean_line):
-        clean_line = clean_line.lstrip("0 !: ")
+        clean_line = clean_line.replace("0 !: ", '')
 
         if self.__line_subfile(clean_line):
             return True
