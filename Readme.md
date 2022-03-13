@@ -18,9 +18,7 @@ file if you did it right. LeoCAD and LDCad groups are supported. LeoCAD cameras 
 LSynth parts installed, it will import those as well.
 
 BFC meta commands are processed by default. Don't recalculate normals, as this will undo all BFC processing that might 
-be done. All CERTIFY parts are handled properly. NOCERTIFY parts still need some work to allow for turning on backface 
-culling. Backface culling is per material, so if a part is not certified, you will need to create a material 
-specifically with backface culling off, or else there may be invisible faces.
+be done. CERTIFY and NOCERTIFY parts are both handled properly.
 
 Materials were taken almost wholesale from TobyLobster's plugin. I added my own glass material that was taken from a 
 BlenderArtists thread, but most of it is unchanged. - https://blenderartists.org/t/realistic-glass-in-eevee/1149937/19
