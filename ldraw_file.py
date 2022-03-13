@@ -74,12 +74,18 @@ class LDrawFile:
         """Reads the color values from the LDConfig.ldr file. For details of the
         LDraw color system see: http://www.ldraw.org/article/547"""
 
-        if LDrawColor.use_alt_colors:
-            filename = "LDCfgalt.ldr"
-        else:
-            filename = "LDConfig.ldr"
+        alt_filename = "LDCfgalt.ldr"
+        standard_filename = "LDConfig.ldr"
 
-        LDrawFile.get_file(filename)
+        if LDrawColor.use_alt_colors:
+            filename = alt_filename
+        else:
+            filename = standard_filename
+
+        ldraw_file = LDrawFile.get_file(filename)
+        if filename == alt_filename and ldraw_file is None:
+            ldraw_file = LDrawFile.get_file(standard_filename)
+        return ldraw_file
 
     @classmethod
     def get_file(cls, filename):
