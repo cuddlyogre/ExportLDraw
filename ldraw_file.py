@@ -190,25 +190,25 @@ class LDrawFile:
             if self.__line_part_type(clean_line, strip_line):
                 continue
 
-            if self.__line_license(clean_line, strip_line):
+            if self.__line_license(strip_line):
                 continue
 
-            if self.__line_help(clean_line, strip_line):
+            if self.__line_help(strip_line):
                 continue
 
             if self.__line_bfc(clean_line, strip_line):
                 continue
 
-            if self.__line_category(clean_line, strip_line):
+            if self.__line_category(strip_line):
                 continue
 
-            if self.__line_keywords(clean_line, strip_line):
+            if self.__line_keywords(strip_line):
                 continue
 
-            if self.__line_cmd_line(clean_line, strip_line):
+            if self.__line_cmd_line(strip_line):
                 continue
 
-            if self.__line_history(clean_line, strip_line):
+            if self.__line_history(strip_line):
                 continue
 
             if self.__line_color(clean_line):
@@ -235,7 +235,7 @@ class LDrawFile:
             if self.__line_texmap(clean_line):
                 continue
 
-            if self.__line_stud_io(clean_line, strip_line):
+            if self.__line_stud_io(clean_line):
                 continue
 
             if self.__parse_geometry_line(clean_line):
@@ -287,13 +287,13 @@ class LDrawFile:
 
         return True
 
-    def __line_license(self, clean_line, strip_line):
+    def __line_license(self, strip_line):
         if strip_line.startswith("0 !LICENSE "):
             self.license = strip_line.split(maxsplit=2)[2]
             return True
         return False
 
-    def __line_help(self, clean_line, strip_line):
+    def __line_help(self, strip_line):
         if strip_line.startswith("0 !HELP "):
             self.help.append(strip_line.split(maxsplit=2)[2])
             return True
@@ -312,25 +312,25 @@ class LDrawFile:
             return True
         return False
 
-    def __line_category(self, clean_line, strip_line):
+    def __line_category(self, strip_line):
         if strip_line.startswith("0 !CATEGORY "):
             self.category = strip_line.split(maxsplit=2)[2]
             return True
         return False
 
-    def __line_keywords(self, clean_line, strip_line):
+    def __line_keywords(self, strip_line):
         if strip_line.startswith("0 !KEYWORDS "):
             self.keywords += strip_line.split(maxsplit=2)[2].split(',')
             return True
         return False
 
-    def __line_cmd_line(self, clean_line, strip_line):
+    def __line_cmd_line(self, strip_line):
         if strip_line.startswith("0 !CMDLINE "):
             self.cmdline = strip_line.split(maxsplit=2)[2]
             return True
         return False
 
-    def __line_history(self, clean_line, strip_line):
+    def __line_history(self, strip_line):
         if strip_line.startswith("0 !HISTORY "):
             self.history.append(strip_line.split(maxsplit=4)[2:])
             return True
@@ -513,7 +513,7 @@ class LDrawFile:
 
         return True
 
-    def __line_stud_io(self, clean_line, strip_line):
+    def __line_stud_io(self, clean_line):
         if clean_line.startswith("0 PE_TEX_PATH "):
             ldraw_node = LDrawNode()
             ldraw_node.file = self
