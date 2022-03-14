@@ -592,7 +592,7 @@ class LDrawFile:
         ):
             return False
 
-        _params = clean_line.split(maxsplit=14)
+        _params = clean_line.split()
 
         face_info = self.geometry.parse_face(_params)
 
