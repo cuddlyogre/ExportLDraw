@@ -111,10 +111,7 @@ class LDrawNode:
         elif self.file.is_like_stud() and ImportOptions.no_studs:
             return
 
-        # set the working color code to this file's
-        # color code if it isn't color code 16
-        if self.color_code != "16":
-            color_code = self.color_code
+        color_code = self.__determine_color(color_code, self.color_code)
 
         if parent_matrix is None:
             parent_matrix = self.__identity
@@ -313,6 +310,15 @@ class LDrawNode:
             obj = self.__process_top_object(mesh, parent_matrix, color_code, collection)
             self.__process_top_edges(key, obj, color_code, collection)
 
+    # set the working color code to this file's
+    # color code if it isn't color code 16
+    @staticmethod
+    def __determine_color(parent_color_code, this_color_code):
+        color_code = parent_color_code
+        if this_color_code != "16":
+            color_code = this_color_code
+        return color_code
+
     @classmethod
     def __build_key(cls, filename, color_code, accum_cull, accum_invert):
         _key = (filename, color_code, accum_cull, accum_invert,)
@@ -359,34 +365,32 @@ class LDrawNode:
         self.__clean_bmesh(bm)
 
     def __process_bmesh_faces(self, geometry_data, bm, mesh):
-        for fd in geometry_data.face_data:
-            face_info = fd.face_info
+        for face_data in geometry_data.face_data:
+            face_info = face_data.face_info
             vertices = face_info.vertices
 
             verts = []
             for vertex in vertices:
-                vert = fd.matrix @ vertex
+                vert = face_data.matrix @ vertex
                 bm_vert = bm.verts.new(vert)
                 verts.append(bm_vert)
             face = bm.faces.new(verts)
 
-            color_code = fd.color_code
-            if face_info.color_code != "16":
-                color_code = face_info.color_code
+            color_code = self.__determine_color(face_data.color_code, face_info.color_code)
 
             part_slopes = special_bricks.get_part_slopes(self.file.name)
-            material = BlenderMaterials.get_material(color_code, part_slopes=part_slopes, texmap=fd.texmap, pe_texmap=fd.pe_texmap, use_backface_culling=self.bfc_certified)
+            material = BlenderMaterials.get_material(color_code, part_slopes=part_slopes, texmap=face_data.texmap, pe_texmap=face_data.pe_texmap, use_backface_culling=self.bfc_certified)
             if material.name not in mesh.materials:
                 mesh.materials.append(material)
 
             face.smooth = ImportOptions.shade_smooth
             face.material_index = mesh.materials.find(material.name)
 
-            if fd.texmap is not None:
-                fd.texmap.uv_unwrap_face(bm, face)
+            if face_data.texmap is not None:
+                face_data.texmap.uv_unwrap_face(bm, face)
 
-            if fd.pe_texmap is not None:
-                fd.pe_texmap.uv_unwrap_face(bm, face)
+            if face_data.pe_texmap is not None:
+                face_data.pe_texmap.uv_unwrap_face(bm, face)
 
     @staticmethod
     def __clean_bmesh(bm):
