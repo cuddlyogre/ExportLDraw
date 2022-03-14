@@ -190,38 +190,25 @@ class LDrawFile:
             if self.__line_part_type(clean_line, strip_line):
                 continue
 
-            if strip_line.startswith("0 !LICENSE "):
-                self.license = strip_line.split(maxsplit=2)[2]
+            if self.__line_license(clean_line, strip_line):
                 continue
 
-            if strip_line.startswith("0 !HELP "):
-                self.help.append(strip_line.split(maxsplit=2)[2])
+            if self.__line_help(clean_line, strip_line):
                 continue
 
-            if strip_line.startswith("0 BFC"):
-                _params = strip_line.split(maxsplit=4)
-
-                ldraw_node = LDrawNode()
-                ldraw_node.file = self
-                ldraw_node.line = clean_line
-                ldraw_node.meta_command = "bfc"
-                ldraw_node.meta_args = strip_line.split(maxsplit=2)[2]
-                self.child_nodes.append(ldraw_node)
-
-            if strip_line.startswith("0 !CATEGORY "):
-                self.category = strip_line.split(maxsplit=2)[2]
+            if self.__line_bfc(clean_line, strip_line):
                 continue
 
-            if strip_line.startswith("0 !KEYWORDS "):
-                self.keywords += strip_line.split(maxsplit=2)[2].split(',')
+            if self.__line_category(clean_line, strip_line):
                 continue
 
-            if strip_line.startswith("0 !CMDLINE "):
-                self.cmdline = strip_line.split(maxsplit=2)[2]
+            if self.__line_keywords(clean_line, strip_line):
                 continue
 
-            if strip_line.startswith("0 !HISTORY "):
-                self.history.append(strip_line.split(maxsplit=4)[2:])
+            if self.__line_cmd_line(clean_line, strip_line):
+                continue
+
+            if self.__line_history(clean_line, strip_line):
                 continue
 
             if self.__line_color(clean_line):
@@ -299,6 +286,55 @@ class LDrawFile:
         self.part_type = self.determine_part_type(self.actual_part_type)
 
         return True
+
+    def __line_license(self, clean_line, strip_line):
+        if strip_line.startswith("0 !LICENSE "):
+            self.license = strip_line.split(maxsplit=2)[2]
+            return True
+        return False
+
+    def __line_help(self, clean_line, strip_line):
+        if strip_line.startswith("0 !HELP "):
+            self.help.append(strip_line.split(maxsplit=2)[2])
+            return True
+        return False
+
+    def __line_bfc(self, clean_line, strip_line):
+        if strip_line.startswith("0 BFC"):
+            _params = strip_line.split(maxsplit=4)
+
+            ldraw_node = LDrawNode()
+            ldraw_node.file = self
+            ldraw_node.line = clean_line
+            ldraw_node.meta_command = "bfc"
+            ldraw_node.meta_args = strip_line.split(maxsplit=2)[2]
+            self.child_nodes.append(ldraw_node)
+            return True
+        return False
+
+    def __line_category(self, clean_line, strip_line):
+        if strip_line.startswith("0 !CATEGORY "):
+            self.category = strip_line.split(maxsplit=2)[2]
+            return True
+        return False
+
+    def __line_keywords(self, clean_line, strip_line):
+        if strip_line.startswith("0 !KEYWORDS "):
+            self.keywords += strip_line.split(maxsplit=2)[2].split(',')
+            return True
+        return False
+
+    def __line_cmd_line(self, clean_line, strip_line):
+        if strip_line.startswith("0 !CMDLINE "):
+            self.cmdline = strip_line.split(maxsplit=2)[2]
+            return True
+        return False
+
+    def __line_history(self, clean_line, strip_line):
+        if strip_line.startswith("0 !HISTORY "):
+            self.history.append(strip_line.split(maxsplit=4)[2:])
+            return True
+        return False
 
     # TODO: add collection of colors specific to this file
     def __line_color(self, clean_line):
