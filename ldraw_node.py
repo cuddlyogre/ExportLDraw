@@ -365,9 +365,7 @@ class LDrawNode:
 
     def __process_bmesh_faces(self, geometry_data, bm, mesh):
         for face_data in geometry_data.face_data:
-            verts = []
-            for vertex in face_data.vertices:
-                verts.append(bm.verts.new(vertex))
+            verts = [bm.verts.new(face_data.matrix @ vertex) for vertex in face_data.vertices]
             face = bm.faces.new(verts)
 
             part_slopes = special_bricks.get_part_slopes(self.file.name)
@@ -439,8 +437,9 @@ class LDrawNode:
             edge_verts = []
             face_indices = []
             for vertex in edge_data.vertices:
-                e_verts.append(vertex)
-                edge_verts.append(vertex)
+                vert = edge_data.matrix @ vertex
+                e_verts.append(vert)
+                edge_verts.append(vert)
                 face_indices.append(i)
                 i += 1
             e_faces.append(face_indices)
@@ -940,12 +939,12 @@ class LDrawNode:
 
     def __meta_edge(self, child_node, color_code, matrix, geometry_data):
         vertices = child_node.meta_args
-        vertices = [matrix @ vertices[0], matrix @ vertices[1]]
         color_code = self.__determine_color(color_code, child_node.color_code)
 
         geometry_data.add_edge_data(
             color_code=color_code,
             vertices=vertices,
+            matrix=matrix,
         )
 
     def __meta_face(self, child_node, color_code, matrix, geometry_data, winding):
@@ -977,31 +976,29 @@ class LDrawNode:
 
         # https://github.com/rredford/LdrawToObj/blob/802924fb8d42145c4f07c10824e3a7f2292a6717/LdrawData/LdrawToData.cs
         if winding == "CCW":
-            if vert_count == 3:
-                vertices = [matrix @ vertices[0], matrix @ vertices[1], matrix @ vertices[2]]
-            elif vert_count == 4:
-                vertices = [matrix @ vertices[0], matrix @ vertices[1], matrix @ vertices[2], matrix @ vertices[3]]
+            pass
         elif winding == "CW":
             if vert_count == 3:
-                vertices = [matrix @ vertices[0], matrix @ vertices[2], matrix @ vertices[1]]
+                vertices = [vertices[0], vertices[2], vertices[1]]
             elif vert_count == 4:
-                vertices = [matrix @ vertices[0], matrix @ vertices[3], matrix @ vertices[2], matrix @ vertices[1]]
+                vertices = [vertices[0], vertices[3], vertices[2], vertices[1]]
 
         color_code = self.__determine_color(color_code, child_node.color_code)
 
         geometry_data.add_face_data(
             color_code=color_code,
             vertices=vertices,
+            matrix=matrix,
             texmap=LDrawNode.__texmap,
             pe_texmap=pe_texmap,
         )
 
     def __meta_line(self, child_node, color_code, matrix, geometry_data):
         vertices = child_node.meta_args
-        vertices = [matrix @ vertices[0], matrix @ vertices[1]]
         color_code = self.__determine_color(color_code, child_node.color_code)
 
         geometry_data.add_line_data(
             color_code=color_code,
             vertices=vertices,
+            matrix=matrix,
         )
