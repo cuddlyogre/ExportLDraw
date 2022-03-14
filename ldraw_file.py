@@ -630,13 +630,12 @@ class LDrawFile:
 
         _params = clean_line.split()
 
-        face_info = self.geometry.parse_face(_params)
-
         ldraw_node = LDrawNode()
         ldraw_node.file = self
         ldraw_node.line = clean_line
         ldraw_node.meta_command = _params[0]
-        ldraw_node.meta_args = face_info
+        ldraw_node.color_code = _params[1]
+        ldraw_node.meta_args = self.geometry.parse_face(_params)
         self.child_nodes.append(ldraw_node)
 
         return True

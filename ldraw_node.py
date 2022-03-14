@@ -10,7 +10,6 @@ from . import special_bricks
 from . import strings
 from .blender_materials import BlenderMaterials
 from .geometry_data import GeometryData
-from .ldraw_geometry import FaceInfo
 from .import_options import ImportOptions
 from .ldraw_colors import LDrawColor
 from .texmap import TexMap
@@ -366,20 +365,13 @@ class LDrawNode:
 
     def __process_bmesh_faces(self, geometry_data, bm, mesh):
         for face_data in geometry_data.face_data:
-            face_info = face_data.face_info
-            vertices = face_info.vertices
-
             verts = []
-            for vertex in vertices:
-                vert = face_data.matrix @ vertex
-                bm_vert = bm.verts.new(vert)
-                verts.append(bm_vert)
+            for vertex in face_data.vertices:
+                verts.append(bm.verts.new(vertex))
             face = bm.faces.new(verts)
 
-            color_code = self.__determine_color(face_data.color_code, face_info.color_code)
-
             part_slopes = special_bricks.get_part_slopes(self.file.name)
-            material = BlenderMaterials.get_material(color_code, part_slopes=part_slopes, texmap=face_data.texmap, pe_texmap=face_data.pe_texmap, use_backface_culling=self.bfc_certified)
+            material = BlenderMaterials.get_material(face_data.color_code, part_slopes=part_slopes, texmap=face_data.texmap, pe_texmap=face_data.pe_texmap, use_backface_culling=self.bfc_certified)
             if material.name not in mesh.materials:
                 mesh.materials.append(material)
 
@@ -443,15 +435,12 @@ class LDrawNode:
         edge_indices = set()
 
         i = 0
-        for ed in geometry_data.edge_data:
-            face_info = ed.face_info
-
+        for edge_data in geometry_data.edge_data:
             edge_verts = []
             face_indices = []
-            for vertex in face_info.vertices:
-                vert = ed.matrix @ vertex
-                e_verts.append(vert)
-                edge_verts.append(vert)
+            for vertex in edge_data.vertices:
+                e_verts.append(vertex)
+                edge_verts.append(vertex)
                 face_indices.append(i)
                 i += 1
             e_faces.append(face_indices)
@@ -950,18 +939,21 @@ class LDrawNode:
         self.__meta_root_group_nxt(child_node)
 
     def __meta_edge(self, child_node, color_code, matrix, geometry_data):
+        vertices = child_node.meta_args
+        vertices = [matrix @ vertices[0], matrix @ vertices[1]]
+        color_code = self.__determine_color(color_code, child_node.color_code)
+
         geometry_data.add_edge_data(
             color_code=color_code,
-            matrix=matrix,
-            face_info=child_node.meta_args,
+            vertices=vertices,
         )
 
     def __meta_face(self, child_node, color_code, matrix, geometry_data, winding):
         clean_line = child_node.line
         _params = clean_line.split()
 
-        face_info = child_node.meta_args
-        vert_count = face_info.vert_count()
+        vertices = child_node.meta_args
+        vert_count = len(vertices)
 
         pe_texmap = None
         if self.pe_tex_info is not None:
@@ -983,28 +975,33 @@ class LDrawNode:
                         uv = mathutils.Vector((x, y))
                         pe_texmap.uvs.append(uv)
 
-        vertices = face_info.vertices
         # https://github.com/rredford/LdrawToObj/blob/802924fb8d42145c4f07c10824e3a7f2292a6717/LdrawData/LdrawToData.cs
         if winding == "CCW":
-            pass
+            if vert_count == 3:
+                vertices = [matrix @ vertices[0], matrix @ vertices[1], matrix @ vertices[2]]
+            elif vert_count == 4:
+                vertices = [matrix @ vertices[0], matrix @ vertices[1], matrix @ vertices[2], matrix @ vertices[3]]
         elif winding == "CW":
-            if face_info.vert_count() == 3:
-                vertices = [vertices[0], vertices[2], vertices[1]]
-            elif face_info.vert_count() == 4:
-                vertices = [vertices[0], vertices[3], vertices[2], vertices[1]]
-            face_info = FaceInfo(face_info.color_code, vertices)
+            if vert_count == 3:
+                vertices = [matrix @ vertices[0], matrix @ vertices[2], matrix @ vertices[1]]
+            elif vert_count == 4:
+                vertices = [matrix @ vertices[0], matrix @ vertices[3], matrix @ vertices[2], matrix @ vertices[1]]
+
+        color_code = self.__determine_color(color_code, child_node.color_code)
 
         geometry_data.add_face_data(
             color_code=color_code,
-            matrix=matrix,
-            face_info=face_info,
+            vertices=vertices,
             texmap=LDrawNode.__texmap,
             pe_texmap=pe_texmap,
         )
 
     def __meta_line(self, child_node, color_code, matrix, geometry_data):
+        vertices = child_node.meta_args
+        vertices = [matrix @ vertices[0], matrix @ vertices[1]]
+        color_code = self.__determine_color(color_code, child_node.color_code)
+
         geometry_data.add_line_data(
             color_code=color_code,
-            matrix=matrix,
-            face_info=child_node.meta_args,
+            vertices=vertices,
         )
