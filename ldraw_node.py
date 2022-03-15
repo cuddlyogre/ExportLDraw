@@ -114,7 +114,8 @@ class LDrawNode:
         self.pe_tex_info = pe_tex_info
 
         top = False
-        matrix = parent_matrix @ self.matrix
+        accum_matrix = parent_matrix @ self.matrix
+        matrix = accum_matrix
         collection = parent_collection
 
         # if a file has geometry, treat it like a part
@@ -304,7 +305,7 @@ class LDrawNode:
         if top:
             if mesh is None:
                 mesh = self.__create_mesh(key, geometry_data)
-            obj = self.__process_top_object(mesh, parent_matrix, color_code, collection)
+            obj = self.__process_top_object(mesh, accum_matrix, color_code, collection)
             self.__process_top_edges(key, obj, color_code, collection)
 
     # set the working color code to this file's
@@ -476,7 +477,7 @@ class LDrawNode:
         if ImportOptions.make_gaps and ImportOptions.gap_target == "mesh":
             mesh.transform(cls.__gap_scale_matrix)
 
-    def __process_top_object(self, mesh, parent_matrix, color_code, collection):
+    def __process_top_object(self, mesh, accum_matrix, color_code, collection):
         obj = bpy.data.objects.new(mesh.name, mesh)
         obj[strings.ldraw_filename_key] = self.file.name
         obj[strings.ldraw_color_code_key] = color_code
@@ -489,7 +490,7 @@ class LDrawNode:
 
         ldraw_props.set_props(self, obj, color_code)
 
-        self.__process_top_object_matrix(obj, parent_matrix)
+        self.__process_top_object_matrix(obj, accum_matrix)
         self.__process_top_object_gap(obj)
         self.__process_top_object_edges(obj)
 
@@ -498,8 +499,8 @@ class LDrawNode:
         self.__link_obj_to_collection(collection, obj)
         return obj
 
-    def __process_top_object_matrix(self, obj, parent_matrix):
-        matrix = parent_matrix @ self.matrix
+    @staticmethod
+    def __process_top_object_matrix(obj, accum_matrix):
         transform_matrix = LDrawNode.__rotation @ LDrawNode.__import_scale_matrix
         if ImportOptions.parent_to_empty:
             if LDrawNode.top_empty is None:
@@ -507,10 +508,10 @@ class LDrawNode:
                 group.link_obj(LDrawNode.top_collection, LDrawNode.top_empty)
 
             LDrawNode.top_empty.matrix_world = transform_matrix
-            obj.matrix_world = matrix
+            obj.matrix_world = accum_matrix
             obj.parent = LDrawNode.top_empty  # must be after matrix_world set or else transform is incorrect
         else:
-            matrix_world = transform_matrix @ matrix
+            matrix_world = transform_matrix @ accum_matrix
             obj.matrix_world = matrix_world
 
     @classmethod
