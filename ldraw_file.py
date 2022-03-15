@@ -46,8 +46,6 @@ class LDrawFile:
         self.geometry = LDrawGeometry()
         self.extra_child_nodes = None
 
-        self.camera = None
-
     def __str__(self):
         return "\n".join([
             f"filename: {self.filename}",
@@ -55,16 +53,6 @@ class LDrawFile:
             f"name: {self.name}",
             f"author: {self.author}",
         ])
-
-    def copy(self):
-        ldraw_file = LDrawFile(self.filename)
-        ldraw_file.lines = self.lines
-        ldraw_file.description = self.description
-        ldraw_file.name = self.name
-        ldraw_file.author = self.author
-        ldraw_file.part_type = self.part_type
-        ldraw_file.actual_part_type = self.actual_part_type
-        return ldraw_file
 
     @classmethod
     def read_color_table(cls):
