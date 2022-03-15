@@ -107,8 +107,6 @@ class LDrawNode:
         elif self.file.is_like_stud() and ImportOptions.no_studs:
             return
 
-        color_code = self.__determine_color(color_code, self.color_code)
-
         if parent_matrix is None:
             parent_matrix = self.__identity
 
@@ -141,6 +139,8 @@ class LDrawNode:
             invert_next = False
 
             for child_node in self.file.child_nodes:
+                current_color = self.__determine_color(color_code, child_node.color_code)
+
                 if child_node.meta_command == "bfc":
                     if not ImportOptions.meta_bfc:
                         continue
@@ -244,7 +244,7 @@ class LDrawNode:
                         if self.bfc_certified:
                             self.__meta_subfile(
                                 child_node,
-                                color_code,
+                                current_color,
                                 matrix,
                                 geometry_data,
                                 collection,
@@ -254,7 +254,7 @@ class LDrawNode:
                         else:
                             self.__meta_subfile(
                                 child_node,
-                                color_code,
+                                current_color,
                                 matrix,
                                 geometry_data,
                                 collection,
@@ -264,7 +264,7 @@ class LDrawNode:
                     elif child_node.meta_command == "2":
                         self.__meta_edge(
                             child_node,
-                            color_code,
+                            current_color,
                             matrix,
                             geometry_data,
                         )
@@ -272,7 +272,7 @@ class LDrawNode:
                         if accum_cull and local_cull and self.bfc_certified:
                             self.__meta_face(
                                 child_node,
-                                color_code,
+                                current_color,
                                 matrix,
                                 geometry_data,
                                 winding,
@@ -280,7 +280,7 @@ class LDrawNode:
                         else:
                             self.__meta_face(
                                 child_node,
-                                color_code,
+                                current_color,
                                 matrix,
                                 geometry_data,
                                 None,
@@ -288,7 +288,7 @@ class LDrawNode:
                     elif child_node.meta_command == "5":
                         self.__meta_line(
                             child_node,
-                            color_code,
+                            current_color,
                             matrix,
                             geometry_data,
                         )
@@ -311,9 +311,9 @@ class LDrawNode:
     # color code if it isn't color code 16
     @staticmethod
     def __determine_color(parent_color_code, this_color_code):
-        color_code = parent_color_code
-        if this_color_code != "16":
-            color_code = this_color_code
+        color_code = this_color_code
+        if this_color_code == "16":
+            color_code = parent_color_code
         return color_code
 
     @classmethod
@@ -932,7 +932,6 @@ class LDrawNode:
 
     def __meta_edge(self, child_node, color_code, matrix, geometry_data):
         vertices = child_node.meta_args
-        color_code = self.__determine_color(color_code, child_node.color_code)
 
         geometry_data.add_edge_data(
             color_code=color_code,
@@ -976,8 +975,6 @@ class LDrawNode:
             elif vert_count == 4:
                 vertices = [vertices[0], vertices[3], vertices[2], vertices[1]]
 
-        color_code = self.__determine_color(color_code, child_node.color_code)
-
         geometry_data.add_face_data(
             color_code=color_code,
             vertices=vertices,
@@ -988,7 +985,6 @@ class LDrawNode:
 
     def __meta_line(self, child_node, color_code, matrix, geometry_data):
         vertices = child_node.meta_args
-        color_code = self.__determine_color(color_code, child_node.color_code)
 
         geometry_data.add_line_data(
             color_code=color_code,
