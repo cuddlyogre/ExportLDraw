@@ -40,9 +40,6 @@ class LDrawNode:
     __collection_id_map = {}
     __key_map = {}
 
-    __texmaps = []
-    __texmap = None
-
     __auto_smooth_angle = 31
     __auto_smooth_angle = 44.97
     __auto_smooth_angle = 51.1
@@ -76,9 +73,6 @@ class LDrawNode:
         cls.__collection_id_map = {}
         cls.__key_map = {}
 
-        cls.__texmaps = []
-        cls.__texmap = None
-
         cls.__set_step()
 
         cls.__create_groups_collection()
@@ -99,12 +93,15 @@ class LDrawNode:
         self.texmap_next = False
         self.texmap_fallback = False
 
+        self.texmaps = []
+        self.texmap = None
+
         self.current_pe_tex_path = None
         self.pe_tex_infos = {}
         self.pe_tex_info = None
         self.subfile_line_index = 0
 
-    def load(self, color_code="16", parent_matrix=None, geometry_data=None, parent_collection=None, accum_cull=True, accum_invert=False, pe_tex_info=None):
+    def load(self, color_code="16", parent_matrix=None, geometry_data=None, parent_collection=None, accum_cull=True, accum_invert=False, texmap=None, pe_tex_info=None):
         if self.file.is_edge_logo() and not ImportOptions.display_logo:
             return
         elif self.file.is_like_stud() and ImportOptions.no_studs:
@@ -115,6 +112,7 @@ class LDrawNode:
         if parent_matrix is None:
             parent_matrix = self.__identity
 
+        self.texmap = texmap
         self.pe_tex_info = pe_tex_info
 
         top = False
@@ -143,9 +141,6 @@ class LDrawNode:
             invert_next = False
 
             for child_node in self.file.child_nodes:
-                if self.texmap_next:
-                    self.__set_texmap_end()
-
                 if child_node.meta_command == "bfc":
                     if not ImportOptions.meta_bfc:
                         continue
@@ -297,6 +292,9 @@ class LDrawNode:
                             matrix,
                             geometry_data,
                         )
+
+                if self.texmap_next:
+                    self.__set_texmap_end()
 
                 if child_node.meta_command != "bfc":
                     invert_next = False
@@ -835,15 +833,15 @@ class LDrawNode:
                 new_texmap.texture = texture
                 new_texmap.glossmap = glossmap
 
-            if LDrawNode.__texmap is not None:
-                LDrawNode.__texmaps.append(LDrawNode.__texmap)
-            LDrawNode.__texmap = new_texmap
+            if self.texmap is not None:
+                self.texmaps.append(self.texmap)
+            self.texmap = new_texmap
 
     def __set_texmap_end(self):
         try:
-            LDrawNode.__texmap = LDrawNode.__texmaps.pop()
+            self.texmap = self.texmaps.pop()
         except IndexError as e:
-            LDrawNode.__texmap = None
+            self.texmap = None
 
         self.texmap_start = False
         self.texmap_next = False
@@ -925,6 +923,7 @@ class LDrawNode:
             parent_collection=collection,
             accum_cull=accum_cull,
             accum_invert=accum_invert,
+            texmap=self.texmap,
             pe_tex_info=pe_tex_info,
         )
 
@@ -983,7 +982,7 @@ class LDrawNode:
             color_code=color_code,
             vertices=vertices,
             matrix=matrix,
-            texmap=LDrawNode.__texmap,
+            texmap=self.texmap,
             pe_texmap=pe_texmap,
         )
 
