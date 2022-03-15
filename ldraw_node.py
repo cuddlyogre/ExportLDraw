@@ -242,14 +242,14 @@ class LDrawNode:
                 elif not self.texmap_fallback:
                     if child_node.meta_command == "1":
                         # TODO: subfile.load() as if it were the file being imported, then merge that mesh into the accumulated mesh
-                        if self.bfc_certified:
+                        if self.bfc_certified and accum_cull and local_cull:
                             self.__meta_subfile(
                                 child_node,
                                 current_color,
                                 matrix,
                                 geometry_data,
                                 collection,
-                                (accum_cull and local_cull),
+                                True,
                                 (accum_invert ^ invert_next),
                             )
                         else:
@@ -270,7 +270,7 @@ class LDrawNode:
                             geometry_data,
                         )
                     elif child_node.meta_command in ["3", "4"]:
-                        if accum_cull and local_cull and self.bfc_certified:
+                        if self.bfc_certified and accum_cull and local_cull:
                             self.__meta_face(
                                 child_node,
                                 current_color,
