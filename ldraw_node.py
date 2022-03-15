@@ -384,12 +384,6 @@ class LDrawNode:
 
     @staticmethod
     def __clean_bmesh(bm):
-        # with bfc, merging duplicates will cause invisible faces in parts like
-        # 3623.dat that have 2 faces in the same place but facing opposite directions
-        # a compromise is
-        # for space in area.spaces:
-        #     space.shading.show_backface_culling = False
-        # so backfaces still show but with proper normals so shading is correct
         if ImportOptions.remove_doubles:
             # TODO: if vertices in sharp edge collection, do not add to merge collection
             bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=ImportOptions.merge_distance)

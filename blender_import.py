@@ -56,6 +56,7 @@ def do_import(filepath):
     for area in bpy.context.screen.areas:
         if area.type == "VIEW_3D":
             for space in area.spaces:
+                # space.shading.show_backface_culling = False
                 if space.type == "VIEW_3D":
                     if space.clip_end < max_clip_end:
                         space.clip_end = max_clip_end
