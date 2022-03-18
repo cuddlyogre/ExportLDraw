@@ -653,23 +653,23 @@ class LDrawNode:
     def __meta_group(self, child_node):
         if ImportOptions.meta_group:
             if child_node.meta_command == "group_def":
-                child_node.__meta_group_def()
+                self.__meta_group_def(child_node)
             elif child_node.meta_command == "group_nxt":
-                child_node.__meta_group_nxt()
+                self.__meta_group_nxt(child_node)
             elif child_node.meta_command == "group_begin":
-                child_node.__meta_group_begin()
+                self.__meta_group_begin(child_node)
             elif child_node.meta_command == "group_end":
-                child_node.__meta_group_end()
+                self.__meta_group_end()
 
-    def __meta_group_def(self):
-        LDrawNode.__collection_id_map[self.meta_args["id"]] = self.meta_args["name"]
-        collection_name = LDrawNode.__collection_id_map[self.meta_args["id"]]
+    def __meta_group_def(self, child_node):
+        LDrawNode.__collection_id_map[child_node.meta_args["id"]] = child_node.meta_args["name"]
+        collection_name = LDrawNode.__collection_id_map[child_node.meta_args["id"]]
         host_collection = LDrawNode.__groups_collection
         group.get_collection(collection_name, host_collection)
 
-    def __meta_group_nxt(self):
-        if self.meta_args["id"] in LDrawNode.__collection_id_map:
-            collection_name = LDrawNode.__collection_id_map[self.meta_args["id"]]
+    def __meta_group_nxt(self, child_node):
+        if child_node.meta_args["id"] in LDrawNode.__collection_id_map:
+            collection_name = LDrawNode.__collection_id_map[child_node.meta_args["id"]]
             if collection_name in bpy.data.collections:
                 LDrawNode.__next_collection = bpy.data.collections[collection_name]
         LDrawNode.__end_next_collection = True
@@ -681,11 +681,11 @@ class LDrawNode:
                     if LDrawNode.__end_next_collection:
                         LDrawNode.__next_collection = None
 
-    def __meta_group_begin(self):
+    def __meta_group_begin(self, child_node):
         if LDrawNode.__next_collection is not None:
             LDrawNode.__next_collections.append(LDrawNode.__next_collection)
 
-        collection_name = self.meta_args["name"]
+        collection_name = child_node.meta_args["name"]
         host_collection = LDrawNode.__groups_collection
         c = group.get_collection(collection_name, host_collection)
         LDrawNode.__next_collection = c
@@ -697,9 +697,9 @@ class LDrawNode:
 
     @classmethod
     def __meta_group_end(cls):
-        if len(cls.__next_collections) > 0:
+        try:
             cls.__next_collection = cls.__next_collections.pop()
-        else:
+        except IndexError as e:
             cls.__next_collection = None
 
     def __meta_leocad_camera(self, child_node, matrix):
