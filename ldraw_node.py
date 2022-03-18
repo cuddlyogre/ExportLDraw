@@ -724,17 +724,17 @@ class LDrawNode:
                 _params = _params[2:]
             elif _params[0] == "position":
                 (x, y, z) = map(float, _params[1:4])
-                vector = mathutils.Vector((x, y, z))
+                vector = matrix @ mathutils.Vector((x, y, z))
                 self.camera.position = vector
                 _params = _params[4:]
             elif _params[0] == "target_position":
                 (x, y, z) = map(float, _params[1:4])
-                vector = mathutils.Vector((x, y, z))
+                vector = matrix @ mathutils.Vector((x, y, z))
                 self.camera.target_position = vector
                 _params = _params[4:]
             elif _params[0] == "up_vector":
                 (x, y, z) = map(float, _params[1:4])
-                vector = mathutils.Vector((x, y, z))
+                vector = matrix @ mathutils.Vector((x, y, z))
                 self.camera.up_vector = vector
                 _params = _params[4:]
             elif _params[0] == "orthographic":
