@@ -128,7 +128,7 @@ class LDrawNode:
             # if parent_collection is not None, this is a nested model
             if parent_collection is not None:
                 collection = group.get_filename_collection(self.file.name, parent_collection)
-        elif geometry_data is None:  # top-level part
+        elif ImportOptions.preserve_hierarchy or geometry_data is None:  # top-level part
             LDrawNode.part_count += 1
             top = True
             matrix = self.__identity
@@ -137,7 +137,7 @@ class LDrawNode:
         key = self.__build_key(self.file.name, color_code, accum_cull, accum_invert)
 
         mesh = bpy.data.meshes.get(key)
-        if mesh is None:
+        if ImportOptions.preserve_hierarchy or mesh is None:
             self.bfc_certified = self.file.is_like_model() or None
             local_cull = True
             winding = "CCW"
@@ -171,7 +171,7 @@ class LDrawNode:
                             self.__meta_subfile(
                                 child_node,
                                 current_color,
-                                matrix,
+                                accum_matrix if ImportOptions.preserve_hierarchy else matrix,
                                 geometry_data,
                                 collection,
                                 True,
@@ -181,7 +181,7 @@ class LDrawNode:
                             self.__meta_subfile(
                                 child_node,
                                 current_color,
-                                matrix,
+                                accum_matrix if ImportOptions.preserve_hierarchy else matrix,
                                 geometry_data,
                                 collection,
                                 False,
@@ -417,7 +417,8 @@ class LDrawNode:
         ldraw_props.set_props(self, obj, color_code)
 
         self.__process_top_object_matrix(obj, accum_matrix)
-        self.__process_top_object_gap(obj)
+        if not ImportOptions.preserve_hierarchy:
+            self.__process_top_object_gap(obj)
         self.__process_top_object_edges(obj)
 
         self.__meta_step(obj)

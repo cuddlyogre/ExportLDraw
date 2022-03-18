@@ -93,3 +93,6 @@ class ImportOptions:
 
     defaults['treat_models_with_subparts_as_parts'] = True
     treat_models_with_subparts_as_parts = defaults['treat_models_with_subparts_as_parts']
+
+    defaults['preserve_hierarchy'] = False
+    preserve_hierarchy = defaults['preserve_hierarchy']

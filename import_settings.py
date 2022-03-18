@@ -49,6 +49,7 @@ class ImportSettings:
         'treat_models_with_subparts_as_parts': ImportOptions.defaults['treat_models_with_subparts_as_parts'],
         'recalculate_normals': ImportOptions.defaults['recalculate_normals'],
         'triangulate': ImportOptions.defaults['triangulate'],
+        'preserve_hierarchy': ImportOptions.defaults['preserve_hierarchy'],
     }
 
     default_settings = {**filesystem_defaults, **ldraw_color_defaults, **import_options_defaults}
