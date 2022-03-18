@@ -233,12 +233,8 @@ class LDrawNode:
                     self.__meta_leocad_camera(child_node, matrix)
                 elif child_node.meta_command == "texmap":
                     self.__meta_texmap(child_node, matrix)
-                elif child_node.meta_command == "pe_tex_path":
-                    self.__meta_pe_tex_path(child_node)
-                elif child_node.meta_command == "pe_tex_info":
-                    self.__meta_pe_tex_info(child_node, matrix)
-                elif child_node.meta_command == "pe_tex_next_shear":
-                    """no idea"""
+                elif child_node.meta_command.startswith("pe_tex_"):
+                    self.__meta_pe_tex(child_node, matrix)
                 elif not self.texmap_fallback:
                     if child_node.meta_command == "1":
                         # TODO: subfile.load() as if it were the file being imported, then merge that mesh into the accumulated mesh
@@ -847,6 +843,14 @@ class LDrawNode:
         self.texmap_start = False
         self.texmap_next = False
         self.texmap_fallback = False
+
+    def __meta_pe_tex(self, child_node, matrix):
+        if child_node.meta_command == "pe_tex_path":
+            self.__meta_pe_tex_path(child_node)
+        elif child_node.meta_command == "pe_tex_info":
+            self.__meta_pe_tex_info(child_node, matrix)
+        elif child_node.meta_command == "pe_tex_next_shear":
+            """no idea"""
 
     # -1 is this file
     # >= 0 is the nth geometry line where n = PE_TEX_PATH
