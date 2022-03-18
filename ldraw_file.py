@@ -324,8 +324,6 @@ class LDrawFile:
 
     def __line_bfc(self, clean_line, strip_line):
         if strip_line.startswith("0 BFC"):
-            _params = strip_line.split(maxsplit=4)
-
             ldraw_node = LDrawNode()
             ldraw_node.file = self
             ldraw_node.line = clean_line
