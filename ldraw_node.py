@@ -113,10 +113,14 @@ class LDrawNode:
         self.texmap = texmap
         self.pe_tex_info = pe_tex_info
 
+        # by default, treat this as either a model or a subpart
         top = False
         accum_matrix = parent_matrix @ self.matrix
         matrix = accum_matrix
         collection = parent_collection
+
+        # if it's a model, don't start collecting geometry
+        # else if there's no geometry, start collecting geometry
 
         # if a file has geometry, treat it like a part
         # otherwise that geometry won't be rendered
@@ -223,6 +227,7 @@ class LDrawNode:
                 elif "INVERTNEXT" not in child_node.meta_args:
                     invert_next = False
 
+        # TODO: add object data to list then use modal to pop from list then call finalize_object with that data
         if top:
             if mesh is None:
                 mesh = self.__create_mesh(key, geometry_data)

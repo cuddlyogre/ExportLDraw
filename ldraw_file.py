@@ -31,7 +31,7 @@ class LDrawFile:
         self.name = os.path.basename(filename)
         self.author = None
         # default part_type of ldraw_file is None, which should mean "model" - see ldraw_part_types.model_types
-        # it is far more likely that a part type will not be specified in models since they are are more likely
+        # it is far more likely that a part type will not be specified in models since they are more likely
         # to be authored by a user outside of specifications
         self.part_type = None
         self.actual_part_type = None
@@ -61,6 +61,9 @@ class LDrawFile:
         """Reads the color values from the LDConfig.ldr file. For details of the
         LDraw color system see: http://www.ldraw.org/article/547"""
 
+        # if there is no LDCfgalt.ldr, look for LDConfig.ldr
+        # the Stud.io library doesn't have LDCfgalt.ldr, so the default of use_alt_colors == True
+        # might trip up the user because they'll get a bunch of invalid color errors
         alt_filename = "LDCfgalt.ldr"
         standard_filename = "LDConfig.ldr"
 
