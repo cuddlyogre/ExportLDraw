@@ -152,6 +152,20 @@ parts instead of merging them.
 **Freestyle edges:** Render LDraw edges using freestyle.  
 **Prefer unofficial parts:** If a part is in both the unofficial and official library, use the unofficial one.  
 **No studs:** Don't import studs. Not particularly useful but is neat to see.  
+**Preserve file structure:** Don't merge the constituent subfiles into the top level part. This is helpful when you want
+to see how a part is made.
+
+**Notes about Preserve file structure**  
+It is my understanding that LDraw uses a shear matrix to transform vertex data. When transforming the actual vertices, 
+Blender has no problem with this. But it appears that a shear matrix can't be applied on the object level in the same 
+way, so some parts that use that technique won't render properly. There may be something that can be done to mitigate 
+this, but I have been unable to figure it out.
+
+Properly rendered
+![Examples of correct render](examples/import/preserve_file_structure_3623.jpg)
+
+Incorrectly rendered
+![Examples of correct render](examples/import/preserve_file_structure_3823.jpg)
 
 # Exporting
 
