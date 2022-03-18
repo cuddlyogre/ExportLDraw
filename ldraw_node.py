@@ -134,91 +134,16 @@ class LDrawNode:
 
         mesh = bpy.data.meshes.get(key)
         if mesh is None:
+            self.bfc_certified = self.file.is_like_model() or None
             local_cull = True
             winding = "CCW"
-            self.bfc_certified = self.file.is_like_model() or None
             invert_next = False
 
             for child_node in self.file.child_nodes:
                 current_color = self.__determine_color(color_code, child_node.color_code)
 
                 if child_node.meta_command == "bfc":
-                    if not ImportOptions.meta_bfc:
-                        continue
-
-                    clean_line = child_node.line
-                    _params = clean_line.split()
-
-                    # https://www.ldraw.org/article/415.html#processing
-                    if self.bfc_certified is None:
-                        self.bfc_certified = True
-                        if _params[2] == "NOCERTIFY":
-                            self.bfc_certified = False
-
-                    if "CERTIFY" in _params:
-                        self.bfc_certified = True
-
-                    if "NOCERTIFY" in _params:
-                        self.bfc_certified = False
-
-                    if "CLIP" in _params:
-                        local_cull = True
-
-                    if "NOCLIP" in _params:
-                        local_cull = False
-
-                    if "CCW" in _params:
-                        if accum_invert:
-                            winding = "CW"
-                        else:
-                            winding = "CCW"
-                    if "CW" in _params:
-                        if accum_invert:
-                            winding = "CCW"
-                        else:
-                            winding = "CW"
-
-                    if "INVERTNEXT" in _params:
-                        invert_next = True
-
-                    """
-                    https://www.ldraw.org/article/415.html#rendering
-                    If the rendering engine does not detect and adjust for reversed matrices, the winding of all polygons in
-                    the subfile will be switched, causing the subfile to be rendered incorrectly.
-
-                    The typical method of determining that an orientation matrix is reversed is to calculate the determinant of
-                    the matrix. If the determinant is negative, then the matrix has been reversed.
-
-                    The typical way to adjust for matrix reversals is to switch the expected winding of the polygon vertices.
-                    That is, if the file specifies the winding as CW and the orientation matrix is reversed, the rendering
-                    program would proceed as if the winding is CCW.
-
-                    The INVERTNEXT option also reverses the winding of the polygons within the subpart or primitive.
-                    If the matrix applied to the subpart or primitive has itself been reversed the INVERTNEXT processing
-                    is done IN ADDITION TO the automatic inversion - the two effectively cancelling each other out.
-                    """
-                    if matrix.determinant() < 0:
-                        if not invert_next:
-                            if winding == "CW":
-                                winding = "CCW"
-                            else:
-                                winding = "CW"
-
-                    """
-                    https://www.ldraw.org/article/415.html#rendering
-                    Degenerate Matrices. Some orientation matrices do not allow calculation of a determinate.
-                    This calculation is central to BFC processing. If an orientation matrix for a subfile is
-                    degenerate, then culling will not be possible for that subfile.
-
-                    https://math.stackexchange.com/a/792591
-                    A singular matrix, also known as a degenerate matrix, is a square matrix whose determinate is zero.
-                    https://www.algebrapracticeproblems.com/singular-degenerate-matrix/
-                    A singular (or degenerate) matrix is a square matrix whose inverse matrix cannot be calculated.
-                    Therefore, the determinant of a singular matrix is equal to 0.
-                    """
-                    if matrix.determinant() == 0:
-                        self.bfc_certified = False
-
+                    local_cull, winding, invert_next = self.__meta_bfc(child_node, matrix, local_cull, winding, invert_next, accum_invert)
                 elif child_node.meta_command == "step":
                     self.__set_step()
                 elif child_node.meta_command == "save":
@@ -582,6 +507,85 @@ class LDrawNode:
                 host_collection = cls.__groups_collection
                 c = group.get_collection(collection_name, host_collection)
                 group.link_obj(c, obj)
+
+    def __meta_bfc(self, child_node, matrix, local_cull, winding, invert_next, accum_invert):
+        if not ImportOptions.meta_bfc:
+            return
+
+        clean_line = child_node.line
+        _params = clean_line.split()
+
+        # https://www.ldraw.org/article/415.html#processing
+        if self.bfc_certified is None:
+            self.bfc_certified = True
+            if _params[2] == "NOCERTIFY":
+                self.bfc_certified = False
+
+        if "CERTIFY" in _params:
+            self.bfc_certified = True
+
+        if "NOCERTIFY" in _params:
+            self.bfc_certified = False
+
+        if "CLIP" in _params:
+            local_cull = True
+
+        if "NOCLIP" in _params:
+            local_cull = False
+
+        if "CCW" in _params:
+            if accum_invert:
+                winding = "CW"
+            else:
+                winding = "CCW"
+
+        if "CW" in _params:
+            if accum_invert:
+                winding = "CCW"
+            else:
+                winding = "CW"
+
+        if "INVERTNEXT" in _params:
+            invert_next = True
+
+        """
+        https://www.ldraw.org/article/415.html#rendering
+        If the rendering engine does not detect and adjust for reversed matrices, the winding of all polygons in
+        the subfile will be switched, causing the subfile to be rendered incorrectly.
+
+        The typical method of determining that an orientation matrix is reversed is to calculate the determinant of
+        the matrix. If the determinant is negative, then the matrix has been reversed.
+
+        The typical way to adjust for matrix reversals is to switch the expected winding of the polygon vertices.
+        That is, if the file specifies the winding as CW and the orientation matrix is reversed, the rendering
+        program would proceed as if the winding is CCW.
+
+        The INVERTNEXT option also reverses the winding of the polygons within the subpart or primitive.
+        If the matrix applied to the subpart or primitive has itself been reversed the INVERTNEXT processing
+        is done IN ADDITION TO the automatic inversion - the two effectively cancelling each other out.
+        """
+        if matrix.determinant() < 0:
+            if not invert_next:
+                if winding == "CW":
+                    winding = "CCW"
+                else:
+                    winding = "CW"
+        """
+        https://www.ldraw.org/article/415.html#rendering
+        Degenerate Matrices. Some orientation matrices do not allow calculation of a determinate.
+        This calculation is central to BFC processing. If an orientation matrix for a subfile is
+        degenerate, then culling will not be possible for that subfile.
+
+        https://math.stackexchange.com/a/792591
+        A singular matrix, also known as a degenerate matrix, is a square matrix whose determinate is zero.
+        https://www.algebrapracticeproblems.com/singular-degenerate-matrix/
+        A singular (or degenerate) matrix is a square matrix whose inverse matrix cannot be calculated.
+        Therefore, the determinant of a singular matrix is equal to 0.
+        """
+        if matrix.determinant() == 0:
+            self.bfc_certified = False
+
+        return local_cull, winding, invert_next
 
     @classmethod
     def __set_step(cls):
