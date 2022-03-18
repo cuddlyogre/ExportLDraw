@@ -78,12 +78,13 @@ class LDrawFile:
     def get_file(cls, filename):
         ldraw_file = LDrawFile.__file_cache.get(filename)
         if ldraw_file is None:
-            ldraw_file = LDrawFile.get_parsed_file(filename)
+            ldraw_file = LDrawFile.read_file(filename)
+            ldraw_file.__parse_file()
             LDrawFile.__file_cache[filename] = ldraw_file
         return ldraw_file
 
     @classmethod
-    def get_parsed_file(cls, filename):
+    def read_file(cls, filename):
         ldraw_file = cls.__raw_files.get(filename)
         if ldraw_file is None:
             # TODO: if missing, use a,b,c,etc parts if available
@@ -153,7 +154,6 @@ class LDrawFile:
                 print(e)
                 return None
 
-        ldraw_file.__parse_file()
         return ldraw_file
 
     # create meta nodes when those commands affect the scene
