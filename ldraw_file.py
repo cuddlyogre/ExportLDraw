@@ -166,9 +166,6 @@ class LDrawFile:
             if self.__line_description(strip_line):
                 continue
 
-            if self.__line_comment(clean_line):
-                continue
-
             if self.__line_name(clean_line, strip_line):
                 continue
 
@@ -194,6 +191,9 @@ class LDrawFile:
                 continue
 
             if self.__line_history(strip_line):
+                continue
+
+            if self.__line_comment(clean_line):
                 continue
 
             if self.__line_color(clean_line):
@@ -235,12 +235,6 @@ class LDrawFile:
     def __line_description(self, strip_line):
         if self.description is None:
             self.description = strip_line.split(maxsplit=1)[1]
-        return False
-
-    @staticmethod
-    def __line_comment(clean_line):
-        if clean_line.startswith("0 //"):
-            return True
         return False
 
     def __line_name(self, clean_line, strip_line):
@@ -302,6 +296,12 @@ class LDrawFile:
     def __line_history(self, strip_line):
         if strip_line.startswith("0 !HISTORY "):
             self.history.append(strip_line.split(maxsplit=4)[2:])
+            return True
+        return False
+
+    @staticmethod
+    def __line_comment(clean_line):
+        if clean_line.startswith("0 //"):
             return True
         return False
 
@@ -494,7 +494,7 @@ class LDrawFile:
         return False
 
     def __parse_geometry_line(self, clean_line):
-        clean_line = clean_line.replace("0 !: ", '')
+        clean_line = clean_line.replace("0 !: ", "")
 
         if self.__line_subfile(clean_line):
             return True
