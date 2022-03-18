@@ -969,7 +969,7 @@ class LDrawNode:
 
         # https://github.com/rredford/LdrawToObj/blob/802924fb8d42145c4f07c10824e3a7f2292a6717/LdrawData/LdrawToData.cs
         if winding == "CCW":
-            pass
+            """this is the default vertex order so don't do anything"""
         elif winding == "CW":
             if vert_count == 3:
                 vertices = [vertices[0], vertices[2], vertices[1]]
