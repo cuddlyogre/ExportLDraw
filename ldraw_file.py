@@ -79,8 +79,9 @@ class LDrawFile:
         ldraw_file = LDrawFile.__file_cache.get(filename)
         if ldraw_file is None:
             ldraw_file = LDrawFile.read_file(filename)
-            ldraw_file.__parse_file()
-            LDrawFile.__file_cache[filename] = ldraw_file
+            if ldraw_file is not None:
+                ldraw_file.__parse_file()
+                LDrawFile.__file_cache[filename] = ldraw_file
         return ldraw_file
 
     @classmethod
