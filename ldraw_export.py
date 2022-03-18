@@ -4,6 +4,7 @@ import math
 import mathutils
 
 from .ldraw_file import LDrawFile
+from .ldraw_node import LDrawNode
 from .ldraw_colors import LDrawColor
 from .filesystem import FileSystem
 from . import strings
@@ -11,6 +12,7 @@ from .export_options import ExportOptions
 from . import helpers
 from . import ldraw_part_types
 
+__rotation = mathutils.Matrix.Rotation(math.radians(-90), 4, 'X').freeze()
 __reverse_rotation = mathutils.Matrix.Rotation(math.radians(90), 4, 'X').freeze()
 
 
@@ -22,7 +24,9 @@ __reverse_rotation = mathutils.Matrix.Rotation(math.radians(90), 4, 'X').freeze(
 # if strings.ldraw_export_polygons_key == 1 current object being iterated will be exported as line type 2,3,4
 # otherwise line type 1
 def do_export(filepath):
-    FileSystem.build_search_paths()
+    LDrawFile.reset_caches()
+    LDrawNode.reset_caches()
+    FileSystem.build_search_paths(parent_filepath=filepath)
     LDrawFile.read_color_table()
 
     active_object = bpy.context.object
@@ -187,10 +191,7 @@ def __export_subfiles(obj, lines, is_model=False):
     if strings.ldraw_export_precision_key in obj:
         precision = obj[strings.ldraw_export_precision_key]
 
-    if is_model:
-        aa = __reverse_rotation @ obj.matrix_world
-    else:
-        aa = obj.matrix_world @ __reverse_rotation
+    aa = __reverse_rotation @ obj.matrix_world @ __rotation
 
     a = __fix_round(aa[0][0], precision)
     b = __fix_round(aa[0][1], precision)
@@ -270,7 +271,7 @@ def __export_polygons(obj, lines):
             line = ["2", "24"]
             for v in e.vertices:
                 for vv in mesh.vertices[v].co:
-                    line.append(__fix_round(vv))
+                    line.append(__fix_round(vv, precision))
 
             lines.append(line)
 

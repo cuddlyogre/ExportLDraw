@@ -73,8 +73,9 @@ class LDrawNode:
         cls.__collection_id_map = {}
         cls.__key_map = {}
 
+    @classmethod
+    def import_setup(cls):
         cls.__set_step()
-
         cls.__create_groups_collection()
 
     def __init__(self):

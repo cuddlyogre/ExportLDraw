@@ -23,6 +23,7 @@ def do_import(filepath):
     FileSystem.build_search_paths(parent_filepath=filepath)
     LDrawFile.read_color_table()
     BlenderMaterials.create_blender_node_groups()
+    LDrawNode.import_setup()
 
     ldraw_file = LDrawFile.get_file(filepath)
     if ldraw_file is None:
