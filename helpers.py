@@ -14,7 +14,7 @@ except ImportError as e:
 
 # remove multiple spaces
 def clean_line(line):
-    return " ".join(line.strip().split())
+    return " ".join(line.split())
 
 
 # assumes cleaned line being passed
