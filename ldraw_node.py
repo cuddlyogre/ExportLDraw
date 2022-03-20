@@ -146,26 +146,7 @@ class LDrawNode:
 
             for child_node in self.file.child_nodes:
                 current_color = self.__determine_color(color_code, child_node.color_code)
-
-                if child_node.meta_command == "bfc":
-                    local_cull, winding, invert_next = self.__meta_bfc(child_node, matrix, local_cull, winding, invert_next, accum_invert)
-                elif child_node.meta_command == "step":
-                    self.__set_step()
-                elif child_node.meta_command == "save":
-                    self.__meta_save()
-                elif child_node.meta_command == "clear":
-                    self.__meta_clear()
-                elif child_node.meta_command == "print":
-                    self.__meta_print(child_node)
-                elif child_node.meta_command.startswith("group"):
-                    self.__meta_group(child_node)
-                elif child_node.meta_command == "leocad_camera":
-                    self.__meta_leocad_camera(child_node, matrix)
-                elif child_node.meta_command == "texmap":
-                    self.__meta_texmap(child_node, matrix)
-                elif child_node.meta_command.startswith("pe_tex_"):
-                    self.__meta_pe_tex(child_node, matrix)
-                elif not self.texmap_fallback:
+                if child_node.meta_command in ["1", "2", "3", "4", "5"] and not self.texmap_fallback:
                     if child_node.meta_command == "1":
                         # TODO: subfile.load() as if it were the file being imported, then merge that mesh into the accumulated mesh
                         if self.bfc_certified and accum_cull and local_cull:
@@ -219,6 +200,24 @@ class LDrawNode:
                             matrix,
                             geometry_data,
                         )
+                elif child_node.meta_command == "bfc":
+                    local_cull, winding, invert_next = self.__meta_bfc(child_node, matrix, local_cull, winding, invert_next, accum_invert)
+                elif child_node.meta_command == "step":
+                    self.__set_step()
+                elif child_node.meta_command == "save":
+                    self.__meta_save()
+                elif child_node.meta_command == "clear":
+                    self.__meta_clear()
+                elif child_node.meta_command == "print":
+                    self.__meta_print(child_node)
+                elif child_node.meta_command.startswith("group"):
+                    self.__meta_group(child_node)
+                elif child_node.meta_command == "leocad_camera":
+                    self.__meta_leocad_camera(child_node, matrix)
+                elif child_node.meta_command == "texmap":
+                    self.__meta_texmap(child_node, matrix)
+                elif child_node.meta_command.startswith("pe_tex_"):
+                    self.__meta_pe_tex(child_node, matrix)
 
                 if self.texmap_next:
                     self.__set_texmap_end()

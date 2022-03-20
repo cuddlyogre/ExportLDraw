@@ -203,6 +203,9 @@ class LDrawFile:
             if self.__line_color(clean_line):
                 continue
 
+            if self.__parse_geometry_line(clean_line):
+                continue
+
             if self.__line_bfc(clean_line, strip_line):
                 continue
 
@@ -228,9 +231,6 @@ class LDrawFile:
                 continue
 
             if self.__line_stud_io(clean_line):
-                continue
-
-            if self.__parse_geometry_line(clean_line):
                 continue
 
         self.__handle_extra_geometry()
@@ -498,10 +498,10 @@ class LDrawFile:
     def __parse_geometry_line(self, clean_line):
         clean_line = clean_line.replace("0 !: ", "")
 
-        if self.__line_subfile(clean_line):
+        if self.__line_geometry(clean_line):
             return True
 
-        if self.__line_geometry(clean_line):
+        if self.__line_subfile(clean_line):
             return True
 
         return False
