@@ -114,7 +114,7 @@ class LDrawNode:
         self.texmap = texmap
         self.pe_tex_info = pe_tex_info
 
-        # by default, treat this as either a model or a subpart
+        # by default, treat this as anything other than a top level part
         top = False
         accum_matrix = parent_matrix @ self.matrix
         matrix = accum_matrix
