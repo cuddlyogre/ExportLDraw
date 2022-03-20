@@ -229,10 +229,14 @@ class LDrawNode:
 
         # TODO: add object data to list then use modal to pop from list then call finalize_object with that data
         if top:
-            if mesh is None:
-                mesh = self.__create_mesh(key, geometry_data)
-            obj = self.__process_top_object(mesh, accum_matrix, color_code, collection)
-            self.__process_top_edges(key, obj, color_code, collection)
+            self.render_geometry(key, geometry_data, accum_matrix, color_code, collection)
+
+    def render_geometry(self, key, geometry_data, accum_matrix, color_code, collection):
+        mesh = bpy.data.meshes.get(key)
+        if mesh is None:
+            mesh = self.__create_mesh(key, geometry_data)
+        obj = self.__process_top_object(mesh, accum_matrix, color_code, collection)
+        self.__process_top_edges(key, obj, color_code, collection)
 
     # set the working color code to this file's
     # color code if it isn't color code 16
