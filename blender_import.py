@@ -144,9 +144,7 @@ def __load_materials(file):
                 face.material_index = mesh.materials.find(material.name)
 
             helpers.finish_bmesh(bm, mesh)
-
-            mesh.validate()
-            mesh.update(calc_edges=True)
+            helpers.finish_mesh(mesh)
 
             obj = bpy.data.objects.new(mesh.name, mesh)
             obj[strings.ldraw_filename_key] = file.name

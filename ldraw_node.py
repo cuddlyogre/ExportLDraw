@@ -148,27 +148,27 @@ class LDrawNode:
                 current_color = self.__determine_color(color_code, child_node.color_code)
                 if child_node.meta_command in ["1", "2", "3", "4", "5"] and not self.texmap_fallback:
                     if child_node.meta_command == "1":
-                        # TODO: subfile.load() as if it were the file being imported, then merge that mesh into the accumulated mesh
-                        if self.bfc_certified and accum_cull and local_cull:
-                            self.__meta_subfile(
-                                child_node,
-                                current_color,
-                                accum_matrix if ImportOptions.preserve_hierarchy else matrix,
-                                geometry_data,
-                                collection,
-                                True,
-                                (accum_invert ^ invert_next),
-                            )
+                        # if we have a pe_tex_info, but no pe_tex meta commands have been parsed
+                        # treat the pe_tex_info as the one to use
+                        # custom minifig head > 3626tex.dat (has no pe_tex) > 3626texshell.dat
+                        if len(self.pe_tex_infos) < 1 and self.pe_tex_info is not None:
+                            pe_tex_info = self.pe_tex_info
                         else:
-                            self.__meta_subfile(
-                                child_node,
-                                current_color,
-                                accum_matrix if ImportOptions.preserve_hierarchy else matrix,
-                                geometry_data,
-                                collection,
-                                False,
-                                (accum_invert ^ invert_next),
-                            )
+                            pe_tex_info = self.pe_tex_infos.get(self.subfile_line_index)
+
+                        child_node.load(
+                            color_code=current_color,
+                            parent_matrix=accum_matrix if ImportOptions.preserve_hierarchy else matrix,
+                            geometry_data=geometry_data,
+                            parent_collection=collection,
+                            accum_cull=self.bfc_certified and accum_cull and local_cull,
+                            accum_invert=(accum_invert ^ invert_next),
+                            texmap=self.texmap,
+                            pe_tex_info=pe_tex_info,
+                        )
+
+                        self.subfile_line_index += 1
+                        self.__meta_root_group_nxt(child_node)
                     elif child_node.meta_command == "2":
                         self.__meta_edge(
                             child_node,
@@ -177,22 +177,17 @@ class LDrawNode:
                             geometry_data,
                         )
                     elif child_node.meta_command in ["3", "4"]:
+                        _winding = None
                         if self.bfc_certified and accum_cull and local_cull:
-                            self.__meta_face(
-                                child_node,
-                                current_color,
-                                matrix,
-                                geometry_data,
-                                winding,
-                            )
-                        else:
-                            self.__meta_face(
-                                child_node,
-                                current_color,
-                                matrix,
-                                geometry_data,
-                                None,
-                            )
+                            _winding = winding
+
+                        self.__meta_face(
+                            child_node,
+                            current_color,
+                            matrix,
+                            geometry_data,
+                            _winding,
+                        )
                     elif child_node.meta_command == "5":
                         self.__meta_line(
                             child_node,
@@ -298,7 +293,13 @@ class LDrawNode:
             face = bm.faces.new(verts)
 
             part_slopes = special_bricks.get_part_slopes(self.file.name)
-            material = BlenderMaterials.get_material(face_data.color_code, part_slopes=part_slopes, texmap=face_data.texmap, pe_texmap=face_data.pe_texmap, use_backface_culling=self.bfc_certified)
+            material = BlenderMaterials.get_material(
+                color_code=face_data.color_code,
+                part_slopes=part_slopes,
+                texmap=face_data.texmap,
+                pe_texmap=face_data.pe_texmap,
+                use_backface_culling=self.bfc_certified
+            )
             if material.name not in mesh.materials:
                 mesh.materials.append(material)
 
@@ -925,29 +926,6 @@ class LDrawNode:
         if self.current_pe_tex_path == -1:
             self.pe_tex_info = self.pe_tex_infos[self.current_pe_tex_path]
         self.current_pe_tex_path = None
-
-    def __meta_subfile(self, child_node, color_code, matrix, geometry_data, collection, accum_cull=True, accum_invert=False):
-        # if we have a pe_tex_info, but no pe_tex meta commands have been parsed
-        # treat the pe_tex_info as the one to use
-        # custom minifig head > 3626tex.dat (has no pe_tex) > 3626texshell.dat
-        if len(self.pe_tex_infos) < 1 and self.pe_tex_info is not None:
-            pe_tex_info = self.pe_tex_info
-        else:
-            pe_tex_info = self.pe_tex_infos.get(self.subfile_line_index)
-
-        child_node.load(
-            color_code=color_code,
-            parent_matrix=matrix,
-            geometry_data=geometry_data,
-            parent_collection=collection,
-            accum_cull=accum_cull,
-            accum_invert=accum_invert,
-            texmap=self.texmap,
-            pe_tex_info=pe_tex_info,
-        )
-
-        self.subfile_line_index += 1
-        self.__meta_root_group_nxt(child_node)
 
     def __meta_edge(self, child_node, color_code, matrix, geometry_data):
         vertices = child_node.meta_args
