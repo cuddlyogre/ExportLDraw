@@ -80,6 +80,7 @@ class LDrawNode:
 
     def __init__(self):
         self.is_root = False
+        self.top = False
         self.file = None
         self.line = ""
         self.color_code = "16"
@@ -115,7 +116,6 @@ class LDrawNode:
         self.pe_tex_info = pe_tex_info
 
         # by default, treat this as anything other than a top level part
-        top = False
         accum_matrix = parent_matrix @ self.matrix
         matrix = accum_matrix
         collection = parent_collection
@@ -131,7 +131,7 @@ class LDrawNode:
                 collection = group.get_filename_collection(self.file.name, parent_collection)
         elif ImportOptions.preserve_hierarchy or geometry_data is None:  # top-level part
             LDrawNode.part_count += 1
-            top = True
+            self.top = True
             matrix = self.__identity
             geometry_data = GeometryData()
 
@@ -223,7 +223,7 @@ class LDrawNode:
                     invert_next = False
 
         # TODO: add object data to list then use modal to pop from list then call finalize_object with that data
-        if top:
+        if self.top:
             self.render_geometry(key, geometry_data, accum_matrix, color_code, collection)
 
     def render_geometry(self, key, geometry_data, accum_matrix, color_code, collection):
