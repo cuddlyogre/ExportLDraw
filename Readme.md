@@ -12,10 +12,10 @@ https://omr.ldraw.org/files/337 loads in about 13 seconds.
 https://omr.ldraw.org/files/338 has incorrectly written parts - 10252 - 10252_towel.dat is written as a model - and 
 MLCad parts that import correctly.
 
-It handles MLCad parts, LDCad projects, ldr, and mpd. It also processes most official META commands. For instance, STEP
-will set keyframes so you can watch the model be built. Theoretically, you could build an entire animation in an MPD
-file if you did it right. LeoCAD and LDCad groups are supported. LeoCAD cameras are supported as well. If you have
-LSynth parts installed, it will import those as well.
+It handles MLCad parts, LDCad projects, ldr, dat, and mpd files. It also processes most official META commands. For 
+instance, STEP will set keyframes so you can watch the model be built. Theoretically, you could build an entire 
+animation in an MPD file if you did it right. LeoCAD and LDCad groups are supported. LeoCAD cameras are supported as 
+well. If you have LSynth parts installed, it will import those as well.
 
 BFC meta commands are processed by default. Don't recalculate normals, as this will undo all BFC processing that might 
 be done. CERTIFY and NOCERTIFY parts are both handled properly.
@@ -30,6 +30,11 @@ relatively new compared to TEXMAP support, so it's not supported, yet. Thanks to
 for the cylindrical and spherical math. 
 
 ![Examples of TEXMAP using 27062.dat and 27062p01.dat](examples/import/texmap.jpg)
+
+The !DATA meta command for MPD files is fully supported. Read more [here](https://www.ldraw.org/article/47.html). A 
+basic file using this spec can be found [here](https://www.ldraw.org/article/47.html#example).
+
+![MPD implementing the !DATA spec](examples/import/texmap_data.jpg)
 
 **Stud.io**  
 Stud.io parts can be used if you set the LDraw path value to the Stud.io ldraw folder location. On Windows, that should
