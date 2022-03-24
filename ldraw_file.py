@@ -113,11 +113,16 @@ class LDrawFile:
                         clean_line = helpers.clean_line(line)
                         strip_line = line.strip()
 
+                        # if we're working on a data block, keep adding to it
+                        # until we reach a line that starts with anything but "0 !: "
+                        # at that point, process the data block
                         if current_data_filename is not None:
                             if clean_line.startswith("0 !: "):
-                                base64_data = strip_line.split(maxsplit=2)[2]
-                                print(base64_data)
-                                current_data.append(base64_data)
+                                try:
+                                    base64_data = strip_line.split(maxsplit=2)[2]
+                                    current_data.append(base64_data)
+                                except IndexError as e:
+                                    print(e)
                                 continue
                             else:
                                 base64_handler.named_png_from_base64_str(current_data_filename, "".join(current_data))
@@ -127,9 +132,11 @@ class LDrawFile:
                         if clean_line == "":
                             continue
 
-                        # if the first non blank line is 0 FILE, this is an mpd
+                        # if the first non-blank line is 0 FILE, this is an mpd
+                        is_mpd_line = clean_line.startswith("0 FILE ") or clean_line.startswith("0 !DATA ")
+
                         if is_mpd is None:
-                            is_mpd = clean_line.startswith("0 FILE ") or clean_line.startswith("0 !DATA ")
+                            is_mpd = is_mpd_line
 
                         # not mpd -> regular ldr/dat file
                         if not is_mpd:
@@ -140,12 +147,10 @@ class LDrawFile:
                             current_file.lines.append(line)
                             continue
 
-                        if clean_line.startswith("0 !DATA "):
-                            current_data_filename = strip_line.split(maxsplit=2)[2]
-                            current_data = []
-                        elif clean_line.startswith("0 FILE "):
+                        if is_mpd_line:
                             no_file = False
 
+                        if clean_line.startswith("0 FILE "):
                             mpd_filename = strip_line.split(maxsplit=2)[2].lower()
                             if first_mpd_filename is None:
                                 first_mpd_filename = mpd_filename
@@ -153,14 +158,24 @@ class LDrawFile:
                             if current_mpd_file is not None:
                                 cls.__raw_files[current_mpd_file.filename] = current_mpd_file
                             current_mpd_file = cls(mpd_filename)
-                        elif no_file:
                             continue
-                        elif clean_line.startswith("0 NOFILE"):
+
+                        if clean_line.startswith("0 !DATA "):
+                            current_data_filename = strip_line.split(maxsplit=2)[2]
+                            current_data = []
+                            continue
+
+                        if no_file:
+                            continue
+
+                        if clean_line.startswith("0 NOFILE"):
                             no_file = True
                             if current_mpd_file is not None:
                                 cls.__raw_files[current_mpd_file.filename] = current_mpd_file
                             current_mpd_file = None
-                        elif current_mpd_file is not None:
+                            continue
+
+                        if current_mpd_file is not None:
                             current_mpd_file.lines.append(line)
 
                     if current_data_filename is not None:
