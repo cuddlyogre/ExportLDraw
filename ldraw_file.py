@@ -7,6 +7,7 @@ from .filesystem import FileSystem
 from .ldraw_node import LDrawNode
 from .ldraw_geometry import LDrawGeometry
 from .ldraw_colors import LDrawColor
+from . import base64_handler
 
 from . import helpers
 from . import ldraw_part_types
@@ -100,6 +101,8 @@ class LDrawFile:
             no_file = False
             first_mpd_filename = None
             current_mpd_file = None
+            current_data_filename = None
+            current_data = None
             try:
                 with open(filepath, mode='r', encoding='utf-8') as file:
                     while True:
@@ -110,12 +113,23 @@ class LDrawFile:
                         clean_line = helpers.clean_line(line)
                         strip_line = line.strip()
 
+                        if current_data_filename is not None:
+                            if clean_line.startswith("0 !: "):
+                                base64_data = strip_line.split(maxsplit=2)[2]
+                                print(base64_data)
+                                current_data.append(base64_data)
+                                continue
+                            else:
+                                base64_handler.named_png_from_base64_str(current_data_filename, "".join(current_data))
+                                current_data_filename = None
+                                current_data = None
+
                         if clean_line == "":
                             continue
 
                         # if the first non blank line is 0 FILE, this is an mpd
                         if is_mpd is None:
-                            is_mpd = clean_line.startswith("0 FILE ")
+                            is_mpd = clean_line.startswith("0 FILE ") or clean_line.startswith("0 !DATA ")
 
                         # not mpd -> regular ldr/dat file
                         if not is_mpd:
@@ -126,7 +140,10 @@ class LDrawFile:
                             current_file.lines.append(line)
                             continue
 
-                        if clean_line.startswith("0 FILE "):
+                        if clean_line.startswith("0 !DATA "):
+                            current_data_filename = strip_line.split(maxsplit=2)[2]
+                            current_data = []
+                        elif clean_line.startswith("0 FILE "):
                             no_file = False
 
                             mpd_filename = strip_line.split(maxsplit=2)[2].lower()
@@ -145,6 +162,9 @@ class LDrawFile:
                             current_mpd_file = None
                         elif current_mpd_file is not None:
                             current_mpd_file.lines.append(line)
+
+                    if current_data_filename is not None:
+                        base64_handler.named_png_from_base64_str(current_data_filename, "".join(current_data))
 
                     # last file in mpd will not be added to the file cache if it doesn't end in 0 NOFILE
                     if current_mpd_file is not None:
