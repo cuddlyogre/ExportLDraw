@@ -224,9 +224,9 @@ class LDrawNode:
 
         # TODO: add object data to list then use modal to pop from list then call finalize_object with that data
         if self.top:
-            self.render_geometry(key, geometry_data, accum_matrix, color_code, collection)
+            self.__render_geometry(key, geometry_data, accum_matrix, color_code, collection)
 
-    def render_geometry(self, key, geometry_data, accum_matrix, color_code, collection):
+    def __render_geometry(self, key, geometry_data, accum_matrix, color_code, collection):
         mesh = bpy.data.meshes.get(key)
         if mesh is None:
             mesh = self.__create_mesh(key, geometry_data)
