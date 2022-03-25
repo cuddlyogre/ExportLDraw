@@ -339,8 +339,7 @@ class LDrawFile:
             return True
         return False
 
-    @staticmethod
-    def __line_comment(clean_line):
+    def __line_comment(self, clean_line):
         if clean_line.startswith("0 //"):
             return True
         return False
@@ -403,7 +402,7 @@ class LDrawFile:
         return False
 
     def __line_print(self, clean_line):
-        if clean_line in ["0 PRINT", "0 WRITE"]:
+        if clean_line.startswith("0 PRINT ") or clean_line.startswith("0 WRITE "):
             ldraw_node = LDrawNode()
             ldraw_node.file = self
             ldraw_node.line = clean_line
