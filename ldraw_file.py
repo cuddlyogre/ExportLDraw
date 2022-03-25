@@ -5,7 +5,6 @@ import mathutils
 from .import_options import ImportOptions
 from .filesystem import FileSystem
 from .ldraw_node import LDrawNode
-from .ldraw_geometry import LDrawGeometry
 from .ldraw_colors import LDrawColor
 from . import base64_handler
 
@@ -44,7 +43,7 @@ class LDrawFile:
         self.history = []
 
         self.child_nodes = []
-        self.geometry = LDrawGeometry()
+        self.geometry_commands = {}
         self.extra_child_nodes = None
 
     def __str__(self):
@@ -132,6 +131,9 @@ class LDrawFile:
 
                         if is_mpd is None:
                             is_mpd = is_mpd_line
+
+                        # clean up texmap geometry line prefixes
+                        line = line.replace("0 !: ", "")
 
                         # not mpd -> regular ldr/dat file
                         if not is_mpd:
@@ -234,7 +236,10 @@ class LDrawFile:
             if self.__line_color(clean_line):
                 continue
 
-            if self.__parse_geometry_line(clean_line):
+            if self.__line_geometry(clean_line):
+                continue
+
+            if self.__line_subfile(clean_line):
                 continue
 
             if self.__line_bfc(clean_line, strip_line):
@@ -526,17 +531,6 @@ class LDrawFile:
 
         return False
 
-    def __parse_geometry_line(self, clean_line):
-        clean_line = clean_line.replace("0 !: ", "")
-
-        if self.__line_geometry(clean_line):
-            return True
-
-        if self.__line_subfile(clean_line):
-            return True
-
-        return False
-
     def __line_subfile(self, clean_line):
         if clean_line.startswith("1 "):
             _params = clean_line.split(maxsplit=14)
@@ -588,7 +582,6 @@ class LDrawFile:
                 # if False, if subpart found, create new LDrawNode with those subparts and add that to child_nodes
                 # this has the effect of splitting shortcuts into their constituent parts
                 # parts like u9158.dat and 99141c01.dat are split into several smaller parts
-                # texmaps might not render properly in this instance
                 # if True, combines models that have subparts and primitives into a single part
                 if ImportOptions.treat_models_with_subparts_as_parts:
                     self.actual_part_type = 'part'
@@ -612,15 +605,42 @@ class LDrawFile:
         ):
             _params = clean_line.split()
 
+            if self.geometry_commands.get(_params[0]) is None:
+                self.geometry_commands[_params[0]] = 0
+            self.geometry_commands[_params[0]] += 1
+
             ldraw_node = LDrawNode()
             ldraw_node.file = self
             ldraw_node.line = clean_line
             ldraw_node.meta_command = _params[0]
             ldraw_node.color_code = _params[1]
-            ldraw_node.meta_args = self.geometry.parse_face(_params)
+            ldraw_node.vertices = self.__parse_face(_params)
             self.child_nodes.append(ldraw_node)
             return True
         return False
+
+    @staticmethod
+    def __parse_face(_params):
+        line_type = _params[0]
+        if line_type == "2":
+            vert_count = 2
+        elif line_type == "3":
+            vert_count = 3
+        elif line_type == "4":
+            vert_count = 4
+        elif line_type == "5":
+            vert_count = 2
+        else:
+            vert_count = 0
+
+        verts = []
+        for i in range(vert_count):
+            x = float(_params[i * 3 + 2])
+            y = float(_params[i * 3 + 3])
+            z = float(_params[i * 3 + 4])
+            vertex = mathutils.Vector((x, y, z))
+            verts.append(vertex)
+        return verts
 
     def __handle_extra_geometry(self):
         if self.extra_child_nodes is not None:
@@ -631,7 +651,6 @@ class LDrawFile:
                 ldraw_file.actual_part_type = "Extra_Data_Part"
                 ldraw_file.part_type = self.determine_part_type(ldraw_file.actual_part_type)
                 ldraw_file.child_nodes = self.extra_child_nodes
-                ldraw_file.geometry = LDrawGeometry()
                 LDrawFile.__file_cache[filename] = ldraw_file
             ldraw_node = LDrawNode()
             ldraw_node.file = ldraw_file
@@ -656,6 +675,9 @@ class LDrawFile:
         elif "configuration" in _actual_part_type:
             return "configuration"
         return "part"
+
+    def has_geometry(self):
+        return sum(self.geometry_commands.values()) > 0
 
     def is_configuration(self):
         return self.part_type in ldraw_part_types.configuration_types

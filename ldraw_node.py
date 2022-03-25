@@ -85,6 +85,7 @@ class LDrawNode:
         self.line = ""
         self.color_code = "16"
         self.matrix = self.__identity
+        self.vertices = []
         self.bfc_certified = None
         self.meta_command = None
         self.meta_args = {}
@@ -106,7 +107,7 @@ class LDrawNode:
     def load(self, color_code="16", parent_matrix=None, geometry_data=None, parent_collection=None, accum_cull=True, accum_invert=False, texmap=None, pe_tex_info=None):
         if self.file.is_edge_logo() and not ImportOptions.display_logo:
             return
-        elif self.file.is_like_stud() and ImportOptions.no_studs:
+        if self.file.is_like_stud() and ImportOptions.no_studs:
             return
 
         if parent_matrix is None:
@@ -125,7 +126,7 @@ class LDrawNode:
 
         # if a file has geometry, treat it like a part
         # otherwise that geometry won't be rendered
-        if self.file.is_like_model() and self.file.geometry.vert_count() == 0:
+        if self.file.is_like_model() and not self.file.has_geometry():
             # if parent_collection is not None, this is a nested model
             if parent_collection is not None:
                 collection = group.get_filename_collection(self.file.name, parent_collection)
@@ -928,7 +929,7 @@ class LDrawNode:
         self.current_pe_tex_path = None
 
     def __meta_edge(self, child_node, color_code, matrix, geometry_data):
-        vertices = child_node.meta_args
+        vertices = child_node.vertices
 
         geometry_data.add_edge_data(
             color_code=color_code,
@@ -940,9 +941,31 @@ class LDrawNode:
         clean_line = child_node.line
         _params = clean_line.split()
 
-        vertices = child_node.meta_args
-        vert_count = len(vertices)
+        vertices = self.__handle_vertex_winding(child_node.vertices, winding)
+        pe_texmap = self.__build_pe_texmap(_params, vertices)
 
+        geometry_data.add_face_data(
+            color_code=color_code,
+            vertices=vertices,
+            matrix=matrix,
+            texmap=self.texmap,
+            pe_texmap=pe_texmap,
+        )
+
+    def __handle_vertex_winding(self, vertices, winding):
+        vert_count = len(vertices)
+        # https://github.com/rredford/LdrawToObj/blob/802924fb8d42145c4f07c10824e3a7f2292a6717/LdrawData/LdrawToData.cs
+        if winding == "CCW":
+            """this is the default vertex order so don't do anything"""
+        elif winding == "CW":
+            if vert_count == 3:
+                vertices = [vertices[0], vertices[2], vertices[1]]
+            elif vert_count == 4:
+                vertices = [vertices[0], vertices[3], vertices[2], vertices[1]]
+        return vertices
+
+    def __build_pe_texmap(self, _params, vertices):
+        vert_count = len(vertices)
         pe_texmap = None
         if self.pe_tex_info is not None:
             # if we have uv data and a pe_tex_info, otherwise pass
@@ -962,26 +985,10 @@ class LDrawNode:
                         y = round(float(_params[i * 2 + 14]), 3)
                         uv = mathutils.Vector((x, y))
                         pe_texmap.uvs.append(uv)
-
-        # https://github.com/rredford/LdrawToObj/blob/802924fb8d42145c4f07c10824e3a7f2292a6717/LdrawData/LdrawToData.cs
-        if winding == "CCW":
-            """this is the default vertex order so don't do anything"""
-        elif winding == "CW":
-            if vert_count == 3:
-                vertices = [vertices[0], vertices[2], vertices[1]]
-            elif vert_count == 4:
-                vertices = [vertices[0], vertices[3], vertices[2], vertices[1]]
-
-        geometry_data.add_face_data(
-            color_code=color_code,
-            vertices=vertices,
-            matrix=matrix,
-            texmap=self.texmap,
-            pe_texmap=pe_texmap,
-        )
+        return pe_texmap
 
     def __meta_line(self, child_node, color_code, matrix, geometry_data):
-        vertices = child_node.meta_args
+        vertices = child_node.vertices
 
         geometry_data.add_line_data(
             color_code=color_code,

@@ -29,7 +29,6 @@ _modules = [
     'ldraw_colors',
     'ldraw_export',
     'ldraw_file',
-    'ldraw_geometry',
     'ldraw_node',
     'ldraw_part_types',
     'ldraw_props',

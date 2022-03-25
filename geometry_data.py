@@ -20,12 +20,8 @@ class GeometryData:
         self.edge_data = []
         self.face_data = []
         self.line_data = []
-        self.edge_vert_count = 0
-        self.face_vert_count = 0
-        self.line_vert_count = 0
 
     def add_edge_data(self, color_code, vertices, matrix):
-        self.edge_vert_count += len(vertices)
         self.edge_data.append(FaceData(
             color_code=color_code,
             vertices=vertices,
@@ -33,7 +29,6 @@ class GeometryData:
         ))
 
     def add_face_data(self, color_code, vertices, matrix, texmap=None, pe_texmap=None):
-        self.face_vert_count += len(vertices)
         self.face_data.append(FaceData(
             color_code=color_code,
             vertices=vertices,
@@ -43,7 +38,6 @@ class GeometryData:
         ))
 
     def add_line_data(self, color_code, vertices, matrix):
-        self.line_vert_count += len(vertices)
         self.line_data.append(FaceData(
             color_code=color_code,
             vertices=vertices,
