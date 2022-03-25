@@ -92,7 +92,6 @@ class LDrawFile:
     def read_file(cls, filename):
         ldraw_file = cls.__raw_files.get(filename)
         if ldraw_file is None:
-            # TODO: if missing, use a,b,c,etc parts if available
             filepath = FileSystem.locate(filename)
             if filepath is None:
                 return None
@@ -156,6 +155,13 @@ class LDrawFile:
                             current_mpd_file = cls(mpd_filename)
                             continue
 
+                        if clean_line.startswith("0 NOFILE"):
+                            no_file = True
+                            if current_mpd_file is not None:
+                                cls.__raw_files[current_mpd_file.filename] = current_mpd_file
+                            current_mpd_file = None
+                            continue
+
                         if clean_line.startswith("0 !DATA "):
                             current_data_filename = strip_line.split(maxsplit=2)[2]
                             current_data = []
@@ -164,15 +170,9 @@ class LDrawFile:
                         if no_file:
                             continue
 
-                        if clean_line.startswith("0 NOFILE"):
-                            no_file = True
-                            if current_mpd_file is not None:
-                                cls.__raw_files[current_mpd_file.filename] = current_mpd_file
-                            current_mpd_file = None
-                            continue
-
                         if current_mpd_file is not None:
                             current_mpd_file.lines.append(line)
+                            continue
 
                     if current_data_filename is not None:
                         base64_handler.named_png_from_base64_str(current_data_filename, "".join(current_data))
