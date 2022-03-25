@@ -118,7 +118,7 @@ class LDrawNode:
 
         # by default, treat this as anything other than a top level part
         accum_matrix = parent_matrix @ self.matrix
-        matrix = accum_matrix
+        matrix = accum_matrix.freeze()
         collection = parent_collection
 
         # if it's a model, don't start collecting geometry
@@ -133,10 +133,10 @@ class LDrawNode:
         elif ImportOptions.preserve_hierarchy or geometry_data is None:  # top-level part
             LDrawNode.part_count += 1
             self.top = True
-            matrix = self.__identity
+            matrix = self.__identity.freeze()
             geometry_data = GeometryData()
 
-        key = self.__build_key(self.file.name, color_code, accum_cull, accum_invert)
+        key = self.__build_key(self.file.name, color_code, matrix, accum_cull, accum_invert)
 
         mesh = bpy.data.meshes.get(key)
         if ImportOptions.preserve_hierarchy or mesh is None:
@@ -243,9 +243,11 @@ class LDrawNode:
             color_code = parent_color_code
         return color_code
 
+    # must include matrix, so that parts that are just mirrored versions of other parts
+    # such as 32527.dat (mirror of 32528.dat) will render
     @classmethod
-    def __build_key(cls, filename, color_code, accum_cull, accum_invert):
-        _key = (filename, color_code, accum_cull, accum_invert,)
+    def __build_key(cls, filename, color_code, matrix, accum_cull, accum_invert):
+        _key = (filename, color_code, matrix, accum_cull, accum_invert,)
 
         key = cls.__key_map.get(_key)
         if key is None:
