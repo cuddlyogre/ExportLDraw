@@ -105,11 +105,7 @@ class LDrawFile:
             current_data = None
             try:
                 with open(filepath, mode='r', encoding='utf-8') as file:
-                    while True:
-                        line = file.readline()
-                        if not line:
-                            break
-
+                    for line in file:
                         clean_line = helpers.clean_line(line)
                         strip_line = line.strip()
 
