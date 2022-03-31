@@ -164,7 +164,7 @@ to see how a part is made.
 It is my understanding that LDraw uses a shear matrix to transform vertex data. When transforming the actual vertices, 
 Blender has no problem with this. But it appears that a shear matrix can't be applied on the object level in the same 
 way, so some parts that use that technique won't render properly. There may be something that can be done to mitigate 
-this, but I have been unable to figure it out.
+this, but I haven't been unable to figure it out.
 
 Properly rendered
 ![Examples of correct render](examples/import/preserve_file_structure_3623.jpg)
