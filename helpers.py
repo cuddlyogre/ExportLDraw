@@ -61,9 +61,8 @@ def write_json(folder, filename, dictionary):
     try:
         folder = os.path.join(APP_ROOT, folder)
         Path(folder).mkdir(parents=True, exist_ok=True)
-        file_path = os.path.join(folder, filename)
-
-        with open(file_path, 'w', encoding='utf-8', newline="\n") as file:
+        filepath = os.path.join(folder, filename)
+        with open(filepath, 'w', encoding='utf-8', newline="\n") as file:
             file.write(json.dumps(dictionary))
     except Exception as e:
         print(e)
@@ -72,8 +71,8 @@ def write_json(folder, filename, dictionary):
 def read_json(folder, filename, default=None):
     try:
         folder = os.path.join(APP_ROOT, folder)
-        file_path = os.path.join(folder, filename)
-        with open(file_path, 'r', encoding='utf-8') as file:
+        filepath = os.path.join(folder, filename)
+        with open(filepath, 'r', encoding='utf-8') as file:
             return json.load(file)
     except Exception as e:
         print(e)

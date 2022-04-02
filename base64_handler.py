@@ -60,6 +60,8 @@ def named_png_from_base64_str(filename, base64_str):
     return image_from_base64_str(filename, base64_str)
 
 
+# basename prevents writing to any place but APP_ROOT
 def write_png_data(filename, data):
-    with open(os.path.join(APP_ROOT, f"{filename}.png"), "wb") as fh:
-        fh.write(data)
+    filepath = os.path.join(APP_ROOT, f"{os.path.basename(filename)}.png")
+    with open(filepath, 'wb') as file:
+        file.write(data)
