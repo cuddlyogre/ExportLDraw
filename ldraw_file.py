@@ -102,7 +102,7 @@ class LDrawFile:
             current_data_filename = None
             current_data = None
             try:
-                with open(filepath, mode='r', encoding='utf-8') as file:
+                with open(filepath, 'r', encoding='utf-8') as file:
                     for line in file:
                         clean_line = helpers.clean_line(line)
                         strip_line = line.strip()
@@ -141,7 +141,8 @@ class LDrawFile:
                             if current_file is None:
                                 cls.__raw_files[filename] = cls(filename)
                                 current_file = cls.__raw_files.get(filename)
-                            current_file.lines.append(line)
+                            if not current_file.parse_header(line):
+                                current_file.lines.append(line)
                             continue
 
                         if is_mpd_line:
@@ -173,7 +174,8 @@ class LDrawFile:
                             continue
 
                         if current_mpd_file is not None:
-                            current_mpd_file.lines.append(line)
+                            if not current_mpd_file.parse_header(line):
+                                current_mpd_file.lines.append(line)
                             continue
 
                     if current_data_filename is not None:
@@ -193,88 +195,98 @@ class LDrawFile:
 
         return ldraw_file
 
+    def parse_header(self, line):
+        clean_line = helpers.clean_line(line)
+        strip_line = line.strip()
+
+        if self.__line_description(strip_line):
+            return True
+
+        if self.__line_name(clean_line, strip_line):
+            return True
+
+        if self.__line_author(clean_line, strip_line):
+            return True
+
+        if self.__line_part_type(clean_line, strip_line):
+            return True
+
+        if self.__line_license(strip_line):
+            return True
+
+        if self.__line_help(strip_line):
+            return True
+
+        if self.__line_category(strip_line):
+            return True
+
+        if self.__line_keywords(strip_line):
+            return True
+
+        if self.__line_cmd_line(strip_line):
+            return True
+
+        if self.__line_history(strip_line):
+            return True
+        return False
+
     # create meta nodes when those commands affect the scene
     # process meta command in place if it only affects the file
     def __parse_file(self):
         for line in self.lines:
-            clean_line = helpers.clean_line(line)
-            strip_line = line.strip()
-
-            if self.__line_description(strip_line):
-                continue
-
-            if self.__line_name(clean_line, strip_line):
-                continue
-
-            if self.__line_author(clean_line, strip_line):
-                continue
-
-            if self.__line_part_type(clean_line, strip_line):
-                continue
-
-            if self.__line_license(strip_line):
-                continue
-
-            if self.__line_help(strip_line):
-                continue
-
-            if self.__line_category(strip_line):
-                continue
-
-            if self.__line_keywords(strip_line):
-                continue
-
-            if self.__line_cmd_line(strip_line):
-                continue
-
-            if self.__line_history(strip_line):
-                continue
-
-            if self.__line_comment(clean_line):
-                continue
-
-            if self.__line_color(clean_line):
-                continue
-
-            if self.__line_geometry(clean_line):
-                continue
-
-            if self.__line_subfile(clean_line):
-                continue
-
-            if self.__line_bfc(clean_line, strip_line):
-                continue
-
-            if self.__line_step(clean_line):
-                continue
-
-            if self.__line_save(clean_line):
-                continue
-
-            if self.__line_clear(clean_line):
-                continue
-
-            if self.__line_print(clean_line):
-                continue
-
-            if self.__line_ldcad(clean_line):
-                continue
-
-            if self.__line_leocad(clean_line):
-                continue
-
-            if self.__line_texmap(clean_line):
-                continue
-
-            if self.__line_stud_io(clean_line):
-                continue
-
+            self.__parse_line(line)
         self.__handle_extra_geometry()
+
+    def __parse_line(self, line):
+        clean_line = helpers.clean_line(line)
+        strip_line = line.strip()
+
+        if self.__line_comment(clean_line):
+            return
+
+        if self.__line_color(clean_line):
+            return
+
+        if self.__line_geometry(clean_line):
+            return
+
+        if self.__line_subfile(clean_line):
+            return
+
+        if self.__line_bfc(clean_line, strip_line):
+            return
+
+        if self.__line_step(clean_line):
+            return
+
+        if self.__line_save(clean_line):
+            return
+
+        if self.__line_clear(clean_line):
+            return
+
+        if self.__line_print(clean_line):
+            return
+
+        if self.__line_ldcad(clean_line):
+            return
+
+        if self.__line_leocad(clean_line):
+            return
+
+        if self.__line_texmap(clean_line):
+            return
+
+        if self.__line_stud_io(clean_line):
+            return
 
     # always return false so that the rest of the line types are parsed even if this is true
     def __line_description(self, strip_line):
         if self.description is None:
-            self.description = strip_line.split(maxsplit=1)[1]
+            try:
+                self.description = strip_line.split(maxsplit=1)[1]
+            except IndexError as e:  # no text in first line - example: "0 "
+                pass
         return False
 
     def __line_name(self, clean_line, strip_line):
@@ -292,13 +304,14 @@ class LDrawFile:
     def __line_part_type(self, clean_line, strip_line):
         if (clean_line.startswith("0 !LDRAW_ORG ") or
                 clean_line.startswith("0 LDRAW_ORG ") or
-                clean_line.startswith("0 Official LCAD ") or
                 clean_line.startswith("0 Unofficial ") or
                 clean_line.startswith("0 Un-official ")):
-            if clean_line.startswith("0 Official LCAD "):
-                self.actual_part_type = strip_line.split(maxsplit=4)[3]
-            else:
-                self.actual_part_type = strip_line.split(maxsplit=3)[2]
+            self.actual_part_type = strip_line.split(maxsplit=3)[2]
+            self.part_type = self.determine_part_type(self.actual_part_type)
+            return True
+
+        if clean_line.startswith("0 Official LCAD "):
+            self.actual_part_type = strip_line.split(maxsplit=4)[3]
             self.part_type = self.determine_part_type(self.actual_part_type)
             return True
         return False
@@ -363,7 +376,6 @@ class LDrawFile:
     def __line_bfc(self, clean_line, strip_line):
         if strip_line.startswith("0 BFC"):
             ldraw_node = LDrawNode()
-            ldraw_node.file = self
             ldraw_node.line = clean_line
             ldraw_node.meta_command = "bfc"
             ldraw_node.meta_args = strip_line.split(maxsplit=2)[2]
@@ -374,7 +386,6 @@ class LDrawFile:
     def __line_step(self, clean_line):
         if clean_line.startswith("0 STEP"):
             ldraw_node = LDrawNode()
-            ldraw_node.file = self
             ldraw_node.line = clean_line
             ldraw_node.meta_command = "step"
             self.child_nodes.append(ldraw_node)
@@ -384,7 +395,6 @@ class LDrawFile:
     def __line_save(self, clean_line):
         if clean_line.startswith("0 SAVE"):
             ldraw_node = LDrawNode()
-            ldraw_node.file = self
             ldraw_node.line = clean_line
             ldraw_node.meta_command = "save"
             self.child_nodes.append(ldraw_node)
@@ -394,7 +404,6 @@ class LDrawFile:
     def __line_clear(self, clean_line):
         if clean_line.startswith("0 CLEAR"):
             ldraw_node = LDrawNode()
-            ldraw_node.file = self
             ldraw_node.line = clean_line
             ldraw_node.meta_command = "clear"
             self.child_nodes.append(ldraw_node)
@@ -404,7 +413,6 @@ class LDrawFile:
     def __line_print(self, clean_line):
         if clean_line.startswith("0 PRINT ") or clean_line.startswith("0 WRITE "):
             ldraw_node = LDrawNode()
-            ldraw_node.file = self
             ldraw_node.line = clean_line
             ldraw_node.meta_command = "print"
             ldraw_node.meta_args = clean_line.split(maxsplit=2)[2]
@@ -425,7 +433,6 @@ class LDrawFile:
             # http://www.melkert.net/LDCad/tech/meta
             _params = re.search(r"\S+\s+\S+\s+\S+\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])", clean_line)
             ldraw_node = LDrawNode()
-            ldraw_node.file = self
             ldraw_node.line = clean_line
             ldraw_node.meta_command = "group_def"
             id_args = re.search(r"\[(.*)=(.*)\]", _params[2])
@@ -440,7 +447,6 @@ class LDrawFile:
         if clean_line.startswith("0 !LDCAD GROUP_NXT "):
             _params = re.search(r"\S+\s+\S+\s+\S+\s+(\[.*\])\s+(\[.*\])", clean_line)
             ldraw_node = LDrawNode()
-            ldraw_node.file = self
             ldraw_node.line = clean_line
             ldraw_node.meta_command = "group_nxt"
             id_args = re.search(r"\[(.*)=(.*)\]", _params[1])
@@ -464,7 +470,6 @@ class LDrawFile:
             # https://www.leocad.org/docs/meta.html
             name_args = clean_line.split(maxsplit=4)
             ldraw_node = LDrawNode()
-            ldraw_node.file = self
             ldraw_node.line = clean_line
             ldraw_node.meta_command = "group_begin"
             ldraw_node.meta_args["name"] = name_args[4]
@@ -475,7 +480,6 @@ class LDrawFile:
     def __line_leocad_group_end(self, clean_line):
         if clean_line.startswith("0 !LEOCAD GROUP END"):
             ldraw_node = LDrawNode()
-            ldraw_node.file = self
             ldraw_node.line = clean_line
             ldraw_node.meta_command = "group_end"
             self.child_nodes.append(ldraw_node)
@@ -485,7 +489,6 @@ class LDrawFile:
     def __line_leocad_camera(self, clean_line):
         if clean_line.startswith("0 !LEOCAD CAMERA "):
             ldraw_node = LDrawNode()
-            ldraw_node.file = self
             ldraw_node.line = clean_line
             ldraw_node.meta_command = "leocad_camera"
             self.child_nodes.append(ldraw_node)
@@ -495,7 +498,6 @@ class LDrawFile:
     def __line_texmap(self, clean_line):
         if clean_line.startswith("0 !TEXMAP "):
             ldraw_node = LDrawNode()
-            ldraw_node.file = self
             ldraw_node.line = clean_line
             ldraw_node.meta_command = "texmap"
             self.child_nodes.append(ldraw_node)
@@ -505,7 +507,6 @@ class LDrawFile:
     def __line_stud_io(self, clean_line):
         if clean_line.startswith("0 PE_TEX_PATH "):
             ldraw_node = LDrawNode()
-            ldraw_node.file = self
             ldraw_node.line = clean_line
             ldraw_node.meta_command = "pe_tex_path"
             self.child_nodes.append(ldraw_node)
@@ -513,16 +514,14 @@ class LDrawFile:
 
         if clean_line.startswith("0 PE_TEX_INFO "):
             ldraw_node = LDrawNode()
-            ldraw_node.file = self
             ldraw_node.line = clean_line
             ldraw_node.meta_command = "pe_tex_info"
             self.child_nodes.append(ldraw_node)
             return True
 
         # TODO: find out what this does
-        if clean_line.startswith("0 0 PE_TEX_NEXT_SHEAR"):
+        if clean_line.startswith("0 PE_TEX_NEXT_SHEAR"):
             ldraw_node = LDrawNode()
-            ldraw_node.file = self
             ldraw_node.line = clean_line
             ldraw_node.meta_command = "pe_tex_next_shear"
             self.child_nodes.append(ldraw_node)
@@ -609,7 +608,6 @@ class LDrawFile:
             self.geometry_commands[_params[0]] += 1
 
             ldraw_node = LDrawNode()
-            ldraw_node.file = self
             ldraw_node.line = clean_line
             ldraw_node.meta_command = _params[0]
             ldraw_node.color_code = _params[1]

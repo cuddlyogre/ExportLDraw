@@ -38,36 +38,28 @@ def do_export(filepath):
     if ExportOptions.selection_only:
         objects = selected_objects
 
-    # TODO: use LDrawFile
-    lines = []
-    part_type = None
-
     if active_object is None:
         return
 
-    if strings.ldraw_filename_key in active_object:
-        header_text_name = active_object[strings.ldraw_filename_key]
+    filename = active_object.get(strings.ldraw_filename_key)
+    # no filename specified on object
+    if strings.ldraw_filename_key is None:
+        return
 
-        if header_text_name in bpy.data.texts:
-            header_text = bpy.data.texts[header_text_name]
+    text = bpy.data.texts.get(filename)
+    # no text with that filename
+    if text is None:
+        return
 
-            hlines = header_text.lines
-            if hlines[-1].body == "\n":
-                hlines.pop()
+    ldraw_file = LDrawFile(filename)
 
-            for hline in hlines:
-                line = hline.body
-                lines.append(line)
+    hlines = text.lines
+    if hlines[-1].body == "\n":
+        hlines.pop()
 
-                clean_line = helpers.clean_line(line)
-                strip_line = line.strip()
-
-                if clean_line.startswith("0 !LDRAW_ORG "):
-                    actual_part_type = strip_line.lower().split(maxsplit=2)[2]
-                    part_type = LDrawFile.determine_part_type(actual_part_type)
-                    continue
-
-    is_model = part_type in ldraw_part_types.model_types
+    for hline in hlines:
+        ldraw_file.parse_header(hline.body)
+        ldraw_file.lines.append(hline.body)
 
     subfile_objects = []
     polygon_objects = []
@@ -82,15 +74,16 @@ def do_export(filepath):
         if strings.ldraw_export_polygons_key in obj:
             do_export_polygons = obj[strings.ldraw_export_polygons_key] == 1
 
+        # TODO: should this be a collection of names? - see https://docs.blender.org/api/current/info_gotcha.html#help-my-script-crashes-blender
         if do_export_polygons:
             polygon_objects.append(obj)
         else:
             subfile_objects.append(obj)
 
     for obj in subfile_objects:
-        __export_subfiles(obj, lines, is_model=is_model)
+        __export_subfiles(obj, ldraw_file.lines, is_model=ldraw_file.is_model())
     if len(subfile_objects) > 0:
-        lines.append("\n")
+        ldraw_file.lines.append("\n")
 
     part_lines = []
     for obj in polygon_objects:
@@ -113,10 +106,10 @@ def do_export(filepath):
                 joined_part_lines.append(f"0 // {color.name}")
 
         joined_part_lines.append(" ".join(line))
-    lines.extend(joined_part_lines)
+    ldraw_file.lines.extend(joined_part_lines)
 
-    with open(filepath, 'w', newline="\n") as file:
-        for line in lines:
+    with open(filepath, 'w', encoding='utf-8', newline="\n") as file:
+        for line in ldraw_file.lines:
             file.write(line)
             if line != "\n":
                 file.write("\n")
