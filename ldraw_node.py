@@ -140,7 +140,7 @@ class LDrawNode:
             matrix = self.__identity.freeze()
             geometry_data = GeometryData()
 
-        key = self.__build_key(self.file.name, color_code, matrix, accum_cull, accum_invert)
+        key = self.__build_key(self.file.name, color_code, matrix, accum_cull, accum_invert, texmap, pe_tex_info)
 
         mesh = bpy.data.meshes.get(key)
         if ImportOptions.preserve_hierarchy or mesh is None:
@@ -250,8 +250,12 @@ class LDrawNode:
     # must include matrix, so that parts that are just mirrored versions of other parts
     # such as 32527.dat (mirror of 32528.dat) will render
     @classmethod
-    def __build_key(cls, filename, color_code, matrix, accum_cull, accum_invert):
+    def __build_key(cls, filename, color_code, matrix, accum_cull, accum_invert, texmap=None, pe_tex_info=None):
         _key = (filename, color_code, matrix, accum_cull, accum_invert,)
+        if texmap is not None:
+            _key += ((texmap.method, texmap.texture, texmap.glossmap),)
+        if pe_tex_info is not None:
+            _key += ((pe_tex_info.image, pe_tex_info.matrix, pe_tex_info.v1, pe_tex_info.v1),)
 
         key = cls.__key_map.get(_key)
         if key is None:
@@ -309,11 +313,14 @@ class LDrawNode:
                 pe_texmap=face_data.pe_texmap,
                 use_backface_culling=self.bfc_certified
             )
-            if material.name not in mesh.materials:
-                mesh.materials.append(material)
 
+            material_index = mesh.materials.find(material.name)
+            if material_index == -1:
+                mesh.materials.append(material)
+                material_index = mesh.materials.find(material.name)
+
+            face.material_index = material_index
             face.smooth = ImportOptions.shade_smooth
-            face.material_index = mesh.materials.find(material.name)
 
             if face_data.texmap is not None:
                 face_data.texmap.uv_unwrap_face(bm, face)
@@ -869,22 +876,24 @@ class LDrawNode:
         self.texmap_fallback = False
 
     def __meta_pe_tex(self, child_node, matrix):
-        if child_node.meta_command == "pe_tex_path":
-            self.__meta_pe_tex_path(child_node)
-        elif child_node.meta_command == "pe_tex_info":
+        if child_node.meta_command == "pe_tex_info":
             self.__meta_pe_tex_info(child_node, matrix)
         elif child_node.meta_command == "pe_tex_next_shear":
             """no idea"""
+        else:
+            self.current_pe_tex_path = None
+            if child_node.meta_command == "pe_tex_path":
+                self.__meta_pe_tex_path(child_node)
 
     # -1 is this file
     # >= 0 is the nth geometry line where n = PE_TEX_PATH
+    # a second arg is the geometry line for that subfile
     def __meta_pe_tex_path(self, child_node):
         clean_line = child_node.line
         _params = clean_line.split()
 
         pe_tex_path = int(_params[2])
 
-        # if there are two pe_tex_paths, the second one is the subfile_line_index in that file
         try:
             pe_tex_path_1 = int(_params[2])
         except IndexError as e:
@@ -894,6 +903,7 @@ class LDrawNode:
 
     # PE_TEX_INFO bse64_str uses the file's uvs
     # PE_TEX_INFO x,y,z,a,b,c,d,e,f,g,h,i,bl/tl,tr/br is matrix and plane coordinates for uv calculations
+    # if there are multiple PE_TEX_INFO immediately following PE_TEX_PATH, use the last one
     # if no matrix, identity @ rotation?
     def __meta_pe_tex_info(self, child_node, matrix):
         if self.current_pe_tex_path is None:
@@ -909,7 +919,7 @@ class LDrawNode:
         elif len(_params) == 19:
             base64_str = _params[18]
             (x, y, z, a, b, c, d, e, f, g, h, i, bl_x, bl_y, tr_x, tr_y) = map(float, _params[2:18])
-            matrix = mathutils.Matrix((
+            _matrix = mathutils.Matrix((
                 (a, b, c, x),
                 (d, e, f, y),
                 (g, h, i, z),
@@ -918,9 +928,9 @@ class LDrawNode:
             bl = mathutils.Vector((bl_x, bl_y))
             tr = mathutils.Vector((tr_x, tr_y))
 
-            pe_tex_info.matrix = matrix
-            pe_tex_info.v1 = bl
-            pe_tex_info.v2 = tr
+            pe_tex_info.matrix = (matrix @ _matrix).freeze()
+            pe_tex_info.v1 = bl.freeze()
+            pe_tex_info.v2 = tr.freeze()
 
         if base64_str is None:
             return
@@ -934,7 +944,6 @@ class LDrawNode:
 
         if self.current_pe_tex_path == -1:
             self.pe_tex_info = self.pe_tex_infos[self.current_pe_tex_path]
-        self.current_pe_tex_path = None
 
     def __meta_edge(self, child_node, color_code, matrix, geometry_data):
         vertices = child_node.vertices
