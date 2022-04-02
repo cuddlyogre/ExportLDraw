@@ -167,7 +167,7 @@ class LDrawNode:
                             geometry_data=geometry_data,
                             parent_collection=collection,
                             accum_cull=self.bfc_certified and accum_cull and local_cull,
-                            accum_invert=(accum_invert ^ invert_next),
+                            accum_invert=(accum_invert ^ invert_next),  # xor
                             texmap=self.texmap,
                             pe_tex_info=pe_tex_info,
                         )
@@ -331,7 +331,6 @@ class LDrawNode:
     @staticmethod
     def __clean_bmesh(bm):
         if ImportOptions.remove_doubles:
-            # TODO: if vertices in sharp edge collection, do not add to merge collection
             bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=ImportOptions.merge_distance)
 
         # recalculate_normals completely overwrites any bfc processing
