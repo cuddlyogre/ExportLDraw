@@ -55,14 +55,15 @@ class LDrawColor:
         if color_code in cls.__colors:
             return cls.__colors[color_code]
 
-        if color_code.lower().startswith('0x2'):
-            clean_line = f"0 !COLOUR {color_code} CODE {color_code} VALUE #{color_code[3:]} EDGE #333333"
+        hex_digits = cls.__extract_hex_digits(color_code)
+        if hex_digits is not None:
+            clean_line = f"0 !COLOUR {color_code} CODE {color_code} VALUE #{hex_digits} EDGE #333333"
             _params = helpers.get_params(clean_line, "0 !COLOUR ", lowercase=False)
             color_code = cls.parse_color(_params)
             return cls.__colors[color_code]
 
         if cls.__bad_color is None:
-            clean_line = "0 !COLOUR Bad_Color CODE -9999 VALUE #FF0000 EDGE #00FF00"
+            clean_line = f"0 !COLOUR Bad_Color CODE {color_code} VALUE #FF0000 EDGE #00FF00"
             _params = helpers.get_params(clean_line, "0 !COLOUR ", lowercase=False)
             color_code = cls.parse_color(_params)
             cls.__bad_color = cls.__colors[color_code]
@@ -216,7 +217,6 @@ class LDrawColor:
     @classmethod
     def get_color_value(cls, value, linear=True):
         hex_digits = cls.__extract_hex_digits(value)
-
         if linear:
             return cls.__hex_digits_to_linear_rgba(hex_digits)
         else:
@@ -229,13 +229,20 @@ class LDrawColor:
         return rgb
 
     @staticmethod
-    def __extract_hex_digits(hex_digits):
-        if hex_digits.startswith('#'):
-            return hex_digits[1:]
-        elif hex_digits.lower().startswith('0x2'):
-            return hex_digits[3:]
+    def __extract_hex_digits(value):
+        if value.startswith('#'):
+            return value[1:7]
+        elif value.lower().startswith('0x2'):
+            # some color codes in 973psr.dat are just hex values for the desired color, such as 0x24C4C45
+            return value[3:9]
         else:
-            return hex_digits
+            try:
+                # 10220 - Volkswagen T1 Camper Van.mpd -> 97122.dat has color code 4294967295 which is 0xffffffff in hex
+                return hex(int(value))[2:8]
+            except ValueError as e:
+                """color code is not an int"""
+
+        return None
 
     @classmethod
     def __hex_digits_to_linear_rgba(cls, hex_digits):
@@ -280,3 +287,7 @@ if __name__ == "__main__":
     print(color_value)
     color_value = LDrawColor.get_rgb_color_value(hex_digits)
     print(color_value)
+
+    print(LDrawColor.get_color_value('#efefef'))
+    print(LDrawColor.get_color_value('0x24C4C45'))
+    print(LDrawColor.get_color_value('4294967295'))
