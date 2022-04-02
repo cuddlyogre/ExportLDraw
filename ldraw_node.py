@@ -121,6 +121,10 @@ class LDrawNode:
         matrix = accum_matrix
         collection = parent_collection
 
+        if LDrawNode.top_collection is None:
+            collection = group.get_filename_collection(self.file.name, bpy.context.scene.collection)
+            LDrawNode.top_collection = collection
+
         # if it's a model, don't start collecting geometry
         # else if there's no geometry, start collecting geometry
 

@@ -33,13 +33,10 @@ def do_import(filepath):
         __load_materials(ldraw_file)
         return
 
-    collection = group.get_filename_collection(ldraw_file.name, bpy.context.scene.collection)
-    LDrawNode.top_collection = collection
-
     root_node = LDrawNode()
     root_node.is_root = True
     root_node.file = ldraw_file
-    root_node.load(parent_collection=collection)
+    root_node.load()
 
     if ImportOptions.meta_step:
         if ImportOptions.set_end_frame:
