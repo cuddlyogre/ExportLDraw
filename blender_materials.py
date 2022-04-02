@@ -26,11 +26,11 @@ class BlenderMaterials:
             node_group.use_fake_user = True
 
     @classmethod
-    def get_material(cls, color_code, use_edge_color=False, part_slopes=None, texmap=None, pe_texmap=None, use_backface_culling=True):
+    def get_material(cls, color_code, use_edge_color=False, part_slopes=None, parts_cloth=False, texmap=None, pe_texmap=None, use_backface_culling=True):
         color = LDrawColor.get_color(color_code)
         use_backface_culling = use_backface_culling is True
 
-        key = cls.__build_key(color, use_edge_color, part_slopes, texmap, pe_texmap, use_backface_culling)
+        key = cls.__build_key(color, use_edge_color, part_slopes, parts_cloth, texmap, pe_texmap, use_backface_culling)
 
         # Reuse current material if it exists, otherwise create a new material
         material = bpy.data.materials.get(key)
@@ -42,6 +42,7 @@ class BlenderMaterials:
             color,
             use_edge_color=use_edge_color,
             part_slopes=part_slopes,
+            parts_cloth=parts_cloth,
             texmap=texmap,
             pe_texmap=pe_texmap,
             use_backface_culling=use_backface_culling,
@@ -49,7 +50,7 @@ class BlenderMaterials:
         return material
 
     @classmethod
-    def __build_key(cls, color, use_edge_color, part_slopes, texmap, pe_texmap, use_backface_culling):
+    def __build_key(cls, color, use_edge_color, part_slopes, parts_cloth, texmap, pe_texmap, use_backface_culling):
         _key = (color.name, color.code, use_backface_culling)
 
         if LDrawColor.use_alt_colors:
@@ -58,6 +59,8 @@ class BlenderMaterials:
             _key += ("edge",)
         if part_slopes is not None:
             _key += (part_slopes,)
+        if parts_cloth:
+            _key += ("cloth",)
         if texmap is not None:
             _key += ((texmap.method, texmap.texture, texmap.glossmap),)
         if pe_texmap is not None:
@@ -71,7 +74,7 @@ class BlenderMaterials:
         return key
 
     @classmethod
-    def __create_node_based_material(cls, key, color, use_edge_color=False, part_slopes=None, texmap=None, pe_texmap=None, use_backface_culling=True):
+    def __create_node_based_material(cls, key, color, use_edge_color=False, part_slopes=None, parts_cloth=False, texmap=None, pe_texmap=None, use_backface_culling=True):
         """Set Cycles Material Values."""
 
         material = bpy.data.materials.new(key)
@@ -139,6 +142,9 @@ class BlenderMaterials:
         if part_slopes is not None:
             cls.__create_cycles_slope_texture(nodes, links, part_slopes)
 
+        if parts_cloth:
+            cls.__create_cloth_texture(nodes, links)
+
         return material
 
     @staticmethod
@@ -156,6 +162,14 @@ class BlenderMaterials:
         if len(angles) > 3:
             node.inputs['Angle 4'].default_value = angles[3]
         node.inputs["Strength"].default_value = 0.6
+        return node
+
+    @staticmethod
+    def __node_cloth(nodes, x, y):
+        node = nodes.new("ShaderNodeGroup")
+        node.name = "cloth"
+        node.node_tree = bpy.data.node_groups["_cloth"]
+        node.location = x, y
         return node
 
     @staticmethod
@@ -310,22 +324,24 @@ class BlenderMaterials:
             image_name = pe_texmap.texture
         if image_name is not None:
             texmap_image = cls.__node_tex_image(nodes, -500.0, 0.0)
-            texmap_image.name = 'ldraw_texmap_image'
+            texmap_image.name = image_name
             texmap_image.interpolation = "Closest"
             texmap_image.extension = "CLIP"
 
             # TODO: requests retrieve image from ldraw.org
             # https://blender.stackexchange.com/questions/157531/blender-2-8-python-add-texture-image
-            if image_name not in bpy.data.images:
+            image = bpy.data.images.get(image_name)
+            if image is None:
                 image_path = FileSystem.locate(image_name)
                 if image_path is not None:
                     image = bpy.data.images.load(image_path)
                     image.name = image_name
                     image[strings.ldraw_filename_key] = image_name
                     image.colorspace_settings.name = 'sRGB'
+                    image.pack()
 
-            if image_name in bpy.data.images:
-                image = bpy.data.images[image_name]
+            image = bpy.data.images.get(image_name)
+            if image_name is not None:
                 texmap_image.image = image
 
             mix_rgb = cls.__node_mix_rgb(nodes, -200, 0.0)
@@ -340,20 +356,22 @@ class BlenderMaterials:
             image_name = texmap.glossmap
         if image_name is not None:
             glossmap_image = cls.__node_tex_image(nodes, -360.0, -280.0)
-            glossmap_image.name = 'ldraw_glossmap_image'
+            glossmap_image.name = image_name
             glossmap_image.interpolation = "Closest"
             glossmap_image.extension = "CLIP"
 
-            if image_name not in bpy.data.images:
+            image = bpy.data.images.get(image_name)
+            if image is None:
                 image_path = FileSystem.locate(image_name)
                 if image_path is not None:
                     image = bpy.data.images.load(image_path)
                     image.name = image_name
                     image[strings.ldraw_filename_key] = image_name
                     image.colorspace_settings.name = 'Non-Color'
+                    image.pack()
 
-            if image_name in bpy.data.images:
-                image = bpy.data.images[image_name]
+            image = bpy.data.images.get(image_name)
+            if image_name is not None:
                 glossmap_image.image = image
 
             links.new(glossmap_image.outputs["Color"], target.inputs["Specular"])
@@ -375,6 +393,16 @@ class BlenderMaterials:
 
         slope_texture = cls.__node_slope_texture_by_angle(nodes, -200, 0, part_slopes)
         links.new(slope_texture.outputs["Normal"], target.inputs["Normal"])
+
+    @classmethod
+    def __create_cloth_texture(cls, nodes, links, part_slopes=None):
+        target = cls.__get_group(nodes)
+        if target is None:
+            return
+
+        cloth = cls.__node_cloth(nodes, -200, 0)
+        links.new(cloth.outputs["Normal"], target.inputs["Normal"])
+        links.new(cloth.outputs["Specular"], target.inputs["Specular"])
 
     @classmethod
     def __create_cycles_transparent(cls, nodes, links, diff_color):

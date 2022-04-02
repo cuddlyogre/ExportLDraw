@@ -296,9 +296,11 @@ class LDrawNode:
             face = bm.faces.new(verts)
 
             part_slopes = special_bricks.get_part_slopes(self.file.name)
+            parts_cloth = special_bricks.get_parts_cloth(self.file.name)
             material = BlenderMaterials.get_material(
                 color_code=face_data.color_code,
                 part_slopes=part_slopes,
+                parts_cloth=parts_cloth,
                 texmap=face_data.texmap,
                 pe_texmap=face_data.pe_texmap,
                 use_backface_culling=self.bfc_certified

@@ -305,6 +305,66 @@ part_slopes = {
     "4195004.dat": (45,)
 }
 
+parts_cloth = {
+    '94318.dat',
+    '94318c01.dat',
+    '85651.dat',
+    '85651c01.dat',
+    '85651c02.dat',
+    '96714.dat',
+    '96714c01.dat',
+    '95195.dat',
+    '95195c01.dat',
+    '95195c02.dat',
+    '64991.dat',
+    '64991c01.dat',
+    '64991c02.dat',
+    '64991c03.dat',
+    '97122.dat',
+    '28981.dat',
+    '28981c01.dat',
+    '28981c02.dat',
+    '71396p01c01.dat',
+    '21490.dat',
+    '21490c01.dat',
+    '21490c02.dat',
+    '50231.dat',
+    '50231c01.dat',
+    '50231c02.dat',
+    '20551.dat',
+    '20551c01.dat',
+    '20551p01.dat',
+    '20551p01c01.dat',
+    '56630.dat',
+    '56630c01.dat',
+    '99464.dat',
+    '99464c01.dat',
+    'u9490.dat',
+    'u9490c01.dat',
+    '86038.dat',
+    '86038c01.dat',
+    '50231p01c01.dat',
+    '42450.dat',
+    '42450c01.dat',
+    'u9494.dat',
+    'u9494c01.dat',
+    'u9494c02.dat',
+    'u9494p01.dat',
+    'u9494p01c01.dat',
+    'u9494p01c02.dat',
+    'u9495c01.dat',
+    'u9495c02.dat',
+    'u9495p01c01.dat',
+    'u9495p01c02.dat',
+    '16820c01.dat',
+    '600880c01.dat',
+    '600880p01c01.dat',
+    'u9209c01.dat',
+    'u9209p01c01.dat',
+    '14295c01.dat',
+    '18200c01.dat',
+}
+
 
 # bulbs
 # 11013.dat
@@ -325,6 +385,10 @@ def get_part_slopes(filename):
         return part_slopes[filename]
     else:
         return None
+
+
+def get_parts_cloth(filename):
+    return filename in parts_cloth
 
 
 # for face in mesh.polygons:
