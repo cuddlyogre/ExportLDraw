@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 import os
 
+import functools
+
 try:
     from .definitions import APP_ROOT
 except ImportError as e:
@@ -97,3 +99,7 @@ def finish_bmesh(bm, mesh):
 def finish_mesh(mesh):
     mesh.validate()
     mesh.update(calc_edges=True)
+
+
+def mat_mult(*m):
+    return functools.reduce(lambda a, b: a @ b, m)
