@@ -196,39 +196,43 @@ class LDrawFile:
         return ldraw_file
 
     def parse_header(self, line):
-        clean_line = helpers.clean_line(line)
-        strip_line = line.strip()
+        try:
+            clean_line = helpers.clean_line(line)
+            strip_line = line.strip()
 
-        if self.__line_description(strip_line):
-            return True
+            if self.__line_description(strip_line):
+                return True
 
-        if self.__line_name(clean_line, strip_line):
-            return True
+            if self.__line_name(clean_line, strip_line):
+                return True
 
-        if self.__line_author(clean_line, strip_line):
-            return True
+            if self.__line_author(clean_line, strip_line):
+                return True
 
-        if self.__line_part_type(clean_line, strip_line):
-            return True
+            if self.__line_part_type(clean_line, strip_line):
+                return True
 
-        if self.__line_license(strip_line):
-            return True
+            if self.__line_license(strip_line):
+                return True
 
-        if self.__line_help(strip_line):
-            return True
+            if self.__line_help(strip_line):
+                return True
 
-        if self.__line_category(strip_line):
-            return True
+            if self.__line_category(strip_line):
+                return True
 
-        if self.__line_keywords(strip_line):
-            return True
+            if self.__line_keywords(strip_line):
+                return True
 
-        if self.__line_cmd_line(strip_line):
-            return True
+            if self.__line_cmd_line(strip_line):
+                return True
 
-        if self.__line_history(strip_line):
+            if self.__line_history(strip_line):
+                return True
+            return False
+        except Exception as e:
+            print(e)
             return True
-        return False
 
     # create meta nodes when those commands affect the scene
     # process meta command in place if it only affects the file
@@ -238,55 +242,56 @@ class LDrawFile:
         self.__handle_extra_geometry()
 
     def __parse_line(self, line):
-        clean_line = helpers.clean_line(line)
-        strip_line = line.strip()
+        try:
+            clean_line = helpers.clean_line(line)
+            strip_line = line.strip()
 
-        if self.__line_comment(clean_line):
-            return
+            if self.__line_comment(clean_line):
+                return
 
-        if self.__line_color(clean_line):
-            return
+            if self.__line_color(clean_line):
+                return
 
-        if self.__line_geometry(clean_line):
-            return
+            if self.__line_geometry(clean_line):
+                return
 
-        if self.__line_subfile(clean_line):
-            return
+            if self.__line_subfile(clean_line):
+                return
 
-        if self.__line_bfc(clean_line, strip_line):
-            return
+            if self.__line_bfc(clean_line, strip_line):
+                return
 
-        if self.__line_step(clean_line):
-            return
+            if self.__line_step(clean_line):
+                return
 
-        if self.__line_save(clean_line):
-            return
+            if self.__line_save(clean_line):
+                return
 
-        if self.__line_clear(clean_line):
-            return
+            if self.__line_clear(clean_line):
+                return
 
-        if self.__line_print(clean_line):
-            return
+            if self.__line_print(clean_line):
+                return
 
-        if self.__line_ldcad(clean_line):
-            return
+            if self.__line_ldcad(clean_line):
+                return
 
-        if self.__line_leocad(clean_line):
-            return
+            if self.__line_leocad(clean_line):
+                return
 
-        if self.__line_texmap(clean_line):
-            return
+            if self.__line_texmap(clean_line):
+                return
 
-        if self.__line_stud_io(clean_line):
+            if self.__line_stud_io(clean_line):
+                return
+        except Exception as e:
+            print(e)
             return
 
     # always return false so that the rest of the line types are parsed even if this is true
     def __line_description(self, strip_line):
         if self.description is None:
-            try:
-                self.description = strip_line.split(maxsplit=1)[1]
-            except IndexError as e:  # no text in first line - example: "0 "
-                pass
+            self.description = strip_line.split(maxsplit=1)[1]
         return False
 
     def __line_name(self, clean_line, strip_line):
