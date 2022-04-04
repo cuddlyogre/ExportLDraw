@@ -150,8 +150,8 @@ class LDrawNode:
             invert_next = False
 
             for child_node in self.file.child_nodes:
-                current_color = self.__determine_color(color_code, child_node.color_code)
                 if child_node.meta_command in ["1", "2", "3", "4", "5"] and not self.texmap_fallback:
+                    current_color = self.__determine_color(color_code, child_node.color_code)
                     if child_node.meta_command == "1":
                         # if we have a pe_tex_info, but no pe_tex meta commands have been parsed
                         # treat the pe_tex_info as the one to use
