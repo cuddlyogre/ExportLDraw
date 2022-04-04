@@ -50,6 +50,9 @@ class LDrawColor:
         cls.__colors[color.code] = color
         return color.code
 
+    # get colors loaded from ldconfig if they exist
+    # otherwise convert the color code to a usable color and return that
+    # if all that fails, create and send bad_color
     @classmethod
     def get_color(cls, color_code):
         if color_code in cls.__colors:
@@ -65,7 +68,14 @@ class LDrawColor:
                 """color code is not an int"""
 
         if hex_digits is not None:
-            clean_line = f"0 !COLOUR {color_code} CODE {color_code} VALUE #{hex_digits} EDGE #333333"
+            alpha = ''
+            # FFFFFF == 6 means no alpha
+            # FFFFFFFF == 8 means alpha
+            if len(hex_digits) == 8:
+                alpha_val = struct.unpack("B", bytes.fromhex(hex_digits[6:8]))[0]
+                alpha = f"ALPHA {alpha_val}"
+
+            clean_line = f"0 !COLOUR {color_code} CODE {color_code} VALUE #{hex_digits} EDGE #333333 {alpha}"
             _params = helpers.get_params(clean_line, "0 !COLOUR ", lowercase=False)
             color_code = cls.parse_color(_params)
             return cls.__colors[color_code]
@@ -114,13 +124,13 @@ class LDrawColor:
 
         i = lparams.index("value")
         value = lparams[i + 1]
-        rgb = self.get_color_value(value, linear)
+        rgb = self.__get_rgb_color_value(value, linear)
         self.color = rgb
         self.color_d = rgb + (1.0,)
 
         i = lparams.index("edge")
         edge = lparams[i + 1]
-        e_rgb = self.get_color_value(edge, linear)
+        e_rgb = self.__get_rgb_color_value(edge, linear)
         self.edge_color = e_rgb
         self.edge_color_d = e_rgb + (1.0,)
 
@@ -156,7 +166,7 @@ class LDrawColor:
 
             i = lparams.index("value")
             material_value = lparams[i + 1]
-            material_rgba = self.get_color_value(material_value, linear)
+            material_rgba = self.__get_rgb_color_value(material_value, linear)
             self.material_color = material_rgba
 
             material_alpha = 255
@@ -223,36 +233,31 @@ class LDrawColor:
             return False
 
     @classmethod
-    def get_color_value(cls, value, linear=True):
-        hex_digits = cls.__extract_hex_digits(value)
+    def __get_rgb_color_value(cls, value, linear=True):
+        hex_digits = cls.__extract_hex_digits(value)[0:6]
         if linear:
-            return cls.__hex_digits_to_linear_rgba(hex_digits)
+            return cls.__hex_digits_to_linear_rgb(hex_digits)
         else:
             return cls.__hex_digits_to_srgb(hex_digits)
 
     @classmethod
-    def get_rgb_color_value(cls, value):
-        hex_digits = cls.__extract_hex_digits(value)
-        rgb = cls.__hex_to_rgb(hex_digits)
-        return rgb
-
-    @classmethod
     def __extract_hex_digits(cls, value):
         # the normal format of color values
-        if value.startswith('#'):  # '#efefef'
-            return value[1:7]
+        if value.startswith('#'):  # '#efefefff'
+            return value[1:]
 
         # some color codes in 973psr.dat are just hex values for the desired color, such as 0x24C4C45
-        if value.lower().startswith('0x2'):  # '0x24C4C45'
-            return value[3:9]
+        if value.lower().startswith('0x2'):  # '0x24C4C45ff'
+            return value[3:]
 
-        if value.lower().startswith('0x'):  # '0xffffff'
-            return value[2:8]
+        # some color codes are ints that need to be converted to hex -> hex(intval) == '0xFFFFFFFF'
+        if value.lower().startswith('0x'):  # '0xffffffff'
+            return value[2:]
 
         return None
 
     @classmethod
-    def __hex_digits_to_linear_rgba(cls, hex_digits):
+    def __hex_digits_to_linear_rgb(cls, hex_digits):
         srgb = cls.__hex_digits_to_srgb(hex_digits)
         linear_rgb = cls.__srgb_to_linear_rgb(srgb)
         return linear_rgb[0], linear_rgb[1], linear_rgb[2]
@@ -289,12 +294,8 @@ class LDrawColor:
 
 
 if __name__ == "__main__":
-    hex_digits = "0x2062E92"
-    color_value = LDrawColor.get_color_value(hex_digits)
-    print(color_value)
-    color_value = LDrawColor.get_rgb_color_value(hex_digits)
-    print(color_value)
-
-    print(LDrawColor.get_color_value('#efefef'))
-    print(LDrawColor.get_color_value('0x24C4C45'))
-    print(LDrawColor.get_color_value('4294967295'))
+    print(LDrawColor.get_color('#efefef').color_a)
+    print(LDrawColor.get_color('#efefef55').color_a)
+    print(LDrawColor.get_color("0x2062E92").color_a)
+    print(LDrawColor.get_color("0x2062E9255").color_a)
+    print(LDrawColor.get_color('4294967295').color_a)
