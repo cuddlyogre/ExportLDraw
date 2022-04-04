@@ -228,19 +228,24 @@ class LDrawColor:
         rgb = cls.__hex_to_rgb(hex_digits)
         return rgb
 
-    @staticmethod
-    def __extract_hex_digits(value):
-        if value.startswith('#'):
+    @classmethod
+    def __extract_hex_digits(cls, value):
+        # the normal format of color values
+        if value.startswith('#'):  # '#efefef'
             return value[1:7]
-        elif value.lower().startswith('0x2'):
-            # some color codes in 973psr.dat are just hex values for the desired color, such as 0x24C4C45
+
+        # some color codes in 973psr.dat are just hex values for the desired color, such as 0x24C4C45
+        if value.lower().startswith('0x2'):  # '0x24C4C45'
             return value[3:9]
-        else:
-            try:
-                # 10220 - Volkswagen T1 Camper Van.mpd -> 97122.dat has color code 4294967295 which is 0xffffffff in hex
-                return hex(int(value))[2:8]
-            except ValueError as e:
-                """color code is not an int"""
+
+        if value.lower().startswith('0x'):  # '0xffffff'
+            return value[2:8]
+
+        # 10220 - Volkswagen T1 Camper Van.mpd -> 97122.dat uses an int color code 4294967295 which is 0xffffffff in hex
+        try:
+            return cls.__extract_hex_digits(hex(int(value)))
+        except ValueError as e:
+            """color code is not an int"""
 
         return None
 
