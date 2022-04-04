@@ -117,7 +117,7 @@ class LDrawNode:
         self.pe_tex_info = pe_tex_info
 
         # by default, treat this as anything other than a top level part
-        accum_matrix = helpers.mat_mult(parent_matrix, self.matrix).freeze()
+        accum_matrix = (parent_matrix @ self.matrix).freeze()
         matrix = accum_matrix
         collection = parent_collection
 
@@ -300,7 +300,7 @@ class LDrawNode:
 
     def __process_bmesh_faces(self, geometry_data, bm, mesh):
         for face_data in geometry_data.face_data:
-            verts = [bm.verts.new(helpers.mat_mult(face_data.matrix, vertex)) for vertex in face_data.vertices]
+            verts = [bm.verts.new(face_data.matrix @ vertex) for vertex in face_data.vertices]
             face = bm.faces.new(verts)
 
             part_slopes = special_bricks.get_part_slopes(self.file.name)
@@ -376,7 +376,7 @@ class LDrawNode:
             edge_verts = []
             face_indices = []
             for vertex in edge_data.vertices:
-                vert = helpers.mat_mult(edge_data.matrix, vertex)
+                vert = edge_data.matrix @ vertex
                 e_verts.append(vert)
                 edge_verts.append(vert)
                 face_indices.append(i)
@@ -448,7 +448,7 @@ class LDrawNode:
 
     @staticmethod
     def __process_top_object_matrix(obj, accum_matrix):
-        transform_matrix = helpers.mat_mult(LDrawNode.__rotation, LDrawNode.__import_scale_matrix)
+        transform_matrix = LDrawNode.__rotation @ LDrawNode.__import_scale_matrix
         if ImportOptions.parent_to_empty:
             if LDrawNode.top_empty is None:
                 LDrawNode.top_empty = bpy.data.objects.new(LDrawNode.top_collection.name, None)
@@ -458,20 +458,20 @@ class LDrawNode:
             obj.matrix_world = accum_matrix
             obj.parent = LDrawNode.top_empty  # must be after matrix_world set or else transform is incorrect
         else:
-            matrix_world = helpers.mat_mult(transform_matrix, accum_matrix)
+            matrix_world = transform_matrix @ accum_matrix
             obj.matrix_world = matrix_world
 
     @classmethod
     def __process_top_object_gap(cls, obj):
         if ImportOptions.make_gaps and ImportOptions.gap_target == "object":
             if ImportOptions.gap_scale_strategy == "object":
-                matrix_world = helpers.mat_mult(obj.matrix_world, cls.__gap_scale_matrix)
+                matrix_world = obj.matrix_world @ cls.__gap_scale_matrix
                 obj.matrix_world = matrix_world
             elif ImportOptions.gap_scale_strategy == "constraint":
                 if cls.__gap_scale_empty is None:
                     cls.__gap_scale_empty = bpy.data.objects.new("gap_scale", None)
                     cls.__gap_scale_empty.use_fake_user = True
-                    matrix_world = helpers.mat_mult(cls.__gap_scale_empty.matrix_world, cls.__gap_scale_matrix)
+                    matrix_world = cls.__gap_scale_empty.matrix_world @ cls.__gap_scale_matrix
                     cls.__gap_scale_empty.matrix_world = matrix_world
                     group.link_obj(cls.top_collection, cls.__gap_scale_empty)
                 copy_scale_constraint = obj.constraints.new("COPY_SCALE")
@@ -750,17 +750,17 @@ class LDrawNode:
                 _params = _params[2:]
             elif _params[0] == "position":
                 (x, y, z) = map(float, _params[1:4])
-                vector = helpers.mat_mult(matrix, mathutils.Vector((x, y, z)))
+                vector = matrix @ mathutils.Vector((x, y, z))
                 self.camera.position = vector
                 _params = _params[4:]
             elif _params[0] == "target_position":
                 (x, y, z) = map(float, _params[1:4])
-                vector = helpers.mat_mult(matrix, mathutils.Vector((x, y, z)))
+                vector = matrix @ mathutils.Vector((x, y, z))
                 self.camera.target_position = vector
                 _params = _params[4:]
             elif _params[0] == "up_vector":
                 (x, y, z) = map(float, _params[1:4])
-                vector = helpers.mat_mult(matrix, mathutils.Vector((x, y, z)))
+                vector = matrix @ mathutils.Vector((x, y, z))
                 self.camera.up_vector = vector
                 _params = _params[4:]
             elif _params[0] == "orthographic":
@@ -814,9 +814,9 @@ class LDrawNode:
                     glossmap = None
 
                 new_texmap.parameters = [
-                    helpers.mat_mult(matrix, mathutils.Vector((x1, y1, z1))),
-                    helpers.mat_mult(matrix, mathutils.Vector((x2, y2, z2))),
-                    helpers.mat_mult(matrix, mathutils.Vector((x3, y3, z3))),
+                    matrix @ mathutils.Vector((x1, y1, z1)),
+                    matrix @ mathutils.Vector((x2, y2, z2)),
+                    matrix @ mathutils.Vector((x3, y3, z3)),
                 ]
                 new_texmap.texture = texture
                 new_texmap.glossmap = glossmap
@@ -832,9 +832,9 @@ class LDrawNode:
                     glossmap = None
 
                 new_texmap.parameters = [
-                    helpers.mat_mult(matrix, mathutils.Vector((x1, y1, z1))),
-                    helpers.mat_mult(matrix, mathutils.Vector((x2, y2, z2))),
-                    helpers.mat_mult(matrix, mathutils.Vector((x3, y3, z3))),
+                    matrix @ mathutils.Vector((x1, y1, z1)),
+                    matrix @ mathutils.Vector((x2, y2, z2)),
+                    matrix @ mathutils.Vector((x3, y3, z3)),
                     a,
                 ]
                 new_texmap.texture = texture
@@ -851,9 +851,9 @@ class LDrawNode:
                     glossmap = None
 
                 new_texmap.parameters = [
-                    helpers.mat_mult(matrix, mathutils.Vector((x1, y1, z1))),
-                    helpers.mat_mult(matrix, mathutils.Vector((x2, y2, z2))),
-                    helpers.mat_mult(matrix, mathutils.Vector((x3, y3, z3))),
+                    matrix @ mathutils.Vector((x1, y1, z1)),
+                    matrix @ mathutils.Vector((x2, y2, z2)),
+                    matrix @ mathutils.Vector((x3, y3, z3)),
                     a,
                     b,
                 ]

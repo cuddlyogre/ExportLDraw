@@ -184,7 +184,7 @@ def __export_subfiles(obj, lines, is_model=False):
     if strings.ldraw_export_precision_key in obj:
         precision = obj[strings.ldraw_export_precision_key]
 
-    aa = helpers.mat_mult(__reverse_rotation, obj.matrix_world, __rotation)
+    aa = __reverse_rotation @ obj.matrix_world @ __rotation
 
     a = __fix_round(aa[0][0], precision)
     b = __fix_round(aa[0][1], precision)
