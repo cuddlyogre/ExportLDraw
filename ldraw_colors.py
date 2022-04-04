@@ -56,6 +56,14 @@ class LDrawColor:
             return cls.__colors[color_code]
 
         hex_digits = cls.__extract_hex_digits(color_code)
+
+        if hex_digits is None:
+            # 10220 - Volkswagen T1 Camper Van.mpd -> 97122.dat uses an int color code 4294967295 which is 0xffffffff in hex
+            try:
+                hex_digits = cls.__extract_hex_digits(hex(int(color_code)))
+            except ValueError as e:
+                """color code is not an int"""
+
         if hex_digits is not None:
             clean_line = f"0 !COLOUR {color_code} CODE {color_code} VALUE #{hex_digits} EDGE #333333"
             _params = helpers.get_params(clean_line, "0 !COLOUR ", lowercase=False)
@@ -240,12 +248,6 @@ class LDrawColor:
 
         if value.lower().startswith('0x'):  # '0xffffff'
             return value[2:8]
-
-        # 10220 - Volkswagen T1 Camper Van.mpd -> 97122.dat uses an int color code 4294967295 which is 0xffffffff in hex
-        try:
-            return cls.__extract_hex_digits(hex(int(value)))
-        except ValueError as e:
-            """color code is not an int"""
 
         return None
 
