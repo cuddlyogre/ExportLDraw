@@ -36,7 +36,10 @@ def do_import(filepath):
     root_node = LDrawNode()
     root_node.is_root = True
     root_node.file = ldraw_file
-    root_node.load()
+    # if ImportOptions.interactive_import:
+    #     return root_node.load(parent_collection=collection)
+    # else:
+    obj = root_node.load()
 
     if ImportOptions.meta_step:
         if ImportOptions.set_end_frame:
@@ -58,6 +61,8 @@ def do_import(filepath):
                 if space.type == "VIEW_3D":
                     if space.clip_end < max_clip_end:
                         space.clip_end = max_clip_end
+
+    return obj
 
 
 def __scene_setup():
@@ -93,6 +98,27 @@ def __scene_setup():
 
 
 def __load_materials(file):
+    ImportOptions.meta_group = False
+    ImportOptions.parent_to_empty = False
+    ImportOptions.make_gaps = False
+
+    # slope texture demonstration
+    obj = do_import('3044.dat')
+    if obj is not None:
+        obj.location.y = 5
+
+    # texmap demonstration
+    obj = do_import('27062p01.dat')
+    if obj is not None:
+        obj.location.x = 3
+        obj.location.y = 5
+
+    # cloth demonstration
+    obj = do_import('50231.dat')
+    if obj is not None:
+        obj.location.x = 6
+        obj.location.y = 5
+
     colors = {}
     group_name = 'blank'
     for line in file.lines:
@@ -104,7 +130,7 @@ def __load_materials(file):
             colors[group_name] = []
             continue
 
-        if clean_line.startswith("0 !COLOUR"):
+        if clean_line.startswith("0 !COLOUR "):
             _params = helpers.get_params(clean_line, "0 !COLOUR ", lowercase=False)
             colors[group_name].append(LDrawColor.parse_color(_params))
             continue
@@ -132,7 +158,7 @@ def __load_materials(file):
             mesh = bpy.data.meshes.new(f"{prefix}_{color_code}")
             mesh[strings.ldraw_color_code_key] = color_code
 
-            material = BlenderMaterials.get_material(color_code)
+            material = BlenderMaterials.get_material(color_code, easy_key=True)
 
             # https://blender.stackexchange.com/questions/23905/select-faces-depending-on-material
             if material.name not in mesh.materials:

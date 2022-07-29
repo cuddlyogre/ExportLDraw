@@ -50,6 +50,7 @@ class ImportSettings:
         'recalculate_normals': ImportOptions.defaults['recalculate_normals'],
         'triangulate': ImportOptions.defaults['triangulate'],
         'preserve_hierarchy': ImportOptions.defaults['preserve_hierarchy'],
+        # 'interactive_import': ImportOptions.defaults['interactive_import'],
     }
 
     default_settings = {**filesystem_defaults, **ldraw_color_defaults, **import_options_defaults}

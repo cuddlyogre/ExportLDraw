@@ -96,3 +96,6 @@ class ImportOptions:
 
     defaults['preserve_hierarchy'] = False
     preserve_hierarchy = defaults['preserve_hierarchy']
+
+    # defaults['interactive_import'] = True
+    # interactive_import = defaults['interactive_import']

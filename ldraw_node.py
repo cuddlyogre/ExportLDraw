@@ -105,6 +105,9 @@ class LDrawNode:
         self.subfile_line_index = 0
 
     def load(self, color_code="16", parent_matrix=None, geometry_data=None, parent_collection=None, accum_cull=True, accum_invert=False, texmap=None, pe_tex_info=None):
+        # if ImportOptions.interactive_import:
+        #     yield self
+
         if self.file.is_edge_logo() and not ImportOptions.display_logo:
             return
         if self.file.is_like_stud() and ImportOptions.no_studs:
@@ -142,13 +145,13 @@ class LDrawNode:
 
         key = self.__build_key(self.file.name, color_code, matrix, accum_cull, accum_invert, texmap, pe_tex_info)
 
+        self.bfc_certified = self.file.is_like_model() or None
+        local_cull = True
+        winding = "CCW"
+        invert_next = False
+
         mesh = bpy.data.meshes.get(key)
         if ImportOptions.preserve_hierarchy or mesh is None:
-            self.bfc_certified = self.file.is_like_model() or None
-            local_cull = True
-            winding = "CCW"
-            invert_next = False
-
             for child_node in self.file.child_nodes:
                 if child_node.meta_command in ["1", "2", "3", "4", "5"] and not self.texmap_fallback:
                     current_color = self.__determine_color(color_code, child_node.color_code)
@@ -161,6 +164,23 @@ class LDrawNode:
                         else:
                             pe_tex_info = self.pe_tex_infos.get(self.subfile_line_index)
 
+                        # if ImportOptions.interactive_import:
+                        #     for node in child_node.load(
+                        #             color_code=current_color,
+                        #             parent_matrix=accum_matrix if ImportOptions.preserve_hierarchy else matrix,
+                        #             geometry_data=geometry_data,
+                        #             parent_collection=collection,
+                        #             accum_cull=self.bfc_certified and accum_cull and local_cull,
+                        #             accum_invert=(accum_invert ^ invert_next),
+                        #             texmap=self.texmap,
+                        #             pe_tex_info=pe_tex_info,
+                        #     ):
+                        #         yield node
+                        # else:
+
+                        # TODO: preload file, return mesh.name and get mesh and merge that mesh with the current mesh
+                        # may crash based on https://docs.blender.org/api/current/info_gotcha.html#help-my-script-crashes-blender
+                        # but testing seems to indicate that adding to bpy.data.meshes does not change hash(mesh) value
                         child_node.load(
                             color_code=current_color,
                             parent_matrix=accum_matrix if ImportOptions.preserve_hierarchy else matrix,
@@ -227,16 +247,13 @@ class LDrawNode:
                 elif "INVERTNEXT" not in child_node.meta_args:
                     invert_next = False
 
-        # TODO: add object data to list then use modal to pop from list then call finalize_object with that data
         if self.top:
-            self.__render_geometry(key, geometry_data, accum_matrix, color_code, collection)
-
-    def __render_geometry(self, key, geometry_data, accum_matrix, color_code, collection):
-        mesh = bpy.data.meshes.get(key)
-        if mesh is None:
-            mesh = self.__create_mesh(key, geometry_data)
-        obj = self.__process_top_object(mesh, accum_matrix, color_code, collection)
-        self.__process_top_edges(key, obj, color_code, collection)
+            mesh = bpy.data.meshes.get(key)
+            if mesh is None:
+                mesh = self.__create_mesh(key, geometry_data)
+            obj = self.__process_top_object(mesh, accum_matrix, color_code, collection)
+            self.__process_top_edges(key, obj, color_code, collection)
+            return obj
 
     # set the working color code to this file's
     # color code if it isn't color code 16
@@ -300,7 +317,7 @@ class LDrawNode:
 
     def __process_bmesh_faces(self, geometry_data, bm, mesh):
         for face_data in geometry_data.face_data:
-            verts = [bm.verts.new(face_data.matrix @ vertex) for vertex in face_data.vertices]
+            verts = [bm.verts.new(vertex) for vertex in face_data.vertices]
             face = bm.faces.new(verts)
 
             part_slopes = special_bricks.get_part_slopes(self.file.name)
@@ -376,9 +393,8 @@ class LDrawNode:
             edge_verts = []
             face_indices = []
             for vertex in edge_data.vertices:
-                vert = edge_data.matrix @ vertex
-                e_verts.append(vert)
-                edge_verts.append(vert)
+                e_verts.append(vertex)
+                edge_verts.append(vertex)
                 face_indices.append(i)
                 i += 1
             e_faces.append(face_indices)
@@ -945,44 +961,48 @@ class LDrawNode:
             self.pe_tex_info = self.pe_tex_infos[self.current_pe_tex_path]
 
     def __meta_edge(self, child_node, color_code, matrix, geometry_data):
-        vertices = child_node.vertices
+        vertices = [matrix @ v for v in child_node.vertices]
 
         geometry_data.add_edge_data(
             color_code=color_code,
             vertices=vertices,
-            matrix=matrix,
         )
 
     def __meta_face(self, child_node, color_code, matrix, geometry_data, winding):
-        clean_line = child_node.line
-        _params = clean_line.split()
-
-        vertices = self.__handle_vertex_winding(child_node.vertices, winding)
-        pe_texmap = self.__build_pe_texmap(_params, vertices)
+        vertices = self.__handle_vertex_winding(child_node, matrix, winding)
+        pe_texmap = self.__build_pe_texmap(child_node)
 
         geometry_data.add_face_data(
             color_code=color_code,
             vertices=vertices,
-            matrix=matrix,
             texmap=self.texmap,
             pe_texmap=pe_texmap,
         )
 
-    def __handle_vertex_winding(self, vertices, winding):
-        vert_count = len(vertices)
-        # https://github.com/rredford/LdrawToObj/blob/802924fb8d42145c4f07c10824e3a7f2292a6717/LdrawData/LdrawToData.cs
-        if winding == "CCW":
-            """this is the default vertex order so don't do anything"""
-        elif winding == "CW":
+    # https://github.com/rredford/LdrawToObj/blob/802924fb8d42145c4f07c10824e3a7f2292a6717/LdrawData/LdrawToData.cs#L219
+    # https://github.com/rredford/LdrawToObj/blob/802924fb8d42145c4f07c10824e3a7f2292a6717/LdrawData/LdrawToData.cs#L260
+    def __handle_vertex_winding(self, child_node, matrix, winding):
+        vert_count = len(child_node.vertices)
+
+        vertices = child_node.vertices
+        if winding == "CW":
             if vert_count == 3:
-                vertices = [vertices[0], vertices[2], vertices[1]]
+                vertices = [matrix @ vertices[0], matrix @ vertices[2], matrix @ vertices[1]]
             elif vert_count == 4:
-                vertices = [vertices[0], vertices[3], vertices[2], vertices[1]]
+                vertices = [matrix @ vertices[0], matrix @ vertices[3], matrix @ vertices[2], matrix @ vertices[1]]
+        else:  # winding == "CCW" or winding is None:
+            vertices = [matrix @ m for m in vertices]
+            """this is the default vertex order so don't do anything"""
+
         return vertices
 
-    def __build_pe_texmap(self, _params, vertices):
-        vert_count = len(vertices)
+    def __build_pe_texmap(self, child_node):
+        clean_line = child_node.line
+        _params = clean_line.split()
+
         pe_texmap = None
+        vert_count = len(child_node.vertices)
+
         if self.pe_tex_info is not None:
             # if we have uv data and a pe_tex_info, otherwise pass
             # # custom minifig head > 3626tex.dat (has no pe_tex) > 3626texpole.dat (has no uv data)
@@ -1004,10 +1024,9 @@ class LDrawNode:
         return pe_texmap
 
     def __meta_line(self, child_node, color_code, matrix, geometry_data):
-        vertices = child_node.vertices
+        vertices = [matrix @ v for v in child_node.vertices]
 
         geometry_data.add_line_data(
             color_code=color_code,
             vertices=vertices,
-            matrix=matrix,
         )
