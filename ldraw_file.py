@@ -140,7 +140,7 @@ class LDrawFile:
                         if not is_mpd:
                             current_file = cls.__raw_files.get(filename)
                             if current_file is None:
-                                cls.__raw_files[filename] = cls(filename)
+                                cls.__raw_files[filename] = LDrawFile(filename)
                                 current_file = cls.__raw_files.get(filename)
                             if not current_file.parse_header(line):
                                 current_file.lines.append(line)
@@ -156,7 +156,7 @@ class LDrawFile:
 
                             if current_mpd_file is not None:
                                 cls.__raw_files[current_mpd_file.filename] = current_mpd_file
-                            current_mpd_file = cls(mpd_filename)
+                            current_mpd_file = LDrawFile(mpd_filename)
                             continue
 
                         if clean_line.startswith("0 NOFILE"):
