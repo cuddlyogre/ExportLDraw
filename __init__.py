@@ -32,6 +32,7 @@ _modules = [
     'ldraw_node',
     'ldraw_part_types',
     'ldraw_props',
+    'operator_panel_ldraw',
     'operator_export',
     'operator_import',
     'pe_texmap',
@@ -64,12 +65,14 @@ def register():
     ldraw_props.register()
     operator_import.register()
     operator_export.register()
+    operator_panel_ldraw.register()
 
 
 def unregister():
     ldraw_props.unregister()
     operator_import.unregister()
     operator_export.unregister()
+    operator_panel_ldraw.unregister()
 
 
 if __name__ == "__main__":

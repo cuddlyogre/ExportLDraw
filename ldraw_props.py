@@ -2,19 +2,47 @@ import bpy
 import getpass
 
 
-def set_props(ldraw_node, obj, color_code):
-    obj.ldraw_props.description = ldraw_node.file.description or ""
-    obj.ldraw_props.name = ldraw_node.file.name or ""
-    obj.ldraw_props.author = ldraw_node.file.author or ""
+def set_props(obj, ldraw_file, color_code):
+    obj.ldraw_props.filename = ldraw_file.filename or ""
+    obj.ldraw_props.description = ldraw_file.description or ""
+    obj.ldraw_props.name = ldraw_file.name or ""
+    obj.ldraw_props.author = ldraw_file.author or ""
     try:
-        obj.ldraw_props.part_type = ldraw_node.file.actual_part_type or ""
+        obj.ldraw_props.part_type = ldraw_file.actual_part_type or ""
     except TypeError as e:
         obj.ldraw_props.part_type = 'Unknown'
-    obj.ldraw_props.actual_part_type = ldraw_node.file.actual_part_type or ""
+    obj.ldraw_props.actual_part_type = ldraw_file.actual_part_type or ""
+    obj.ldraw_props.license = ldraw_file.license
     obj.ldraw_props.color_code = color_code
 
 
+def get_header_lines(obj):
+    """
+    0 Brick  2 x  4
+    0 Name: 3001.dat
+    0 Author: James Jessiman
+    0 !LDRAW_ORG Part UPDATE 2004-03
+    0 !LICENSE Redistributable under CCAL version 2.0 : see CAreadme.txt
+    """
+    header_lines = []
+    header_lines.append(f"0 {obj.ldraw_props.description}")
+    header_lines.append(f"0 Name: {obj.ldraw_props.name}")
+    header_lines.append(f"0 Author: {obj.ldraw_props.author}")
+    header_lines.append(f"0 !LDRAW_ORG {obj.ldraw_props.part_type}")
+    header_lines.append(f"0 !LICENSE {obj.ldraw_props.license}")
+    return header_lines
+
+    # header_text = "\n".join(header_lines)
+    # return header_text
+
+
 class LDrawProps(bpy.types.PropertyGroup):
+    filename: bpy.props.StringProperty(
+        name="Filename",
+        description="LDraw filename",
+        default="",
+    )
+
     description: bpy.props.StringProperty(
         name="Description",
         description="LDraw description",
@@ -57,6 +85,13 @@ class LDrawProps(bpy.types.PropertyGroup):
         name="Actual part type",
         description="LDraw part type specified in the file",
         default="",
+    )
+
+    license: bpy.props.StringProperty(
+        options={'HIDDEN'},
+        name="License",
+        description="LDraw license",
+        default="Redistributable under CCAL version 2.0 : see CAreadme.txt",
     )
 
     def test_update(self, context):
@@ -103,7 +138,15 @@ def register():
     """Register addon classes"""
 
     registerClasses()
+    bpy.types.Scene.ldraw_props = bpy.props.PointerProperty(type=LDrawProps)
     bpy.types.Object.ldraw_props = bpy.props.PointerProperty(type=LDrawProps)
+    # bpy.types.Object.get_header_lines = get_header_lines
+    # hlines = active_object.get_header_lines()
+    # bpy.types.Object.ldraw_filename = bpy.props.StringProperty(name='LDraw filename')
+    # bpy.types.Mesh.ldraw_filename = bpy.props.StringProperty(name='LDraw filename')
+    # bpy.types.Collection.ldraw_filename = bpy.props.StringProperty(name='LDraw filename')
+    # bpy.types.Image.ldraw_filename = bpy.props.StringProperty(name='LDraw filename')
+    # bpy_types.MeshEdge.ldraw_color_code = bpy.props.StringProperty(name='LDraw color code')
 
 
 def unregister():
