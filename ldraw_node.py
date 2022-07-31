@@ -73,6 +73,21 @@ class LDrawNode:
         cls.__collection_id_map = {}
         cls.__key_map = {}
 
+        cls.__auto_smooth_angle = 31
+        cls.__auto_smooth_angle = 44.97
+        cls.__auto_smooth_angle = 51.1
+        cls.__auto_smooth_angle = 89.9  # 1.56905 - 89.9 so 90 degrees and up are affected
+        cls.__auto_smooth_angle = math.radians(cls.__auto_smooth_angle)
+
+        cls.__identity = mathutils.Matrix.Identity(4).freeze()
+        # https://www.ldraw.org/article/218.html#coords
+        # LDraw uses a right-handed co-ordinate system where -Y is "up".
+        # https://en.wikibooks.org/wiki/Blender_3D:_Noob_to_Pro/Understanding_Coordinates
+        # Blender uses a right-handed co-ordinate system where +Z is "up"
+        cls.__rotation = mathutils.Matrix.Rotation(math.radians(-90), 4, 'X').freeze()  # rotate -90 degrees on X axis to make -Y up
+        cls.__import_scale_matrix = mathutils.Matrix.Scale(ImportOptions.import_scale, 4).freeze()
+        cls.__gap_scale_matrix = mathutils.Matrix.Scale(ImportOptions.gap_scale, 4).freeze()
+
     @classmethod
     def import_setup(cls):
         cls.__set_step()
