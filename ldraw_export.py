@@ -11,6 +11,7 @@ from . import strings
 from .export_options import ExportOptions
 from . import helpers
 from . import ldraw_part_types
+from . import ldraw_props
 
 __rotation = mathutils.Matrix.Rotation(math.radians(-90), 4, 'X').freeze()
 __reverse_rotation = mathutils.Matrix.Rotation(math.radians(90), 4, 'X').freeze()
@@ -20,8 +21,8 @@ __reverse_rotation = mathutils.Matrix.Rotation(math.radians(90), 4, 'X').freeze(
 # tris => line type 3
 # quads => line type 4
 # conditional lines => line type 5 and ngons, aren't handled
-# header file is determined by strings.ldraw_filename_key of active object
-# if strings.ldraw_export_polygons_key == 1 current object being iterated will be exported as line type 2,3,4
+# header file is determined by ldraw_props of active object
+# if obj.ldraw_props.export_polygons current object being iterated will be exported as line type 2,3,4
 # otherwise line type 1
 def do_export(filepath):
     LDrawFile.reset_caches()
@@ -41,28 +42,20 @@ def do_export(filepath):
     if active_object is None:
         return
 
-    filename = active_object.get(strings.ldraw_filename_key)
+    filename = active_object.ldraw_props.filename
     # no filename specified on object
     if filename is None:
         return
 
-    text = bpy.data.texts.get(filename)
-    # no text with that filename
-    if text is None:
-        return
-
     ldraw_file = LDrawFile(filename)
 
-    hlines = text.lines
-    if hlines[-1].body == "\n":
-        hlines.pop()
-
+    hlines = ldraw_props.get_header_lines(active_object)
     for hline in hlines:
-        ldraw_file.parse_header(hline.body)
-        ldraw_file.lines.append(hline.body)
+        ldraw_file.parse_header(hline)
+        ldraw_file.lines.append(hline)
 
-    subfile_objects = []
-    polygon_objects = []
+    subfile_obj_names = []
+    polygon_obj_names = []
 
     for obj in objects:
         # so objects that are not linked to the scene don't get exported
@@ -70,23 +63,22 @@ def do_export(filepath):
         if obj.users < 1:
             continue
 
-        do_export_polygons = False
-        if strings.ldraw_export_polygons_key in obj:
-            do_export_polygons = obj[strings.ldraw_export_polygons_key] == 1
-
-        # TODO: should this be a collection of names? - see https://docs.blender.org/api/current/info_gotcha.html#help-my-script-crashes-blender
-        if do_export_polygons:
-            polygon_objects.append(obj)
+        if obj.ldraw_props.export_polygons:
+            polygon_obj_names.append(obj.name)
         else:
-            subfile_objects.append(obj)
+            subfile_obj_names.append(obj.name)
 
-    for obj in subfile_objects:
-        __export_subfiles(obj, ldraw_file.lines, is_model=ldraw_file.is_model())
-    if len(subfile_objects) > 0:
+    if len(subfile_obj_names) > 0:
         ldraw_file.lines.append("\n")
+    for name in subfile_obj_names:
+        obj = bpy.data.objects.get(name)
+        __export_subfiles(obj, ldraw_file.lines, is_model=ldraw_file.is_model())
 
+    if len(polygon_obj_names) > 0:
+        ldraw_file.lines.append("\n")
     part_lines = []
-    for obj in polygon_objects:
+    for name in polygon_obj_names:
+        obj = bpy.data.objects.get(name)
         __export_polygons(obj, part_lines)
 
     sorted_part_lines = sorted(part_lines, key=lambda pl: (int(pl[1]), int(pl[0])))
@@ -169,20 +161,14 @@ def __fix_round(number, places=None):
 # TODO: if obj["section_label"] then:
 #  0 // f{obj["section_label"]}
 def __export_subfiles(obj, lines, is_model=False):
-    if strings.ldraw_filename_key not in obj:
-        return False
-    name = obj[strings.ldraw_filename_key]
+    name = obj.ldraw_props.filename
 
-    color_code = "16"
+    color_code = obj.ldraw_props.color_code
     color = LDrawColor.get_color(color_code)
-    if strings.ldraw_color_code_key in obj:
-        color_code = str(obj[strings.ldraw_color_code_key])
-        color = LDrawColor.get_color(color_code)
     color_code = color.code
 
-    precision = ExportOptions.export_precision
-    if strings.ldraw_export_precision_key in obj:
-        precision = obj[strings.ldraw_export_precision_key]
+    precision = obj.ldraw_props.export_precision
+
 
     aa = __reverse_rotation @ obj.matrix_world @ __rotation
 
@@ -216,9 +202,7 @@ def __export_polygons(obj, lines):
 
     mesh = __clean_mesh(obj)
 
-    precision = ExportOptions.export_precision
-    if strings.ldraw_export_precision_key in obj:
-        precision = obj[strings.ldraw_export_precision_key]
+    precision = obj.ldraw_props.export_precision
 
     for polygon in mesh.polygons:
         length = len(polygon.vertices)
@@ -230,11 +214,8 @@ def __export_polygons(obj, lines):
         if line_type is None:
             continue
 
-        obj_color_code = "16"
+        obj_color_code = obj.ldraw_props.color_code
         obj_color = LDrawColor.get_color(obj_color_code)
-        if strings.ldraw_color_code_key in obj:
-            color_code = str(obj[strings.ldraw_color_code_key])
-            obj_color = LDrawColor.get_color(color_code)
 
         color_code = "16"
         color = LDrawColor.get_color(color_code)

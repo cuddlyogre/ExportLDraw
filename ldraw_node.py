@@ -267,6 +267,9 @@ class LDrawNode:
             if mesh is None:
                 mesh = self.__create_mesh(key, geometry_data)
             obj = self.__process_top_object(mesh, accum_matrix, color_code, collection)
+
+            ldraw_props.set_props(obj, self.file, color_code)
+
             self.__process_top_edges(key, obj, color_code, collection)
             return obj
 
@@ -464,8 +467,6 @@ class LDrawNode:
         # Shading > Color > Object to see object colors
         color = LDrawColor.get_color(color_code)
         obj.color = color.color_a
-
-        ldraw_props.set_props(self, obj, color_code)
 
         self.__process_top_object_matrix(obj, accum_matrix)
         if not ImportOptions.preserve_hierarchy:
