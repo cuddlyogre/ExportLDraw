@@ -43,7 +43,7 @@ def do_export(filepath):
 
     filename = active_object.get(strings.ldraw_filename_key)
     # no filename specified on object
-    if strings.ldraw_filename_key is None:
+    if filename is None:
         return
 
     text = bpy.data.texts.get(filename)
