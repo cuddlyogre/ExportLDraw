@@ -45,7 +45,7 @@ class LDrawColor:
 
     @classmethod
     def parse_color(cls, _params):
-        color = cls()
+        color = LDrawColor()
         color.parse_color_params(_params)
         cls.__colors[color.code] = color
         return color.code
