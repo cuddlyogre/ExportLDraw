@@ -236,7 +236,8 @@ class LDrawNode:
                             geometry_data,
                         )
                 elif child_node.meta_command == "bfc":
-                    local_cull, winding, invert_next = self.__meta_bfc(child_node, matrix, local_cull, winding, invert_next, accum_invert)
+                    if ImportOptions.meta_bfc:
+                        local_cull, winding, invert_next = self.__meta_bfc(child_node, matrix, local_cull, winding, invert_next, accum_invert)
                 elif child_node.meta_command == "step":
                     self.__set_step()
                 elif child_node.meta_command == "save":
@@ -567,9 +568,6 @@ class LDrawNode:
                 group.link_obj(c, obj)
 
     def __meta_bfc(self, child_node, matrix, local_cull, winding, invert_next, accum_invert):
-        if not ImportOptions.meta_bfc:
-            return
-
         clean_line = child_node.line
         _params = clean_line.split()
 
