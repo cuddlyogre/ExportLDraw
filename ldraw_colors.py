@@ -65,20 +65,24 @@ class LDrawColor:
             try:
                 hex_digits = cls.__extract_hex_digits(hex(int(color_code)))
             except ValueError as e:
-                """color code is not an int"""
+                print(e)
 
         if hex_digits is not None:
             alpha = ''
             # FFFFFF == 6 means no alpha
             # FFFFFFFF == 8 means alpha
+            # 1009022 == #f657e -> ValueError
             if len(hex_digits) == 8:
                 alpha_val = struct.unpack("B", bytes.fromhex(hex_digits[6:8]))[0]
                 alpha = f"ALPHA {alpha_val}"
 
             clean_line = f"0 !COLOUR {color_code} CODE {color_code} VALUE #{hex_digits} EDGE #333333 {alpha}"
             _params = helpers.get_params(clean_line, "0 !COLOUR ", lowercase=False)
-            color_code = cls.parse_color(_params)
-            return cls.__colors[color_code]
+            try:
+                color_code = cls.parse_color(_params)
+                return cls.__colors[color_code]
+            except ValueError as e:
+                print(e)
 
         if cls.__bad_color is None:
             clean_line = f"0 !COLOUR Bad_Color CODE {color_code} VALUE #FF0000 EDGE #00FF00"
@@ -299,3 +303,4 @@ if __name__ == "__main__":
     print(LDrawColor.get_color("0x2062E92").color_a)
     print(LDrawColor.get_color("0x2062E9255").color_a)
     print(LDrawColor.get_color('4294967295').color_a)
+    print(LDrawColor.get_color('#f657e').color_a)
