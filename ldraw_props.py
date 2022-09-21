@@ -12,7 +12,7 @@ def set_props(obj, ldraw_file, color_code):
     except TypeError as e:
         obj.ldraw_props.part_type = 'Unknown'
     obj.ldraw_props.actual_part_type = ldraw_file.actual_part_type or ""
-    obj.ldraw_props.license = ldraw_file.license
+    obj.ldraw_props.license = ldraw_file.license or ""
     obj.ldraw_props.color_code = color_code
 
 
