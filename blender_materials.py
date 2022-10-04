@@ -21,16 +21,23 @@ class BlenderMaterials:
         cls.reset_caches()
         path = os.path.join(APP_ROOT, 'materials', 'all_monkeys.blend')
         with bpy.data.libraries.load(path, link=False) as (data_from, data_to):
-            data_to.node_groups = data_from.node_groups
+            all_node_groups = False
+            if all_node_groups:
+                data_to.node_groups = data_from.node_groups
+            else:
+                data_to.node_groups = [c for c in data_from.node_groups if c.startswith("_") or c.startswith("LEGO")]
         for node_group in data_to.node_groups:
             node_group.use_fake_user = True
 
     @classmethod
-    def get_material(cls, color_code, use_edge_color=False, part_slopes=None, parts_cloth=False, texmap=None, pe_texmap=None, use_backface_culling=True):
+    def get_material(cls, color_code, use_edge_color=False, part_slopes=None, parts_cloth=False, texmap=None, pe_texmap=None, use_backface_culling=True, easy_key=False):
         color = LDrawColor.get_color(color_code)
         use_backface_culling = use_backface_culling is True
 
-        key = cls.__build_key(color, use_edge_color, part_slopes, parts_cloth, texmap, pe_texmap, use_backface_culling)
+        if easy_key:
+            key = color_code
+        else:
+            key = cls.__build_key(color, use_edge_color, part_slopes, parts_cloth, texmap, pe_texmap, use_backface_culling)
 
         # Reuse current material if it exists, otherwise create a new material
         material = bpy.data.materials.get(key)
@@ -51,7 +58,7 @@ class BlenderMaterials:
 
     @classmethod
     def __build_key(cls, color, use_edge_color, part_slopes, parts_cloth, texmap, pe_texmap, use_backface_culling):
-        _key = (color.name, color.code, use_backface_culling)
+        _key = (color.name, color.code, use_backface_culling,)
 
         if LDrawColor.use_alt_colors:
             _key += ("alt",)
@@ -62,7 +69,7 @@ class BlenderMaterials:
         if parts_cloth:
             _key += ("cloth",)
         if texmap is not None:
-            _key += ((texmap.method, texmap.texture, texmap.glossmap),)
+            _key += (texmap.method, texmap.texture, texmap.glossmap,)
         if pe_texmap is not None:
             _key += (pe_texmap.texture,)
 
@@ -75,8 +82,6 @@ class BlenderMaterials:
 
     @classmethod
     def __create_node_based_material(cls, key, color, use_edge_color=False, part_slopes=None, parts_cloth=False, texmap=None, pe_texmap=None, use_backface_culling=True):
-        """Set Cycles Material Values."""
-
         material = bpy.data.materials.new(key)
         material.use_fake_user = True
         material.use_nodes = True
@@ -87,7 +92,16 @@ class BlenderMaterials:
 
         nodes.clear()
 
-        is_transparent = color.alpha < 1.0
+        out = cls.__node_output_material(nodes, 200, 0)
+
+        new_way = True  # slower but color codes are encompassed in their own node groups
+        new_way = False  # faster but color codes are directly created within the material
+        if new_way:
+            group_name = cls.__node_group_color_code(color, 200, 0, use_edge_color)
+            node = cls.__node_group(group_name, nodes, 0, 0)
+        else:
+            node, rgb_node, mix_rgb_node = cls.__node_group_color_code_old(color, nodes, links, 200, 0, use_edge_color)
+        links.new(node.outputs["Shader"], out.inputs["Surface"])
 
         # https://wiki.ldraw.org/wiki/Color_24
         if use_edge_color:
@@ -95,410 +109,336 @@ class BlenderMaterials:
             material.diffuse_color = diff_color
             material[strings.ldraw_color_code_key] = "24"
             material[strings.ldraw_color_name_key] = color.name
-            cls.__create_cycles_standard(nodes, links, diff_color)
-            return material
-
-        diff_color = color.color_d
-        material.diffuse_color = diff_color
-        material[strings.ldraw_color_code_key] = color.code
-        material[strings.ldraw_color_name_key] = color.name
-
-        if is_transparent:
-            material.use_screen_refraction = True
-            material.refraction_depth = 0.5
-
-        if color.name == "Milky_White":
-            cls.__create_cycles_milky_white(nodes, links, diff_color)
-        elif 'Opal' in color.name:
-            material_color = color.material_color + (1.0,)
-            cls.__create_cycles_opal(nodes, links, diff_color, material_color)
-        elif color.material_name == "glitter":
-            material_color = color.material_color + (1.0,)
-            cls.__create_cycles_glitter(nodes, links, diff_color, material_color)
-        elif color.material_name == "speckle":
-            material_color = color.material_color + (1.0,)
-            cls.__create_cycles_speckle(nodes, links, diff_color, material_color)
-        elif color.luminance > 0:
-            cls.__create_cycles_emission(nodes, links, diff_color, color.luminance)
-        elif color.material_name == "chrome":
-            cls.__create_cycles_chrome(nodes, links, diff_color)
-        elif color.material_name == "pearlescent":
-            cls.__create_cycles_pearlescent(nodes, links, diff_color)
-        elif color.material_name == "metal":
-            cls.__create_cycles_metal(nodes, links, diff_color)
-        elif color.material_name == "rubber":
-            if is_transparent:
-                cls.__create_cycles_rubber_translucent(nodes, links, diff_color)
-            else:
-                cls.__create_cycles_rubber(nodes, links, diff_color)
-        elif is_transparent:
-            cls.__create_cycles_transparent(nodes, links, diff_color)
         else:
-            cls.__create_cycles_standard(nodes, links, diff_color)
+            diff_color = color.color_d
+            material.diffuse_color = diff_color
+            material[strings.ldraw_color_code_key] = color.code
+            material[strings.ldraw_color_name_key] = color.name
 
-        if texmap is not None or pe_texmap is not None:
-            cls.__create_texmap_texture(nodes, links, diff_color, texmap, pe_texmap)
+            is_transparent = color.alpha < 1.0
+            if is_transparent:
+                material.use_screen_refraction = True
+                material.refraction_depth = 0.5
 
-        if part_slopes is not None:
-            cls.__create_cycles_slope_texture(nodes, links, part_slopes)
+            if part_slopes is not None and len(part_slopes) > 0:
+                cls.__create_slope(nodes, links, node, -200, -220, part_slopes)
 
-        if parts_cloth:
-            cls.__create_cloth_texture(nodes, links)
+            if texmap is not None or pe_texmap is not None:
+                if new_way:
+                    cls.__create_texmap(nodes, links, -460, 180, texmap, pe_texmap, node.inputs["Texture Color"], node.inputs["Texture Alpha"], node.inputs["Specular"])
+                else:
+                    cls.__create_texmap(nodes, links, -500, -140, texmap, pe_texmap, mix_rgb_node.inputs["Color2"], mix_rgb_node.inputs["Fac"], node.inputs["Specular"])
+
+            if parts_cloth:
+                cls.__create_cloth(nodes, links, node, -200, -100)
 
         return material
 
-    @staticmethod
-    def __node_slope_texture_by_angle(nodes, x, y, angles):
-        node = nodes.new("ShaderNodeGroup")
-        node.name = "slope_texture_by_angle"
-        node.node_tree = bpy.data.node_groups["_Slope Texture By Angle"]
-        node.location = x, y
-        if len(angles) > 0:
-            node.inputs['Angle 1'].default_value = angles[0]
-        if len(angles) > 1:
-            node.inputs['Angle 2'].default_value = angles[1]
-        if len(angles) > 2:
-            node.inputs['Angle 3'].default_value = angles[2]
-        if len(angles) > 3:
-            node.inputs['Angle 4'].default_value = angles[3]
-        node.inputs["Strength"].default_value = 0.6
-        return node
-
-    @staticmethod
-    def __node_cloth(nodes, x, y):
-        node = nodes.new("ShaderNodeGroup")
-        node.name = "cloth"
-        node.node_tree = bpy.data.node_groups["_cloth"]
-        node.location = x, y
-        return node
-
-    @staticmethod
-    def __node_lego_standard(nodes, color, x, y):
-        node = nodes.new("ShaderNodeGroup")
-        node.name = "standard"
-        node.node_tree = bpy.data.node_groups["LEGO Standard"]
-        node.location = x, y
-        node.inputs["Color"].default_value = color
-        return node
-
-    @staticmethod
-    def __node_lego_transparent(nodes, color, x, y):
-        node = nodes.new("ShaderNodeGroup")
-        node.name = "transparent"
-        node.node_tree = bpy.data.node_groups["LEGO Transparent"]
-        node.location = x, y
-        node.inputs["Color"].default_value = color
-        return node
-
-    @staticmethod
-    def __node_lego_rubber(nodes, color, x, y):
-        node = nodes.new("ShaderNodeGroup")
-        node.name = "rubber"
-        node.node_tree = bpy.data.node_groups["LEGO Rubber Solid"]
-        node.location = x, y
-        node.inputs["Color"].default_value = color
-        return node
-
-    @staticmethod
-    def __node_lego_rubber_translucent(nodes, color, x, y):
-        node = nodes.new("ShaderNodeGroup")
-        node.name = "rubber_translucent"
-        node.node_tree = bpy.data.node_groups["LEGO Rubber Translucent"]
-        node.location = x, y
-        node.inputs["Color"].default_value = color
-        return node
-
-    @staticmethod
-    def __node_lego_emission(nodes, color, luminance, x, y):
-        node = nodes.new("ShaderNodeGroup")
-        node.name = "emission"
-        node.node_tree = bpy.data.node_groups["LEGO Emission"]
-        node.location = x, y
-        node.inputs["Color"].default_value = color
-        node.inputs["Luminance"].default_value = luminance
-        return node
-
-    @staticmethod
-    def __node_lego_chrome(nodes, color, x, y):
-        node = nodes.new("ShaderNodeGroup")
-        node.name = "chrome"
-        node.node_tree = bpy.data.node_groups["LEGO Chrome"]
-        node.location = x, y
-        node.inputs["Color"].default_value = color
-        return node
-
-    @staticmethod
-    def __node_lego_pearlescent(nodes, color, x, y):
-        node = nodes.new("ShaderNodeGroup")
-        node.name = "pearlescent"
-        node.node_tree = bpy.data.node_groups["LEGO Pearlescent"]
-        node.location = x, y
-        node.inputs["Color"].default_value = color
-        return node
-
-    @staticmethod
-    def __node_lego_metal(nodes, color, x, y):
-        node = nodes.new("ShaderNodeGroup")
-        node.name = "metal"
-        node.node_tree = bpy.data.node_groups["LEGO Metal"]
-        node.location = x, y
-        node.inputs["Color"].default_value = color
-        return node
-
-    @staticmethod
-    def __node_lego_opal(nodes, color, glitter_color, x, y):
-        node = nodes.new("ShaderNodeGroup")
-        node.name = "opal"
-        node.node_tree = bpy.data.node_groups["LEGO Opal"]
-        node.location = x, y
-        node.inputs["Color"].default_value = color
-        node.inputs["Glitter Color"].default_value = glitter_color
-        return node
-
-    @staticmethod
-    def __node_lego_glitter(nodes, color, glitter_color, x, y):
-        node = nodes.new("ShaderNodeGroup")
-        node.name = "glitter"
-        node.node_tree = bpy.data.node_groups["LEGO Glitter"]
-        node.location = x, y
-        node.inputs["Color"].default_value = color
-        node.inputs["Glitter Color"].default_value = glitter_color
-        return node
-
-    @staticmethod
-    def __node_lego_speckle(nodes, color, speckle_color, x, y):
-        node = nodes.new("ShaderNodeGroup")
-        node.name = "speckle"
-        node.node_tree = bpy.data.node_groups["LEGO Speckle"]
-        node.location = x, y
-        node.inputs["Color"].default_value = color
-        node.inputs["Speckle Color"].default_value = speckle_color
-        return node
-
-    @staticmethod
-    def __node_lego_milky_white(nodes, color, x, y):
-        node = nodes.new("ShaderNodeGroup")
-        node.name = "milky_white"
-        node.node_tree = bpy.data.node_groups["LEGO Milky White"]
-        node.location = x, y
-        node.inputs["Color"].default_value = color
-        return node
-
-    @staticmethod
-    def __node_output(nodes, x, y):
+    @classmethod
+    def __node_output_material(cls, nodes, x, y):
         node = nodes.new("ShaderNodeOutputMaterial")
         node.location = x, y
         return node
 
-    @staticmethod
-    def __node_tex_image(nodes, x, y):
-        node = nodes.new("ShaderNodeTexImage")
+    @classmethod
+    def __node_tree(cls, group_name, use_fake_user=True):
+        node = bpy.data.node_groups.new(group_name, "ShaderNodeTree")
+        node.use_fake_user = use_fake_user
+        return node
+
+    @classmethod
+    def __node_group(cls, group_name, nodes, x, y):
+        node = nodes.new("ShaderNodeGroup")
+        node.node_tree = bpy.data.node_groups[group_name]
+        node.name = node.node_tree.name
         node.location = x, y
         return node
 
-    @staticmethod
-    def __node_mix_rgb(nodes, x, y):
+    @classmethod
+    def __node_group_input(cls, nodes, x, y):
+        node = nodes.new("NodeGroupInput")
+        node.location = x, y
+        return node
+
+    @classmethod
+    def __node_group_output(cls, nodes, x, y):
+        node = nodes.new("NodeGroupOutput")
+        node.location = x, y
+        return node
+
+    @classmethod
+    def __node_rgb(cls, nodes, x, y):
+        node = nodes.new("ShaderNodeRGB")
+        node.location = x, y
+        return node
+
+    @classmethod
+    def __node_mix_rgb(cls, nodes, x, y):
         node = nodes.new("ShaderNodeMixRGB")
         node.location = x, y
         return node
 
-    @staticmethod
-    def __get_group(nodes):
-        for x in nodes:
-            if x.type == "GROUP":
-                return x
-        return None
+    @classmethod
+    def __node_group_color_code_old(cls, color, nodes, links, x, y, use_edge_color=False):
+        if use_edge_color:
+            diff_color = color.edge_color_d
+        else:
+            diff_color = color.color_d
+        rgb_node = cls.__node_rgb(nodes, x + -600, y + 60)
+        rgb_node.outputs["Color"].default_value = diff_color
+
+        mix_rgb_node = cls.__node_mix_rgb(nodes, x + -400, y + 0)
+        mix_rgb_node.inputs["Fac"].default_value = 0
+
+        node = cls.__node_color_code_material(nodes, color, x + -200, y + 0, use_edge_color)
+
+        links.new(rgb_node.outputs["Color"], mix_rgb_node.inputs["Color1"])
+        links.new(mix_rgb_node.outputs["Color"], node.inputs["Color"])
+
+        return node, rgb_node, mix_rgb_node
 
     @classmethod
-    def __create_texmap_texture(cls, nodes, links, diff_color, texmap, pe_texmap):
-        """Image texture for texmap"""
+    def __node_group_color_code(cls, color, x, y, use_edge_color=False):
+        group_name = color.code
+        if group_name not in bpy.data.node_groups:
+            node_group = cls.__node_tree(group_name)
 
-        target = cls.__get_group(nodes)
-        if target is None:
-            return
+            node_tree_input = cls.__node_group_input(node_group.nodes, x + -600, y + -200)
+            node_tree_output = cls.__node_group_output(node_group.nodes, x, y)
 
+            node_group.inputs.new("NodeSocketColor", "Texture Color")
+
+            node_group.inputs.new("NodeSocketFloatFactor", "Texture Alpha")
+            node_group.inputs["Texture Alpha"].default_value = 0.0
+            node_group.inputs["Texture Alpha"].min_value = 0.0
+            node_group.inputs["Texture Alpha"].max_value = 1.0
+
+            node_group.inputs.new("NodeSocketFloatFactor", "Specular")
+            node_group.inputs["Specular"].default_value = 0.5
+            node_group.inputs["Specular"].min_value = 0.0
+            node_group.inputs["Specular"].max_value = 1.0
+
+            node_group.inputs.new("NodeSocketVectorDirection", "Normal")
+            node_group.inputs["Normal"].min_value = 0.0
+            node_group.inputs["Normal"].max_value = 1.0
+
+            node_group.outputs.new("NodeSocketShader", "Shader")
+
+            if use_edge_color:
+                diff_color = color.edge_color_d
+            else:
+                diff_color = color.color_d
+            rgb_node = cls.__node_rgb(node_group.nodes, x + -600, y + 60)
+            rgb_node.outputs["Color"].default_value = diff_color
+
+            mix_rgb_node = cls.__node_mix_rgb(node_group.nodes, x + -400, y + 0)
+            mix_rgb_node.inputs["Fac"].default_value = 0
+
+            color_code_node = cls.__node_color_code_material(node_group.nodes, color, x + -200, y + 0, use_edge_color)
+
+            node_group.links.new(rgb_node.outputs["Color"], mix_rgb_node.inputs["Color1"])
+            node_group.links.new(node_tree_input.outputs["Texture Color"], mix_rgb_node.inputs["Color2"])
+            node_group.links.new(node_tree_input.outputs["Texture Alpha"], mix_rgb_node.inputs["Fac"])
+            node_group.links.new(mix_rgb_node.outputs["Color"], color_code_node.inputs["Color"])
+            node_group.links.new(node_tree_input.outputs["Specular"], color_code_node.inputs["Specular"])
+            node_group.links.new(node_tree_input.outputs["Normal"], color_code_node.inputs["Normal"])
+            node_group.links.new(color_code_node.outputs["Shader"], node_tree_output.inputs["Shader"])
+
+            group_name = node_group.name
+        return group_name
+
+    @classmethod
+    def __node_color_code_material(cls, nodes, color, x, y, use_edge_color=False):
+        if use_edge_color:
+            is_transparent = False
+        else:
+            is_transparent = color.alpha < 1.0
+
+        if color.name == "Milky_White":
+            node = cls.__node_lego_milky_white(nodes, x, y)
+        elif "Opal" in color.name:
+            material_color = color.material_color + (1.0,)
+            glitter_color = LDrawColor.lighten_rgba(material_color, 0.5)
+            node = cls.__node_lego_opal(nodes, glitter_color, x, y)
+        elif color.material_name == "glitter":
+            material_color = color.material_color + (1.0,)
+            glitter_color = LDrawColor.lighten_rgba(material_color, 0.5)
+            node = cls.__node_lego_glitter(nodes, glitter_color, x, y)
+        elif color.material_name == "speckle":
+            material_color = color.material_color + (1.0,)
+            speckle_color = LDrawColor.lighten_rgba(material_color, 0.5)
+            node = cls.__node_lego_speckle(nodes, speckle_color, x, y)
+        elif color.luminance > 0:
+            luminance = color.luminance / 100.0
+            node = cls.__node_lego_emission(nodes, luminance, x, y)
+        elif color.material_name == "chrome":
+            node = cls.__node_lego_chrome(nodes, x, y)
+        elif color.material_name == "pearlescent":
+            node = cls.__node_lego_pearlescent(nodes, x, y)
+        elif color.material_name == "metal":
+            node = cls.__node_lego_metal(nodes, x, y)
+        elif color.material_name == "rubber":
+            if is_transparent:
+                node = cls.__node_lego_rubber_translucent(nodes, x, y)
+            else:
+                node = cls.__node_lego_rubber(nodes, x, y)
+        elif is_transparent:
+            node = cls.__node_lego_transparent(nodes, x, y)
+        else:
+            node = cls.__node_lego_standard(nodes, x, y)
+
+        return node
+
+    @classmethod
+    # TODO: slight variation in strength for each material
+    def __create_slope(cls, nodes, links, node, x, y, part_slopes=None):
+        slope_texture = cls.__node_slope_texture_by_angle(nodes, x, y, part_slopes)
+        links.new(slope_texture.outputs["Normal"], node.inputs["Normal"])
+
+    @classmethod
+    def __node_slope_texture_by_angle(cls, nodes, x, y, angles):
+        group_name = "_Slope Texture By Angle"
+        node = cls.__node_group(group_name, nodes, x, y)
+        if len(angles) > 0:
+            node.inputs["Angle 1"].default_value = angles[0]
+        if len(angles) > 1:
+            node.inputs["Angle 2"].default_value = angles[1]
+        if len(angles) > 2:
+            node.inputs["Angle 3"].default_value = angles[2]
+        if len(angles) > 3:
+            node.inputs["Angle 4"].default_value = angles[3]
+        node.inputs["Strength"].default_value = 0.6
+        return node
+
+    @classmethod
+    def __create_texmap(cls, nodes, links, x, y, texmap, pe_texmap, color_input, alpha_input, specular_input):
         image_name = None
         if texmap is not None:
             image_name = texmap.texture
         elif pe_texmap is not None:
             image_name = pe_texmap.texture
         if image_name is not None:
-            texmap_image = cls.__node_tex_image(nodes, -500.0, 0.0)
-            texmap_image.name = image_name
-            texmap_image.interpolation = "Closest"
-            texmap_image.extension = "CLIP"
-
-            # TODO: requests retrieve image from ldraw.org
-            # https://blender.stackexchange.com/questions/157531/blender-2-8-python-add-texture-image
-            image = bpy.data.images.get(image_name)
-            if image is None:
-                image_path = FileSystem.locate(image_name)
-                if image_path is not None:
-                    image = bpy.data.images.load(image_path)
-                    image.name = image_name
-                    image[strings.ldraw_filename_key] = image_name
-                    image.colorspace_settings.name = 'sRGB'
-                    image.pack()
-
-            image = bpy.data.images.get(image_name)
-            if image_name is not None:
-                texmap_image.image = image
-
-            mix_rgb = cls.__node_mix_rgb(nodes, -200, 0.0)
-            mix_rgb.inputs["Color1"].default_value = diff_color
-
-            links.new(texmap_image.outputs["Color"], mix_rgb.inputs["Color2"])
-            links.new(texmap_image.outputs["Alpha"], mix_rgb.inputs["Fac"])
-            links.new(mix_rgb.outputs["Color"], target.inputs["Color"])
+            texmap_image = cls.__node_tex_image_closest_clip(nodes, x, y, image_name, "sRGB")
+            links.new(texmap_image.outputs["Color"], color_input)
+            links.new(texmap_image.outputs["Alpha"], alpha_input)
 
         image_name = None
         if texmap is not None:
             image_name = texmap.glossmap
         if image_name is not None:
-            glossmap_image = cls.__node_tex_image(nodes, -360.0, -280.0)
-            glossmap_image.name = image_name
-            glossmap_image.interpolation = "Closest"
-            glossmap_image.extension = "CLIP"
+            glossmap_image = cls.__node_tex_image_closest_clip(nodes, x, y - 280, image_name, "Non-Color")
+            links.new(glossmap_image.outputs["Color"], specular_input)
 
-            image = bpy.data.images.get(image_name)
-            if image is None:
-                image_path = FileSystem.locate(image_name)
-                if image_path is not None:
-                    image = bpy.data.images.load(image_path)
-                    image.name = image_name
-                    image[strings.ldraw_filename_key] = image_name
-                    image.colorspace_settings.name = 'Non-Color'
-                    image.pack()
+    @staticmethod
+    def __node_tex_image_closest_clip(nodes, x, y, image_name, colorspace):
+        node = nodes.new("ShaderNodeTexImage")
+        node.location = x, y
+        node.name = image_name
+        node.interpolation = "Closest"
+        node.extension = "CLIP"
 
-            image = bpy.data.images.get(image_name)
-            if image_name is not None:
-                glossmap_image.image = image
+        # TODO: requests retrieve image from ldraw.org
+        # https://blender.stackexchange.com/questions/157531/blender-2-8-python-add-texture-image
+        image = bpy.data.images.get(image_name)
+        if image is None:
+            image_path = FileSystem.locate(image_name)
+            if image_path is not None:
+                image = bpy.data.images.load(image_path)
+                image.name = image_name
+                image[strings.ldraw_filename_key] = image_name
+                image.colorspace_settings.name = colorspace
+                image.pack()
 
-            links.new(glossmap_image.outputs["Color"], target.inputs["Specular"])
+        image = bpy.data.images.get(image_name)
+        if image_name is not None:
+            node.image = image
 
-    @classmethod
-    # TODO: slight variation in strength for each material
-    def __create_cycles_slope_texture(cls, nodes, links, part_slopes=None):
-        """Slope face normals for Cycles render engine"""
-
-        target = cls.__get_group(nodes)
-        if target is None:
-            return
-
-        if part_slopes is None:
-            return
-
-        if len(part_slopes) < 1:
-            return
-
-        slope_texture = cls.__node_slope_texture_by_angle(nodes, -200, 0, part_slopes)
-        links.new(slope_texture.outputs["Normal"], target.inputs["Normal"])
+        return node
 
     @classmethod
-    def __create_cloth_texture(cls, nodes, links, part_slopes=None):
-        target = cls.__get_group(nodes)
-        if target is None:
-            return
-
-        cloth = cls.__node_cloth(nodes, -200, 0)
-        links.new(cloth.outputs["Normal"], target.inputs["Normal"])
-        links.new(cloth.outputs["Specular"], target.inputs["Specular"])
+    def __create_cloth(cls, nodes, links, node, x, y):
+        cloth = cls.__node_cloth(nodes, x, y)
+        links.new(cloth.outputs["Normal"], node.inputs["Normal"])
+        links.new(cloth.outputs["Specular"], node.inputs["Specular"])
 
     @classmethod
-    def __create_cycles_transparent(cls, nodes, links, diff_color):
-        """Transparent Material for Cycles render engine."""
-
-        node = cls.__node_lego_transparent(nodes, diff_color, 0, 0)
-        out = cls.__node_output(nodes, 200, 0)
-        links.new(node.outputs["Shader"], out.inputs[0])
+    def __node_cloth(cls, nodes, x, y):
+        group_name = "_cloth"
+        node = cls.__node_group(group_name, nodes, x, y)
+        return node
 
     @classmethod
-    def __create_cycles_standard(cls, nodes, links, diff_color):
-        """Basic Material for Cycles render engine."""
-
-        node = cls.__node_lego_standard(nodes, diff_color, 0, 0)
-        out = cls.__node_output(nodes, 200, 0)
-        links.new(node.outputs["Shader"], out.inputs[0])
+    def __node_lego_standard(cls, nodes, x, y):
+        group_name = "LEGO Standard"
+        node = cls.__node_group(group_name, nodes, x, y)
+        return node
 
     @classmethod
-    def __create_cycles_emission(cls, nodes, links, diff_color, luminance):
-        """Emission material for Cycles render engine."""
-
-        node = cls.__node_lego_emission(nodes, diff_color, luminance / 100.0, 0, 0)
-        out = cls.__node_output(nodes, 200, 0)
-        links.new(node.outputs["Shader"], out.inputs[0])
+    def __node_lego_transparent(cls, nodes, x, y):
+        group_name = "LEGO Transparent"
+        node = cls.__node_group(group_name, nodes, x, y)
+        return node
 
     @classmethod
-    def __create_cycles_chrome(cls, nodes, links, diff_color):
-        """Chrome material for Cycles render engine."""
-
-        node = cls.__node_lego_chrome(nodes, diff_color, 0, 0)
-        out = cls.__node_output(nodes, 200, 0)
-        links.new(node.outputs["Shader"], out.inputs[0])
+    def __node_lego_rubber(cls, nodes, x, y):
+        group_name = "LEGO Rubber Solid"
+        node = cls.__node_group(group_name, nodes, x, y)
+        return node
 
     @classmethod
-    def __create_cycles_pearlescent(cls, nodes, links, diff_color):
-        """Pearlescent material for Cycles render engine."""
-
-        node = cls.__node_lego_pearlescent(nodes, diff_color, 0, 0)
-        out = cls.__node_output(nodes, 200, 0)
-        links.new(node.outputs["Shader"], out.inputs[0])
+    def __node_lego_rubber_translucent(cls, nodes, x, y):
+        group_name = "LEGO Rubber Translucent"
+        node = cls.__node_group(group_name, nodes, x, y)
+        return node
 
     @classmethod
-    def __create_cycles_metal(cls, nodes, links, diff_color):
-        """Metal material for Cycles render engine."""
-
-        node = cls.__node_lego_metal(nodes, diff_color, 0, 0)
-        out = cls.__node_output(nodes, 200, 0)
-        links.new(node.outputs["Shader"], out.inputs[0])
-
-    @classmethod
-    def __create_cycles_opal(cls, nodes, links, diff_color, glitter_color):
-        """Glitter material for Cycles render engine."""
-
-        glitter_color = LDrawColor.lighten_rgba(glitter_color, 0.5)
-        node = cls.__node_lego_opal(nodes, diff_color, glitter_color, 0, 0)
-        out = cls.__node_output(nodes, 200, 0)
-        links.new(node.outputs["Shader"], out.inputs[0])
+    def __node_lego_emission(cls, nodes, luminance, x, y):
+        group_name = "LEGO Emission"
+        node = cls.__node_group(group_name, nodes, x, y)
+        node.inputs["Luminance"].default_value = luminance
+        return node
 
     @classmethod
-    def __create_cycles_glitter(cls, nodes, links, diff_color, glitter_color):
-        """Glitter material for Cycles render engine."""
-
-        glitter_color = LDrawColor.lighten_rgba(glitter_color, 0.5)
-        node = cls.__node_lego_glitter(nodes, diff_color, glitter_color, 0, 0)
-        out = cls.__node_output(nodes, 200, 0)
-        links.new(node.outputs["Shader"], out.inputs[0])
+    def __node_lego_chrome(cls, nodes, x, y):
+        group_name = "LEGO Chrome"
+        node = cls.__node_group(group_name, nodes, x, y)
+        return node
 
     @classmethod
-    def __create_cycles_speckle(cls, nodes, links, diff_color, speckle_color):
-        """Speckle material for Cycles render engine."""
-
-        speckle_color = LDrawColor.lighten_rgba(speckle_color, 0.5)
-        node = cls.__node_lego_speckle(nodes, diff_color, speckle_color, 0, 0)
-        out = cls.__node_output(nodes, 200, 0)
-        links.new(node.outputs["Shader"], out.inputs[0])
+    def __node_lego_pearlescent(cls, nodes, x, y):
+        group_name = "LEGO Pearlescent"
+        node = cls.__node_group(group_name, nodes, x, y)
+        return node
 
     @classmethod
-    def __create_cycles_rubber(cls, nodes, links, diff_color):
-        """Rubber material colors for Cycles render engine."""
-
-        node = cls.__node_lego_rubber(nodes, diff_color, 0, 0)
-        out = cls.__node_output(nodes, 200, 0)
-        links.new(node.outputs[0], out.inputs[0])
+    def __node_lego_metal(cls, nodes, x, y):
+        group_name = "LEGO Metal"
+        node = cls.__node_group(group_name, nodes, x, y)
+        return node
 
     @classmethod
-    def __create_cycles_rubber_translucent(cls, nodes, links, diff_color):
-        """Translucent Rubber material colors for Cycles render engine."""
-
-        node = cls.__node_lego_rubber_translucent(nodes, diff_color, 0, 0)
-        out = cls.__node_output(nodes, 200, 0)
-        links.new(node.outputs[0], out.inputs[0])
+    def __node_lego_opal(cls, nodes, glitter_color, x, y):
+        group_name = "LEGO Opal"
+        node = cls.__node_group(group_name, nodes, x, y)
+        node.inputs["Glitter Color"].default_value = glitter_color
+        return node
 
     @classmethod
-    def __create_cycles_milky_white(cls, nodes, links, diff_color):
-        """Milky White material for Cycles render engine."""
+    def __node_lego_glitter(cls, nodes, glitter_color, x, y):
+        group_name = "LEGO Glitter"
+        node = cls.__node_group(group_name, nodes, x, y)
+        node.inputs["Glitter Color"].default_value = glitter_color
+        return node
 
-        node = cls.__node_lego_milky_white(nodes, diff_color, 0, 0)
-        out = cls.__node_output(nodes, 200, 0)
-        links.new(node.outputs["Shader"], out.inputs[0])
+    @classmethod
+    def __node_lego_speckle(cls, nodes, speckle_color, x, y):
+        group_name = "LEGO Speckle"
+        node = cls.__node_group(group_name, nodes, x, y)
+        node.inputs["Speckle Color"].default_value = speckle_color
+        return node
+
+    @classmethod
+    def __node_lego_milky_white(cls, nodes, x, y):
+        group_name = "LEGO Milky White"
+        node = cls.__node_group(group_name, nodes, x, y)
+        return node

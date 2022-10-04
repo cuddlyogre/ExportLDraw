@@ -4,6 +4,8 @@ import glob
 from sys import platform
 from pathlib import Path
 
+from .definitions import APP_ROOT
+
 
 class FileSystem:
     defaults = {}
@@ -30,6 +32,7 @@ class FileSystem:
     # TODO: add stud.io ldraw path - C:\Program Files\Studio 2.0\ldraw
     @staticmethod
     def locate_ldraw():
+        # return r"C:\Program Files\Studio 2.0\ldraw"
         ldraw_folder_name = 'ldraw'
 
         home = str(Path.home())

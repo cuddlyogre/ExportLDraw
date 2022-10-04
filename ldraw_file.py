@@ -25,6 +25,7 @@ class LDrawFile:
 
     def __init__(self, filename):
         self.filename = filename
+        self.header_lines = []
         self.lines = []
 
         self.description = None
@@ -201,33 +202,43 @@ class LDrawFile:
             strip_line = line.strip()
 
             if self.__line_description(strip_line):
+                self.header_lines.append(line)
                 return True
 
             if self.__line_name(clean_line, strip_line):
+                self.header_lines.append(line)
                 return True
 
             if self.__line_author(clean_line, strip_line):
+                self.header_lines.append(line)
                 return True
 
             if self.__line_part_type(clean_line, strip_line):
+                self.header_lines.append(line)
                 return True
 
             if self.__line_license(strip_line):
+                self.header_lines.append(line)
                 return True
 
             if self.__line_help(strip_line):
+                self.header_lines.append(line)
                 return True
 
             if self.__line_category(strip_line):
+                self.header_lines.append(line)
                 return True
 
             if self.__line_keywords(strip_line):
+                self.header_lines.append(line)
                 return True
 
             if self.__line_cmd_line(strip_line):
+                self.header_lines.append(line)
                 return True
 
             if self.__line_history(strip_line):
+                self.header_lines.append(line)
                 return True
             return False
         except Exception as e:
@@ -631,7 +642,11 @@ class LDrawFile:
         elif line_type == "4":
             vert_count = 4
         elif line_type == "5":
-            vert_count = 2
+            # 1.148 26.114 -19.076
+            # 6.9   25.8   -18.6
+            # 0     26     -19
+            # 2.121 26.44  -19.293
+            vert_count = 4
         else:
             vert_count = 0
 
