@@ -260,7 +260,7 @@ class LDrawNode:
 
                 if child_node.meta_command != "bfc":
                     invert_next = False
-                elif "INVERTNEXT" not in child_node.meta_args:
+                elif child_node.meta_command == "bfc" and "INVERTNEXT" not in child_node.meta_args:
                     invert_next = False
 
         if self.top:
