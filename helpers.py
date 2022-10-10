@@ -20,7 +20,7 @@ def clean_line(line):
 
 
 # assumes cleaned line being passed
-def get_params(clean_line, command, lowercase=True):
+def get_params(clean_line, command, lowercase=False):
     no_command = clean_line[len(command):]
     no_command_parts = no_command.split()
     if lowercase:

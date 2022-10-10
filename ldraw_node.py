@@ -760,7 +760,7 @@ class LDrawNode:
 
     def __meta_leocad_camera(self, child_node, matrix):
         clean_line = child_node.line
-        _params = helpers.get_params(clean_line, "0 !LEOCAD CAMERA ")
+        _params = helpers.get_params(clean_line, "0 !LEOCAD CAMERA ", lowercase=True)
 
         if self.camera is None:
             self.camera = LDrawCamera()

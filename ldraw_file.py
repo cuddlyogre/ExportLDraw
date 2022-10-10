@@ -376,7 +376,7 @@ class LDrawFile:
     # TODO: add collection of colors specific to this file
     def __line_color(self, clean_line):
         if clean_line.startswith("0 !COLOUR "):
-            _params = helpers.get_params(clean_line, "0 !COLOUR ", lowercase=False)
+            _params = helpers.get_params(clean_line, "0 !COLOUR ")
 
             if self.is_configuration():
                 LDrawColor.parse_color(_params)

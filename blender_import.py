@@ -131,7 +131,7 @@ def __load_materials(file):
             continue
 
         if clean_line.startswith("0 !COLOUR "):
-            _params = helpers.get_params(clean_line, "0 !COLOUR ", lowercase=False)
+            _params = helpers.get_params(clean_line, "0 !COLOUR ")
             colors[group_name].append(LDrawColor.parse_color(_params))
             continue
 

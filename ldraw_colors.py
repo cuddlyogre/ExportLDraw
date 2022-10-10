@@ -77,7 +77,7 @@ class LDrawColor:
                 alpha = f"ALPHA {alpha_val}"
 
             clean_line = f"0 !COLOUR {color_code} CODE {color_code} VALUE #{hex_digits} EDGE #333333 {alpha}"
-            _params = helpers.get_params(clean_line, "0 !COLOUR ", lowercase=False)
+            _params = helpers.get_params(clean_line, "0 !COLOUR ")
             try:
                 color_code = cls.parse_color(_params)
                 return cls.__colors[color_code]
@@ -86,7 +86,7 @@ class LDrawColor:
 
         if cls.__bad_color is None:
             clean_line = f"0 !COLOUR Bad_Color CODE {color_code} VALUE #FF0000 EDGE #00FF00"
-            _params = helpers.get_params(clean_line, "0 !COLOUR ", lowercase=False)
+            _params = helpers.get_params(clean_line, "0 !COLOUR ")
             color_code = cls.parse_color(_params)
             cls.__bad_color = cls.__colors[color_code]
 
