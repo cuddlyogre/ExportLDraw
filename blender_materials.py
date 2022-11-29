@@ -25,7 +25,17 @@ class BlenderMaterials:
             if all_node_groups:
                 data_to.node_groups = data_from.node_groups
             else:
-                data_to.node_groups = [c for c in data_from.node_groups if c.startswith("_") or c.startswith("LEGO")]
+                do_delete = False
+                if do_delete:  # deleting them will cause materials that use those nodes to render solid black
+                    data_to.node_groups = []
+                    for c in data_from.node_groups:
+                        existing_node_group = bpy.data.node_groups.get(c)
+                        if existing_node_group is not None:
+                            bpy.data.node_groups.remove(existing_node_group)
+                        if c.startswith("_") or c.startswith("LEGO"):
+                            data_to.node_groups.append(c)
+                else:  # don't import the node group again if there is already one that exists with that name
+                    data_to.node_groups = [c for c in data_from.node_groups if bpy.data.node_groups.get(c) is None and (c.startswith("_") or c.startswith("LEGO"))]
         for node_group in data_to.node_groups:
             node_group.use_fake_user = True
 
