@@ -1,6 +1,8 @@
 import bpy
 
 
+# bpy.context.mode == 'OBJECT'
+# bpy.context.mode == 'EDIT_MESH' # TODO: panel that add color code to face's material
 class CO_PT_ldraw_panel(bpy.types.Panel):
     """This is a test panel"""
 
@@ -35,11 +37,13 @@ class CO_PT_ldraw_panel(bpy.types.Panel):
     # https://b3d.interplanety.org/en/class-naming-conventions-in-blender-2-8-python-api/
     # https://blender.stackexchange.com/a/161584
     def draw(self, context):
+        scene = context.scene
+
         selected_objects = context.selected_objects
         obj = context.object
         obj = context.active_object
 
-        picked_obj = len(selected_objects) > 0 and obj.type == 'MESH'
+        picked_obj = len(selected_objects) > 0
 
         layout = self.layout
         layout.use_property_split = True
@@ -49,11 +53,11 @@ class CO_PT_ldraw_panel(bpy.types.Panel):
             col = layout.column()
             col.label(text="Header")
 
-            col.prop(context.scene.ldraw_props, 'description')
-            col.prop(context.scene.ldraw_props, 'name')
-            col.prop(context.scene.ldraw_props, 'author')
-            col.prop(context.scene.ldraw_props, 'part_type')
-            # col.prop(context.scene.ldraw_props, 'actual_part_type')
+            col.prop(scene.ldraw_props, 'description')
+            col.prop(scene.ldraw_props, 'name')
+            col.prop(scene.ldraw_props, 'author')
+            col.prop(scene.ldraw_props, 'part_type')
+            col.prop(scene.ldraw_props, 'actual_part_type')
         else:
             layout.separator(factor=0.3)
             col = layout.column()
@@ -65,8 +69,6 @@ class CO_PT_ldraw_panel(bpy.types.Panel):
             col.prop(obj.ldraw_props, 'part_type')
             col.prop(obj.ldraw_props, 'actual_part_type')
 
-            # col.prop(obj, 'color')
-
             layout.separator(factor=0.3)
             col = layout.column()
             col.label(text="Part Attributes")
@@ -76,7 +78,8 @@ class CO_PT_ldraw_panel(bpy.types.Panel):
             layout.separator(factor=0.3)
             col = layout.column()
             col.label(text="Export Options")
-            col.prop(obj.ldraw_props, 'export_polygons')
+            if obj.type == 'MESH':
+                col.prop(obj.ldraw_props, 'export_polygons')
             col.prop(obj.ldraw_props, 'export_precision')
 
 
