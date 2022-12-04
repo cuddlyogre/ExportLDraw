@@ -148,13 +148,15 @@ BFC processing. It is recommended to keep unchecked if processing BFC commands i
 
 **Extras**
 
+**Import edges:** Import LDraw edges as edges.  
+**Freestyle edges:** Render LDraw edges using freestyle. Import edges must be picked for this to work.   
+![No freestyle vs freestyle demo](examples/import/freestyle.gif)
+
 **Import all materials:** Import all LDraw materials, not just the ones used by the model.  
 **Add subsurface:** Attach a subsurface shader node to materials.  
 **Debug text:** Render debug text to the system console.  
-**Import edges:** Import LDraw edges as edges.  
 **Treat shortcut parts as models:** Treat shortcut parts as if they were models by splitting them into their constituent
 parts instead of merging them.  
-**Freestyle edges:** Render LDraw edges using freestyle.  
 **Prefer unofficial parts:** If a part is in both the unofficial and official library, use the unofficial one.  
 **No studs:** Don't import studs. Not particularly useful but is neat to see.  
 **Preserve file structure:** Don't merge the constituent subfiles into the top level part. This is helpful when you want
