@@ -42,18 +42,18 @@ class LDrawNode:
     __collection_id_map = {}
     __key_map = {}
 
-    __auto_smooth_angle = 31
-    __auto_smooth_angle = 44.97
-    __auto_smooth_angle = 51.1
-    __auto_smooth_angle = 89.9  # 1.56905 - 89.9 so 90 degrees and up are affected
-    __auto_smooth_angle = math.radians(__auto_smooth_angle)
+    __auto_smooth_angle_deg = 31
+    __auto_smooth_angle_deg = 44.97
+    __auto_smooth_angle_deg = 51.1
+    __auto_smooth_angle_deg = 89.9  # 1.56905 - 89.9 so 90 degrees and up are affected
+    __auto_smooth_angle = math.radians(__auto_smooth_angle_deg)
 
-    __identity = mathutils.Matrix.Identity(4).freeze()
     # https://www.ldraw.org/article/218.html#coords
     # LDraw uses a right-handed co-ordinate system where -Y is "up".
     # https://en.wikibooks.org/wiki/Blender_3D:_Noob_to_Pro/Understanding_Coordinates
     # Blender uses a right-handed co-ordinate system where +Z is "up"
-    __rotation = mathutils.Matrix.Rotation(math.radians(-90), 4, 'X').freeze()  # rotate -90 degrees on X axis to make -Y up
+    __identity_matrix = mathutils.Matrix.Identity(4).freeze()
+    __rotation_matrix = mathutils.Matrix.Rotation(math.radians(-90), 4, 'X').freeze()  # rotate -90 degrees on X axis to make -Y up
     __import_scale_matrix = mathutils.Matrix.Scale(ImportOptions.import_scale, 4).freeze()
     __gap_scale_matrix = mathutils.Matrix.Scale(ImportOptions.gap_scale, 4).freeze()
 
@@ -75,18 +75,8 @@ class LDrawNode:
         cls.__collection_id_map = {}
         cls.__key_map = {}
 
-        cls.__auto_smooth_angle = 31
-        cls.__auto_smooth_angle = 44.97
-        cls.__auto_smooth_angle = 51.1
-        cls.__auto_smooth_angle = 89.9  # 1.56905 - 89.9 so 90 degrees and up are affected
-        cls.__auto_smooth_angle = math.radians(cls.__auto_smooth_angle)
+        cls.__auto_smooth_angle = math.radians(cls.__auto_smooth_angle_deg)
 
-        cls.__identity = mathutils.Matrix.Identity(4).freeze()
-        # https://www.ldraw.org/article/218.html#coords
-        # LDraw uses a right-handed co-ordinate system where -Y is "up".
-        # https://en.wikibooks.org/wiki/Blender_3D:_Noob_to_Pro/Understanding_Coordinates
-        # Blender uses a right-handed co-ordinate system where +Z is "up"
-        cls.__rotation = mathutils.Matrix.Rotation(math.radians(-90), 4, 'X').freeze()  # rotate -90 degrees on X axis to make -Y up
         cls.__import_scale_matrix = mathutils.Matrix.Scale(ImportOptions.import_scale, 4).freeze()
         cls.__gap_scale_matrix = mathutils.Matrix.Scale(ImportOptions.gap_scale, 4).freeze()
 
@@ -100,7 +90,7 @@ class LDrawNode:
         self.file = None
         self.line = ""
         self.color_code = "16"
-        self.matrix = self.__identity
+        self.matrix = self.__identity_matrix
         self.vertices = []
         self.bfc_certified = None
         self.meta_command = None
@@ -120,9 +110,19 @@ class LDrawNode:
         self.pe_tex_info = None
         self.subfile_line_index = 0
 
-    def load(self, color_code="16", parent_matrix=None, geometry_data=None, parent_collection=None, accum_cull=True, accum_invert=False, texmap=None, pe_tex_info=None):
+    def load(self,
+             color_code="16",
+             parent_matrix=None,
+             geometry_data=None,
+             parent_collection=None,
+             accum_cull=True,
+             accum_invert=False,
+             texmap=None,
+             pe_tex_info=None
+             ):
         # if ImportOptions.interactive_import:
         #     yield self
+        # print(self.file.name)
 
         if self.file.is_edge_logo() and not ImportOptions.display_logo:
             return
@@ -130,7 +130,7 @@ class LDrawNode:
             return
 
         if parent_matrix is None:
-            parent_matrix = self.__identity
+            parent_matrix = self.__identity_matrix
 
         self.texmap = texmap
         self.pe_tex_info = pe_tex_info
@@ -176,10 +176,10 @@ class LDrawNode:
         elif ImportOptions.preserve_hierarchy or geometry_data is None:  # top-level part
             LDrawNode.part_count += 1
             self.top = True
-            matrix = self.__identity.freeze()
+            matrix = self.__identity_matrix
             geometry_data = GeometryData()
 
-        key = self.__build_key(self.file.name, color_code, matrix, accum_cull, accum_invert, texmap, pe_tex_info)
+        key = LDrawNode.__build_key(self.file.name, color_code, matrix, accum_cull, accum_invert, texmap, pe_tex_info)
 
         self.bfc_certified = self.file.is_like_model() or None
         local_cull = True
@@ -190,7 +190,7 @@ class LDrawNode:
         if ImportOptions.preserve_hierarchy or mesh is None:
             for child_node in self.file.child_nodes:
                 if child_node.meta_command in ["1", "2", "3", "4", "5"] and not self.texmap_fallback:
-                    current_color = self.__determine_color(color_code, child_node.color_code)
+                    current_color = LDrawNode.__determine_color(color_code, child_node.color_code)
                     if child_node.meta_command == "1":
                         # if we have a pe_tex_info, but no pe_tex meta commands have been parsed
                         # treat the pe_tex_info as the one to use
@@ -229,9 +229,9 @@ class LDrawNode:
                         )
 
                         self.subfile_line_index += 1
-                        self.__meta_root_group_nxt(child_node)
+                        LDrawNode.__meta_root_group_nxt(self, child_node)
                     elif child_node.meta_command == "2":
-                        self.__meta_edge(
+                        LDrawNode.__meta_edge(
                             child_node,
                             current_color,
                             matrix,
@@ -242,7 +242,8 @@ class LDrawNode:
                         if self.bfc_certified and accum_cull and local_cull:
                             _winding = winding
 
-                        self.__meta_face(
+                        LDrawNode.__meta_face(
+                            self,
                             child_node,
                             current_color,
                             matrix,
@@ -250,7 +251,7 @@ class LDrawNode:
                             _winding,
                         )
                     elif child_node.meta_command == "5":
-                        self.__meta_line(
+                        LDrawNode.__meta_line(
                             child_node,
                             current_color,
                             matrix,
@@ -258,41 +259,42 @@ class LDrawNode:
                         )
                 elif child_node.meta_command == "bfc":
                     if ImportOptions.meta_bfc:
-                        local_cull, winding, invert_next = self.__meta_bfc(child_node, matrix, local_cull, winding, invert_next, accum_invert)
+                        local_cull, winding, invert_next = LDrawNode.__meta_bfc(self, child_node, matrix, local_cull, winding, invert_next, accum_invert)
                 elif child_node.meta_command == "step":
                     LDrawNode.__meta_step()
                 elif child_node.meta_command == "save":
-                    self.__meta_save()
+                    LDrawNode.__meta_save()
                 elif child_node.meta_command == "clear":
-                    self.__meta_clear()
+                    LDrawNode.__meta_clear()
                 elif child_node.meta_command == "print":
-                    self.__meta_print(child_node)
+                    LDrawNode.__meta_print(child_node)
                 elif child_node.meta_command.startswith("group"):
-                    self.__meta_group(child_node)
+                    LDrawNode.__meta_group(child_node)
                 elif child_node.meta_command == "leocad_camera":
-                    self.__meta_leocad_camera(child_node, matrix)
+                    LDrawNode.__meta_leocad_camera(self, child_node, matrix)
                 elif child_node.meta_command == "texmap":
-                    self.__meta_texmap(child_node, matrix)
+                    LDrawNode.__meta_texmap(self, child_node, matrix)
                 elif child_node.meta_command.startswith("pe_tex_"):
-                    self.__meta_pe_tex(child_node, matrix)
+                    LDrawNode.__meta_pe_tex(self, child_node, matrix)
 
                 if self.texmap_next:
-                    self.__set_texmap_end()
+                    LDrawNode.__set_texmap_end(self)
 
                 if child_node.meta_command != "bfc":
                     invert_next = False
-                elif child_node.meta_command == "bfc" and "INVERTNEXT" not in child_node.meta_args:
+                elif child_node.meta_command == "bfc" and child_node.meta_args["command"] != "INVERTNEXT":
                     invert_next = False
 
         if self.top:
             mesh = bpy.data.meshes.get(key)
             if mesh is None:
-                mesh = self.__create_mesh(key, geometry_data)
-            obj = self.__process_top_object(mesh, accum_matrix, color_code, collection)
+                mesh = LDrawNode.__create_mesh(self, key, geometry_data)
+            obj = LDrawNode.__process_top_object(self, mesh, accum_matrix, color_code, collection)
 
             ldraw_props.set_props(obj, self.file, color_code)
 
-            self.__process_top_edges(key, obj, color_code, collection)
+            LDrawNode.__process_top_edges(self, key, obj, color_code, collection)
+
             return obj
 
     # set the working color code to this file's
@@ -306,35 +308,36 @@ class LDrawNode:
 
     # must include matrix, so that parts that are just mirrored versions of other parts
     # such as 32527.dat (mirror of 32528.dat) will render
-    @classmethod
-    def __build_key(cls, filename, color_code, matrix, accum_cull, accum_invert, texmap=None, pe_tex_info=None):
+    @staticmethod
+    def __build_key(filename, color_code, matrix, accum_cull, accum_invert, texmap=None, pe_tex_info=None):
         _key = (filename, color_code, matrix, accum_cull, accum_invert,)
         if texmap is not None:
             _key += ((texmap.method, texmap.texture, texmap.glossmap),)
         if pe_tex_info is not None:
             _key += ((pe_tex_info.image, pe_tex_info.matrix, pe_tex_info.v1, pe_tex_info.v1),)
 
-        key = cls.__key_map.get(_key)
+        key = LDrawNode.__key_map.get(_key)
         if key is None:
-            cls.__key_map[_key] = str(uuid.uuid4())
-            key = cls.__key_map.get(_key)
+            LDrawNode.__key_map[_key] = str(uuid.uuid4())
+            key = LDrawNode.__key_map.get(_key)
 
         return key
 
-    def __create_mesh(self, key, geometry_data):
+    @staticmethod
+    def __create_mesh(ldraw_node, key, geometry_data):
         bm = bmesh.new()
 
         mesh = bpy.data.meshes.new(key)
         mesh.name = key
-        mesh[strings.ldraw_filename_key] = self.file.name
+        mesh[strings.ldraw_filename_key] = ldraw_node.file.name
 
-        self.__process_bmesh(bm, mesh, geometry_data)
-        self.__process_bmesh_edges(key, bm, geometry_data)
+        LDrawNode.__process_bmesh(ldraw_node, bm, mesh, geometry_data)
+        LDrawNode.__process_bmesh_edges(ldraw_node, key, bm, geometry_data)
 
         helpers.finish_bmesh(bm, mesh)
         helpers.finish_mesh(mesh)
 
-        self.__process_mesh(mesh)
+        LDrawNode.__process_mesh(mesh)
 
         return mesh
 
@@ -342,25 +345,27 @@ class LDrawNode:
     # https://blender.stackexchange.com/questions/50160/scripting-low-level-join-meshes-elements-hopefully-with-bmesh
     # https://blender.stackexchange.com/questions/188039/how-to-join-only-two-objects-to-create-a-new-object-using-python
     # https://blender.stackexchange.com/questions/23905/select-faces-depending-on-material
-    def __process_bmesh(self, bm, mesh, geometry_data):
-        self.__process_bmesh_faces(geometry_data, bm, mesh)
+    @staticmethod
+    def __process_bmesh(ldraw_node, bm, mesh, geometry_data):
+        LDrawNode.__process_bmesh_faces(ldraw_node, geometry_data, bm, mesh)
         helpers.ensure_bmesh(bm)
-        self.__clean_bmesh(bm)
+        LDrawNode.__clean_bmesh(bm)
 
-    def __process_bmesh_faces(self, geometry_data, bm, mesh):
+    @staticmethod
+    def __process_bmesh_faces(ldraw_node, geometry_data, bm, mesh):
         for face_data in geometry_data.face_data:
             verts = [bm.verts.new(vertex) for vertex in face_data.vertices]
             face = bm.faces.new(verts)
 
-            part_slopes = special_bricks.get_part_slopes(self.file.name)
-            parts_cloth = special_bricks.get_parts_cloth(self.file.name)
+            part_slopes = special_bricks.get_part_slopes(ldraw_node.file.name)
+            parts_cloth = special_bricks.get_parts_cloth(ldraw_node.file.name)
             material = BlenderMaterials.get_material(
                 color_code=face_data.color_code,
                 part_slopes=part_slopes,
                 parts_cloth=parts_cloth,
                 texmap=face_data.texmap,
                 pe_texmap=face_data.pe_texmap,
-                use_backface_culling=self.bfc_certified
+                use_backface_culling=ldraw_node.bfc_certified
             )
 
             material_index = mesh.materials.find(material.name)
@@ -397,8 +402,9 @@ class LDrawNode:
         kd.balance()
         return kd
 
-    def __process_bmesh_edges(self, key, bm, geometry_data):
-        kd = self.__build_kd(bm)
+    @staticmethod
+    def __process_bmesh_edges(ldraw_node, key, bm, geometry_data):
+        kd = LDrawNode.__build_kd(bm)
 
         # increase the distance to look for edges to merge
         # merge line type 2 edges at a greater distance than mesh edges
@@ -407,9 +413,9 @@ class LDrawNode:
         distance = ImportOptions.merge_distance
         distance = ImportOptions.merge_distance * 2.1
 
-        e_edges, e_faces, e_verts, edge_indices = self.__build_edge_data(geometry_data, kd, distance)
-        self.__create_edge_mesh(key, e_edges, e_faces, e_verts)
-        self.__remove_bmesh_doubles(bm, edge_indices, distance)
+        e_edges, e_faces, e_verts, edge_indices = LDrawNode.__build_edge_data(geometry_data, kd, distance)
+        LDrawNode.__create_edge_mesh(ldraw_node, key, e_edges, e_faces, e_verts)
+        LDrawNode.__remove_bmesh_doubles(bm, edge_indices, distance)
 
     @staticmethod
     def __build_edge_data(geometry_data, kd, distance):
@@ -457,8 +463,8 @@ class LDrawNode:
             # if it was detected as an edge, then merge those vertices
             bmesh.ops.remove_doubles(bm, verts=list(merge), dist=distance)
 
-    @classmethod
-    def __process_mesh(cls, mesh):
+    @staticmethod
+    def __process_mesh(mesh):
         if ImportOptions.use_freestyle_edges:
             for edge in mesh.edges:
                 if edge.use_edge_sharp:
@@ -466,14 +472,15 @@ class LDrawNode:
 
         if ImportOptions.smooth_type == "auto_smooth":
             mesh.use_auto_smooth = ImportOptions.shade_smooth
-            mesh.auto_smooth_angle = cls.__auto_smooth_angle
+            mesh.auto_smooth_angle = LDrawNode.__auto_smooth_angle
 
         if ImportOptions.make_gaps and ImportOptions.gap_target == "mesh":
-            mesh.transform(cls.__gap_scale_matrix)
+            mesh.transform(LDrawNode.__gap_scale_matrix)
 
-    def __process_top_object(self, mesh, accum_matrix, color_code, collection):
+    @staticmethod
+    def __process_top_object(ldraw_node, mesh, accum_matrix, color_code, collection):
         obj = bpy.data.objects.new(mesh.name, mesh)
-        obj[strings.ldraw_filename_key] = self.file.name
+        obj[strings.ldraw_filename_key] = ldraw_node.file.name
         obj[strings.ldraw_color_code_key] = color_code
 
         # bpy.context.space_data.shading.color_type = 'MATERIAL'
@@ -482,19 +489,19 @@ class LDrawNode:
         color = LDrawColor.get_color(color_code)
         obj.color = color.color_a
 
-        self.__process_top_object_matrix(obj, accum_matrix)
+        LDrawNode.__process_top_object_matrix(obj, accum_matrix)
         if not ImportOptions.preserve_hierarchy:
-            self.__process_top_object_gap(obj)
-        self.__process_top_object_edges(obj)
+            LDrawNode.__process_top_object_gap(obj)
+        LDrawNode.__process_top_object_edges(obj)
 
         LDrawNode.__do_meta_step(obj)
 
-        self.__link_obj_to_collection(collection, obj)
+        LDrawNode.__link_obj_to_collection(collection, obj)
         return obj
 
     @staticmethod
     def __process_top_object_matrix(obj, accum_matrix):
-        transform_matrix = LDrawNode.__rotation @ LDrawNode.__import_scale_matrix
+        transform_matrix = LDrawNode.__rotation_matrix @ LDrawNode.__import_scale_matrix
         if ImportOptions.parent_to_empty:
             if LDrawNode.top_empty is None:
                 LDrawNode.top_empty = bpy.data.objects.new(LDrawNode.top_collection.name, None)
@@ -507,51 +514,53 @@ class LDrawNode:
             matrix_world = transform_matrix @ accum_matrix
             obj.matrix_world = matrix_world
 
-    @classmethod
-    def __process_top_object_gap(cls, obj):
+    @staticmethod
+    def __process_top_object_gap(obj):
         if ImportOptions.make_gaps and ImportOptions.gap_target == "object":
             if ImportOptions.gap_scale_strategy == "object":
-                matrix_world = obj.matrix_world @ cls.__gap_scale_matrix
+                matrix_world = obj.matrix_world @ LDrawNode.__gap_scale_matrix
                 obj.matrix_world = matrix_world
             elif ImportOptions.gap_scale_strategy == "constraint":
-                if cls.__gap_scale_empty is None:
-                    cls.__gap_scale_empty = bpy.data.objects.new("gap_scale", None)
-                    cls.__gap_scale_empty.use_fake_user = True
-                    matrix_world = cls.__gap_scale_empty.matrix_world @ cls.__gap_scale_matrix
-                    cls.__gap_scale_empty.matrix_world = matrix_world
-                    group.link_obj(cls.top_collection, cls.__gap_scale_empty)
+                if LDrawNode.__gap_scale_empty is None:
+                    LDrawNode.__gap_scale_empty = bpy.data.objects.new("gap_scale", None)
+                    LDrawNode.__gap_scale_empty.use_fake_user = True
+                    matrix_world = LDrawNode.__gap_scale_empty.matrix_world @ LDrawNode.__gap_scale_matrix
+                    LDrawNode.__gap_scale_empty.matrix_world = matrix_world
+                    group.link_obj(LDrawNode.top_collection, LDrawNode.__gap_scale_empty)
                 copy_scale_constraint = obj.constraints.new("COPY_SCALE")
-                copy_scale_constraint.target = cls.__gap_scale_empty
-                copy_scale_constraint.target.parent = cls.top_empty
+                copy_scale_constraint.target = LDrawNode.__gap_scale_empty
+                copy_scale_constraint.target.parent = LDrawNode.top_empty
 
-    @classmethod
-    def __process_top_object_edges(cls, obj):
+    @staticmethod
+    def __process_top_object_edges(obj):
         if ImportOptions.smooth_type == "edge_split":
             edge_modifier = obj.modifiers.new("Edge Split", type='EDGE_SPLIT')
             edge_modifier.use_edge_sharp = True
             # need this or else items like the back blue window stripes in 10252-1 - Volkswagen Beetle.mpd aren't shaded properly
             edge_modifier.use_edge_angle = True
-            edge_modifier.split_angle = cls.__auto_smooth_angle
+            edge_modifier.split_angle = LDrawNode.__auto_smooth_angle
 
-    def __create_edge_mesh(self, key, e_edges, e_faces, e_verts):
+    @staticmethod
+    def __create_edge_mesh(ldraw_node, key, e_edges, e_faces, e_verts):
         if ImportOptions.import_edges:
             edge_key = f"e_{key}"
             edge_mesh = bpy.data.meshes.new(edge_key)
             edge_mesh.name = edge_key
-            edge_mesh[strings.ldraw_filename_key] = self.file.name
+            edge_mesh[strings.ldraw_filename_key] = ldraw_node.file.name
 
             edge_mesh.from_pydata(e_verts, e_edges, e_faces)
             helpers.finish_mesh(edge_mesh)
 
             if ImportOptions.make_gaps and ImportOptions.gap_target == "mesh":
-                edge_mesh.transform(self.__gap_scale_matrix)
+                edge_mesh.transform(LDrawNode.__gap_scale_matrix)
 
-    def __process_top_edges(self, key, obj, color_code, collection):
+    @staticmethod
+    def __process_top_edges(ldraw_node, key, obj, color_code, collection):
         if ImportOptions.import_edges:
             edge_key = f"e_{key}"
             edge_mesh = bpy.data.meshes[edge_key]
             edge_obj = bpy.data.objects.new(edge_mesh.name, edge_mesh)
-            edge_obj[strings.ldraw_filename_key] = f"{self.file.name}_edges"
+            edge_obj[strings.ldraw_filename_key] = f"{ldraw_node.file.name}_edges"
             edge_obj[strings.ldraw_color_code_key] = color_code
 
             color = LDrawColor.get_color(color_code)
@@ -559,42 +568,40 @@ class LDrawNode:
 
             LDrawNode.__do_meta_step(edge_obj)
 
-            self.__link_obj_to_collection(collection, edge_obj)
+            LDrawNode.__link_obj_to_collection(collection, edge_obj)
 
             edge_obj.parent = obj
             edge_obj.matrix_world = obj.matrix_world
 
-    @classmethod
-    def __link_obj_to_collection(cls, collection, obj):
-        group.link_obj(collection, obj)
+    @staticmethod
+    def __link_obj_to_collection(_collection, obj):
+        group.link_obj(_collection, obj)
 
-        if cls.__current_step_group is not None:
-            group.link_obj(cls.__current_step_group, obj)
+        if LDrawNode.__current_step_group is not None:
+            group.link_obj(LDrawNode.__current_step_group, obj)
 
         if ImportOptions.meta_group:
-            if cls.__next_collection is not None:
-                group.link_obj(cls.__next_collection, obj)
+            if LDrawNode.__next_collection is not None:
+                group.link_obj(LDrawNode.__next_collection, obj)
             else:
-                collection_name = 'Ungrouped'
-                host_collection = cls.__groups_collection
-                c = group.get_collection(collection_name, host_collection)
-                group.link_obj(c, obj)
+                group.link_obj(LDrawNode.__ungrouped_collection, obj)
 
-    def __meta_bfc(self, child_node, matrix, local_cull, winding, invert_next, accum_invert):
+    @staticmethod
+    def __meta_bfc(ldraw_node, child_node, matrix, local_cull, winding, invert_next, accum_invert):
         clean_line = child_node.line
         _params = clean_line.split()
 
         # https://www.ldraw.org/article/415.html#processing
-        if self.bfc_certified is None:
-            self.bfc_certified = True
+        if ldraw_node.bfc_certified is None:
+            ldraw_node.bfc_certified = True
             if _params[2] == "NOCERTIFY":
-                self.bfc_certified = False
+                ldraw_node.bfc_certified = False
 
         if "CERTIFY" in _params:
-            self.bfc_certified = True
+            ldraw_node.bfc_certified = True
 
         if "NOCERTIFY" in _params:
-            self.bfc_certified = False
+            ldraw_node.bfc_certified = False
 
         if "CLIP" in _params:
             local_cull = True
@@ -652,7 +659,7 @@ class LDrawNode:
         Therefore, the determinant of a singular matrix is equal to 0.
         """
         if matrix.determinant() == 0:
-            self.bfc_certified = False
+            ldraw_node.bfc_certified = False
 
         return local_cull, winding, invert_next
 
@@ -708,132 +715,139 @@ class LDrawNode:
                     obj.keyframe_insert(data_path="hide_render", frame=LDrawNode.current_frame)
                     obj.keyframe_insert(data_path="hide_viewport", frame=LDrawNode.current_frame)
 
-    def __meta_print(self, child_node):
+    @staticmethod
+    def __meta_print(child_node):
         if ImportOptions.meta_print_write:
-            print(child_node.meta_args)
+            print(child_node.meta_args["message"])
 
-    def __meta_group(self, child_node):
+    @staticmethod
+    def __meta_group(child_node):
         if ImportOptions.meta_group:
             if child_node.meta_command == "group_def":
-                self.__meta_group_def(child_node)
+                LDrawNode.__meta_group_def(child_node)
             elif child_node.meta_command == "group_nxt":
-                self.__meta_group_nxt(child_node)
+                LDrawNode.__meta_group_nxt(child_node)
             elif child_node.meta_command == "group_begin":
-                self.__meta_group_begin(child_node)
+                LDrawNode.__meta_group_begin(child_node)
             elif child_node.meta_command == "group_end":
-                self.__meta_group_end()
+                LDrawNode.__meta_group_end()
 
-    def __meta_group_def(self, child_node):
+    @staticmethod
+    def __meta_group_def(child_node):
         LDrawNode.__collection_id_map[child_node.meta_args["id"]] = child_node.meta_args["name"]
         collection_name = LDrawNode.__collection_id_map[child_node.meta_args["id"]]
         host_collection = LDrawNode.__groups_collection
         group.get_collection(collection_name, host_collection)
 
-    def __meta_group_nxt(self, child_node):
+    @staticmethod
+    def __meta_group_nxt(child_node):
         if child_node.meta_args["id"] in LDrawNode.__collection_id_map:
             collection_name = LDrawNode.__collection_id_map[child_node.meta_args["id"]]
-            if collection_name in bpy.data.collections:
-                LDrawNode.__next_collection = bpy.data.collections[collection_name]
+            collection = bpy.data.collections.get(collection_name)
+            if collection is not None:
+                LDrawNode.__next_collection = collection
         LDrawNode.__end_next_collection = True
 
-    def __meta_root_group_nxt(self, child_node):
-        if ImportOptions.meta_group:
-            if self.is_root:
-                if child_node.meta_command not in ["group_nxt"]:
-                    if LDrawNode.__end_next_collection:
-                        LDrawNode.__next_collection = None
-
-    def __meta_group_begin(self, child_node):
+    @staticmethod
+    def __meta_group_begin(child_node):
         if LDrawNode.__next_collection is not None:
             LDrawNode.__next_collections.append(LDrawNode.__next_collection)
 
         collection_name = child_node.meta_args["name"]
         host_collection = LDrawNode.__groups_collection
-        c = group.get_collection(collection_name, host_collection)
-        LDrawNode.__next_collection = c
+        collection = group.get_collection(collection_name, host_collection)
+        LDrawNode.__next_collection = collection
 
         if len(LDrawNode.__next_collections) > 0:
-            collection = LDrawNode.__next_collection
             host_collection = LDrawNode.__next_collections[-1]
             group.link_child(collection, host_collection)
 
-    @classmethod
-    def __meta_group_end(cls):
+    @staticmethod
+    def __meta_group_end():
         try:
-            cls.__next_collection = cls.__next_collections.pop()
+            LDrawNode.__next_collection = LDrawNode.__next_collections.pop()
         except IndexError as e:
-            cls.__next_collection = None
+            LDrawNode.__next_collection = None
 
-    def __meta_leocad_camera(self, child_node, matrix):
+    @staticmethod
+    def __meta_root_group_nxt(ldraw_node, child_node):
+        if ldraw_node.is_root and ImportOptions.meta_group:
+            if child_node.meta_command not in ["group_nxt"]:
+                if LDrawNode.__end_next_collection:
+                    LDrawNode.__next_collection = None
+
+    @staticmethod
+    def __meta_leocad_camera(ldraw_node, child_node, matrix):
         clean_line = child_node.line
         _params = helpers.get_params(clean_line, "0 !LEOCAD CAMERA ", lowercase=True)
 
-        if self.camera is None:
-            self.camera = LDrawCamera()
+        if ldraw_node.camera is None:
+            ldraw_node.camera = LDrawCamera()
 
         # https://www.leocad.org/docs/meta.html
         # "Camera commands can be grouped in the same line"
         # _params = _params[1:] at the end bumps promotes _params[2] to _params[1]
         while len(_params) > 0:
             if _params[0] == "fov":
-                self.camera.fov = float(_params[1])
+                ldraw_node.camera.fov = float(_params[1])
                 _params = _params[2:]
             elif _params[0] == "znear":
-                self.camera.z_near = float(_params[1])
+                ldraw_node.camera.z_near = float(_params[1])
                 _params = _params[2:]
             elif _params[0] == "zfar":
-                self.camera.z_far = float(_params[1])
+                ldraw_node.camera.z_far = float(_params[1])
                 _params = _params[2:]
             elif _params[0] == "position":
                 (x, y, z) = map(float, _params[1:4])
                 vector = matrix @ mathutils.Vector((x, y, z))
-                self.camera.position = vector
+                ldraw_node.camera.position = vector
                 _params = _params[4:]
             elif _params[0] == "target_position":
                 (x, y, z) = map(float, _params[1:4])
                 vector = matrix @ mathutils.Vector((x, y, z))
-                self.camera.target_position = vector
+                ldraw_node.camera.target_position = vector
                 _params = _params[4:]
             elif _params[0] == "up_vector":
                 (x, y, z) = map(float, _params[1:4])
                 vector = matrix @ mathutils.Vector((x, y, z))
-                self.camera.up_vector = vector
+                ldraw_node.camera.up_vector = vector
                 _params = _params[4:]
             elif _params[0] == "orthographic":
-                self.camera.orthographic = True
+                ldraw_node.camera.orthographic = True
                 _params = _params[1:]
             elif _params[0] == "hidden":
-                self.camera.hidden = True
+                ldraw_node.camera.hidden = True
                 _params = _params[1:]
             elif _params[0] == "name":
                 # "0 !LEOCAD CAMERA NAME Camera  2".split("NAME ")[1] => "Camera  2"
                 # "NAME Camera  2".split("NAME ")[1] => "Camera  2"
                 name_args = clean_line.split("NAME ")
-                self.camera.name = name_args[1]
+                ldraw_node.camera.name = name_args[1]
 
                 # By definition this is the last of the parameters
                 _params = []
 
-                LDrawNode.cameras.append(self.camera)
-                self.camera = None
+                LDrawNode.cameras.append(ldraw_node.camera)
+                ldraw_node.camera = None
             else:
                 _params = _params[1:]
 
     # https://www.ldraw.org/documentation/ldraw-org-file-format-standards/language-extension-for-texture-mapping.html
-    def __meta_texmap(self, child_node, matrix):
+    @staticmethod
+    def __meta_texmap(ldraw_node, child_node, matrix):
         clean_line = child_node.line
 
-        if self.texmap_start:
+        if ldraw_node.texmap_start:
             if clean_line == "0 !TEXMAP FALLBACK":
-                self.texmap_fallback = True
+                ldraw_node.texmap_fallback = True
             elif clean_line == "0 !TEXMAP END":
-                self.__set_texmap_end()
+                LDrawNode.__set_texmap_end(ldraw_node)
         elif clean_line.startswith("0 !TEXMAP START ") or clean_line.startswith("0 !TEXMAP NEXT "):
             if clean_line.startswith("0 !TEXMAP START "):
-                self.texmap_start = True
+                ldraw_node.texmap_start = True
             elif clean_line.startswith("0 !TEXMAP NEXT "):
-                self.texmap_next = True
-            self.texmap_fallback = False
+                ldraw_node.texmap_next = True
+            ldraw_node.texmap_fallback = False
 
             method = clean_line.split()[3]
 
@@ -896,34 +910,37 @@ class LDrawNode:
                 new_texmap.texture = texture
                 new_texmap.glossmap = glossmap
 
-            if self.texmap is not None:
-                self.texmaps.append(self.texmap)
-            self.texmap = new_texmap
+            if ldraw_node.texmap is not None:
+                ldraw_node.texmaps.append(ldraw_node.texmap)
+            ldraw_node.texmap = new_texmap
 
-    def __set_texmap_end(self):
+    @staticmethod
+    def __set_texmap_end(ldraw_node):
         try:
-            self.texmap = self.texmaps.pop()
+            ldraw_node.texmap = ldraw_node.texmaps.pop()
         except IndexError as e:
-            self.texmap = None
+            ldraw_node.texmap = None
 
-        self.texmap_start = False
-        self.texmap_next = False
-        self.texmap_fallback = False
+        ldraw_node.texmap_start = False
+        ldraw_node.texmap_next = False
+        ldraw_node.texmap_fallback = False
 
-    def __meta_pe_tex(self, child_node, matrix):
+    @staticmethod
+    def __meta_pe_tex(ldraw_node, child_node, matrix):
         if child_node.meta_command == "pe_tex_info":
-            self.__meta_pe_tex_info(child_node, matrix)
+            LDrawNode.__meta_pe_tex_info(ldraw_node, child_node, matrix)
         elif child_node.meta_command == "pe_tex_next_shear":
             """no idea"""
         else:
-            self.current_pe_tex_path = None
+            ldraw_node.current_pe_tex_path = None
             if child_node.meta_command == "pe_tex_path":
-                self.__meta_pe_tex_path(child_node)
+                LDrawNode.__meta_pe_tex_path(ldraw_node, child_node)
 
     # -1 is this file
     # >= 0 is the nth geometry line where n = PE_TEX_PATH
     # a second arg is the geometry line for that subfile
-    def __meta_pe_tex_path(self, child_node):
+    @staticmethod
+    def __meta_pe_tex_path(ldraw_node, child_node):
         clean_line = child_node.line
         _params = clean_line.split()
 
@@ -934,14 +951,15 @@ class LDrawNode:
         except IndexError as e:
             pe_tex_path_1 = None
 
-        self.current_pe_tex_path = pe_tex_path
+        ldraw_node.current_pe_tex_path = pe_tex_path
 
     # PE_TEX_INFO bse64_str uses the file's uvs
     # PE_TEX_INFO x,y,z,a,b,c,d,e,f,g,h,i,bl/tl,tr/br is matrix and plane coordinates for uv calculations
     # if there are multiple PE_TEX_INFO immediately following PE_TEX_PATH, use the last one
     # if no matrix, identity @ rotation?
-    def __meta_pe_tex_info(self, child_node, matrix):
-        if self.current_pe_tex_path is None:
+    @staticmethod
+    def __meta_pe_tex_info(ldraw_node, child_node, matrix):
+        if ldraw_node.current_pe_tex_path is None:
             return
 
         clean_line = child_node.line
@@ -971,16 +989,17 @@ class LDrawNode:
             return
 
         from . import base64_handler
-        image = base64_handler.named_png_from_base64_str(f"{self.file.name}_{self.current_pe_tex_path}.png", base64_str)
+        image = base64_handler.named_png_from_base64_str(f"{ldraw_node.file.name}_{ldraw_node.current_pe_tex_path}.png", base64_str)
 
         pe_tex_info.image = image.name
 
-        self.pe_tex_infos[self.current_pe_tex_path] = pe_tex_info
+        ldraw_node.pe_tex_infos[ldraw_node.current_pe_tex_path] = pe_tex_info
 
-        if self.current_pe_tex_path == -1:
-            self.pe_tex_info = self.pe_tex_infos[self.current_pe_tex_path]
+        if ldraw_node.current_pe_tex_path == -1:
+            ldraw_node.pe_tex_info = ldraw_node.pe_tex_infos[ldraw_node.current_pe_tex_path]
 
-    def __meta_edge(self, child_node, color_code, matrix, geometry_data):
+    @staticmethod
+    def __meta_edge(child_node, color_code, matrix, geometry_data):
         vertices = [matrix @ v for v in child_node.vertices]
 
         geometry_data.add_edge_data(
@@ -988,20 +1007,22 @@ class LDrawNode:
             vertices=vertices,
         )
 
-    def __meta_face(self, child_node, color_code, matrix, geometry_data, winding):
-        vertices = self.__handle_vertex_winding(child_node, matrix, winding)
-        pe_texmap = self.__build_pe_texmap(child_node)
+    @staticmethod
+    def __meta_face(ldraw_node, child_node, color_code, matrix, geometry_data, winding):
+        vertices = LDrawNode.__handle_vertex_winding(child_node, matrix, winding)
+        pe_texmap = LDrawNode.__build_pe_texmap(ldraw_node, child_node)
 
         geometry_data.add_face_data(
             color_code=color_code,
             vertices=vertices,
-            texmap=self.texmap,
+            texmap=ldraw_node.texmap,
             pe_texmap=pe_texmap,
         )
 
     # https://github.com/rredford/LdrawToObj/blob/802924fb8d42145c4f07c10824e3a7f2292a6717/LdrawData/LdrawToData.cs#L219
     # https://github.com/rredford/LdrawToObj/blob/802924fb8d42145c4f07c10824e3a7f2292a6717/LdrawData/LdrawToData.cs#L260
-    def __handle_vertex_winding(self, child_node, matrix, winding):
+    @staticmethod
+    def __handle_vertex_winding(child_node, matrix, winding):
         vert_count = len(child_node.vertices)
 
         vertices = child_node.vertices
@@ -1016,19 +1037,20 @@ class LDrawNode:
 
         return vertices
 
-    def __build_pe_texmap(self, child_node):
+    @staticmethod
+    def __build_pe_texmap(ldraw_node, child_node):
         clean_line = child_node.line
         _params = clean_line.split()
 
         pe_texmap = None
         vert_count = len(child_node.vertices)
 
-        if self.pe_tex_info is not None:
+        if ldraw_node.pe_tex_info is not None:
             # if we have uv data and a pe_tex_info, otherwise pass
             # # custom minifig head > 3626tex.dat (has no pe_tex) > 3626texpole.dat (has no uv data)
             if len(_params) > 14:
                 pe_texmap = PETexmap()
-                pe_texmap.texture = self.pe_tex_info.image
+                pe_texmap.texture = ldraw_node.pe_tex_info.image
                 if vert_count == 3:
                     for i in range(vert_count):
                         x = round(float(_params[i * 2 + 11]), 3)
@@ -1043,7 +1065,8 @@ class LDrawNode:
                         pe_texmap.uvs.append(uv)
         return pe_texmap
 
-    def __meta_line(self, child_node, color_code, matrix, geometry_data):
+    @staticmethod
+    def __meta_line(child_node, color_code, matrix, geometry_data):
         vertices = [matrix @ v for v in child_node.vertices]
 
         geometry_data.add_line_data(
