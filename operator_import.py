@@ -305,7 +305,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         ImportSettings.save_settings(self)
         ImportSettings.apply_settings()
 
-        # if self.interactive_import:
+        # if ImportOptions.interactive_import:
         #     bpy.ops.wm.modal_timer_operator(filepath=self.filepath)
         # else:
         # https://docs.python.org/3/library/profile.html
