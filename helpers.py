@@ -98,3 +98,13 @@ def finish_bmesh(bm, mesh):
 def finish_mesh(mesh):
     mesh.validate()
     mesh.update(calc_edges=True)
+
+
+def hide_obj(obj):
+    obj.hide_viewport = True
+    obj.hide_render = True
+
+
+def show_obj(obj):
+    obj.hide_viewport = False
+    obj.hide_render = False

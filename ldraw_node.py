@@ -26,12 +26,14 @@ class LDrawNode:
 
     part_count = 0
     top_collection = None
+    parts_collection = None
     current_frame = 0
     top_empty = None
     cameras = []
 
     __groups_collection = None
     __gap_scale_empty = None
+    __ungrouped_collection = None
     __next_collections = []
     __next_collection = None
     __end_next_collection = False
@@ -90,8 +92,7 @@ class LDrawNode:
 
     @classmethod
     def import_setup(cls):
-        cls.__set_step()
-        cls.__create_groups_collection()
+        cls.__meta_step()
 
     def __init__(self):
         self.is_root = False
@@ -140,8 +141,28 @@ class LDrawNode:
         collection = parent_collection
 
         if LDrawNode.top_collection is None:
-            collection = group.get_filename_collection(self.file.name, bpy.context.scene.collection)
+            collection_name = self.file.name
+            host_collection = bpy.context.scene.collection
+            collection = group.get_filename_collection(collection_name, host_collection)
             LDrawNode.top_collection = collection
+
+            collection_name = 'Parts'
+            host_collection = LDrawNode.top_collection
+            collection = group.get_collection(collection_name, host_collection)
+            LDrawNode.parts_collection = collection
+
+        if ImportOptions.meta_group:
+            collection_name = 'Groups'
+            host_collection = LDrawNode.top_collection
+            _collection = group.get_collection(collection_name, host_collection)
+            LDrawNode.__groups_collection = _collection
+            helpers.hide_obj(LDrawNode.__groups_collection)
+
+            collection_name = 'Ungrouped'
+            host_collection = LDrawNode.top_collection
+            _collection = group.get_collection(collection_name, host_collection)
+            LDrawNode.__ungrouped_collection = _collection
+            helpers.hide_obj(LDrawNode.__ungrouped_collection)
 
         # if it's a model, don't start collecting geometry
         # else if there's no geometry, start collecting geometry
@@ -239,7 +260,7 @@ class LDrawNode:
                     if ImportOptions.meta_bfc:
                         local_cull, winding, invert_next = self.__meta_bfc(child_node, matrix, local_cull, winding, invert_next, accum_invert)
                 elif child_node.meta_command == "step":
-                    self.__set_step()
+                    LDrawNode.__meta_step()
                 elif child_node.meta_command == "save":
                     self.__meta_save()
                 elif child_node.meta_command == "clear":
@@ -316,14 +337,6 @@ class LDrawNode:
         self.__process_mesh(mesh)
 
         return mesh
-
-    @classmethod
-    def __create_groups_collection(cls):
-        if ImportOptions.meta_group:
-            collection_name = 'Groups'
-            host_collection = bpy.context.scene.collection
-            c = group.get_collection(collection_name, host_collection)
-            cls.__groups_collection = c
 
     # https://b3d.interplanety.org/en/how-to-get-global-vertex-coordinates/
     # https://blender.stackexchange.com/questions/50160/scripting-low-level-join-meshes-elements-hopefully-with-bmesh
@@ -474,7 +487,7 @@ class LDrawNode:
             self.__process_top_object_gap(obj)
         self.__process_top_object_edges(obj)
 
-        self.__meta_step(obj)
+        LDrawNode.__do_meta_step(obj)
 
         self.__link_obj_to_collection(collection, obj)
         return obj
@@ -544,7 +557,7 @@ class LDrawNode:
             color = LDrawColor.get_color(color_code)
             edge_obj.color = color.edge_color_d
 
-            self.__meta_step(edge_obj)
+            LDrawNode.__do_meta_step(edge_obj)
 
             self.__link_obj_to_collection(collection, edge_obj)
 
@@ -643,45 +656,40 @@ class LDrawNode:
 
         return local_cull, winding, invert_next
 
-    @classmethod
-    def __set_step(cls):
+    @staticmethod
+    def __meta_step():
         if not ImportOptions.meta_step:
             return
 
         first_frame = (ImportOptions.starting_step_frame + ImportOptions.frames_per_step)
-        current_step_frame = (ImportOptions.frames_per_step * cls.__current_step)
-        cls.current_frame = first_frame + current_step_frame
-        cls.__current_step += 1
+        current_step_frame = (ImportOptions.frames_per_step * LDrawNode.__current_step)
+        LDrawNode.current_frame = first_frame + current_step_frame
+        LDrawNode.__current_step += 1
 
         if ImportOptions.set_timeline_markers:
-            bpy.context.scene.timeline_markers.new("STEP", frame=cls.current_frame)
+            bpy.context.scene.timeline_markers.new("STEP", frame=LDrawNode.current_frame)
 
         if ImportOptions.meta_step_groups:
             collection_name = f"Steps"
             host_collection = bpy.context.scene.collection
-            parts_collection = group.get_collection(collection_name, host_collection)
+            steps_collection = group.get_collection(collection_name, host_collection)
+            helpers.hide_obj(steps_collection)
 
-            collection_name = f"Step {str(cls.__current_step)}"
-            host_collection = parts_collection
-            c = group.get_collection(collection_name, host_collection)
-            cls.__current_step_group = c
+            collection_name = f"Step {str(LDrawNode.__current_step)}"
+            host_collection = steps_collection
+            step_collection = group.get_collection(collection_name, host_collection)
+            LDrawNode.__current_step_group = step_collection
 
-    # https://docs.blender.org/api/current/bpy.types.bpy_struct.html#bpy.types.bpy_struct.keyframe_insert
-    # https://docs.blender.org/api/current/bpy.types.Scene.html?highlight=frame_set#bpy.types.Scene.frame_set
-    # https://docs.blender.org/api/current/bpy.types.Object.html?highlight=rotation_quaternion#bpy.types.Object.rotation_quaternion
-    @classmethod
-    def __meta_step(cls, obj):
+    @staticmethod
+    def __do_meta_step(obj):
         if ImportOptions.meta_step:
-            bpy.context.scene.frame_set(ImportOptions.starting_step_frame)
-            obj.hide_viewport = True
-            obj.hide_render = True
-            obj.keyframe_insert(data_path="hide_render")
-            obj.keyframe_insert(data_path="hide_viewport")
-            bpy.context.scene.frame_set(cls.current_frame)
-            obj.hide_viewport = False
-            obj.hide_render = False
-            obj.keyframe_insert(data_path="hide_render")
-            obj.keyframe_insert(data_path="hide_viewport")
+            helpers.hide_obj(obj)
+            obj.keyframe_insert(data_path="hide_render", frame=ImportOptions.starting_step_frame)
+            obj.keyframe_insert(data_path="hide_viewport", frame=ImportOptions.starting_step_frame)
+
+            helpers.show_obj(obj)
+            obj.keyframe_insert(data_path="hide_render", frame=LDrawNode.current_frame)
+            obj.keyframe_insert(data_path="hide_viewport", frame=LDrawNode.current_frame)
 
     @staticmethod
     def __meta_save():
@@ -695,12 +703,10 @@ class LDrawNode:
             if ImportOptions.set_timeline_markers:
                 bpy.context.scene.timeline_markers.new("CLEAR", frame=LDrawNode.current_frame)
             if LDrawNode.top_collection is not None:
-                for ob in LDrawNode.top_collection.all_objects:
-                    bpy.context.scene.frame_set(LDrawNode.current_frame)
-                    ob.hide_viewport = True
-                    ob.hide_render = True
-                    ob.keyframe_insert(data_path="hide_render")
-                    ob.keyframe_insert(data_path="hide_viewport")
+                for obj in LDrawNode.top_collection.all_objects:
+                    helpers.hide_obj(obj)
+                    obj.keyframe_insert(data_path="hide_render", frame=LDrawNode.current_frame)
+                    obj.keyframe_insert(data_path="hide_viewport", frame=LDrawNode.current_frame)
 
     def __meta_print(self, child_node):
         if ImportOptions.meta_print_write:

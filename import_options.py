@@ -55,7 +55,7 @@ class ImportOptions:
     defaults['no_studs'] = False
     no_studs = defaults['no_studs']
 
-    defaults['set_end_frame'] = False
+    defaults['set_end_frame'] = True
     set_end_frame = defaults['set_end_frame']
 
     defaults['starting_step_frame'] = 1
