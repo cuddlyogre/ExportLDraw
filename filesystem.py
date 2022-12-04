@@ -4,8 +4,6 @@ import glob
 from sys import platform
 from pathlib import Path
 
-from .definitions import APP_ROOT
-
 
 class FileSystem:
     defaults = {}
@@ -35,6 +33,7 @@ class FileSystem:
         # return r"C:\Program Files\Studio 2.0\ldraw"
         ldraw_folder_name = 'ldraw'
 
+        # home = os.path.expanduser("~")
         home = str(Path.home())
         ldraw_path = os.path.join(home, ldraw_folder_name)
         if os.path.isdir(ldraw_path):
