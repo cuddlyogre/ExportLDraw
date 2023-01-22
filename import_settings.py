@@ -9,7 +9,9 @@ class ImportSettings:
 
     filesystem_defaults = {
         'ldraw_path': FileSystem.locate_ldraw(),
+        'studio_ldraw_path': FileSystem.locate_studio_ldraw(),
         'prefer_unofficial': FileSystem.defaults['prefer_unofficial'],
+        'prefer_studio': FileSystem.defaults['prefer_studio'],
         'resolution': FileSystem.defaults['resolution'],
     }
 

@@ -31,8 +31,37 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
 
     ldraw_path: bpy.props.StringProperty(
         name="LDraw path",
-        description="Full filepath to the LDraw Parts Library (download from http://www.ldraw.org)",
+        description="Full filepath to the LDraw Parts Library (download from https://www.ldraw.org)",
         default=ImportSettings.get_setting('ldraw_path'),
+    )
+
+    studio_ldraw_path: bpy.props.StringProperty(
+        name="Stud.io LDraw path",
+        description="Full filepath to the Stud.io LDraw Parts Library (download from https://www.bricklink.com/v3/studio/download.page)",
+        default=ImportSettings.get_setting('studio_ldraw_path'),
+    )
+
+    prefer_studio: bpy.props.BoolProperty(
+        name="Prefer Stud.io library",
+        description="Search for parts in Stud.io library first",
+        default=ImportSettings.get_setting('prefer_studio'),
+    )
+
+    prefer_unofficial: bpy.props.BoolProperty(
+        name="Prefer unofficial parts",
+        description="Search for unofficial parts first",
+        default=ImportSettings.get_setting('prefer_unofficial'),
+    )
+
+    resolution: bpy.props.EnumProperty(
+        name="Part resolution",
+        description="Resolution of part primitives, ie. how much geometry they have",
+        default=ImportSettings.get_setting('resolution'),
+        items=(
+            ("Low", "Low resolution primitives", "Import using low resolution primitives."),
+            ("Standard", "Standard primitives", "Import using standard resolution primitives."),
+            ("High", "High resolution primitives", "Import using high resolution primitives."),
+        ),
     )
 
     use_alt_colors: bpy.props.BoolProperty(
@@ -60,17 +89,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         name="Shade smooth",
         description="Shade smooth",
         default=ImportSettings.get_setting('shade_smooth'),
-    )
-
-    resolution: bpy.props.EnumProperty(
-        name="Part resolution",
-        description="Resolution of part primitives, ie. how much geometry they have",
-        default=ImportSettings.get_setting('resolution'),
-        items=(
-            ("Low", "Low resolution primitives", "Import using low resolution primitives."),
-            ("Standard", "Standard primitives", "Import using standard resolution primitives."),
-            ("High", "High resolution primitives", "Import using high resolution primitives."),
-        ),
     )
 
     display_logo: bpy.props.BoolProperty(
@@ -270,12 +288,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         default=ImportSettings.get_setting('treat_models_with_subparts_as_parts'),
     )
 
-    prefer_unofficial: bpy.props.BoolProperty(
-        name="Prefer unofficial parts",
-        description="Search for unofficial parts first",
-        default=ImportSettings.get_setting('prefer_unofficial'),
-    )
-
     recalculate_normals: bpy.props.BoolProperty(
         name="Recalculate normals",
         description="Recalculate normals. Not recommended if BFC processing is active",
@@ -345,10 +357,13 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
 
         col = layout.column()
         col.prop(self, "ldraw_path")
+        col.prop(self, "studio_ldraw_path")
 
         layout.separator(factor=space_factor)
         col = layout.column()
         col.label(text="Import Options")
+        col.prop(self, "prefer_studio")
+        col.prop(self, "prefer_unofficial")
         col.prop(self, "use_alt_colors")
         col.prop(self, "resolution")
         col.prop(self, "display_logo")
@@ -398,7 +413,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         col.prop(self, "import_edges")
         col.prop(self, "treat_shortcut_as_model")
         col.prop(self, "treat_models_with_subparts_as_parts")
-        col.prop(self, "prefer_unofficial")
         col.prop(self, "no_studs")
         col.prop(self, "preserve_hierarchy")
 

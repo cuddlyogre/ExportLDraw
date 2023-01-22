@@ -11,6 +11,12 @@ class FileSystem:
     defaults['ldraw_path'] = ''
     ldraw_path = defaults['ldraw_path']
 
+    defaults['studio_ldraw_path'] = ''
+    studio_ldraw_path = defaults['studio_ldraw_path']
+
+    defaults['prefer_studio'] = False
+    prefer_studio = defaults['prefer_studio']
+
     defaults['prefer_unofficial'] = False
     prefer_unofficial = defaults['prefer_unofficial']
 
@@ -27,10 +33,8 @@ class FileSystem:
         cls.__texture_paths = []
         cls.__lowercase_paths = {}
 
-    # TODO: add stud.io ldraw path - C:\Program Files\Studio 2.0\ldraw
     @staticmethod
     def locate_ldraw():
-        # return r"C:\Program Files\Studio 2.0\ldraw"
         ldraw_folder_name = 'ldraw'
 
         # home = os.path.expanduser("~")
@@ -52,6 +56,27 @@ class FileSystem:
                     return ldraw_path
         return ""
 
+    @staticmethod
+    def locate_studio_ldraw():
+        ldraw_folder_name = 'ldraw'
+
+        if platform == "linux" or platform == "linux2":
+            pass
+            # linux
+        elif platform == "darwin":
+            pass
+            # OS X
+        elif platform == "win32":
+            studio_path = os.path.join(os.environ["ProgramFiles"], 'Studio 2.0', ldraw_folder_name)
+            if os.path.isdir(studio_path):
+                return studio_path
+
+            studio_path = os.path.join(os.environ["ProgramFiles(x86)"], 'Studio 2.0', ldraw_folder_name)
+            if os.path.isdir(studio_path):
+                return studio_path
+
+        return ""
+
     @classmethod
     def build_search_paths(cls, parent_filepath=None):
         cls.reset_caches()
@@ -64,14 +89,62 @@ class FileSystem:
 
         cls.__append_search_path((os.path.join(cls.ldraw_path), '*'))
 
-        if cls.prefer_unofficial:
-            cls.__append_unofficial_paths()
-            cls.__append_official_paths()
-        else:
-            cls.__append_official_paths()
-            cls.__append_unofficial_paths()
+        ldraw_roots = list()
 
-        cls.__build_lowercase_paths()
+        if cls.prefer_studio:
+            if cls.prefer_unofficial:
+                ldraw_roots.append(os.path.join(cls.studio_ldraw_path, "unofficial"))
+                ldraw_roots.append(os.path.join(cls.ldraw_path, "unofficial"))
+                ldraw_roots.append(os.path.join(cls.studio_ldraw_path))
+                ldraw_roots.append(os.path.join(cls.ldraw_path))
+            else:
+                ldraw_roots.append(os.path.join(cls.studio_ldraw_path))
+                ldraw_roots.append(os.path.join(cls.ldraw_path))
+                ldraw_roots.append(os.path.join(cls.studio_ldraw_path, "unofficial"))
+                ldraw_roots.append(os.path.join(cls.ldraw_path, "unofficial"))
+        else:
+            if cls.prefer_unofficial:
+                ldraw_roots.append(os.path.join(cls.ldraw_path, "unofficial"))
+                ldraw_roots.append(os.path.join(cls.studio_ldraw_path, "unofficial"))
+                ldraw_roots.append(os.path.join(cls.ldraw_path))
+                ldraw_roots.append(os.path.join(cls.studio_ldraw_path))
+            else:
+                ldraw_roots.append(os.path.join(cls.ldraw_path))
+                ldraw_roots.append(os.path.join(cls.studio_ldraw_path))
+                ldraw_roots.append(os.path.join(cls.ldraw_path, "unofficial"))
+                ldraw_roots.append(os.path.join(cls.studio_ldraw_path, "unofficial"))
+
+        for root in ldraw_roots:
+            cls.__append_search_path((os.path.join(root, "models"), '**/*'))
+            cls.__append_search_path((os.path.join(root, "models"), '*'))
+
+            cls.__append_search_path((os.path.join(root, "parts", "textures"), '**/*'))
+            cls.__append_search_path((os.path.join(root, "parts", "textures"), '*'))
+
+            cls.__append_search_path((os.path.join(root, "parts"), '**/*'))
+            cls.__append_search_path((os.path.join(root, "parts"), '*'))
+
+            if cls.resolution == "High":
+                cls.__append_search_path((os.path.join(root, "p", "48"), '**/*'))
+                cls.__append_search_path((os.path.join(root, "p", "48"), '*'))
+            elif cls.resolution == "Low":
+                cls.__append_search_path((os.path.join(root, "p", "8"), '**/*'))
+                cls.__append_search_path((os.path.join(root, "p", "8"), '*'))
+
+            cls.__append_search_path((os.path.join(root, "p"), '**/*'))
+            cls.__append_search_path((os.path.join(root, "p"), '*'))
+
+            print(root)
+
+        cls.__lowercase_paths = {}
+        for path in cls.__search_paths:
+            for file in glob.glob(os.path.join(path[0], path[1])):
+                cls.__lowercase_paths[file.lower()] = file
+
+    @classmethod
+    def __append_search_path(cls, path):
+        if path[0] != "" and os.path.isdir(path[0]):
+            cls.__search_paths.append(path)
 
     @classmethod
     def locate(cls, filename):
@@ -84,7 +157,7 @@ class FileSystem:
 
         for path in cls.__search_paths:
             full_path = os.path.join(path[0], part_path)
-            full_path = cls.__path_lowercase(full_path)
+            full_path = cls.__lowercase_paths.get(full_path.lower()) or full_path
             if os.path.isfile(full_path):
                 return full_path
 
@@ -92,52 +165,3 @@ class FileSystem:
 
         print(f"missing {filename}")
         return None
-
-    @classmethod
-    def __append_search_path(cls, path):
-        if path[0] != "" and os.path.isdir(path[0]):
-            cls.__search_paths.append(path)
-
-    @classmethod
-    def __build_lowercase_paths(cls):
-        cls.__lowercase_paths = {}
-
-        for path in cls.__search_paths:
-            for file in glob.glob(os.path.join(path[0], path[1])):
-                cls.__lowercase_paths[file.lower()] = file
-
-    @classmethod
-    def __append_paths(cls, folder=''):
-        cls.__append_search_path((os.path.join(cls.ldraw_path, folder, "models"), '**/*'))
-        cls.__append_search_path((os.path.join(cls.ldraw_path, folder, "models"), '*'))
-
-        cls.__append_search_path((os.path.join(cls.ldraw_path, folder, "parts", "textures"), '**/*'))
-        cls.__append_search_path((os.path.join(cls.ldraw_path, folder, "parts", "textures"), '*'))
-
-        cls.__append_search_path((os.path.join(cls.ldraw_path, folder, "parts"), '**/*'))
-        cls.__append_search_path((os.path.join(cls.ldraw_path, folder, "parts"), '*'))
-
-        if cls.resolution == "High":
-            cls.__append_search_path((os.path.join(cls.ldraw_path, folder, "p", "48"), '**/*'))
-            cls.__append_search_path((os.path.join(cls.ldraw_path, folder, "p", "48"), '*'))
-        elif cls.resolution == "Low":
-            cls.__append_search_path((os.path.join(cls.ldraw_path, folder, "p", "8"), '**/*'))
-            cls.__append_search_path((os.path.join(cls.ldraw_path, folder, "p", "8"), '*'))
-
-        cls.__append_search_path((os.path.join(cls.ldraw_path, folder, "p"), '**/*'))
-        cls.__append_search_path((os.path.join(cls.ldraw_path, folder, "p"), '*'))
-
-    @classmethod
-    def __append_official_paths(cls):
-        cls.__append_paths()
-
-    @classmethod
-    def __append_unofficial_paths(cls):
-        cls.__append_paths(folder="unofficial")
-
-    @classmethod
-    # https://stackoverflow.com/a/8462613
-    def __path_lowercase(cls, path):
-        if path.lower() in cls.__lowercase_paths:
-            return cls.__lowercase_paths[path.lower()]
-        return path
