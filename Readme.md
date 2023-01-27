@@ -37,8 +37,8 @@ basic file using this spec can be found [here](https://www.ldraw.org/article/47.
 ![MPD implementing the !DATA spec](examples/import/texmap_data.jpg)
 
 **Stud.io**  
-Stud.io parts can be used if you set the LDraw path value to the Stud.io ldraw folder location. On Windows, that should
-be **C:\Program Files\Studio 2.0\ldraw**
+Stud.io parts can be used if you set the **Stud.io LDraw path** value correctly. On Windows, that should
+be **C:\Program Files\Studio 2.0\ldraw**. This should auto-populate on Windows if Stud.io is installed.
 
 Stud.io decals are mostly supported. There are some aspects of the spec I have to figure out still, but the current 
 level of support should be sufficient for most things. In this example, the textures on the hands are missing. This is 
@@ -101,12 +101,18 @@ __File > Import > LDraw (.mpd/.ldr/.l3b/.dat)__
 **config/import_options.json** Your import settings are saved here every time you import. If you run across any errors, 
 delete config/import_options.json from the plugin folder. The defaults are saved and used immediately.
 
-**LDraw filepath:** The path to your LDraw folder. On Windows, the plugins searches the roots of A:-Z:
-for an LDraw folder (C:\ldraw). On Linux, it searches the home folder for an ldraw folder (~/ldraw). I don't have a Mac
-to test on, so on Mac OS, this value will be blank.
+**LDraw path:** The path to your LDraw folder.  
+The plugin will first look in your home folder and use that if an LDraw library is found. (~/ldraw)  
+On Windows, the plugin searches the roots of A:-Z: for an LDraw folder. (C:\ldraw)  
+If nothing is found, it will be blank.
+
+**Stud.io LDraw path:** The path to the LDraw folder that comes with Stud.io. On Windows, this should auto-populate if Stud.io is installed.
+It will be blank if nothing is found or on non-Windows systems.
 
 **Import Options**
 
+**Prefer Stud.io library:** Look in the Stud.io parts library first.  
+**Prefer unofficial parts:** Look in the unofficial parts folder first.  
 **Use alternate colors:** Uses LDCfgalt.ldr for more accurate colors.  
 **Part resolution:** The quality of parts to use. Low resolution is quicker to import, but doesn't look as good. High
 resolution looks better but take longer to import.  
@@ -157,7 +163,6 @@ BFC processing. It is recommended to keep unchecked if processing BFC commands i
 **Debug text:** Render debug text to the system console.  
 **Treat shortcut parts as models:** Treat shortcut parts as if they were models by splitting them into their constituent
 parts instead of merging them.  
-**Prefer unofficial parts:** If a part is in both the unofficial and official library, use the unofficial one.  
 **No studs:** Don't import studs. Not particularly useful but is neat to see.  
 **Preserve file structure:** Don't merge the constituent subfiles into the top level part. This is helpful when you want
 to see how a part is made.
