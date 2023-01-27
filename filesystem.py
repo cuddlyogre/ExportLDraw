@@ -134,8 +134,6 @@ class FileSystem:
             cls.__append_search_path((os.path.join(root, "p"), '**/*'))
             cls.__append_search_path((os.path.join(root, "p"), '*'))
 
-            print(root)
-
         cls.__lowercase_paths = {}
         for path in cls.__search_paths:
             for file in glob.glob(os.path.join(path[0], path[1])):
