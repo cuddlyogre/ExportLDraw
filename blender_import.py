@@ -36,9 +36,6 @@ def do_import(filepath):
     root_node = LDrawNode()
     root_node.is_root = True
     root_node.file = ldraw_file
-    # if ImportOptions.interactive_import:
-    #     return root_node.load(parent_collection=collection)
-    # else:
     obj = root_node.load()
 
     if ImportOptions.meta_step:

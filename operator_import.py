@@ -148,12 +148,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         default=ImportSettings.get_setting('preserve_hierarchy'),
     )
 
-    # interactive_import: bpy.props.BoolProperty(
-    #     name="Interactive import",
-    #     description="The viewport remains responsive at the expense of import speed",
-    #     default=ImportSettings.get_setting('interactive_import'),
-    # )
-
     parent_to_empty: bpy.props.BoolProperty(
         name="Parent to empty",
         description="Parent the model to an empty",
@@ -317,9 +311,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         ImportSettings.save_settings(self)
         ImportSettings.apply_settings()
 
-        # if ImportOptions.interactive_import:
-        #     bpy.ops.wm.modal_timer_operator(filepath=self.filepath)
-        # else:
         # https://docs.python.org/3/library/profile.html
         if self.profile:
             import cProfile
@@ -409,7 +400,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         col = layout.column()
         col.label(text="Extras")
         col.prop(self, "use_freestyle_edges")
-        # col.prop(self, "interactive_import")
         col.prop(self, "import_edges")
         col.prop(self, "treat_shortcut_as_model")
         col.prop(self, "treat_models_with_subparts_as_parts")

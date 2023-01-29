@@ -120,9 +120,6 @@ class LDrawNode:
              texmap=None,
              pe_tex_info=None
              ):
-        # if ImportOptions.interactive_import:
-        #     yield self
-        # print(self.file.name)
 
         if self.file.is_edge_logo() and not ImportOptions.display_logo:
             return
@@ -199,20 +196,6 @@ class LDrawNode:
                             pe_tex_info = self.pe_tex_info
                         else:
                             pe_tex_info = self.pe_tex_infos.get(self.subfile_line_index)
-
-                        # if ImportOptions.interactive_import:
-                        #     for node in child_node.load(
-                        #             color_code=current_color,
-                        #             parent_matrix=accum_matrix if ImportOptions.preserve_hierarchy else matrix,
-                        #             geometry_data=geometry_data,
-                        #             parent_collection=collection,
-                        #             accum_cull=self.bfc_certified and accum_cull and local_cull,
-                        #             accum_invert=(accum_invert ^ invert_next),
-                        #             texmap=self.texmap,
-                        #             pe_tex_info=pe_tex_info,
-                        #     ):
-                        #         yield node
-                        # else:
 
                         # TODO: preload file, return mesh.name and get mesh and merge that mesh with the current mesh
                         # may crash based on https://docs.blender.org/api/current/info_gotcha.html#help-my-script-crashes-blender
