@@ -305,11 +305,38 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         ImportSettings.load_settings()
         return {'RUNNING_MODAL'}
 
+    # _timer = None
+    # __i = 0
+    #
+    # def modal(self, context, event):
+    #     if event.type in {'RIGHTMOUSE', 'ESC'}:
+    #         self.cancel(context)
+    #         return {'CANCELLED'}
+    #
+    #     if event.type == 'TIMER':
+    #         try:
+    #             for i in range(10000):
+    #                 next(self.__i)
+    #         except StopIteration as e:
+    #             self.cancel(context)
+    #
+    #     return {'PASS_THROUGH'}
+    #
+    # def cancel(self, context):
+    #     wm = context.window_manager
+    #     wm.event_timer_remove(self._timer)
+
     def execute(self, context):
         start = time.perf_counter()
 
         ImportSettings.save_settings(self)
         ImportSettings.apply_settings()
+
+        # wm = context.window_manager
+        # self._timer = wm.event_timer_add(0.01, window=context.window)
+        # wm.modal_handler_add(self)
+        # self.__i = blender_import.do_import(bpy.path.abspath(self.filepath))
+        # return {'RUNNING_MODAL'}
 
         # https://docs.python.org/3/library/profile.html
         if self.profile:

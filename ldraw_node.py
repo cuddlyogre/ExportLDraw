@@ -210,6 +210,17 @@ class LDrawNode:
                             texmap=self.texmap,
                             pe_tex_info=pe_tex_info,
                         )
+                        # for node in child_node.load(
+                        #         color_code=current_color,
+                        #         parent_matrix=accum_matrix if ImportOptions.preserve_hierarchy else matrix,
+                        #         geometry_data=geometry_data,
+                        #         accum_cull=self.bfc_certified and accum_cull and local_cull,
+                        #         accum_invert=(accum_invert ^ invert_next),  # xor
+                        #         parent_collection=collection,
+                        #         texmap=self.texmap,
+                        #         pe_tex_info=pe_tex_info,
+                        # ):
+                        #     yield node
 
                         self.subfile_line_index += 1
                         LDrawNode.__meta_root_group_nxt(self, child_node)
@@ -278,6 +289,7 @@ class LDrawNode:
 
             LDrawNode.__process_top_edges(self, key, obj, color_code, collection)
 
+            # yield self
             return obj
 
     # set the working color code to this file's
