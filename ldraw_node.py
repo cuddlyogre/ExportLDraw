@@ -1014,6 +1014,17 @@ class LDrawNode:
                 vertices = [matrix @ vertices[0], matrix @ vertices[2], matrix @ vertices[1]]
             elif vert_count == 4:
                 vertices = [matrix @ vertices[0], matrix @ vertices[3], matrix @ vertices[2], matrix @ vertices[1]]
+
+                # handle bowtie quadrilaterals - 6582.dat
+                # https://github.com/TobyLobster/ImportLDraw/pull/65/commits/3d8cebee74bf6d0447b616660cc989e870f00085
+                nA = (vertices[1] - vertices[0]).cross(vertices[2] - vertices[0])
+                nB = (vertices[2] - vertices[1]).cross(vertices[3] - vertices[1])
+                nC = (vertices[3] - vertices[2]).cross(vertices[0] - vertices[2])
+                if nA.dot(nB) < 0:
+                    vertices[2], vertices[3] = vertices[3], vertices[2]
+                elif nB.dot(nC) < 0:
+                    vertices[2], vertices[1] = vertices[1], vertices[2]
+
         else:  # winding == "CCW" or winding is None:
             vertices = [matrix @ m for m in vertices]
             """this is the default vertex order so don't do anything"""
