@@ -114,9 +114,9 @@ class LDrawNode:
              color_code="16",
              parent_matrix=None,
              geometry_data=None,
-             parent_collection=None,
              accum_cull=True,
              accum_invert=False,
+             parent_collection=None,
              texmap=None,
              pe_tex_info=None
              ):
@@ -204,9 +204,9 @@ class LDrawNode:
                             color_code=current_color,
                             parent_matrix=accum_matrix if ImportOptions.preserve_hierarchy else matrix,
                             geometry_data=geometry_data,
-                            parent_collection=collection,
                             accum_cull=self.bfc_certified and accum_cull and local_cull,
                             accum_invert=(accum_invert ^ invert_next),  # xor
+                            parent_collection=collection,
                             texmap=self.texmap,
                             pe_tex_info=pe_tex_info,
                         )
