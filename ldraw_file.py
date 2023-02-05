@@ -330,7 +330,6 @@ class LDrawFile:
                 color.parse_color_params(_params)
                 #  self.__colors[color.code] = color
                 """add this color to this file's colors"""
-
             return True
         return False
 
@@ -475,7 +474,6 @@ class LDrawFile:
             ldraw_node.meta_command = "pe_tex_next_shear"
             self.child_nodes.append(ldraw_node)
             return True
-
         return False
 
     def __line_subfile(self, clean_line, strip_line):
