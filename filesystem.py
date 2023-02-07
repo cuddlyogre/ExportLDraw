@@ -24,13 +24,11 @@ class FileSystem:
     resolution = defaults['resolution']
 
     __search_paths = []
-    __texture_paths = []
     __lowercase_paths = {}
 
     @classmethod
     def reset_caches(cls):
         cls.__search_paths = []
-        cls.__texture_paths = []
         cls.__lowercase_paths = {}
 
     @staticmethod
@@ -87,7 +85,12 @@ class FileSystem:
             cls.__append_search_path((os.path.dirname(parent_filepath), '**/*'))
             cls.__append_search_path((os.path.dirname(parent_filepath), '*'))
 
-        cls.__append_search_path((os.path.join(cls.ldraw_path), '*'))
+        if cls.prefer_studio:
+            cls.__append_search_path((os.path.join(cls.studio_ldraw_path), '*'))
+            cls.__append_search_path((os.path.join(cls.ldraw_path), '*'))
+        else:
+            cls.__append_search_path((os.path.join(cls.ldraw_path), '*'))
+            cls.__append_search_path((os.path.join(cls.studio_ldraw_path), '*'))
 
         ldraw_roots = list()
 
@@ -141,8 +144,8 @@ class FileSystem:
 
     @classmethod
     def __append_search_path(cls, path):
-        if path[0] != "" and os.path.isdir(path[0]):
-            cls.__search_paths.append(path)
+        # if path[0] != "" and os.path.isdir(path[0]):
+        cls.__search_paths.append(path)
 
     @classmethod
     def locate(cls, filename):
