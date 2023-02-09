@@ -71,7 +71,7 @@ def do_export(filepath):
         ldraw_file.lines.append("\n")
     for name in subfile_obj_names:
         obj = bpy.data.objects.get(name)
-        __export_subfiles(obj, ldraw_file.lines, is_model=ldraw_file.is_model())
+        __export_subfiles(obj, ldraw_file.lines)
 
     if len(polygon_obj_names) > 0:
         ldraw_file.lines.append("\n")
@@ -159,15 +159,13 @@ def __fix_round(number, places=None):
 
 # TODO: if obj["section_label"] then:
 #  0 // f{obj["section_label"]}
-def __export_subfiles(obj, lines, is_model=False):
-    name = obj.ldraw_props.filename
-
+def __export_subfiles(obj, lines):
     color_code = obj.ldraw_props.color_code
     color = LDrawColor.get_color(color_code)
     color_code = color.code
 
+    name = obj.ldraw_props.filename
     precision = obj.ldraw_props.export_precision
-
 
     aa = __reverse_rotation @ obj.matrix_world @ __rotation
 

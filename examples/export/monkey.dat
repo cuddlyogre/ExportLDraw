@@ -6,12 +6,8 @@
 
 0 BFC CERTIFY CCW
 
-0 !KEYWORDS Blender, monkey, Suzanne
-
-0 !HISTORY 2020-03-17 [cuddlyogre] Initial Export
-
-1 4 13 -26.49 0 1 0 0 0 1 0 0 0 1 64647.dat
 1 0 0 -13.49 0 1 0 0 0 1 0 0 0 1 2528p30.dat
+1 4 13 -26.49 0 1 0 0 0 1 0 0 0 1 64647.dat
 
 0 // Black
 3 0 4.51 -3.11 -10.63 5.72 -2.01 -10.03 6.12 -3.11 -9.93
