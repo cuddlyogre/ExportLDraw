@@ -13,7 +13,7 @@ from . import helpers
 from . import ldraw_part_types
 from . import ldraw_props
 
-__rotation = mathutils.Matrix.Rotation(math.radians(-90), 4, 'X').freeze()
+__rotation_matrix = mathutils.Matrix.Rotation(math.radians(-90), 4, 'X').freeze()
 __reverse_rotation = mathutils.Matrix.Rotation(math.radians(90), 4, 'X').freeze()
 
 
@@ -43,9 +43,10 @@ def do_export(filepath):
         return
 
     filename = active_object.ldraw_props.filename
+
     # no filename specified on object
-    if filename is None:
-        return
+    if active_object.ldraw_props.filename == "" or filename is None:
+        return False
 
     ldraw_file = LDrawFile(filename)
 
@@ -71,7 +72,7 @@ def do_export(filepath):
         ldraw_file.lines.append("\n")
     for name in subfile_obj_names:
         obj = bpy.data.objects.get(name)
-        __export_subfiles(obj, ldraw_file.lines, is_model=ldraw_file.is_model())
+        __export_subfiles(obj, ldraw_file.lines)
 
     if len(polygon_obj_names) > 0:
         ldraw_file.lines.append("\n")
@@ -118,8 +119,6 @@ def __clean_mesh(obj):
     bm = bmesh.new()
     bm.from_object(obj, bpy.context.evaluated_depsgraph_get())
 
-    bm.transform(__reverse_rotation)
-
     faces = None
     if ExportOptions.triangulate:
         faces = bm.faces
@@ -159,17 +158,15 @@ def __fix_round(number, places=None):
 
 # TODO: if obj["section_label"] then:
 #  0 // f{obj["section_label"]}
-def __export_subfiles(obj, lines, is_model=False):
-    name = obj.ldraw_props.filename
-
+def __export_subfiles(obj, lines):
     color_code = obj.ldraw_props.color_code
     color = LDrawColor.get_color(color_code)
     color_code = color.code
 
+    name = obj.ldraw_props.filename
     precision = obj.ldraw_props.export_precision
 
-
-    aa = __reverse_rotation @ obj.matrix_world @ __rotation
+    aa = __reverse_rotation @ obj.matrix_world
 
     a = __fix_round(aa[0][0], precision)
     b = __fix_round(aa[0][1], precision)
@@ -203,6 +200,7 @@ def __export_polygons(obj, lines):
 
     precision = obj.ldraw_props.export_precision
 
+    # export faces
     for polygon in mesh.polygons:
         length = len(polygon.vertices)
         line_type = None
@@ -231,22 +229,27 @@ def __export_polygons(obj, lines):
             color_code = obj_color.code
 
         line = [line_type, color_code]
-
         for v in polygon.vertices:
-            for vv in mesh.vertices[v].co:
+            aa = __reverse_rotation @ obj.matrix_world
+            co = aa @ mesh.vertices[v].co
+            for vv in co:
                 line.append(__fix_round(vv, precision))
 
         lines.append(line)
 
     # export edges
     for e in mesh.edges:
-        if e.use_edge_sharp:
-            line = ["2", "24"]
-            for v in e.vertices:
-                for vv in mesh.vertices[v].co:
-                    line.append(__fix_round(vv, precision))
+        if not e.use_edge_sharp:
+            continue
 
-            lines.append(line)
+        line = ["2", "24"]
+        for v in e.vertices:
+            aa = __reverse_rotation @ obj.matrix_world
+            co = aa @ mesh.vertices[v].co
+            for vv in co:
+                line.append(__fix_round(vv, precision))
+
+        lines.append(line)
 
     bpy.data.meshes.remove(mesh)
 

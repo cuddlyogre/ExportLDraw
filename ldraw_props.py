@@ -28,8 +28,14 @@ def get_header_lines(obj):
     header_lines.append(f"0 {obj.ldraw_props.description}")
     header_lines.append(f"0 Name: {obj.ldraw_props.name}")
     header_lines.append(f"0 Author: {obj.ldraw_props.author}")
-    header_lines.append(f"0 !LDRAW_ORG {obj.ldraw_props.part_type}")
+
+    part_type_parts = []
+    part_type_parts.append(obj.ldraw_props.part_type)
+
+    header_lines.append(f"0 !LDRAW_ORG {' '.join(part_type_parts)}")
     header_lines.append(f"0 !LICENSE {obj.ldraw_props.license}")
+    header_lines.append(f"\n")
+    header_lines.append(f"0 BFC CERTIFY CCW")
     return header_lines
 
     # header_text = "\n".join(header_lines)
@@ -103,7 +109,7 @@ class LDrawProps(bpy.types.PropertyGroup):
         name="Color code",
         description="LDraw color code",
         default="16",
-        update=test_update
+        # update=test_update
     )
 
     export_polygons: bpy.props.BoolProperty(
