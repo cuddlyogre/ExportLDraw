@@ -51,7 +51,6 @@ def do_export(filepath):
 
     hlines = ldraw_props.get_header_lines(active_object)
     for hline in hlines:
-        ldraw_file.parse_header(hline)
         ldraw_file.lines.append(hline)
 
     subfile_obj_names = []
