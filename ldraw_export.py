@@ -168,6 +168,10 @@ def __export_subfiles(obj, lines):
         return
 
     color_code = obj.ldraw_props.color_code
+    if color_code == "" or color_code is None:
+        print(f"Object {obj.name} does not have a color_code")
+        return
+
     color = LDrawColor.get_color(color_code)
     color_code = color.code
 
