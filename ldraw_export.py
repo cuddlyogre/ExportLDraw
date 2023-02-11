@@ -164,7 +164,7 @@ def __fix_round(number, places=None):
 def __export_subfiles(obj, lines):
     filename = obj.ldraw_props.filename
     if filename == "" or filename is None:
-        print(f"Object {obj.name} does not have a name")
+        print(f"Object {obj.name} does not have a filename")
         return
 
     color_code = obj.ldraw_props.color_code
