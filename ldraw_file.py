@@ -190,6 +190,8 @@ class LDrawFile:
 
                 if current_data_filename is not None:
                     base64_handler.named_png_from_base64_str(current_data_filename, "".join(current_data))
+                    current_data_filename = None
+                    current_data = None
 
                 # last file in mpd will not be added to the file cache if it doesn't end in 0 NOFILE
                 if current_mpd_file is not None:
