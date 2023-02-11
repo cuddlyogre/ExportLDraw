@@ -16,7 +16,7 @@ def set_props(obj, ldraw_file, color_code):
     obj.ldraw_props.color_code = color_code
 
 
-def get_header_lines(obj):
+def get_header_lines(obj, is_model=False):
     """
     0 Brick  2 x  4
     0 Name: 3001.dat
@@ -34,8 +34,9 @@ def get_header_lines(obj):
 
     header_lines.append(f"0 !LDRAW_ORG {' '.join(part_type_parts)}")
     header_lines.append(f"0 !LICENSE {obj.ldraw_props.license}")
-    header_lines.append(f"\n")
-    header_lines.append(f"0 BFC CERTIFY CCW")
+    if not is_model:  # only include bfc information if the obj is not a model
+        header_lines.append(f"\n")
+        header_lines.append(f"0 BFC CERTIFY CCW")
     return header_lines
 
     # header_text = "\n".join(header_lines)

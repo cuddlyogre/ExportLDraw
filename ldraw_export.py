@@ -40,17 +40,20 @@ def do_export(filepath):
         objects = selected_objects
 
     if active_object is None:
+        print("No selected objects")
         return
 
-    filename = active_object.ldraw_props.filename
+    name = active_object.ldraw_props.name
 
     # no filename specified on object
-    if active_object.ldraw_props.filename == "" or filename is None:
+    if name == "" or name is None:
+        print(f"Active object {active_object.name} does not have a name")
         return False
 
-    ldraw_file = LDrawFile(filename)
+    ldraw_file = LDrawFile(name)
 
-    hlines = ldraw_props.get_header_lines(active_object)
+    is_like_model = ldraw_file.is_model() or ldraw_file.is_shortcut()
+    hlines = ldraw_props.get_header_lines(active_object, is_like_model)
     for hline in hlines:
         ldraw_file.lines.append(hline)
 
@@ -159,11 +162,15 @@ def __fix_round(number, places=None):
 # TODO: if obj["section_label"] then:
 #  0 // f{obj["section_label"]}
 def __export_subfiles(obj, lines):
+    filename = obj.ldraw_props.filename
+    if filename == "" or filename is None:
+        print(f"Object {obj.name} does not have a name")
+        return
+
     color_code = obj.ldraw_props.color_code
     color = LDrawColor.get_color(color_code)
     color_code = color.code
 
-    name = obj.ldraw_props.filename
     precision = obj.ldraw_props.export_precision
 
     aa = __reverse_rotation @ obj.matrix_world
@@ -183,7 +190,7 @@ def __export_subfiles(obj, lines):
     i = __fix_round(aa[2][2], precision)
     z = __fix_round(aa[2][3], precision)
 
-    line = f"1 {color_code} {x} {y} {z} {a} {b} {c} {d} {e} {f} {g} {h} {i} {name}"
+    line = f"1 {color_code} {x} {y} {z} {a} {b} {c} {d} {e} {f} {g} {h} {i} {filename}"
 
     lines.append(line)
 
