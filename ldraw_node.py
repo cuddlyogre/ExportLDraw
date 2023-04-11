@@ -327,11 +327,12 @@ class LDrawNode:
         mesh[strings.ldraw_filename_key] = ldraw_node.file.name
 
         LDrawNode.__process_bmesh(ldraw_node, bm, mesh, geometry_data)
-        LDrawNode.__process_bmesh_edges(ldraw_node, key, bm, geometry_data)
 
         helpers.finish_bmesh(bm, mesh)
         helpers.finish_mesh(mesh)
 
+        LDrawNode.__process_mesh_edges(ldraw_node, key, geometry_data)
+        LDrawNode.__process_mesh_sharp_edges(mesh, geometry_data)
         LDrawNode.__process_mesh(mesh)
 
         return mesh
@@ -390,16 +391,47 @@ class LDrawNode:
     # Create kd tree for fast "find nearest points" calculation
     # https://docs.blender.org/api/blender_python_api_current/mathutils.kdtree.html
     @staticmethod
-    def __build_kd(bm):
-        kd = mathutils.kdtree.KDTree(len(bm.verts))
-        for i, v in enumerate(bm.verts):
+    def __build_kd(verts):
+        kd = mathutils.kdtree.KDTree(len(verts))
+        for i, v in enumerate(verts):
             kd.insert(v.co, i)
         kd.balance()
         return kd
 
     @staticmethod
-    def __process_bmesh_edges(ldraw_node, key, bm, geometry_data):
-        kd = LDrawNode.__build_kd(bm)
+    def __process_mesh_edges(ldraw_node, key, geometry_data):
+        e_verts = []
+        e_edges = []
+        e_faces = []
+
+        i = 0
+        # for edge_data in geometry_data.line_data:
+        for edge_data in geometry_data.edge_data:
+            edge_verts = []
+            face_indices = []
+            # for vertex in edge_data.vertices[0:2]:  # in case line_data is being used since it has 4 verts
+            for vertex in edge_data.vertices:
+                e_verts.append(vertex)
+                edge_verts.append(vertex)
+                face_indices.append(i)
+                i += 1
+            e_faces.append(face_indices)
+
+        if ImportOptions.import_edges:
+            edge_key = f"e_{key}"
+            edge_mesh = bpy.data.meshes.new(edge_key)
+            edge_mesh.name = edge_key
+            edge_mesh[strings.ldraw_filename_key] = ldraw_node.file.name
+
+            edge_mesh.from_pydata(e_verts, e_edges, e_faces)
+            helpers.finish_mesh(edge_mesh)
+
+            if ImportOptions.make_gaps and ImportOptions.gap_target == "mesh":
+                edge_mesh.transform(LDrawNode.__gap_scale_matrix)
+
+    @staticmethod
+    def __process_mesh_sharp_edges(mesh, geometry_data):
+        kd = LDrawNode.__build_kd(mesh.vertices)
 
         # increase the distance to look for edges to merge
         # merge line type 2 edges at a greater distance than mesh edges
@@ -408,55 +440,26 @@ class LDrawNode:
         distance = ImportOptions.merge_distance
         distance = ImportOptions.merge_distance * 2.1
 
-        e_edges, e_faces, e_verts, edge_indices = LDrawNode.__build_edge_data(geometry_data, kd, distance)
-        LDrawNode.__create_edge_mesh(ldraw_node, key, e_edges, e_faces, e_verts)
-        LDrawNode.__remove_bmesh_doubles(bm, edge_indices, distance)
-
-    @staticmethod
-    def __build_edge_data(geometry_data, kd, distance):
-        e_verts = []
-        e_edges = []
-        e_faces = []
-
-        # Create edge_indices dictionary, which is the list of edges as pairs of indices into our verts array
         edge_indices = set()
 
-        i = 0
         for edge_data in geometry_data.edge_data:
             edge_verts = []
-            face_indices = []
+            # for vertex in edge_data.vertices[0:2]:  # in case line_data is being used since it has 4 verts
             for vertex in edge_data.vertices:
-                e_verts.append(vertex)
                 edge_verts.append(vertex)
-                face_indices.append(i)
-                i += 1
-            e_faces.append(face_indices)
 
-            if ImportOptions.remove_doubles:
-                edges0 = [index for (co, index, dist) in kd.find_range(edge_verts[0], distance)]
-                edges1 = [index for (co, index, dist) in kd.find_range(edge_verts[1], distance)]
-                for e0 in edges0:
-                    for e1 in edges1:
-                        edge_indices.add((e0, e1))
-                        edge_indices.add((e1, e0))
+            edges0 = [index for (co, index, dist) in kd.find_range(edge_verts[0], distance)]
+            edges1 = [index for (co, index, dist) in kd.find_range(edge_verts[1], distance)]
+            for e0 in edges0:
+                for e1 in edges1:
+                    edge_indices.add((e0, e1))
+                    edge_indices.add((e1, e0))
 
-        return e_edges, e_faces, e_verts, edge_indices
-
-    @staticmethod
-    def __remove_bmesh_doubles(bm, edge_indices, distance):
-        if ImportOptions.remove_doubles:
-            # Find the appropriate mesh edges and make them sharp (i.e. not smooth)
-            merge = set()
-            for edge in bm.edges:
-                v0 = edge.verts[0].index
-                v1 = edge.verts[1].index
-                if (v0, v1) in edge_indices:
-                    merge.add(edge.verts[0])
-                    merge.add(edge.verts[1])
-                    edge.smooth = False
-
-            # if it was detected as an edge, then merge those vertices
-            bmesh.ops.remove_doubles(bm, verts=list(merge), dist=distance)
+        for edge in mesh.edges:
+            v0 = edge.vertices[0]
+            v1 = edge.vertices[1]
+            if (v0, v1) in edge_indices:
+                edge.use_edge_sharp = True
 
     @staticmethod
     def __process_mesh(mesh):
@@ -534,20 +537,6 @@ class LDrawNode:
             # need this or else items like the back blue window stripes in 10252-1 - Volkswagen Beetle.mpd aren't shaded properly
             edge_modifier.use_edge_angle = True
             edge_modifier.split_angle = LDrawNode.__auto_smooth_angle
-
-    @staticmethod
-    def __create_edge_mesh(ldraw_node, key, e_edges, e_faces, e_verts):
-        if ImportOptions.import_edges:
-            edge_key = f"e_{key}"
-            edge_mesh = bpy.data.meshes.new(edge_key)
-            edge_mesh.name = edge_key
-            edge_mesh[strings.ldraw_filename_key] = ldraw_node.file.name
-
-            edge_mesh.from_pydata(e_verts, e_edges, e_faces)
-            helpers.finish_mesh(edge_mesh)
-
-            if ImportOptions.make_gaps and ImportOptions.gap_target == "mesh":
-                edge_mesh.transform(LDrawNode.__gap_scale_matrix)
 
     @staticmethod
     def __process_top_edges(ldraw_node, key, obj, color_code, collection):
