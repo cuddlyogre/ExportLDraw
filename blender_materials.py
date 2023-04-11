@@ -120,7 +120,7 @@ class BlenderMaterials:
             material[strings.ldraw_color_code_key] = "24"
             material[strings.ldraw_color_name_key] = color.name
         else:
-            diff_color = color.color_d
+            diff_color = color.color_a
             material.diffuse_color = diff_color
             material[strings.ldraw_color_code_key] = color.code
             material[strings.ldraw_color_name_key] = color.name
