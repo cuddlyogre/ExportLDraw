@@ -296,6 +296,9 @@ class LDrawNode:
 
             LDrawNode.__process_top_edges(self, key, obj, color_code, collection)
 
+            # if LDrawNode.part_count == 1:
+            #     raise BaseException("done")
+
             # yield self
             return obj
 
@@ -374,6 +377,7 @@ class LDrawNode:
 
             material_index = mesh.materials.find(material.name)
             if material_index == -1:
+                # mesh.materials.append(None) #add blank slot
                 mesh.materials.append(material)
                 material_index = mesh.materials.find(material.name)
 
@@ -589,6 +593,7 @@ class LDrawNode:
 
     @staticmethod
     def __process_top_object_edges(obj):
+        # TODO: add rigid body - must apply scale and cannot be parented to empty
         if ImportOptions.smooth_type == "edge_split":
             edge_modifier = obj.modifiers.new("Edge Split", type='EDGE_SPLIT')
             edge_modifier.use_edge_sharp = True
