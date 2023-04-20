@@ -178,7 +178,14 @@ class LDrawNode:
 
         key = LDrawNode.__build_key(self.file.name, color_code, matrix, accum_cull, accum_invert, texmap, pe_tex_info)
 
-        self.bfc_certified = self.file.is_like_model() or None
+        if self.file.is_like_model():
+            if self.file.has_geometry():
+                self.bfc_certified = False
+            else:
+                self.bfc_certified = True
+        else:
+            self.bfc_certified = None
+
         local_cull = True
         winding = "CCW"
         invert_next = False
@@ -641,10 +648,8 @@ class LDrawNode:
         _params = clean_line.split()
 
         # https://www.ldraw.org/article/415.html#processing
-        if ldraw_node.bfc_certified is None:
+        if ldraw_node.bfc_certified is None and "NOCERTIFY" not in _params:
             ldraw_node.bfc_certified = True
-            if _params[2] == "NOCERTIFY":
-                ldraw_node.bfc_certified = False
 
         if "CERTIFY" in _params:
             ldraw_node.bfc_certified = True
