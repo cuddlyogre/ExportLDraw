@@ -1,5 +1,3 @@
-import math
-
 import bpy
 import bmesh
 import mathutils
@@ -9,21 +7,7 @@ from . import strings
 from .blender_materials import BlenderMaterials
 from .import_options import ImportOptions
 from . import helpers
-
-__auto_smooth_angle_deg = 31
-__auto_smooth_angle_deg = 44.97
-__auto_smooth_angle_deg = 51.1
-__auto_smooth_angle_deg = 89.9  # 1.56905 - 89.9 so 90 degrees and up are affected
-__auto_smooth_angle = math.radians(__auto_smooth_angle_deg)
-
-# https://www.ldraw.org/article/218.html#coords
-# LDraw uses a right-handed co-ordinate system where -Y is "up".
-# https://en.wikibooks.org/wiki/Blender_3D:_Noob_to_Pro/Understanding_Coordinates
-# Blender uses a right-handed co-ordinate system where +Z is "up"
-__identity_matrix = mathutils.Matrix.Identity(4).freeze()
-__rotation_matrix = mathutils.Matrix.Rotation(math.radians(-90), 4, 'X').freeze()  # rotate -90 degrees on X axis to make -Y up
-__import_scale_matrix = mathutils.Matrix.Scale(ImportOptions.import_scale, 4).freeze()
-__gap_scale_matrix = mathutils.Matrix.Scale(ImportOptions.gap_scale, 4).freeze()
+from . import matrices
 
 
 def create_mesh(ldraw_node, key, geometry_data):
@@ -173,10 +157,10 @@ def __process_mesh(mesh):
 
     if ImportOptions.smooth_type == "auto_smooth":
         mesh.use_auto_smooth = ImportOptions.shade_smooth
-        mesh.auto_smooth_angle = __auto_smooth_angle
+        mesh.auto_smooth_angle = matrices.auto_smooth_angle
 
     if ImportOptions.make_gaps and ImportOptions.gap_target == "mesh":
-        mesh.transform(__gap_scale_matrix)
+        mesh.transform(matrices.gap_scale_matrix)
 
 
 # bpy.context.object.data.edges[6].use_edge_sharp = True
@@ -230,7 +214,7 @@ def __create_edge_mesh(ldraw_node, key, e_edges, e_faces, e_verts):
         helpers.finish_mesh(edge_mesh)
 
         if ImportOptions.make_gaps and ImportOptions.gap_target == "mesh":
-            edge_mesh.transform(__gap_scale_matrix)
+            edge_mesh.transform(matrices.gap_scale_matrix)
 
 
 def __remove_bmesh_doubles(bm, edge_indices, distance):

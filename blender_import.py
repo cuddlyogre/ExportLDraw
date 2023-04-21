@@ -12,14 +12,25 @@ from . import helpers
 from . import strings
 
 from . import group
+from . import ldraw_meta
+from . import ldraw_object
+from . import ldraw_camera
+from . import matrices
 
 
 def do_import(filepath):
     print(filepath)  # TODO: multiple filepaths?
 
     __scene_setup()
+
     LDrawFile.reset_caches()
     LDrawNode.reset_caches()
+    group.reset_caches()
+    ldraw_meta.reset_caches()
+    ldraw_object.reset_caches()
+    ldraw_camera.reset_caches()
+    matrices.reset_caches()
+
     FileSystem.build_search_paths(parent_filepath=filepath)
     LDrawFile.read_color_table()
     BlenderMaterials.create_blender_node_groups()
@@ -41,12 +52,12 @@ def do_import(filepath):
 
     if ImportOptions.meta_step:
         if ImportOptions.set_end_frame:
-            bpy.context.scene.frame_end = LDrawNode.current_frame + ImportOptions.frames_per_step
+            bpy.context.scene.frame_end = ldraw_meta.current_frame + ImportOptions.frames_per_step
             bpy.context.scene.frame_set(bpy.context.scene.frame_end)
 
     max_clip_end = 0
-    for camera in LDrawNode.cameras:
-        camera = blender_camera.create_camera(camera, empty=LDrawNode.top_empty, collection=LDrawNode.top_collection)
+    for camera in ldraw_camera.cameras:
+        camera = blender_camera.create_camera(camera, empty=ldraw_object.top_empty, collection=group.top_collection)
         if bpy.context.scene.camera is None:
             if camera.data.clip_end > max_clip_end:
                 max_clip_end = camera.data.clip_end
