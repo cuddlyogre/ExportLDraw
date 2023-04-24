@@ -81,7 +81,7 @@ class LDrawColor:
             try:
                 color_code = cls.parse_color(_params)
                 return cls.__colors[color_code]
-            except ValueError as e:
+            except Exception as e:
                 print(e)
 
         if cls.__bad_color is None:
