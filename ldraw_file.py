@@ -34,6 +34,8 @@ class LDrawFile:
         # to be authored by a user outside of specifications
         self.part_type = None
         self.actual_part_type = None
+        self.optional_qualifier = None
+        self.update_date = None
         self.license = None
         self.help = []
         self.category = None
@@ -269,6 +271,18 @@ class LDrawFile:
             parts = strip_line.split(maxsplit=3)
             self.actual_part_type = parts[2]
             self.part_type = self.determine_part_type(self.actual_part_type)
+
+            if 'UPDATE' in strip_line:
+                _r = parts[3]
+                if _r.startswith('UPDATE'):
+                    _p = _r.split(maxsplit=1)
+                    self.optional_qualifier = ''
+                    self.update_date = _p[1]
+                else:
+                    _p = _r.split(maxsplit=1)
+                    self.optional_qualifier = _p[0]
+                    __p = _p[1].split(maxsplit=1)
+                    self.update_date = __p[1]
             return True
 
         if clean_line.startswith("0 Official LCAD "):

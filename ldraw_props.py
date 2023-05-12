@@ -13,6 +13,8 @@ def set_props(obj, ldraw_file, color_code):
     except TypeError as e:
         obj.ldraw_props.part_type = 'Unknown'
     obj.ldraw_props.actual_part_type = ldraw_file.actual_part_type or ""
+    obj.ldraw_props.optional_qualifier = ldraw_file.optional_qualifier or ""
+    obj.ldraw_props.update_date = ldraw_file.update_date or ""
     obj.ldraw_props.license = ldraw_file.license or ""
     obj.ldraw_props.color_code = color_code
 
@@ -32,6 +34,10 @@ def get_header_lines(obj, is_model=False):
 
     part_type_parts = []
     part_type_parts.append(obj.ldraw_props.part_type)
+    if obj.ldraw_props.optional_qualifier is not None:
+        part_type_parts.append(obj.ldraw_props.optional_qualifier)
+    if obj.ldraw_props.update_date is not None:
+        part_type_parts.append(f"UPDATE {obj.ldraw_props.update_date}")
 
     header_lines.append(f"0 !LDRAW_ORG {' '.join(part_type_parts)}")
     header_lines.append(f"0 !LICENSE {obj.ldraw_props.license}")
@@ -92,6 +98,18 @@ class LDrawProps(bpy.types.PropertyGroup):
     actual_part_type: bpy.props.StringProperty(
         name="Actual part type",
         description="LDraw part type specified in the file",
+        default="",
+    )
+
+    optional_qualifier: bpy.props.StringProperty(
+        name="Optional qualifier",
+        description="LDraw optional qualifier specified in the file",
+        default="",
+    )
+
+    update_date: bpy.props.StringProperty(
+        name="Update date",
+        description="LDraw update date specified in the file",
         default="",
     )
 
