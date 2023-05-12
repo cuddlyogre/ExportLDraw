@@ -488,13 +488,14 @@ def __handle_vertex_winding(child_node, matrix, winding):
 
 
 def __build_pe_texmap(ldraw_node, child_node):
-    clean_line = child_node.line
-    _params = clean_line.split()
-
     pe_texmap = None
-    vert_count = len(child_node.vertices)
 
     if ldraw_node.pe_tex_info is not None:
+        clean_line = child_node.line
+        _params = clean_line.split()
+
+        vert_count = len(child_node.vertices)
+
         # if we have uv data and a pe_tex_info, otherwise pass
         # # custom minifig head > 3626tex.dat (has no pe_tex) > 3626texpole.dat (has no uv data)
         if len(_params) > 14:
