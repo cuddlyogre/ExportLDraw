@@ -16,13 +16,11 @@ from . import ldraw_part_types
 class LDrawFile:
     __raw_files = {}
     __file_cache = {}
-    __key_map = {}
 
     @classmethod
     def reset_caches(cls):
         cls.__raw_files = {}
         cls.__file_cache = {}
-        cls.__key_map = {}
 
     def __init__(self, filename):
         self.filename = filename
