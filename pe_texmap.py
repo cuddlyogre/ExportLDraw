@@ -1,6 +1,3 @@
-import mathutils
-
-
 class PETexInfo:
     def __init__(self, image=None, matrix=None, v1=None, v2=None):
         self.image = image

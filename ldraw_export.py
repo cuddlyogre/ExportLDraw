@@ -1,7 +1,8 @@
 import bpy
 import bmesh
-import math
 import mathutils
+
+import math
 
 from .ldraw_file import LDrawFile
 from .ldraw_node import LDrawNode

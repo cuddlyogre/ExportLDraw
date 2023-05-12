@@ -1,5 +1,6 @@
-import time
 import bpy
+
+import time
 import os
 
 from .import_settings import ImportSettings

@@ -6,8 +6,6 @@ import json
 from pathlib import Path
 import os
 
-import functools
-
 try:
     from .definitions import APP_ROOT
 except ImportError as e:

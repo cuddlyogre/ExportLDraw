@@ -1,4 +1,3 @@
-import bpy
 import os
 from pathlib import Path
 
@@ -28,6 +27,8 @@ def is_png(data):
 
 # https://blender.stackexchange.com/questions/240137/is-it-possible-to-create-image-data-from-a-base64-encoded-png
 def image_from_data(name, data, height=1, width=1):
+    import bpy
+
     # Create image, width and height are dummy values
     img = bpy.data.images.new(name, height, width)
     img.use_fake_user = True  # otherwise it won't save to the file

@@ -1,6 +1,7 @@
-import time
 import bpy
 from bpy_extras.io_utils import ExportHelper
+
+import time
 
 from .export_options import ExportOptions
 from .filesystem import FileSystem

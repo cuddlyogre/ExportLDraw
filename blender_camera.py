@@ -1,6 +1,7 @@
 import bpy
-import math
 import mathutils
+
+import math
 
 from .import_options import ImportOptions
 from . import group

@@ -1,4 +1,5 @@
 import bpy
+
 import os
 
 top_collection = None

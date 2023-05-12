@@ -1,6 +1,7 @@
+import mathutils
+
 import os
 import re
-import mathutils
 
 from .import_options import ImportOptions
 from .filesystem import FileSystem
