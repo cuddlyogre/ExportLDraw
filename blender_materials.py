@@ -21,7 +21,7 @@ class BlenderMaterials:
     def create_blender_node_groups(cls):
         cls.reset_caches()
         path = os.path.join(APP_ROOT, 'materials', 'all_monkeys.blend')
-        with bpy.data.libraries.load(path, link=False) as (data_from, data_to):
+        with bpy.data.libraries.load(path) as (data_from, data_to):
             all_node_groups = False
             if all_node_groups:
                 data_to.node_groups = data_from.node_groups
