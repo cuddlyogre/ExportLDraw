@@ -1,7 +1,5 @@
 import uuid
 
-import bpy
-
 from . import group
 from .geometry_data import GeometryData
 from .import_options import ImportOptions
@@ -84,7 +82,7 @@ class LDrawNode:
 
         if group.top_collection is None:
             collection_name = self.file.name
-            host_collection = bpy.context.scene.collection
+            host_collection = group.get_scene_collection()
             collection = group.get_filename_collection(collection_name, host_collection)
             group.top_collection = collection
 

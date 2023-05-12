@@ -146,7 +146,8 @@ def __load_materials(file):
 
     j = 0
     for collection_name, codes in colors.items():
-        collection = group.get_collection(collection_name, bpy.context.scene.collection)
+        scene_collection = group.get_scene_collection()
+        collection = group.get_collection(collection_name, scene_collection)
 
         for i, color_code in enumerate(codes):
             bm = bmesh.new()

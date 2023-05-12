@@ -112,7 +112,7 @@ def meta_step():
 
     if ImportOptions.meta_step_groups:
         collection_name = f"Steps"
-        host_collection = bpy.context.scene.collection
+        host_collection = group.get_scene_collection()
         steps_collection = group.get_collection(collection_name, host_collection)
         helpers.hide_obj(steps_collection)
 

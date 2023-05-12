@@ -35,6 +35,10 @@ def reset_caches():
     collection_id_map = {}
 
 
+def get_scene_collection():
+    return bpy.context.scene.collection
+
+
 def get_collection(collection_name, host_collection):
     collection_name = collection_name[:63]
     collection = bpy.data.collections.get(collection_name)
