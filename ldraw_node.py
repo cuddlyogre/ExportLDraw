@@ -133,7 +133,7 @@ class LDrawNode:
         winding = "CCW"
         invert_next = False
 
-        mesh = bpy.data.meshes.get(key)
+        mesh = ldraw_mesh.get_mesh(key)
         if ImportOptions.preserve_hierarchy or mesh is None:
             for child_node in self.file.child_nodes:
                 if child_node.meta_command in ["1", "2", "3", "4", "5"] and not self.texmap_fallback:
@@ -230,9 +230,7 @@ class LDrawNode:
                     invert_next = False
 
         if self.top:
-            mesh = bpy.data.meshes.get(key)
-            if mesh is None:
-                mesh = ldraw_mesh.create_mesh(self, key, geometry_data)
+            mesh = ldraw_mesh.create_mesh(self, key, geometry_data)
             obj = ldraw_object.process_top_object(self, mesh, key, accum_matrix, color_code, collection)
 
             # if LDrawNode.part_count == 1:

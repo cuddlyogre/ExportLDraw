@@ -10,22 +10,21 @@ from . import helpers
 from . import matrices
 
 
+def get_mesh(key):
+    return bpy.data.meshes.get(key)
+
+
 def create_mesh(ldraw_node, key, geometry_data):
-    bm = bmesh.new()
+    mesh = get_mesh(key)
+    if mesh is None:
+        mesh = bpy.data.meshes.new(key)
+        mesh.name = key
+        mesh[strings.ldraw_filename_key] = ldraw_node.file.name
 
-    mesh = bpy.data.meshes.new(key)
-    mesh.name = key
-    mesh[strings.ldraw_filename_key] = ldraw_node.file.name
-
-    __process_bmesh(ldraw_node, bm, mesh, geometry_data)
-    # __process_bmesh_edges(ldraw_node, key, bm, geometry_data)
-
-    helpers.finish_bmesh(bm, mesh)
-    helpers.finish_mesh(mesh)
-
-    __process_mesh_edges(ldraw_node, key, geometry_data)
-    __process_mesh_sharp_edges(mesh, geometry_data)
-    __process_mesh(mesh)
+        __process_bmesh(ldraw_node, mesh, geometry_data)
+        __process_mesh_edges(ldraw_node, key, geometry_data)
+        __process_mesh_sharp_edges(mesh, geometry_data)
+        __process_mesh(mesh)
 
     return mesh
 
@@ -34,10 +33,14 @@ def create_mesh(ldraw_node, key, geometry_data):
 # https://blender.stackexchange.com/questions/50160/scripting-low-level-join-meshes-elements-hopefully-with-bmesh
 # https://blender.stackexchange.com/questions/188039/how-to-join-only-two-objects-to-create-a-new-object-using-python
 # https://blender.stackexchange.com/questions/23905/select-faces-depending-on-material
-def __process_bmesh(ldraw_node, bm, mesh, geometry_data):
+def __process_bmesh(ldraw_node, mesh, geometry_data):
+    bm = bmesh.new()
     __process_bmesh_faces(ldraw_node, geometry_data, bm, mesh)
     helpers.ensure_bmesh(bm)
     __clean_bmesh(bm)
+    # __process_bmesh_edges(ldraw_node, key, bm, geometry_data)
+    helpers.finish_bmesh(bm, mesh)
+    helpers.finish_mesh(mesh)
 
 
 def __process_bmesh_edges(ldraw_node, key, bm, geometry_data):
@@ -166,6 +169,7 @@ def __process_mesh(mesh):
 # bpy.context.object.data.edges[6].use_edge_sharp = True
 # Create kd tree for fast "find nearest points" calculation
 # https://docs.blender.org/api/blender_python_api_current/mathutils.kdtree.html
+# https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.KDTree.html
 def __build_kd(verts):
     kd = mathutils.kdtree.KDTree(len(verts))
     for i, v in enumerate(verts):
