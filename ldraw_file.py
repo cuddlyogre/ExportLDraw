@@ -246,7 +246,10 @@ class LDrawFile:
     # always return false so that the rest of the line types are parsed even if this is true
     def __line_description(self, strip_line):
         if self.description is None:
-            self.description = strip_line.split(maxsplit=1)[1]
+            parts = strip_line.split(maxsplit=1)
+            if len(parts) > 1:
+                str = parts[1]
+                self.description = str
         return False
 
     # name and author are allowed to be case insensitive
