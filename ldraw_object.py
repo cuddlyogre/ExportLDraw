@@ -31,60 +31,59 @@ def process_top_object(ldraw_node, mesh, key, accum_matrix, color_code, collecti
     color = LDrawColor.get_color(color_code)
     obj.color = color.color_a
 
+    # TODO: to add rigid body - must apply scale and cannot be parented to empty
     __process_top_object_matrix(obj, accum_matrix)
-    if not ImportOptions.preserve_hierarchy:
-        __process_top_object_gap(obj)
+    __process_top_object_gap(obj, accum_matrix)
     __process_top_object_edges(obj)
-
     ldraw_meta.do_meta_step(obj)
-
     __link_obj_to_collection(collection, obj)
-
     ldraw_props.set_props(obj, ldraw_node.file, color_code)
-
     __process_top_edges(ldraw_node, key, obj, color_code, collection)
 
     return obj
 
 
 def __process_top_object_matrix(obj, accum_matrix):
-    global top_empty
-
-    transform_matrix = matrices.rotation_matrix @ matrices.import_scale_matrix
     if ImportOptions.parent_to_empty:
+        global top_empty
         if top_empty is None:
             top_empty = bpy.data.objects.new(group.top_collection.name, None)
             group.link_obj(group.top_collection, top_empty)
 
-        top_empty.matrix_world = transform_matrix
+        top_empty.matrix_world = matrices.transform_matrix
         obj.matrix_world = accum_matrix
         obj.parent = top_empty  # must be after matrix_world set or else transform is incorrect
     else:
-        matrix_world = transform_matrix @ accum_matrix
+        matrix_world = matrices.transform_matrix @ accum_matrix
         obj.matrix_world = matrix_world
 
 
-def __process_top_object_gap(obj):
-    global gap_scale_empty
+def __process_top_object_gap(obj, accum_matrix):
+    if ImportOptions.preserve_hierarchy:
+        return
 
     if ImportOptions.make_gaps and ImportOptions.gap_target == "object":
         if ImportOptions.gap_scale_strategy == "object":
-            matrix_world = obj.matrix_world @ matrices.gap_scale_matrix
+            matrix_world = matrices.transform_matrix @ accum_matrix @ matrices.gap_scale_matrix
             obj.matrix_world = matrix_world
         elif ImportOptions.gap_scale_strategy == "constraint":
+            global gap_scale_empty
             if gap_scale_empty is None:
                 gap_scale_empty = bpy.data.objects.new("gap_scale", None)
                 gap_scale_empty.use_fake_user = True
-                matrix_world = gap_scale_empty.matrix_world @ matrices.gap_scale_matrix
-                gap_scale_empty.matrix_world = matrix_world
+                if ImportOptions.parent_to_empty:
+                    matrix_world = matrices.gap_scale_matrix
+                    gap_scale_empty.matrix_world = matrix_world
+                    gap_scale_empty.parent = top_empty
+                else:
+                    matrix_world = matrices.transform_matrix @ matrices.gap_scale_matrix
+                    gap_scale_empty.matrix_world = matrix_world
                 group.link_obj(group.top_collection, gap_scale_empty)
             copy_scale_constraint = obj.constraints.new("COPY_SCALE")
             copy_scale_constraint.target = gap_scale_empty
-            copy_scale_constraint.target.parent = top_empty
 
 
 def __process_top_object_edges(obj):
-    # TODO: add rigid body - must apply scale and cannot be parented to empty
     if ImportOptions.smooth_type == "edge_split":
         edge_modifier = obj.modifiers.new("Edge Split", type='EDGE_SPLIT')
         edge_modifier.use_edge_sharp = True
