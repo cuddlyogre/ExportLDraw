@@ -6,6 +6,7 @@ from .import_options import ImportOptions
 from .ldraw_colors import LDrawColor
 from . import ldraw_props
 from . import ldraw_meta
+from . import ldraw_mesh
 from . import matrices
 
 top_empty = None
@@ -95,7 +96,7 @@ def __process_top_object_edges(obj):
 def __process_top_edges(ldraw_node, key, obj, color_code, collection):
     if ImportOptions.import_edges:
         edge_key = f"e_{key}"
-        edge_mesh = bpy.data.meshes[edge_key]
+        edge_mesh = ldraw_mesh.get_mesh(edge_key)
         edge_obj = bpy.data.objects.new(edge_mesh.name, edge_mesh)
         edge_obj[strings.ldraw_filename_key] = f"{ldraw_node.file.name}_edges"
         edge_obj[strings.ldraw_color_code_key] = color_code
