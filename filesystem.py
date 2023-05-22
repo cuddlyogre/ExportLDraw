@@ -23,13 +23,13 @@ class FileSystem:
     defaults['resolution'] = 'Standard'
     resolution = defaults['resolution']
 
-    __search_paths = []
-    __lowercase_paths = {}
+    search_dirs = []
+    lowercase_paths = {}
 
     @classmethod
     def reset_caches(cls):
-        cls.__search_paths = []
-        cls.__lowercase_paths = {}
+        cls.search_dirs = []
+        cls.lowercase_paths = {}
 
     @staticmethod
     def locate_ldraw():
@@ -79,20 +79,15 @@ class FileSystem:
     def build_search_paths(cls, parent_filepath=None):
         cls.reset_caches()
 
-        # https://forums.ldraw.org/thread-24495-post-40577.html#pid40577
+        ldraw_roots = []
+
         # append top level file's directory
+        # https://forums.ldraw.org/thread-24495-post-40577.html#pid40577
+        # post discussing path order, this order was chosen
+        # except that the current file's dir isn't scanned, only the current dir of the top level file
+        # https://forums.ldraw.org/thread-24495-post-45340.html#pid45340
         if parent_filepath is not None:
-            cls.__append_search_path((os.path.dirname(parent_filepath), '**/*'))
-            cls.__append_search_path((os.path.dirname(parent_filepath), '*'))
-
-        if cls.prefer_studio:
-            cls.__append_search_path((os.path.join(cls.studio_ldraw_path), '*'))
-            cls.__append_search_path((os.path.join(cls.ldraw_path), '*'))
-        else:
-            cls.__append_search_path((os.path.join(cls.ldraw_path), '*'))
-            cls.__append_search_path((os.path.join(cls.studio_ldraw_path), '*'))
-
-        ldraw_roots = list()
+            ldraw_roots.append(os.path.dirname(parent_filepath))
 
         if cls.prefer_studio:
             if cls.prefer_unofficial:
@@ -118,34 +113,43 @@ class FileSystem:
                 ldraw_roots.append(os.path.join(cls.studio_ldraw_path, "unofficial"))
 
         for root in ldraw_roots:
-            cls.__append_search_path((os.path.join(root, "models"), '**/*'))
-            cls.__append_search_path((os.path.join(root, "models"), '*'))
+            path = root
+            cls.append_search_path(path, root=True)
 
-            cls.__append_search_path((os.path.join(root, "parts", "textures"), '**/*'))
-            cls.__append_search_path((os.path.join(root, "parts", "textures"), '*'))
-
-            cls.__append_search_path((os.path.join(root, "parts"), '**/*'))
-            cls.__append_search_path((os.path.join(root, "parts"), '*'))
+            path = os.path.join(root, "p")
+            cls.append_search_path(path)
 
             if cls.resolution == "High":
-                cls.__append_search_path((os.path.join(root, "p", "48"), '**/*'))
-                cls.__append_search_path((os.path.join(root, "p", "48"), '*'))
+                path = os.path.join(root, "p", "48")
+                cls.append_search_path(path)
             elif cls.resolution == "Low":
-                cls.__append_search_path((os.path.join(root, "p", "8"), '**/*'))
-                cls.__append_search_path((os.path.join(root, "p", "8"), '*'))
+                path = os.path.join(root, "p", "8")
+                cls.append_search_path(path)
 
-            cls.__append_search_path((os.path.join(root, "p"), '**/*'))
-            cls.__append_search_path((os.path.join(root, "p"), '*'))
+            path = os.path.join(root, "parts")
+            cls.append_search_path(path)
 
-        cls.__lowercase_paths = {}
-        for path in cls.__search_paths:
-            for file in glob.glob(os.path.join(path[0], path[1])):
-                cls.__lowercase_paths[file.lower()] = file
+            path = os.path.join(root, "parts", "textures")
+            cls.append_search_path(path)
+
+            path = os.path.join(root, "models")
+            cls.append_search_path(path)
+
+    # build a list of folders to search for parts
+    # build a map of lowercase to actual filenames
+    @classmethod
+    def append_search_path(cls, path, root=False):
+        cls.search_dirs.append(path)
+        cls.append_lowercase_paths(path, '*')
+        if root:
+            return
+        cls.append_lowercase_paths(path, '**/*')
 
     @classmethod
-    def __append_search_path(cls, path):
-        # if path[0] != "" and os.path.isdir(path[0]):
-        cls.__search_paths.append(path)
+    def append_lowercase_paths(cls, path, pattern):
+        files = glob.glob(os.path.join(path, pattern))
+        for file in files:
+            cls.lowercase_paths.setdefault(file.lower(), file)
 
     @classmethod
     def locate(cls, filename):
@@ -156,9 +160,9 @@ class FileSystem:
         if os.path.isfile(part_path):
             return part_path
 
-        for path in cls.__search_paths:
-            full_path = os.path.join(path[0], part_path)
-            full_path = cls.__lowercase_paths.get(full_path.lower()) or full_path
+        for dir in cls.search_dirs:
+            full_path = os.path.join(dir, part_path)
+            full_path = cls.lowercase_paths.get(full_path.lower()) or full_path
             if os.path.isfile(full_path):
                 return full_path
 
