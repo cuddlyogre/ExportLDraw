@@ -21,7 +21,21 @@ def reset_caches():
     gap_scale_empty = None
 
 
+# TODO: to add rigid body - must apply scale and cannot be parented to empty
 def process_top_object(ldraw_node, mesh, key, accum_matrix, color_code, collection):
+    obj = __get_top_object(ldraw_node, mesh, color_code)
+    __process_top_object_matrix(obj, accum_matrix)
+    __process_top_object_gap(obj, accum_matrix)
+    __process_top_object_edges(obj)
+    ldraw_meta.do_meta_step(obj)
+    __link_obj_to_collection(collection, obj)
+    ldraw_props.set_props(obj, ldraw_node.file, color_code)
+    __process_top_edges(ldraw_node, key, obj, color_code, collection)
+
+    return obj
+
+
+def __get_top_object(ldraw_node, mesh, color_code):
     obj = bpy.data.objects.new(mesh.name, mesh)
     obj[strings.ldraw_filename_key] = ldraw_node.file.name
     obj[strings.ldraw_color_code_key] = color_code
@@ -31,16 +45,6 @@ def process_top_object(ldraw_node, mesh, key, accum_matrix, color_code, collecti
     # Shading > Color > Object to see object colors
     color = LDrawColor.get_color(color_code)
     obj.color = color.color_a
-
-    # TODO: to add rigid body - must apply scale and cannot be parented to empty
-    __process_top_object_matrix(obj, accum_matrix)
-    __process_top_object_gap(obj, accum_matrix)
-    __process_top_object_edges(obj)
-    ldraw_meta.do_meta_step(obj)
-    __link_obj_to_collection(collection, obj)
-    ldraw_props.set_props(obj, ldraw_node.file, color_code)
-    __process_top_edges(ldraw_node, key, obj, color_code, collection)
-
     return obj
 
 
