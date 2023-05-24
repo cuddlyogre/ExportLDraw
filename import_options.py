@@ -67,13 +67,13 @@ class ImportOptions:
     defaults['set_timeline_markers'] = False
     set_timeline_markers = defaults['set_timeline_markers']
 
-    defaults['smooth_type'] = "edge_split"  # "edge_split" "auto_smooth"
+    defaults['smooth_type'] = ["edge_split", "auto_smooth"][0]
     smooth_type = defaults['smooth_type']
 
-    defaults['gap_target'] = "object"  # "mesh"
+    defaults['gap_target'] = ["object", "mesh"][0]
     gap_target = defaults['gap_target']
 
-    defaults['gap_scale_strategy'] = "constraint"  # "object" "constraint"
+    defaults['gap_scale_strategy'] = ["constraint", "object"][1]
     gap_scale_strategy = defaults['gap_scale_strategy']
 
     defaults['import_edges'] = False
