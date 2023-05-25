@@ -54,6 +54,7 @@ class LDrawNode:
         self.subfile_line_index = 0
 
     def load(self,
+             parent_node=None,
              color_code="16",
              parent_matrix=None,
              geometry_data=None,
@@ -61,7 +62,7 @@ class LDrawNode:
              accum_invert=False,
              parent_collection=None,
              texmap=None,
-             pe_tex_info=None
+             pe_tex_info=None,
              ):
 
         if self.file.is_edge_logo() and not ImportOptions.display_logo:
@@ -119,7 +120,13 @@ class LDrawNode:
             matrix = matrices.identity_matrix
             geometry_data = GeometryData()
 
-        key = LDrawNode.__build_key(self.file.name, color_code, matrix, accum_cull, accum_invert, texmap, pe_tex_info)
+        # when a part is used on its own and also as part of a shortcut, the part will not render in the shortcut
+        # because that part doesn't register as a subpart of the shortcut
+        # a is a random string if the parent is a shortcut
+        a = ""
+        if parent_node and parent_node.file.is_shortcut():
+            a = uuid.uuid4()
+        key = LDrawNode.__build_key(self.file.name, color_code, matrix, a, accum_cull, accum_invert, texmap, pe_tex_info)
 
         if self.file.is_like_model():
             if self.file.has_geometry():
@@ -151,6 +158,7 @@ class LDrawNode:
                         # may crash based on https://docs.blender.org/api/current/info_gotcha.html#help-my-script-crashes-blender
                         # but testing seems to indicate that adding to bpy.data.meshes does not change hash(mesh) value
                         child_node.load(
+                            parent_node=self,
                             color_code=current_color,
                             parent_matrix=accum_matrix if ImportOptions.preserve_hierarchy else matrix,
                             geometry_data=geometry_data,
@@ -256,8 +264,8 @@ class LDrawNode:
     # must include matrix, so that parts that are just mirrored versions of other parts
     # such as 32527.dat (mirror of 32528.dat) will render
     @staticmethod
-    def __build_key(filename, color_code, matrix, accum_cull, accum_invert, texmap=None, pe_tex_info=None):
-        _key = (filename, color_code, matrix, accum_cull, accum_invert,)
+    def __build_key(filename, color_code, matrix, a, accum_cull, accum_invert, texmap=None, pe_tex_info=None):
+        _key = (filename, color_code, matrix, a, accum_cull, accum_invert,)
         if texmap is not None:
             _key += ((texmap.method, texmap.texture, texmap.glossmap),)
         if pe_tex_info is not None:
