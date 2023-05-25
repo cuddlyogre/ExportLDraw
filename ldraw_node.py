@@ -125,8 +125,9 @@ class LDrawNode:
         # a is a random string if the parent is a shortcut
         a = ""
         if parent_node and parent_node.file.is_shortcut():
-            a = uuid.uuid4()
-        key = LDrawNode.__build_key(self.file.name, color_code, matrix, a, accum_cull, accum_invert, texmap, pe_tex_info)
+            key = LDrawNode.__build_key(self.file.name, color_code, matrix, accum_cull, accum_invert, parent_filename=parent_node.file.name, texmap=texmap, pe_tex_info=pe_tex_info)
+        else:
+            key = LDrawNode.__build_key(self.file.name, color_code, matrix, accum_cull, accum_invert, texmap=texmap, pe_tex_info=pe_tex_info)
 
         if self.file.is_like_model():
             if self.file.has_geometry():
@@ -264,8 +265,8 @@ class LDrawNode:
     # must include matrix, so that parts that are just mirrored versions of other parts
     # such as 32527.dat (mirror of 32528.dat) will render
     @staticmethod
-    def __build_key(filename, color_code, matrix, a, accum_cull, accum_invert, texmap=None, pe_tex_info=None):
-        _key = (filename, color_code, matrix, a, accum_cull, accum_invert,)
+    def __build_key(filename, color_code, matrix, accum_cull, accum_invert, parent_filename=None, texmap=None, pe_tex_info=None):
+        _key = (filename, color_code, matrix, accum_cull, accum_invert, parent_filename,)
         if texmap is not None:
             _key += ((texmap.method, texmap.texture, texmap.glossmap),)
         if pe_tex_info is not None:
