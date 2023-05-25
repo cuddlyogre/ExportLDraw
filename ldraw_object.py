@@ -92,7 +92,8 @@ def __process_top_object_edges(obj):
     if ImportOptions.smooth_type == "edge_split":
         edge_modifier = obj.modifiers.new("Edge Split", type='EDGE_SPLIT')
         edge_modifier.use_edge_sharp = True
-        # need this or else items like the back blue window stripes in 10252-1 - Volkswagen Beetle.mpd aren't shaded properly
+        # need this or else items with right angles but aren't marked as sharp aren't shaded properly
+        # see the back blue window stripes in 10252-1 - Volkswagen Beetle.mpd
         edge_modifier.use_edge_angle = True
         edge_modifier.split_angle = matrices.auto_smooth_angle
 
