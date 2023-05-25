@@ -79,9 +79,6 @@ class ImportOptions:
     defaults['import_edges'] = False
     import_edges = defaults['import_edges']
 
-    defaults['bevel_edges'] = True
-    bevel_edges = defaults['bevel_edges']
-
     defaults['use_freestyle_edges'] = False
     use_freestyle_edges = defaults['use_freestyle_edges']
 
