@@ -134,7 +134,7 @@ class LDrawNode:
         invert_next = False
 
         mesh = ldraw_mesh.get_mesh(key)
-        if ImportOptions.preserve_hierarchy or mesh is None:
+        if mesh is None or ImportOptions.preserve_hierarchy:
             for child_node in self.file.child_nodes:
                 if child_node.meta_command in ["1", "2", "3", "4", "5"] and not self.texmap_fallback:
                     current_color = LDrawNode.__determine_color(color_code, child_node.color_code)
@@ -230,14 +230,19 @@ class LDrawNode:
                     invert_next = False
 
         if self.top:
-            mesh = ldraw_mesh.create_mesh(self, key, geometry_data)
-            obj = ldraw_object.process_top_object(self, mesh, key, accum_matrix, color_code, collection)
+            obj = LDrawNode.__create_obj(self, key, geometry_data, accum_matrix, color_code, collection)
 
             # if LDrawNode.part_count == 1:
             #     raise BaseException("done")
 
-            # yield self
+            # yield obj
             return obj
+
+    @staticmethod
+    def __create_obj(ldraw_node, key, geometry_data, accum_matrix, color_code, collection):
+        mesh = ldraw_mesh.create_mesh(ldraw_node, key, geometry_data)
+        obj = ldraw_object.process_top_object(ldraw_node, mesh, key, accum_matrix, color_code, collection)
+        return obj
 
     # set the working color code to this file's
     # color code if it isn't color code 16
