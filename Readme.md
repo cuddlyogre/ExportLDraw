@@ -25,9 +25,8 @@ BlenderArtists thread](https://blenderartists.org/t/realistic-glass-in-eevee/114
 
 You are able to choose the logo you want to show on studs, or no logo or stud at all.
 
-Importing TEXMAP is fully supported. This includes planar, cylindrical, and spherical. The DATA meta command is
-relatively new compared to TEXMAP support, so it's not supported, yet. Thanks to https://github.com/trevorsandy/lpub3d 
-for the cylindrical and spherical math. 
+Importing TEXMAP is fully supported, including embedded image data using the DATA meta command. This includes planar, 
+cylindrical, and spherical projections. Thanks to https://github.com/trevorsandy/lpub3d for the cylindrical and spherical math. 
 
 ![Examples of TEXMAP using 27062.dat and 27062p01.dat](examples/import/texmap.jpg)
 
@@ -56,7 +55,7 @@ importing Stud.io projects will not ever be implemented here, even though it wou
 
 Eevee and Cycles are both supported.
 
-**EEvee**  
+**Eevee**  
 ![Examples of Eevee import](examples/import/eevee.jpg)
 
 **Cycles**  
@@ -113,13 +112,15 @@ It will be blank if nothing is found or on non-Windows systems.
 
 **Prefer Stud.io library:** Look in the Stud.io parts library first.  
 **Prefer unofficial parts:** Look in the unofficial parts folder first.  
+**Profile:** Runs cProfile during import. Saves **export_ldraw_import.prof** to the user's home folder. This file can be
+viewed with **snakeviz**.
 **Use alternate colors:** Uses LDCfgalt.ldr for more accurate colors.  
 **Part resolution:** The quality of parts to use. Low resolution is quicker to import, but doesn't look as good. High
 resolution looks better but take longer to import.  
 **Display logo:** Display the logo on the stud.  
 **Chosen logo:** Which logo to display. logo and logo2 aren't used and are only included for completeness.  
-**Profile:** Runs cProfile during import. Saves **export_ldraw_import.prof** to the user's home folder. This file can be
-viewed with **snakeviz**.
+**Freestyle edges:** Render LDraw edges using Freestyle.  
+![No freestyle vs freestyle demo](examples/import/freestyle.gif)
 
 **Scaling Options**
 
@@ -130,15 +131,6 @@ viewed with **snakeviz**.
 **Gap target:** Whether to scale the object data or mesh data.  
 **Gap strategy:** If object then the gap is applied to the object directly. If constraint, an empty named gap_scale can
 be scaled to adjust to gaps between parts.
-
-**Cleanup Options**
-
-**Remove doubles:** Merge vertices that are within a certain distance.  
-**Merge distance:** How close the vertices have to be to merge them.  
-**Smooth type:** Use either autosmooth or an edge split modifier to smooth part faces.  
-**Shade smooth:**  Use flat or smooth shading for part faces.  
-**Recalculate normals:** Recalculate normals during import to ensure all normals face outside. Completely overwrites any 
-BFC processing. It is recommended to keep unchecked if processing BFC commands is checked
 
 **Meta Commands** - Process LDraw META commands.
 
@@ -152,15 +144,18 @@ BFC processing. It is recommended to keep unchecked if processing BFC commands i
 **SAVE:** Doesn't do anything.  
 **Set timeline markers:** Add markers to the timeline where META commands were encountered.
 
+**Cleanup Options**
+
+**Remove doubles:** Merge vertices that are within a certain distance.  
+**Merge distance:** How close the vertices have to be to merge them.  
+**Smooth type:** Use an edge split modifier to smooth part faces, split edges during mesh processing, or use auto smooth.  
+**Shade smooth:**  Use flat or smooth shading for part faces.  
+**Recalculate normals:** Recalculate normals during import to ensure all normals face outside. Completely overwrites any 
+BFC processing. It is recommended to keep unchecked if processing BFC commands is checked
+
 **Extras**
 
 **Import edges:** Import LDraw edges as edges.  
-**Freestyle edges:** Render LDraw edges using freestyle. Import edges must be picked for this to work.   
-![No freestyle vs freestyle demo](examples/import/freestyle.gif)
-
-**Import all materials:** Import all LDraw materials, not just the ones used by the model.  
-**Add subsurface:** Attach a subsurface shader node to materials.  
-**Debug text:** Render debug text to the system console.  
 **Treat shortcut parts as models:** Treat shortcut parts as if they were models by splitting them into their constituent
 parts instead of merging them.  
 **No studs:** Don't import studs. Not particularly useful but is neat to see.  
