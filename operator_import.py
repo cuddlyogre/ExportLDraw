@@ -381,6 +381,10 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
 
         layout.separator(factor=space_factor)
         col = layout.column()
+        col.prop(self, "profile")
+
+        layout.separator(factor=space_factor)
+        col = layout.column()
         col.label(text="Import Options")
         col.prop(self, "prefer_studio")
         col.prop(self, "prefer_unofficial")
@@ -388,7 +392,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         col.prop(self, "resolution")
         col.prop(self, "display_logo")
         col.prop(self, "chosen_logo")
-        col.prop(self, "profile")
+        col.prop(self, "use_freestyle_edges")
 
         layout.separator(factor=space_factor)
         col = layout.column()
@@ -399,16 +403,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         col.prop(self, "gap_scale")
         col.prop(self, "gap_target")
         col.prop(self, "gap_scale_strategy")
-
-        layout.separator(factor=space_factor)
-        col = layout.column()
-        col.label(text="Cleanup Options")
-        col.prop(self, "remove_doubles")
-        col.prop(self, "merge_distance")
-        col.prop(self, "smooth_type")
-        col.prop(self, "shade_smooth")
-        col.prop(self, "recalculate_normals")
-        col.prop(self, "triangulate")
 
         layout.separator(factor=space_factor)
         col = layout.column()
@@ -427,8 +421,17 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
 
         layout.separator(factor=space_factor)
         col = layout.column()
+        col.label(text="Cleanup Options")
+        col.prop(self, "remove_doubles")
+        col.prop(self, "merge_distance")
+        col.prop(self, "smooth_type")
+        col.prop(self, "shade_smooth")
+        col.prop(self, "recalculate_normals")
+        col.prop(self, "triangulate")
+
+        layout.separator(factor=space_factor)
+        col = layout.column()
         col.label(text="Extras")
-        col.prop(self, "use_freestyle_edges")
         col.prop(self, "import_edges")
         col.prop(self, "treat_shortcut_as_model")
         col.prop(self, "treat_models_with_subparts_as_parts")
