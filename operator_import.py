@@ -112,8 +112,9 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         description="Use this strategy to smooth meshes",
         default=ImportSettings.get_setting('smooth_type'),
         items=(
-            ("auto_smooth", "Auto smooth", "Use auto smooth"),
             ("edge_split", "Edge split", "Use an edge split modifier"),
+            ("auto_smooth", "Auto smooth", "Use auto smooth"),
+            ("bmesh_split", "bmesh smooth", "Split during initial mesh processing"),
         ),
     )
 

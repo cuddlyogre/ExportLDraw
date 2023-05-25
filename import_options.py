@@ -67,7 +67,7 @@ class ImportOptions:
     defaults['set_timeline_markers'] = False
     set_timeline_markers = defaults['set_timeline_markers']
 
-    defaults['smooth_type'] = ["edge_split", "auto_smooth"][0]
+    defaults['smooth_type'] = ["edge_split", "auto_smooth", "bmesh_split"][0]
     smooth_type = defaults['smooth_type']
 
     defaults['gap_target'] = ["object", "mesh"][0]
@@ -78,6 +78,9 @@ class ImportOptions:
 
     defaults['import_edges'] = False
     import_edges = defaults['import_edges']
+
+    defaults['bevel_edges'] = True
+    bevel_edges = defaults['bevel_edges']
 
     defaults['use_freestyle_edges'] = False
     use_freestyle_edges = defaults['use_freestyle_edges']
