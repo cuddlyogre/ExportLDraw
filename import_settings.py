@@ -52,6 +52,10 @@ class ImportSettings:
         'recalculate_normals': ImportOptions.defaults['recalculate_normals'],
         'triangulate': ImportOptions.defaults['triangulate'],
         'preserve_hierarchy': ImportOptions.defaults['preserve_hierarchy'],
+        'bevel_edges': ImportOptions.defaults['bevel_edges'],
+        'bevel_weight': ImportOptions.defaults['bevel_weight'],
+        'bevel_width': ImportOptions.defaults['bevel_width'],
+        'bevel_segments': ImportOptions.defaults['bevel_segments'],
     }
 
     default_settings = {**filesystem_defaults, **ldraw_color_defaults, **import_options_defaults}

@@ -89,6 +89,12 @@ def __process_top_object_gap(obj, accum_matrix):
 
 
 def __process_top_object_edges(obj):
+    if ImportOptions.bevel_edges:
+        bevel_modifier = obj.modifiers.new("Bevel", type='BEVEL')
+        bevel_modifier.limit_method = 'WEIGHT'
+        bevel_modifier.width = ImportOptions.bevel_width
+        bevel_modifier.segments = ImportOptions.bevel_segments
+
     if ImportOptions.smooth_type == "edge_split":
         edge_modifier = obj.modifiers.new("Edge Split", type='EDGE_SPLIT')
         edge_modifier.use_edge_sharp = True

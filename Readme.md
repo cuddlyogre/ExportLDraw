@@ -122,6 +122,12 @@ resolution looks better but take longer to import.
 **Freestyle edges:** Render LDraw edges using Freestyle.  
 ![No freestyle vs freestyle demo](examples/import/freestyle.gif)
 
+**Bevel Options**
+**Bevel edges:** Bevel edges using a modifier. Some parts don't render correctly, so this is set to false by default.  
+**Bevel weight:** **Bevel Weight** value applied to mesh edges 
+**Bevel width:** Bevel modifier **Amount** value 
+**Bevel Segments:** Bevel modifier **Segments** value 
+
 **Scaling Options**
 
 **Import scale:** What scale to import at. Full scale is 1.0 and is so huge that it is unwieldy in the viewport.  

@@ -302,6 +302,38 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         default=False
     )
 
+    bevel_edges: bpy.props.BoolProperty(
+        name="Bevel edges",
+        description="Bevel edges. Can cause some parts to render incorrectly",
+        default=ImportSettings.get_setting('bevel_edges'),
+    )
+
+    bevel_weight: bpy.props.FloatProperty(
+        name="Bevel weight",
+        description="Bevel weight",
+        default=ImportSettings.get_setting('bevel_weight'),
+        precision=1,
+        step=10,
+        min=0.0,
+        max=1.0,
+    )
+
+    bevel_width: bpy.props.FloatProperty(
+        name="Bevel width",
+        description="Bevel width",
+        default=ImportSettings.get_setting('bevel_width'),
+        precision=1,
+        step=10,
+        min=0.0,
+        max=1.0,
+    )
+
+    bevel_segments: bpy.props.IntProperty(
+        name="Bevel segments",
+        description="Bevel segments",
+        default=ImportSettings.get_setting('bevel_segments'),
+    )
+
     def invoke(self, context, _event):
         context.window_manager.fileselect_add(self)
         ImportSettings.load_settings()
@@ -403,6 +435,14 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         col.prop(self, "gap_scale")
         col.prop(self, "gap_target")
         col.prop(self, "gap_scale_strategy")
+
+        layout.separator(factor=space_factor)
+        col = layout.column()
+        col.label(text="Bevel Options")
+        col.prop(self, "bevel_edges")
+        col.prop(self, "bevel_weight")
+        col.prop(self, "bevel_width")
+        col.prop(self, "bevel_segments")
 
         layout.separator(factor=space_factor)
         col = layout.column()
