@@ -122,8 +122,6 @@ class LDrawNode:
 
         # when a part is used on its own and also as part of a shortcut, the part will not render in the shortcut
         # because that part doesn't register as a subpart of the shortcut
-        # a is a random string if the parent is a shortcut
-        a = ""
         if parent_node and parent_node.file.is_shortcut():
             key = LDrawNode.__build_key(self.file.name, color_code, matrix, accum_cull, accum_invert, parent_filename=parent_node.file.name, texmap=texmap, pe_tex_info=pe_tex_info)
         else:
