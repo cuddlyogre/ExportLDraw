@@ -114,7 +114,7 @@ class LDrawNode:
             # if parent_collection is not None, this is a nested model
             if parent_collection is not None:
                 collection = group.get_filename_collection(self.file.name, parent_collection)
-        elif ImportOptions.preserve_hierarchy or geometry_data is None:  # top-level part
+        elif geometry_data is None or ImportOptions.preserve_hierarchy:  # top-level part
             LDrawNode.part_count += 1
             self.top = True
             matrix = matrices.identity_matrix
