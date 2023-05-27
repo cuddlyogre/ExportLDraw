@@ -159,7 +159,7 @@ class LDrawNode:
                         child_node.load(
                             parent_node=self,
                             color_code=current_color,
-                            parent_matrix=accum_matrix if ImportOptions.preserve_hierarchy else matrix,
+                            parent_matrix=matrix if not ImportOptions.preserve_hierarchy else accum_matrix,
                             geometry_data=geometry_data,
                             accum_cull=self.bfc_certified and accum_cull and local_cull,
                             accum_invert=(accum_invert ^ invert_next),  # xor
@@ -169,7 +169,7 @@ class LDrawNode:
                         )
                         # for node in child_node.load(
                         #         color_code=current_color,
-                        #         parent_matrix=accum_matrix if ImportOptions.preserve_hierarchy else matrix,
+                        #         parent_matrix=matrix if not ImportOptions.preserve_hierarchy else accum_matrix,
                         #         geometry_data=geometry_data,
                         #         accum_cull=self.bfc_certified and accum_cull and local_cull,
                         #         accum_invert=(accum_invert ^ invert_next),  # xor
