@@ -22,10 +22,10 @@ def reset_caches():
 
 
 # TODO: to add rigid body - must apply scale and cannot be parented to empty
-def process_top_object(ldraw_node, mesh, key, accum_matrix, color_code, collection):
+def process_top_object(ldraw_node, mesh, key, obj_matrix, color_code, collection):
     obj = __get_top_object(ldraw_node, mesh, color_code)
-    __process_top_object_matrix(obj, accum_matrix)
-    __process_top_object_gap(obj, accum_matrix)
+    __process_top_object_matrix(obj, obj_matrix)
+    __process_top_object_gap(obj, obj_matrix)
     __process_top_object_edges(obj)
     ldraw_meta.do_meta_step(obj)
     __link_obj_to_collection(collection, obj)
@@ -48,7 +48,7 @@ def __get_top_object(ldraw_node, mesh, color_code):
     return obj
 
 
-def __process_top_object_matrix(obj, accum_matrix):
+def __process_top_object_matrix(obj, obj_matrix):
     if ImportOptions.parent_to_empty:
         global top_empty
         if top_empty is None:
@@ -56,20 +56,20 @@ def __process_top_object_matrix(obj, accum_matrix):
             group.link_obj(group.top_collection, top_empty)
 
         top_empty.matrix_world = matrices.transform_matrix
-        obj.matrix_world = accum_matrix
+        obj.matrix_world = obj_matrix
         obj.parent = top_empty  # must be after matrix_world set or else transform is incorrect
     else:
-        matrix_world = matrices.transform_matrix @ accum_matrix
+        matrix_world = matrices.transform_matrix @ obj_matrix
         obj.matrix_world = matrix_world
 
 
-def __process_top_object_gap(obj, accum_matrix):
+def __process_top_object_gap(obj, obj_matrix):
     if ImportOptions.preserve_hierarchy:
         return
 
     if ImportOptions.make_gaps and ImportOptions.gap_target == "object":
         if ImportOptions.gap_scale_strategy == "object":
-            matrix_world = matrices.transform_matrix @ accum_matrix @ matrices.gap_scale_matrix
+            matrix_world = matrices.transform_matrix @ obj_matrix @ matrices.gap_scale_matrix
             obj.matrix_world = matrix_world
         elif ImportOptions.gap_scale_strategy == "constraint":
             global gap_scale_empty

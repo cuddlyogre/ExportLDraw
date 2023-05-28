@@ -77,8 +77,10 @@ class LDrawNode:
         self.pe_tex_info = pe_tex_info
 
         # by default, treat this as anything other than a top level part
-        accum_matrix = (parent_matrix @ self.matrix).freeze()
-        matrix = accum_matrix
+        # obj_matrix is the matrix up to the point and used for placement of objects
+        # vertex_matrix is the matrix that gets passed to subparts
+        obj_matrix = (parent_matrix @ self.matrix).freeze()
+        vertex_matrix = obj_matrix
         collection = parent_collection
 
         if group.top_collection is None:
@@ -117,14 +119,14 @@ class LDrawNode:
         elif geometry_data is None or ImportOptions.preserve_hierarchy:  # top-level part
             LDrawNode.part_count += 1
             self.top = True
-            matrix = matrices.identity_matrix
+            vertex_matrix = matrices.identity_matrix
             geometry_data = GeometryData()
 
         # parent_is_top
         # true == the parent node is a part
         # false == parent node is a model
         # when a part is used on its own and also treated as a subpart like with a shortcut, the part will not render in the shortcut
-        key = LDrawNode.__build_key(self.file.name, color_code, matrix, accum_cull, accum_invert, parent_is_top=(parent_node and parent_node.top), texmap=texmap, pe_tex_info=pe_tex_info)
+        key = LDrawNode.__build_key(self.file.name, color_code, vertex_matrix, accum_cull, accum_invert, parent_is_top=(parent_node and parent_node.top), texmap=texmap, pe_tex_info=pe_tex_info)
 
         if self.file.is_like_model():
             if self.file.has_geometry():
@@ -158,7 +160,7 @@ class LDrawNode:
                         child_node.load(
                             parent_node=self,
                             color_code=current_color,
-                            parent_matrix=matrix if not ImportOptions.preserve_hierarchy else accum_matrix,
+                            parent_matrix=vertex_matrix if not ImportOptions.preserve_hierarchy else obj_matrix,
                             geometry_data=geometry_data,
                             accum_cull=self.bfc_certified and accum_cull and local_cull,
                             accum_invert=(accum_invert ^ invert_next),  # xor
@@ -168,7 +170,7 @@ class LDrawNode:
                         )
                         # for node in child_node.load(
                         #         color_code=current_color,
-                        #         parent_matrix=matrix if not ImportOptions.preserve_hierarchy else accum_matrix,
+                        #         parent_matrix=matrix if not ImportOptions.preserve_hierarchy else obj_matrix,
                         #         geometry_data=geometry_data,
                         #         accum_cull=self.bfc_certified and accum_cull and local_cull,
                         #         accum_invert=(accum_invert ^ invert_next),  # xor
@@ -184,7 +186,7 @@ class LDrawNode:
                         ldraw_meta.meta_edge(
                             child_node,
                             current_color,
-                            matrix,
+                            vertex_matrix,
                             geometry_data,
                         )
                     elif child_node.meta_command in ["3", "4"]:
@@ -196,7 +198,7 @@ class LDrawNode:
                             self,
                             child_node,
                             current_color,
-                            matrix,
+                            vertex_matrix,
                             geometry_data,
                             _winding,
                         )
@@ -204,12 +206,12 @@ class LDrawNode:
                         ldraw_meta.meta_line(
                             child_node,
                             current_color,
-                            matrix,
+                            vertex_matrix,
                             geometry_data,
                         )
                 elif child_node.meta_command == "bfc":
                     if ImportOptions.meta_bfc:
-                        local_cull, winding, invert_next = ldraw_meta.meta_bfc(self, child_node, matrix, local_cull, winding, invert_next, accum_invert)
+                        local_cull, winding, invert_next = ldraw_meta.meta_bfc(self, child_node, vertex_matrix, local_cull, winding, invert_next, accum_invert)
                 elif child_node.meta_command == "step":
                     ldraw_meta.meta_step()
                 elif child_node.meta_command == "save":
@@ -221,11 +223,11 @@ class LDrawNode:
                 elif child_node.meta_command.startswith("group"):
                     ldraw_meta.meta_group(child_node)
                 elif child_node.meta_command == "leocad_camera":
-                    ldraw_meta.meta_leocad_camera(self, child_node, matrix)
+                    ldraw_meta.meta_leocad_camera(self, child_node, vertex_matrix)
                 elif child_node.meta_command == "texmap":
-                    ldraw_meta.meta_texmap(self, child_node, matrix)
+                    ldraw_meta.meta_texmap(self, child_node, vertex_matrix)
                 elif child_node.meta_command.startswith("pe_tex_"):
-                    ldraw_meta.meta_pe_tex(self, child_node, matrix)
+                    ldraw_meta.meta_pe_tex(self, child_node, vertex_matrix)
 
                 if self.texmap_next:
                     ldraw_meta.set_texmap_end(self)
@@ -236,7 +238,7 @@ class LDrawNode:
                     invert_next = False
 
         if self.top:
-            obj = LDrawNode.__create_obj(self, key, geometry_data, accum_matrix, color_code, collection)
+            obj = LDrawNode.__create_obj(self, key, geometry_data, obj_matrix, color_code, collection)
 
             # if LDrawNode.part_count == 1:
             #     raise BaseException("done")
@@ -245,9 +247,9 @@ class LDrawNode:
             return obj
 
     @staticmethod
-    def __create_obj(ldraw_node, key, geometry_data, accum_matrix, color_code, collection):
+    def __create_obj(ldraw_node, key, geometry_data, obj_matrix, color_code, collection):
         mesh = ldraw_mesh.create_mesh(ldraw_node, key, geometry_data)
-        obj = ldraw_object.process_top_object(ldraw_node, mesh, key, accum_matrix, color_code, collection)
+        obj = ldraw_object.process_top_object(ldraw_node, mesh, key, obj_matrix, color_code, collection)
         return obj
 
     # set the working color code to this file's
