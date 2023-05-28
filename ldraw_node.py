@@ -262,8 +262,8 @@ class LDrawNode:
     # must include matrix, so that parts that are just mirrored versions of other parts
     # such as 32527.dat (mirror of 32528.dat) will render
     @staticmethod
-    def __build_key(filename, color_code, matrix, accum_cull, accum_invert, parent_filename=None, texmap=None, pe_tex_info=None):
-        _key = (filename, color_code, matrix, accum_cull, accum_invert, parent_filename,)
+    def __build_key(filename, color_code, matrix, accum_cull, accum_invert, parent_is_top=None, texmap=None, pe_tex_info=None):
+        _key = (filename, color_code, matrix, accum_cull, accum_invert, parent_is_top,)
         if texmap is not None:
             _key += ((texmap.method, texmap.texture, texmap.glossmap),)
         if pe_tex_info is not None:
