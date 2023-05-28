@@ -120,12 +120,11 @@ class LDrawNode:
             matrix = matrices.identity_matrix
             geometry_data = GeometryData()
 
-        # when a part is used on its own and also as part of a shortcut, the part will not render in the shortcut
-        # because that part doesn't register as a subpart of the shortcut
-        if parent_node and parent_node.file.is_shortcut():
-            key = LDrawNode.__build_key(self.file.name, color_code, matrix, accum_cull, accum_invert, parent_filename=parent_node.file.name, texmap=texmap, pe_tex_info=pe_tex_info)
-        else:
-            key = LDrawNode.__build_key(self.file.name, color_code, matrix, accum_cull, accum_invert, texmap=texmap, pe_tex_info=pe_tex_info)
+        # parent_is_top
+        # true == the parent node is a part
+        # false == parent node is a model
+        # when a part is used on its own and also treated as a subpart like with a shortcut, the part will not render in the shortcut
+        key = LDrawNode.__build_key(self.file.name, color_code, matrix, accum_cull, accum_invert, parent_is_top=(parent_node and parent_node.top), texmap=texmap, pe_tex_info=pe_tex_info)
 
         if self.file.is_like_model():
             if self.file.has_geometry():
