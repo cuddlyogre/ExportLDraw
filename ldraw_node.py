@@ -17,11 +17,13 @@ class LDrawNode:
 
     part_count = 0
     key_map = {}
+    geometry_datas = {}
 
     @classmethod
     def reset_caches(cls):
         cls.part_count = 0
         cls.key_map = {}
+        cls.geometry_datas = {}
 
     @classmethod
     def import_setup(cls):
@@ -54,6 +56,7 @@ class LDrawNode:
         self.subfile_line_index = 0
 
     def load(self,
+             root_node=None,
              parent_node=None,
              color_code="16",
              parent_matrix=None,
@@ -67,7 +70,7 @@ class LDrawNode:
 
         if self.file.is_edge_logo() and not ImportOptions.display_logo:
             return
-        if self.file.is_like_stud() and ImportOptions.no_studs:
+        if self.file.is_stud() and ImportOptions.no_studs:
             return
 
         if parent_matrix is None:
@@ -120,28 +123,34 @@ class LDrawNode:
             LDrawNode.part_count += 1
             self.top = True
             vertex_matrix = matrices.identity_matrix
-            geometry_data = GeometryData()
 
         # parent_is_top
         # true == the parent node is a part
         # false == parent node is a model
         # when a part is used on its own and also treated as a subpart like with a shortcut, the part will not render in the shortcut
-        key = LDrawNode.__build_key(self.file.name, color_code, vertex_matrix, accum_cull, accum_invert, parent_is_top=(parent_node and parent_node.top), texmap=texmap, pe_tex_info=pe_tex_info)
+        parent_is_top = (parent_node and parent_node.top)
+        key = LDrawNode.__build_key(self.file.name, color_code, vertex_matrix, accum_cull, accum_invert, parent_is_top=parent_is_top, texmap=texmap, pe_tex_info=pe_tex_info)
 
-        if self.file.is_like_model():
-            if self.file.has_geometry():
-                self.bfc_certified = False
+        # if geometry_data exists, don't process this key again
+        g = LDrawNode.geometry_datas.get(key)
+        if g is None or ImportOptions.preserve_hierarchy:
+            if self.top:
+                # geometry_data is unused if the mesh already exists
+                root_node = self
+                geometry_data = GeometryData()
+
+            if self.file.is_like_model():
+                if self.file.has_geometry():
+                    self.bfc_certified = False
+                else:
+                    self.bfc_certified = True
             else:
-                self.bfc_certified = True
-        else:
-            self.bfc_certified = None
+                self.bfc_certified = None
 
-        local_cull = True
-        winding = "CCW"
-        invert_next = False
+            local_cull = True
+            winding = "CCW"
+            invert_next = False
 
-        mesh = ldraw_mesh.get_mesh(key)
-        if mesh is None or ImportOptions.preserve_hierarchy:
             for child_node in self.file.child_nodes:
                 if child_node.meta_command in ["1", "2", "3", "4", "5"] and not self.texmap_fallback:
                     current_color = LDrawNode.__determine_color(color_code, child_node.color_code)
@@ -158,6 +167,7 @@ class LDrawNode:
                         # may crash based on https://docs.blender.org/api/current/info_gotcha.html#help-my-script-crashes-blender
                         # but testing seems to indicate that adding to bpy.data.meshes does not change hash(mesh) value
                         child_node.load(
+                            root_node=root_node,
                             parent_node=self,
                             color_code=current_color,
                             parent_matrix=vertex_matrix if not ImportOptions.preserve_hierarchy else obj_matrix,
@@ -238,7 +248,11 @@ class LDrawNode:
                     invert_next = False
 
         if self.top:
-            obj = LDrawNode.__create_obj(self, key, geometry_data, obj_matrix, color_code, collection)
+            _geometry_data = LDrawNode.geometry_datas.setdefault(key, geometry_data)
+
+            # geometry_data will not be None if this is a new mesh
+            # geometry_data will be None if the mesh already exists
+            obj = LDrawNode.__create_obj(self, key, _geometry_data, obj_matrix, color_code, collection)
 
             # if LDrawNode.part_count == 1:
             #     raise BaseException("done")
