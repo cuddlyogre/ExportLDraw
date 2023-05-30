@@ -153,7 +153,7 @@ class LDrawNode:
 
             for child_node in self.file.child_nodes:
                 if child_node.meta_command in ["1", "2", "3", "4", "5"] and not self.texmap_fallback:
-                    current_color = LDrawNode.__determine_color(color_code, child_node.color_code)
+                    child_current_color = LDrawNode.__determine_color(color_code, child_node.color_code)
                     if child_node.meta_command == "1":
                         # if we have a pe_tex_info, but no pe_tex meta commands have been parsed
                         # treat the pe_tex_info as the one to use
@@ -169,7 +169,7 @@ class LDrawNode:
                         child_node.load(
                             root_node=root_node,
                             parent_node=self,
-                            color_code=current_color,
+                            color_code=child_current_color,
                             parent_matrix=vertex_matrix if not ImportOptions.preserve_hierarchy else obj_matrix,
                             geometry_data=geometry_data,
                             accum_cull=self.bfc_certified and accum_cull and local_cull,
@@ -179,7 +179,7 @@ class LDrawNode:
                             pe_tex_info=pe_tex_info,
                         )
                         # for node in child_node.load(
-                        #         color_code=current_color,
+                        #         color_code=child_current_color,
                         #         parent_matrix=matrix if not ImportOptions.preserve_hierarchy else obj_matrix,
                         #         geometry_data=geometry_data,
                         #         accum_cull=self.bfc_certified and accum_cull and local_cull,
@@ -195,7 +195,7 @@ class LDrawNode:
                     elif child_node.meta_command == "2":
                         ldraw_meta.meta_edge(
                             child_node,
-                            current_color,
+                            child_current_color,
                             vertex_matrix,
                             geometry_data,
                         )
@@ -207,7 +207,7 @@ class LDrawNode:
                         ldraw_meta.meta_face(
                             self,
                             child_node,
-                            current_color,
+                            child_current_color,
                             vertex_matrix,
                             geometry_data,
                             _winding,
@@ -215,7 +215,7 @@ class LDrawNode:
                     elif child_node.meta_command == "5":
                         ldraw_meta.meta_line(
                             child_node,
-                            current_color,
+                            child_current_color,
                             vertex_matrix,
                             geometry_data,
                         )
