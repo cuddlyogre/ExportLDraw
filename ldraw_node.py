@@ -132,8 +132,8 @@ class LDrawNode:
         key = LDrawNode.__build_key(self.file.name, color_code, vertex_matrix, accum_cull, accum_invert, parent_is_top=parent_is_top, texmap=texmap, pe_tex_info=pe_tex_info)
 
         # if geometry_data exists, don't process this key again
-        g = LDrawNode.geometry_datas.get(key)
-        if g is None or ImportOptions.preserve_hierarchy:
+        _geometry_data = LDrawNode.geometry_datas.get(key)
+        if _geometry_data is None or ImportOptions.preserve_hierarchy:
             if self.top:
                 # geometry_data is unused if the mesh already exists
                 top_node = self
