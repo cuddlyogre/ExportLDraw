@@ -56,8 +56,6 @@ class LDrawNode:
         self.subfile_line_index = 0
 
     def load(self,
-             top_node=None,
-             parent_node=None,
              color_code="16",
              parent_matrix=None,
              geometry_data=None,
@@ -128,15 +126,13 @@ class LDrawNode:
         # true == the parent node is a part
         # false == parent node is a model
         # when a part is used on its own and also treated as a subpart like with a shortcut, the part will not render in the shortcut
-        parent_is_top = (parent_node and parent_node.top)
-        key = LDrawNode.__build_key(self.file.name, color_code, vertex_matrix, accum_cull, accum_invert, parent_is_top=parent_is_top, texmap=texmap, pe_tex_info=pe_tex_info)
+        key = LDrawNode.__build_key(self.file.name, color_code, vertex_matrix, accum_cull, accum_invert, texmap=texmap, pe_tex_info=pe_tex_info)
 
-        # if geometry_data exists, don't process this key again
-        _geometry_data = LDrawNode.geometry_datas.get(key)
-        if _geometry_data is None or ImportOptions.preserve_hierarchy:
+        # always process geometry_data if this is a subpart
+        # if geometry_data exists, this is a top level part that has already been processed so don't process this key again
+        if not self.top or LDrawNode.geometry_datas.get(key) is None or ImportOptions.preserve_hierarchy:
             if self.top:
                 # geometry_data is unused if the mesh already exists
-                top_node = self
                 geometry_data = GeometryData()
 
             if self.file.is_like_model():
@@ -169,8 +165,6 @@ class LDrawNode:
                         # may crash based on https://docs.blender.org/api/current/info_gotcha.html#help-my-script-crashes-blender
                         # but testing seems to indicate that adding to bpy.data.meshes does not change hash(mesh) value
                         child_node.load(
-                            top_node=top_node,
-                            parent_node=self,
                             color_code=child_current_color,
                             parent_matrix=vertex_matrix if not ImportOptions.preserve_hierarchy else obj_matrix,
                             geometry_data=geometry_data,
@@ -280,8 +274,8 @@ class LDrawNode:
     # must include matrix, so that parts that are just mirrored versions of other parts
     # such as 32527.dat (mirror of 32528.dat) will render
     @staticmethod
-    def __build_key(filename, color_code, matrix, accum_cull, accum_invert, parent_is_top=None, texmap=None, pe_tex_info=None):
-        _key = (filename, color_code, matrix, accum_cull, accum_invert, parent_is_top,)
+    def __build_key(filename, color_code, matrix, accum_cull, accum_invert, texmap=None, pe_tex_info=None):
+        _key = (filename, color_code, matrix, accum_cull, accum_invert,)
         if texmap is not None:
             _key += ((texmap.method, texmap.texture, texmap.glossmap),)
         if pe_tex_info is not None:
