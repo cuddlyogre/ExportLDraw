@@ -11,6 +11,7 @@ from . import base64_handler
 
 from . import helpers
 from . import ldraw_part_types
+from . import texmap
 
 
 class LDrawFile:
@@ -119,16 +120,17 @@ class LDrawFile:
                         continue
 
                     # if we're working on a data block, keep adding to it
-                    # until we reach a line that starts with anything but "0 !: "
+                    # until we reach a line that is not is_texmap_line
                     # at that point, process the data block
                     if current_data_filename is not None:
-                        if clean_line.startswith("0 !: "):
-                            try:
-                                base64_data = strip_line.split(maxsplit=2)[2]
-                                current_data.append(base64_data)
-                            except IndexError as e:
-                                print(e)
-                            continue
+                        if texmap.is_texmap_line(clean_line):
+                            if ImportOptions.meta_texmap:
+                                try:
+                                    base64_data = texmap.clean_line(strip_line)
+                                    current_data.append(base64_data)
+                                except IndexError as e:
+                                    print(e)
+                                continue
                         else:
                             base64_handler.named_png_from_base64_str(current_data_filename, "".join(current_data))
                             current_data_filename = None
@@ -146,7 +148,8 @@ class LDrawFile:
                     hit_not_blank_line = True
 
                     # clean up texmap geometry line prefixes
-                    line = line.replace("0 !: ", "")
+                    if ImportOptions.meta_texmap:
+                        line = texmap.clean_line(line)
 
                     # not mpd -> regular ldr/dat file
                     if not is_mpd:

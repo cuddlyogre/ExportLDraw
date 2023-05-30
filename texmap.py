@@ -5,6 +5,16 @@ import uuid
 
 from . import helpers
 
+texmap_prefix = "0 !: "
+
+
+def is_texmap_line(line):
+    return line.startswith(texmap_prefix)
+
+
+def clean_line(line):
+    return line.replace(texmap_prefix, "")
+
 
 # https://github.com/trevorsandy/lpub3d/blob/e7c39cd3df518cf16521dc2c057a9f125cc3b5c3/lclib/common/lc_meshloader.h#L56
 # https://github.com/trevorsandy/lpub3d/blob/e7c39cd3df518cf16521dc2c057a9f125cc3b5c3/lclib/common/lc_meshloader.cpp#L12

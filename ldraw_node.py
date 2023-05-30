@@ -152,6 +152,8 @@ class LDrawNode:
             invert_next = False
 
             for child_node in self.file.child_nodes:
+                # self.texmap_fallback will only be true if ImportOptions.meta_texmap == True and you're on a fallback line
+                # if ImportOptions.meta_texmap == False, it will always be False
                 if child_node.meta_command in ["1", "2", "3", "4", "5"] and not self.texmap_fallback:
                     child_current_color = LDrawNode.__determine_color(color_code, child_node.color_code)
                     if child_node.meta_command == "1":

@@ -37,6 +37,9 @@ class ImportOptions:
     defaults['meta_save'] = False
     meta_save = defaults['meta_save']
 
+    defaults['meta_texmap'] = True
+    meta_texmap = defaults['meta_texmap']
+
     defaults['display_logo'] = False
     display_logo = defaults['display_logo']
 

@@ -270,6 +270,9 @@ def meta_leocad_camera(ldraw_node, child_node, matrix):
 # https://www.ldraw.org/documentation/ldraw-org-file-format-standards/language-extension-for-texture-mapping.html
 
 def meta_texmap(ldraw_node, child_node, matrix):
+    if not ImportOptions.meta_texmap:
+        return
+
     clean_line = child_node.line
 
     if ldraw_node.texmap_start:
