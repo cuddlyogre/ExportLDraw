@@ -39,6 +39,12 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
         default=FileSystem.locate_ldraw(),
     )
 
+    studio_ldraw_path: bpy.props.StringProperty(
+        name="Stud.io LDraw path",
+        description="Full filepath to the Stud.io LDraw Parts Library (download from https://www.bricklink.com/v3/studio/download.page)",
+        default=FileSystem.locate_ldraw(),
+    )
+
     use_alt_colors: bpy.props.BoolProperty(
         name="Use alternate colors",
         # options={'HIDDEN'},
@@ -111,6 +117,7 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
         start = time.perf_counter()
 
         FileSystem.ldraw_path = self.ldraw_path
+        FileSystem.studio_ldraw_path = self.studio_ldraw_path
         FileSystem.resolution = self.resolution
         LDrawColor.use_alt_colors = self.use_alt_colors
 
