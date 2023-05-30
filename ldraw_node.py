@@ -56,7 +56,7 @@ class LDrawNode:
         self.subfile_line_index = 0
 
     def load(self,
-             root_node=None,
+             top_node=None,
              parent_node=None,
              color_code="16",
              parent_matrix=None,
@@ -136,7 +136,7 @@ class LDrawNode:
         if g is None or ImportOptions.preserve_hierarchy:
             if self.top:
                 # geometry_data is unused if the mesh already exists
-                root_node = self
+                top_node = self
                 geometry_data = GeometryData()
 
             if self.file.is_like_model():
@@ -169,7 +169,7 @@ class LDrawNode:
                         # may crash based on https://docs.blender.org/api/current/info_gotcha.html#help-my-script-crashes-blender
                         # but testing seems to indicate that adding to bpy.data.meshes does not change hash(mesh) value
                         child_node.load(
-                            root_node=root_node,
+                            top_node=top_node,
                             parent_node=self,
                             color_code=child_current_color,
                             parent_matrix=vertex_matrix if not ImportOptions.preserve_hierarchy else obj_matrix,
