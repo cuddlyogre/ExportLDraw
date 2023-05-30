@@ -218,22 +218,27 @@ class LDrawNode:
                 elif child_node.meta_command == "bfc":
                     if ImportOptions.meta_bfc:
                         local_cull, winding, invert_next = ldraw_meta.meta_bfc(self, child_node, vertex_matrix, local_cull, winding, invert_next, accum_invert)
-                elif child_node.meta_command == "step":
-                    ldraw_meta.meta_step()
-                elif child_node.meta_command == "save":
-                    ldraw_meta.meta_save()
-                elif child_node.meta_command == "clear":
-                    ldraw_meta.meta_clear()
-                elif child_node.meta_command == "print":
-                    ldraw_meta.meta_print(child_node)
-                elif child_node.meta_command.startswith("group"):
-                    ldraw_meta.meta_group(child_node)
-                elif child_node.meta_command == "leocad_camera":
-                    ldraw_meta.meta_leocad_camera(self, child_node, vertex_matrix)
                 elif child_node.meta_command == "texmap":
                     ldraw_meta.meta_texmap(self, child_node, vertex_matrix)
                 elif child_node.meta_command.startswith("pe_tex_"):
                     ldraw_meta.meta_pe_tex(self, child_node, vertex_matrix)
+                else:
+                    # these meta commands really only make sense if they are encountered at the model level
+                    # these should never be encoutered when geometry_data not None
+                    # so they should be processed every time they are hit
+                    # as opposed to just once because they won't be cached
+                    if child_node.meta_command == "step":
+                        ldraw_meta.meta_step()
+                    elif child_node.meta_command == "save":
+                        ldraw_meta.meta_save()
+                    elif child_node.meta_command == "clear":
+                        ldraw_meta.meta_clear()
+                    elif child_node.meta_command == "print":
+                        ldraw_meta.meta_print(child_node)
+                    elif child_node.meta_command.startswith("group"):
+                        ldraw_meta.meta_group(child_node)
+                    elif child_node.meta_command == "leocad_camera":
+                        ldraw_meta.meta_leocad_camera(self, child_node, vertex_matrix)
 
                 if self.texmap_next:
                     ldraw_meta.set_texmap_end(self)
