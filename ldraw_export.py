@@ -11,7 +11,6 @@ from .filesystem import FileSystem
 from . import strings
 from .export_options import ExportOptions
 from . import helpers
-from . import ldraw_part_types
 from . import ldraw_props
 
 __rotation_matrix = mathutils.Matrix.Rotation(math.radians(-90), 4, 'X').freeze()
