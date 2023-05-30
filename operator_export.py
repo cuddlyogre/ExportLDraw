@@ -35,7 +35,7 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
 
     ldraw_path: bpy.props.StringProperty(
         name="LDraw path",
-        description="Full filepath to the LDraw Parts Library (download from http://www.ldraw.org)",
+        description="Full filepath to the LDraw Parts Library (download from https://www.ldraw.org)",
         default=FileSystem.locate_ldraw(),
     )
 
