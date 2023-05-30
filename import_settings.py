@@ -7,58 +7,15 @@ from . import helpers
 class ImportSettings:
     settings = None
 
-    filesystem_defaults = {
-        'ldraw_path': FileSystem.locate_ldraw(),
-        'studio_ldraw_path': FileSystem.locate_studio_ldraw(),
-        'prefer_unofficial': FileSystem.defaults['prefer_unofficial'],
-        'prefer_studio': FileSystem.defaults['prefer_studio'],
-        'resolution': FileSystem.defaults['resolution'],
-    }
+    filesystem_defaults = FileSystem.defaults
+    ldraw_color_defaults = LDrawColor.defaults
+    import_options_defaults = ImportOptions.defaults
 
-    ldraw_color_defaults = {
-        'use_alt_colors': LDrawColor.defaults['use_alt_colors'],
+    default_settings = {
+        **filesystem_defaults,
+        **ldraw_color_defaults,
+        **import_options_defaults
     }
-
-    import_options_defaults = {
-        'remove_doubles': ImportOptions.defaults['remove_doubles'],
-        'merge_distance': ImportOptions.defaults['merge_distance'],
-        'shade_smooth': ImportOptions.defaults['shade_smooth'],
-        'display_logo': ImportOptions.defaults['display_logo'],
-        'chosen_logo': ImportOptions.defaults['chosen_logo'],
-        'make_gaps': ImportOptions.defaults['make_gaps'],
-        'gap_scale': ImportOptions.defaults['gap_scale'],
-        'no_studs': ImportOptions.defaults['no_studs'],
-        'set_timeline_markers': ImportOptions.defaults['set_timeline_markers'],
-        'meta_bfc': ImportOptions.defaults['meta_bfc'],
-        'meta_group': ImportOptions.defaults['meta_group'],
-        'meta_print_write': ImportOptions.defaults['meta_print_write'],
-        'meta_step': ImportOptions.defaults['meta_step'],
-        'meta_step_groups': ImportOptions.defaults['meta_step_groups'],
-        'meta_clear': ImportOptions.defaults['meta_clear'],
-        'meta_pause': ImportOptions.defaults['meta_pause'],
-        'meta_save': ImportOptions.defaults['meta_save'],
-        'set_end_frame': ImportOptions.defaults['set_end_frame'],
-        'frames_per_step': ImportOptions.defaults['frames_per_step'],
-        'starting_step_frame': ImportOptions.defaults['starting_step_frame'],
-        'smooth_type': ImportOptions.defaults['smooth_type'],
-        'import_edges': ImportOptions.defaults['import_edges'],
-        'use_freestyle_edges': ImportOptions.defaults['use_freestyle_edges'],
-        'import_scale': ImportOptions.defaults['import_scale'],
-        'parent_to_empty': ImportOptions.defaults['parent_to_empty'],
-        'gap_target': ImportOptions.defaults['gap_target'],
-        'gap_scale_strategy': ImportOptions.defaults['gap_scale_strategy'],
-        'treat_shortcut_as_model': ImportOptions.defaults['treat_shortcut_as_model'],
-        'treat_models_with_subparts_as_parts': ImportOptions.defaults['treat_models_with_subparts_as_parts'],
-        'recalculate_normals': ImportOptions.defaults['recalculate_normals'],
-        'triangulate': ImportOptions.defaults['triangulate'],
-        'preserve_hierarchy': ImportOptions.defaults['preserve_hierarchy'],
-        'bevel_edges': ImportOptions.defaults['bevel_edges'],
-        'bevel_weight': ImportOptions.defaults['bevel_weight'],
-        'bevel_width': ImportOptions.defaults['bevel_width'],
-        'bevel_segments': ImportOptions.defaults['bevel_segments'],
-    }
-
-    default_settings = {**filesystem_defaults, **ldraw_color_defaults, **import_options_defaults}
 
     @classmethod
     def get_setting(cls, key):

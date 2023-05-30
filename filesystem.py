@@ -5,13 +5,57 @@ from sys import platform
 from pathlib import Path
 
 
+def locate_ldraw():
+    ldraw_folder_name = 'ldraw'
+
+    # home = os.path.expanduser("~")
+    home = str(Path.home())
+    ldraw_path = os.path.join(home, ldraw_folder_name)
+    if os.path.isdir(ldraw_path):
+        return ldraw_path
+
+    if platform == "linux" or platform == "linux2":
+        pass
+        # linux
+    elif platform == "darwin":
+        pass
+        # OS X
+    elif platform == "win32":
+        for drive_letter in string.ascii_lowercase:
+            ldraw_path = os.path.join(os.path.join(f"{drive_letter}:\\", ldraw_folder_name))
+            if os.path.isdir(ldraw_path):
+                return ldraw_path
+    return ""
+
+
+def locate_studio_ldraw():
+    ldraw_folder_name = 'ldraw'
+
+    if platform == "linux" or platform == "linux2":
+        pass
+        # linux
+    elif platform == "darwin":
+        pass
+        # OS X
+    elif platform == "win32":
+        studio_path = os.path.join(os.environ["ProgramFiles"], 'Studio 2.0', ldraw_folder_name)
+        if os.path.isdir(studio_path):
+            return studio_path
+
+        studio_path = os.path.join(os.environ["ProgramFiles(x86)"], 'Studio 2.0', ldraw_folder_name)
+        if os.path.isdir(studio_path):
+            return studio_path
+
+    return ""
+
+
 class FileSystem:
     defaults = {}
 
-    defaults['ldraw_path'] = ''
+    defaults['ldraw_path'] = locate_ldraw()
     ldraw_path = defaults['ldraw_path']
 
-    defaults['studio_ldraw_path'] = ''
+    defaults['studio_ldraw_path'] = locate_studio_ldraw()
     studio_ldraw_path = defaults['studio_ldraw_path']
 
     defaults['prefer_studio'] = False
@@ -30,50 +74,6 @@ class FileSystem:
     def reset_caches(cls):
         cls.search_dirs = []
         cls.lowercase_paths = {}
-
-    @staticmethod
-    def locate_ldraw():
-        ldraw_folder_name = 'ldraw'
-
-        # home = os.path.expanduser("~")
-        home = str(Path.home())
-        ldraw_path = os.path.join(home, ldraw_folder_name)
-        if os.path.isdir(ldraw_path):
-            return ldraw_path
-
-        if platform == "linux" or platform == "linux2":
-            pass
-            # linux
-        elif platform == "darwin":
-            pass
-            # OS X
-        elif platform == "win32":
-            for drive_letter in string.ascii_lowercase:
-                ldraw_path = os.path.join(os.path.join(f"{drive_letter}:\\", ldraw_folder_name))
-                if os.path.isdir(ldraw_path):
-                    return ldraw_path
-        return ""
-
-    @staticmethod
-    def locate_studio_ldraw():
-        ldraw_folder_name = 'ldraw'
-
-        if platform == "linux" or platform == "linux2":
-            pass
-            # linux
-        elif platform == "darwin":
-            pass
-            # OS X
-        elif platform == "win32":
-            studio_path = os.path.join(os.environ["ProgramFiles"], 'Studio 2.0', ldraw_folder_name)
-            if os.path.isdir(studio_path):
-                return studio_path
-
-            studio_path = os.path.join(os.environ["ProgramFiles(x86)"], 'Studio 2.0', ldraw_folder_name)
-            if os.path.isdir(studio_path):
-                return studio_path
-
-        return ""
 
     @classmethod
     def build_search_paths(cls, parent_filepath=None):

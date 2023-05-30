@@ -4,6 +4,7 @@ from bpy_extras.io_utils import ExportHelper
 import time
 
 from .export_options import ExportOptions
+from .import_settings import ImportSettings
 from .filesystem import FileSystem
 from .ldraw_colors import LDrawColor
 from . import ldraw_export
@@ -36,13 +37,13 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
     ldraw_path: bpy.props.StringProperty(
         name="LDraw path",
         description="Full filepath to the LDraw Parts Library (download from https://www.ldraw.org)",
-        default=FileSystem.locate_ldraw(),
+        default=ImportSettings.get_setting('ldraw_path'),
     )
 
     studio_ldraw_path: bpy.props.StringProperty(
         name="Stud.io LDraw path",
         description="Full filepath to the Stud.io LDraw Parts Library (download from https://www.bricklink.com/v3/studio/download.page)",
-        default=FileSystem.locate_ldraw(),
+        default=ImportSettings.get_setting('studio_ldraw_path'),
     )
 
     use_alt_colors: bpy.props.BoolProperty(
