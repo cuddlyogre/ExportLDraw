@@ -117,6 +117,8 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
     def execute(self, context):
         start = time.perf_counter()
 
+        bpy.ops.object.mode_set(mode='OBJECT')
+
         FileSystem.ldraw_path = self.ldraw_path
         FileSystem.studio_ldraw_path = self.studio_ldraw_path
         FileSystem.resolution = self.resolution
