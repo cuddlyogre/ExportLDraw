@@ -369,7 +369,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
     def execute(self, context):
         start = time.perf_counter()
 
-        bpy.ops.object.mode_set(mode='OBJECT')
+        # bpy.ops.object.mode_set(mode='OBJECT')
 
         ImportSettings.save_settings(self)
         ImportSettings.apply_settings()
