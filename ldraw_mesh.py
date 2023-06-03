@@ -34,8 +34,7 @@ def create_mesh(ldraw_node, key, geometry_data):
 # https://blender.stackexchange.com/questions/188039/how-to-join-only-two-objects-to-create-a-new-object-using-python
 # https://blender.stackexchange.com/questions/23905/select-faces-depending-on-material
 def __process_bmesh(ldraw_node, mesh, geometry_data):
-    bm = bmesh.new()
-    __process_bmesh_faces(ldraw_node, geometry_data, bm, mesh)
+    bm = __process_bmesh_faces(ldraw_node, geometry_data, mesh)
     helpers.ensure_bmesh(bm)
     __clean_bmesh(bm)
     __process_bmesh_edges(bm, geometry_data)
@@ -96,7 +95,9 @@ def __process_bmesh_edges(bm, geometry_data):
         bmesh.ops.split_edges(bm, edges=list(edges))
 
 
-def __process_bmesh_faces(ldraw_node, geometry_data, bm, mesh):
+def __process_bmesh_faces(ldraw_node, geometry_data, mesh):
+    bm = bmesh.new()
+
     for face_data in geometry_data.face_data:
         verts = [bm.verts.new(vertex) for vertex in face_data.vertices]
         face = bm.faces.new(verts)
@@ -127,6 +128,7 @@ def __process_bmesh_faces(ldraw_node, geometry_data, bm, mesh):
         if face_data.pe_texmap is not None:
             face_data.pe_texmap.uv_unwrap_face(bm, face)
 
+    return bm
 
 def __clean_bmesh(bm):
     if ImportOptions.remove_doubles:
