@@ -103,6 +103,17 @@ class LDrawColor:
 
         return cls.get_bad_color(color_code)
 
+    # n1 = (nb - 256) / 16
+    # n2 = (nb - 256) mod 16
+    # n1 is the index of input colour 1
+    # nb is the index of the blended color
+    # n2 is the index of input colour 2
+    # Rb = (R1 + R2) / 2
+    # Gb = (G1 + G2) / 2
+    # Bb = (B1 + B2) / 2
+    # Rb, Gb, Bb are the red, green, and blue components of the blended colour
+    # R1, G1, B1 are the red, green, and blue components of the first input colour
+    # R2, G2, B2 are the red, green, and blue components of the second input colour.
     @classmethod
     def parse_blended_color(cls, color_code):
         hex_digits = None
@@ -147,6 +158,14 @@ class LDrawColor:
             print(e)
 
         return hex_digits
+
+    # nb is the index of the blended colour
+    # n1 is the index of the first input colour
+    # n2 is the index of the second input colour
+    @classmethod
+    def get_blended_color_code(cls, n1, n2):
+        nb = n1 * 16 + n2 + 256
+        return nb
 
     @classmethod
     def parse_int_color(cls, color_code):
