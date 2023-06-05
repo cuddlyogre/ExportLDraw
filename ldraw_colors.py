@@ -2,11 +2,32 @@
 
 import math
 import struct
+from collections import namedtuple
 
 try:
     from . import helpers
 except ImportError as e:
     import helpers
+
+Color = namedtuple("Color", "r g b")
+colors = [
+    Color(51, 51, 51),
+    Color(0, 51, 178),
+    Color(0, 127, 51),
+    Color(0, 181, 166),
+    Color(204, 0, 0),
+    Color(255, 51, 153),
+    Color(102, 51, 0),
+    Color(153, 153, 153),
+    Color(102, 102, 88),
+    Color(0, 128, 255),
+    Color(51, 255, 102),
+    Color(171, 253, 249),
+    Color(255, 0, 0),
+    Color(255, 176, 204),
+    Color(255, 229, 0),
+    Color(255, 255, 255),
+]
 
 
 class LDrawColor:
@@ -27,14 +48,20 @@ class LDrawColor:
         self.name = None
         self.code = None
         self.color = None
+        self.color_i = None
+        self.color_hex = None
         self.color_d = None
         self.color_a = None
         self.edge_color = None
+        self.edge_color_i = None
+        self.edge_color_hex = None
         self.edge_color_d = None
         self.alpha = None
         self.luminance = None
         self.material_name = None
         self.material_color = None
+        self.material_color_i = None
+        self.material_color_hex = None
         self.material_alpha = None
         self.material_luminance = None
         self.material_fraction = None
@@ -58,16 +85,88 @@ class LDrawColor:
         if color_code in cls.__colors:
             return cls.__colors[color_code]
 
-        hex_digits = cls.__extract_hex_digits(color_code)
+        hex_digits = None
 
         if hex_digits is None:
-            # 10220 - Volkswagen T1 Camper Van.mpd -> 97122.dat uses an int color code 4294967295 which is 0xffffffff in hex
-            try:
-                hex_digits = cls.__extract_hex_digits(hex(int(color_code)))
-            except ValueError as e:
-                print(e)
+            hex_digits = cls.parse_blended_color(color_code)
+
+        if hex_digits is None:
+            hex_digits = cls.parse_int_color(color_code)
+
+        if hex_digits is None:
+            hex_digits = cls.__extract_hex_digits(color_code)
 
         if hex_digits is not None:
+            new_color = cls.create_new_color_from_hex_digits(color_code, hex_digits)
+            if new_color is not None:
+                return new_color
+
+        return cls.get_bad_color(color_code)
+
+    @classmethod
+    def parse_blended_color(cls, color_code):
+        hex_digits = None
+
+        try:
+            # https://www.ldraw.org/article/218.html#blendcolour
+
+            # blended_color_code
+            nb = int(color_code)
+
+            n1 = (nb - 256) // 16
+            n2 = (nb - 256) % 16
+
+            # https://forums.ldraw.org/thread-15259-post-15261.html#pid15261
+            # A = (nb - 256) >> 4
+            # B = (nb - 256) & 0x0F
+
+            c1 = colors[n1]
+            c2 = colors[n2]
+
+            r1 = c1.r
+            r2 = c2.r
+
+            g1 = c1.g
+            g2 = c2.g
+
+            b1 = c1.b
+            b2 = c2.b
+
+            rb = (r1 + r2) // 2
+            gb = (g1 + g2) // 2
+            bb = (b1 + b2) // 2
+
+            bcolor = Color(rb, gb, bb)
+            hbcolor = f"0x{hex(bcolor.r)[2:]}{hex(bcolor.g)[2:]}{hex(bcolor.b)[2:]}"
+            hex_digits = cls.__extract_hex_digits(hbcolor)
+        except ValueError as e:
+            # color code is not an int
+            print(e)
+        except IndexError as e:
+            # color code indices are not in the colors list
+            print(e)
+
+        return hex_digits
+
+    @classmethod
+    def parse_int_color(cls, color_code):
+        hex_digits = None
+
+        # 10220 - Volkswagen T1 Camper Van.mpd -> 97122.dat uses an int color code 4294967295 which is 0xffffffff in hex
+        try:
+            icolor_code = int(color_code)
+            hicolor_code = hex(icolor_code)
+            hex_digits = cls.__extract_hex_digits(hicolor_code)
+        except ValueError as e:
+            print(e)
+
+        return hex_digits
+
+    @classmethod
+    def create_new_color_from_hex_digits(cls, color_code, hex_digits):
+        new_color = None
+
+        try:
             alpha = ''
             # FFFFFF == 6 means no alpha
             # FFFFFFFF == 8 means alpha
@@ -78,18 +177,20 @@ class LDrawColor:
 
             clean_line = f"0 !COLOUR {color_code} CODE {color_code} VALUE #{hex_digits} EDGE #333333 {alpha}"
             _params = helpers.get_params(clean_line, "0 !COLOUR ")
-            try:
-                color_code = cls.parse_color(_params)
-                return cls.__colors[color_code]
-            except Exception as e:
-                print(e)
+            color_code = cls.parse_color(_params)
+            new_color = cls.__colors[color_code]
+        except Exception as e:
+            print(e)
 
+        return new_color
+
+    @classmethod
+    def get_bad_color(cls, color_code):
         if cls.__bad_color is None:
             clean_line = f"0 !COLOUR Bad_Color CODE {color_code} VALUE #FF0000 EDGE #00FF00"
             _params = helpers.get_params(clean_line, "0 !COLOUR ")
             color_code = cls.parse_color(_params)
             cls.__bad_color = cls.__colors[color_code]
-
         print(f"Bad color code: {color_code}")
         return cls.__colors[cls.__bad_color.code]
 
@@ -130,12 +231,16 @@ class LDrawColor:
         value = lparams[i + 1]
         rgb = self.__get_rgb_color_value(value, linear)
         self.color = rgb
+        self.color_i = tuple(round(i * 255) for i in rgb)
+        self.color_hex = value
         self.color_d = rgb + (1.0,)
 
         i = lparams.index("edge")
         edge = lparams[i + 1]
         e_rgb = self.__get_rgb_color_value(edge, linear)
         self.edge_color = e_rgb
+        self.edge_color_i = tuple(round(i * 255) for i in e_rgb)
+        self.edge_color_hex = edge
         self.edge_color_d = e_rgb + (1.0,)
 
         # [ALPHA a] [LUMINANCE l] [ CHROME | PEARLESCENT | RUBBER | MATTE_METALLIC | METAL | MATERIAL <params> ]
@@ -172,6 +277,8 @@ class LDrawColor:
             material_value = lparams[i + 1]
             material_rgba = self.__get_rgb_color_value(material_value, linear)
             self.material_color = material_rgba
+            self.material_color_i = tuple(round(i * 255) for i in material_rgba)
+            self.material_color_hex = material_value
 
             material_alpha = 255
             if "alpha" in material_parts:
@@ -297,6 +404,11 @@ class LDrawColor:
         return ((value + 0.055) / 1.055) ** 2.4
 
 
+# https://stackoverflow.com/a/74601731
+def print_colored(string, r, g, b):
+    print(f"\033[38;2;{r};{g};{b}m{string}\033[0m")
+
+
 if __name__ == "__main__":
     print(LDrawColor.get_color('#efefef').color_a)
     print(LDrawColor.get_color('#efefef55').color_a)
@@ -304,3 +416,22 @@ if __name__ == "__main__":
     print(LDrawColor.get_color("0x2062E9255").color_a)
     print(LDrawColor.get_color('4294967295').color_a)
     print(LDrawColor.get_color('#f657e').color_a)
+
+    # taken from Datsville
+    print(LDrawColor.get_color("0x2F05C00").color_a)
+    print(LDrawColor.get_color("0x2F03C00").color_a)
+    print(LDrawColor.get_color('258').color_a)  # blended color code
+    print(LDrawColor.get_color('382').color_a)  # blended color code
+    print(LDrawColor.get_color('487').color_a)  # blended color code
+
+    string = '258'
+    c = LDrawColor.get_color(string).color_i
+    print_colored(string, c[0], c[1], c[2])
+
+    string = '382'
+    c = LDrawColor.get_color(string).color_i
+    print_colored(string, c[0], c[1], c[2])
+
+    string = '487'
+    c = LDrawColor.get_color(string).color_i
+    print_colored(string, c[0], c[1], c[2])
