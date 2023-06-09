@@ -10,55 +10,10 @@ bl_info = {
     "category": "Import-Export",
 }
 
-#############################################
-# support reloading sub-modules
-_modules = [
-    'base64_handler',
-    'blender_camera',
-    'blender_import',
-    'blender_materials',
-    'definitions',
-    'export_options',
-    'filesystem',
-    'geometry_data',
-    'group',
-    'helpers',
-    'import_options',
-    'import_settings',
-    'ldraw_camera',
-    'ldraw_colors',
-    'ldraw_export',
-    'ldraw_file',
-    'ldraw_node',
-    'ldraw_part_types',
-    'ldraw_props',
-    'operator_panel_ldraw',
-    'operator_export',
-    'operator_import',
-    'pe_texmap',
-    'import_options',
-    'export_options',
-    'special_bricks',
-    'strings',
-    'texmap',
-]
-
-# Reload previously loaded modules.prop(
-if "bpy" in locals():
-    from importlib import reload
-
-    _modules_loaded[:] = [reload(module) for module in _modules_loaded]
-    del reload
-
-# First import the modules
-__import__(name=__name__, fromlist=_modules)
-_namespace = globals()
-_modules_loaded = [_namespace[name] for name in _modules]
-del _namespace
-# support reloading sub-modules
-#############################################
-
-import bpy
+from . import ldraw_props
+from . import operator_import
+from . import operator_export
+from . import operator_panel_ldraw
 
 
 def register():
