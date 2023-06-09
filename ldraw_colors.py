@@ -134,6 +134,21 @@ class LDrawColor:
             c1 = colors[n1]
             c2 = colors[n2]
 
+            # fc1 = Color(c1.r / 255, c1.g / 255, c1.b / 255)
+            # fc2 = Color(c2.r / 255, c2.g / 255, c2.b / 255)
+            #
+            # a = hex(c1.r)
+            # b = hex(c1.g)
+            # c = hex(c1.b)
+            #
+            # aa = hex(c2.r)
+            # bb = hex(c2.g)
+            # cc = hex(c2.b)
+            #
+            # # https://stackoverflow.com/a/2269841
+            # hc1 = f"0x{'{0:#0{1}x}'.format(c1.r, 4)[2:]}{'{0:#0{1}x}'.format(c1.g, 4)[2:]}{'{0:#0{1}x}'.format(c1.b, 4)[2:]}"
+            # hc2 = f"0x{'{0:#0{1}x}'.format(c2.r, 4)[2:]}{'{0:#0{1}x}'.format(c2.g, 4)[2:]}{'{0:#0{1}x}'.format(c2.b, 4)[2:]}"
+
             r1 = c1.r
             r2 = c2.r
 
@@ -148,6 +163,7 @@ class LDrawColor:
             bb = (b1 + b2) // 2
 
             bcolor = Color(rb, gb, bb)
+            # bicolor = Color(rb / 255, gb / 255, bb / 255)
             hbcolor = f"0x{hex(bcolor.r)[2:]}{hex(bcolor.g)[2:]}{hex(bcolor.b)[2:]}"
             hex_digits = cls.__extract_hex_digits(hbcolor)
         except ValueError as e:
