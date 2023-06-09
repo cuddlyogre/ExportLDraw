@@ -20,8 +20,13 @@ well. If you have LSynth parts installed, it will import those as well.
 BFC meta commands are processed by default. Don't recalculate normals, as this will undo all BFC processing that might 
 be done. CERTIFY and NOCERTIFY parts are both handled properly.
 
-Materials were taken almost wholesale from TobyLobster's plugin. I added my own glass material that was taken from [a 
-BlenderArtists thread](https://blenderartists.org/t/realistic-glass-in-eevee/1149937/19).
+Materials were originally taken from from TobyLobster's plugin, but I've since made my own changes.  
+For instance, I added my own glass material that was taken from [a BlenderArtists thread](https://blenderartists.org/t/realistic-glass-in-eevee/1149937/19).  
+
+**A note on materials**  
+Occasionally, a shader node will be removed from one version of Blender to the next, breaking materials that rely on them.
+In those cases, I will do my best to keep a working collection of materials up to that point for the old version, but I won't focus on them for 
+updates and tweaks unless something needs to be fixed.
 
 You are able to choose the logo you want to show on studs, or no logo or stud at all.
 
