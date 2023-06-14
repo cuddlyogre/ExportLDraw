@@ -213,7 +213,7 @@ def meta_root_group_nxt(ldraw_node, child_node):
 
 def meta_leocad_camera(ldraw_node, child_node, matrix):
     clean_line = child_node.line
-    _params = helpers.get_params(clean_line, "0 !LEOCAD CAMERA ", lowercase=True)
+    _params = helpers.get_params(clean_line, lowercase=True)[3:]
 
     if ldraw_node.camera is None:
         ldraw_node.camera = ldraw_camera.LDrawCamera()

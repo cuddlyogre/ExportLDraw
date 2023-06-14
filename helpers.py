@@ -18,12 +18,11 @@ def clean_line(line):
 
 
 # assumes cleaned line being passed
-def get_params(clean_line, command, lowercase=False):
-    no_command = clean_line[len(command):]
-    no_command_parts = no_command.split()
+def get_params(clean_line, lowercase=False):
+    parts = clean_line.split()
     if lowercase:
-        return [x.lower() for x in no_command_parts]
-    return no_command_parts
+        return [x.lower() for x in parts]
+    return parts
 
 
 def parse_csv_line(line, min_params=0):
