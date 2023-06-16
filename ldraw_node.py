@@ -83,6 +83,7 @@ class LDrawNode:
         obj_matrix = (parent_matrix @ self.matrix).freeze()
         vertex_matrix = obj_matrix
         collection = parent_collection
+        obj_color_code = color_code
 
         if group.top_collection is None:
             collection_name = self.file.name
@@ -111,6 +112,15 @@ class LDrawNode:
         # if it's a model, don't start collecting geometry
         # else if there's no geometry, start collecting geometry
 
+        # parent_is_top
+        # true == the parent node is a part
+        # false == parent node is a model
+        # when a part is used on its own and also treated as a subpart like with a shortcut, the part will not render in the shortcut
+        geometry_data_key = LDrawNode.__build_key(self.file.name, color_code)
+
+        # if geometry_data exists, this is a top level part that has already been processed so don't process this key again
+        cached_geometry_data = None
+
         # if a file has geometry, treat it like a part
         # otherwise that geometry won't be rendered
         if self.file.is_like_model() and not self.file.has_geometry():
@@ -121,16 +131,12 @@ class LDrawNode:
             LDrawNode.part_count += 1
             self.top = True
             vertex_matrix = matrices.identity_matrix
+            color_code = "16"
+            cached_geometry_data = LDrawNode.geometry_datas.get(self.file.name)
 
-        # parent_is_top
-        # true == the parent node is a part
-        # false == parent node is a model
-        # when a part is used on its own and also treated as a subpart like with a shortcut, the part will not render in the shortcut
-        key = LDrawNode.__build_key(self.file.name, color_code, vertex_matrix, accum_cull, accum_invert, texmap=texmap, pe_tex_info=pe_tex_info)
-
-        # always process geometry_data if this is a subpart
-        # if geometry_data exists, this is a top level part that has already been processed so don't process this key again
-        if not self.top or LDrawNode.geometry_datas.get(key) is None or ImportOptions.preserve_hierarchy:
+        # always process geometry_data if this is a subpart or
+        # there is no cached_geometry_data
+        if not self.top or cached_geometry_data is None or ImportOptions.preserve_hierarchy:
             if self.top:
                 # geometry_data is unused if the mesh already exists
                 geometry_data = GeometryData()
@@ -249,11 +255,11 @@ class LDrawNode:
                     invert_next = False
 
         if self.top:
-            _geometry_data = LDrawNode.geometry_datas.setdefault(key, geometry_data)
+            cached_geometry_data = LDrawNode.geometry_datas.setdefault(geometry_data_key, geometry_data)
 
             # geometry_data will not be None if this is a new mesh
             # geometry_data will be None if the mesh already exists
-            obj = LDrawNode.__create_obj(self, key, _geometry_data, obj_matrix, color_code, collection)
+            obj = LDrawNode.__create_obj(self, geometry_data_key, cached_geometry_data, obj_matrix, obj_color_code, collection)
 
             # if LDrawNode.part_count == 1:
             #     raise BaseException("done")
@@ -263,7 +269,7 @@ class LDrawNode:
 
     @staticmethod
     def __create_obj(ldraw_node, key, geometry_data, obj_matrix, color_code, collection):
-        mesh = ldraw_mesh.create_mesh(ldraw_node, key, geometry_data)
+        mesh = ldraw_mesh.create_mesh(ldraw_node, key, geometry_data, color_code)
         obj = ldraw_object.process_top_object(ldraw_node, mesh, key, obj_matrix, color_code, collection)
         return obj
 
@@ -279,7 +285,7 @@ class LDrawNode:
     # must include matrix, so that parts that are just mirrored versions of other parts
     # such as 32527.dat (mirror of 32528.dat) will render
     @staticmethod
-    def __build_key(filename, color_code, matrix, accum_cull, accum_invert, texmap=None, pe_tex_info=None):
+    def __build_key(filename, color_code, matrix=None, accum_cull=None, accum_invert=None, texmap=None, pe_tex_info=None):
         _key = (filename, color_code, matrix, accum_cull, accum_invert,)
         if texmap is not None:
             _key += ((texmap.method, texmap.texture, texmap.glossmap),)
