@@ -116,7 +116,8 @@ class LDrawNode:
         # true == the parent node is a part
         # false == parent node is a model
         # when a part is used on its own and also treated as a subpart like with a shortcut, the part will not render in the shortcut
-        geometry_data_key = LDrawNode.__build_key(self.file.name, color_code)
+        obj_key = LDrawNode.__build_key(self.file.name, color_code)
+        geometry_data_key = (self.file.name, texmap, pe_tex_info)
 
         # if geometry_data exists, this is a top level part that has already been processed so don't process this key again
         cached_geometry_data = None
@@ -132,7 +133,7 @@ class LDrawNode:
             self.top = True
             vertex_matrix = matrices.identity_matrix
             color_code = "16"
-            cached_geometry_data = LDrawNode.geometry_datas.get(self.file.name)
+            cached_geometry_data = LDrawNode.geometry_datas.get(geometry_data_key)
 
         # always process geometry_data if this is a subpart or
         # there is no cached_geometry_data
@@ -259,7 +260,7 @@ class LDrawNode:
 
             # geometry_data will not be None if this is a new mesh
             # geometry_data will be None if the mesh already exists
-            obj = LDrawNode.__create_obj(self, geometry_data_key, cached_geometry_data, obj_matrix, obj_color_code, collection)
+            obj = LDrawNode.__create_obj(self, obj_key, cached_geometry_data, obj_matrix, obj_color_code, collection)
 
             # if LDrawNode.part_count == 1:
             #     raise BaseException("done")
