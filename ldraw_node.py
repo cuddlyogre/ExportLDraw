@@ -77,13 +77,7 @@ class LDrawNode:
         self.texmap = texmap
         self.pe_tex_info = pe_tex_info
 
-        # by default, treat this as anything other than a top level part
-        # obj_matrix is the matrix up to the point and used for placement of objects
-        # vertex_matrix is the matrix that gets passed to subparts
-        obj_matrix = (parent_matrix @ self.matrix).freeze()
-        vertex_matrix = obj_matrix
         collection = parent_collection
-        obj_color_code = color_code
 
         if group.top_collection is None:
             collection_name = self.file.name
@@ -112,14 +106,26 @@ class LDrawNode:
         # if it's a model, don't start collecting geometry
         # else if there's no geometry, start collecting geometry
 
+        # by default, treat this as anything other than a top level part
+        # keep track of the matrix and color up to this point
+        # if it's a top level part, obj_matrix is its global transformation and obj_color_code will be what 16 is replaced with
+        # if it's anything else, vertex_matrix is what is used to tranform the vertices
+        # obj_matrix is the matrix up to the point and used for placement of objects
+        # vertex_matrix is the matrix that gets passed to subparts
+        # obj_color_code is the color code that this node will use if it is a top level part
+        vertex_matrix = (parent_matrix @ self.matrix).freeze()
+        obj_matrix = vertex_matrix
+        obj_color_code = color_code
+
         # parent_is_top
         # true == the parent node is a part
         # false == parent node is a model
         # when a part is used on its own and also treated as a subpart like with a shortcut, the part will not render in the shortcut
-        obj_key = LDrawNode.__build_key(self.file.name, color_code)
-        geometry_data_key = (self.file.name, texmap, pe_tex_info)
-
-        # if geometry_data exists, this is a top level part that has already been processed so don't process this key again
+        # obj_key is essentially a list of attributes that are unique to parts that share the same file
+        # texmapped parts are defined as parts so it should be safe to exclude that from the key
+        # pe_tex_info is defined like an mpd so mutliple instances in a model will share the same texture unless it is included in the key
+        obj_key = LDrawNode.__build_key(self.file.name, color_code, pe_tex_info)
+        geometry_data_key = obj_key
         cached_geometry_data = None
 
         # if a file has geometry, treat it like a part
@@ -135,8 +141,8 @@ class LDrawNode:
             color_code = "16"
             cached_geometry_data = LDrawNode.geometry_datas.get(geometry_data_key)
 
-        # always process geometry_data if this is a subpart or
-        # there is no cached_geometry_data
+        # always process geometry_data if this is a subpart or there is no cached_geometry_data
+        # if geometry_data exists, this is a top level part that has already been processed so don't process this key again
         if not self.top or cached_geometry_data is None:
             if self.top:
                 # geometry_data is unused if the mesh already exists
@@ -269,9 +275,9 @@ class LDrawNode:
             return obj
 
     @staticmethod
-    def __create_obj(ldraw_node, key, geometry_data, obj_matrix, color_code, collection):
+    def __create_obj(ldraw_node, key, geometry_data, matrix, color_code, collection):
         mesh = ldraw_mesh.create_mesh(ldraw_node, key, geometry_data, color_code)
-        obj = ldraw_object.process_top_object(ldraw_node, mesh, key, obj_matrix, color_code, collection)
+        obj = ldraw_object.process_top_object(ldraw_node, mesh, key, matrix, color_code, collection)
         return obj
 
     # set the working color code to this file's
@@ -286,10 +292,8 @@ class LDrawNode:
     # must include matrix, so that parts that are just mirrored versions of other parts
     # such as 32527.dat (mirror of 32528.dat) will render
     @staticmethod
-    def __build_key(filename, color_code, matrix=None, accum_cull=None, accum_invert=None, texmap=None, pe_tex_info=None):
-        _key = (filename, color_code, matrix, accum_cull, accum_invert,)
-        if texmap is not None:
-            _key += ((texmap.method, texmap.texture, texmap.glossmap),)
+    def __build_key(filename, color_code=None, pe_tex_info=None):
+        _key = (filename, color_code,)
         if pe_tex_info is not None:
             _key += ((pe_tex_info.image, pe_tex_info.matrix, pe_tex_info.v1, pe_tex_info.v1),)
 
