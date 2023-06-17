@@ -274,16 +274,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         default=ImportSettings.get_setting('treat_shortcut_as_model'),
     )
 
-    treat_models_with_subparts_as_parts: bpy.props.BoolProperty(
-        name="Treat models with subparts as parts",
-        options={'HIDDEN'},
-        description=" ".join([
-            "If true and a model has a subpart or primitive, treat it like a part by merging its constituent parts into one object.",
-            "If false, add the subparts and primitives as parts of the model"
-        ]),
-        default=ImportSettings.get_setting('treat_models_with_subparts_as_parts'),
-    )
-
     recalculate_normals: bpy.props.BoolProperty(
         name="Recalculate normals",
         description="Recalculate normals. Not recommended if BFC processing is active",
@@ -477,7 +467,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         col.label(text="Extras")
         col.prop(self, "import_edges")
         col.prop(self, "treat_shortcut_as_model")
-        col.prop(self, "treat_models_with_subparts_as_parts")
         col.prop(self, "no_studs")
 
 

@@ -122,39 +122,37 @@ class LDrawNode:
         # false == parent node is a model
         # when a part is used on its own and also treated as a subpart like with a shortcut, the part will not render in the shortcut
         # obj_key is essentially a list of attributes that are unique to parts that share the same file
-        # texmapped parts are defined as parts so it should be safe to exclude that from the key
-        # pe_tex_info is defined like an mpd so mutliple instances in a model will share the same texture unless it is included in the key
+        # texmap parts are defined as parts so it should be safe to exclude that from the key
+        # pe_tex_info is defined like an mpd so mutliple instances sharing the same part name will share the same texture unless it is included in the key
         obj_key = LDrawNode.__build_key(self.file.name, color_code, pe_tex_info)
         geometry_data_key = obj_key
-        cached_geometry_data = None
 
-        # if a file has geometry, treat it like a part
-        # otherwise that geometry won't be rendered
-        if self.file.is_like_model() and not self.file.has_geometry():
-            # if parent_collection is not None, this is a nested model
-            if parent_collection is not None:
-                collection = group.get_filename_collection(self.file.name, parent_collection)
-        elif geometry_data is None:  # top-level part
+        # if a file has geometry, treat it like a part otherwise that geometry won't be rendered
+        # geometry_data is always None if the geometry_data with this key has already been processed
+        # if is_shortcut_part, always treat like top level part, otherwise shortcuts that
+        # are children of other shortcuts will be treated as top level parts won't be treated as top level parts
+        # TODO: is_shortcut_model splits 99141c01.dat into its subparts - ensure the battery contacts are correct
+        cached_geometry_data = None
+        if geometry_data is None and (self.file.has_geometry() or self.file.is_shortcut_part()):
+            # top-level part
             LDrawNode.part_count += 1
             self.top = True
+            self.bfc_certified = None
             vertex_matrix = matrices.identity_matrix
             color_code = "16"
             cached_geometry_data = LDrawNode.geometry_datas.get(geometry_data_key)
+        else:
+            if self.file.is_like_model():
+                self.bfc_certified = True  # or else accum_cull will be false
+                # if parent_collection is not None, this is a nested model
+                if parent_collection is not None:
+                    collection = group.get_filename_collection(self.file.name, parent_collection)
 
         # always process geometry_data if this is a subpart or there is no cached_geometry_data
         # if geometry_data exists, this is a top level part that has already been processed so don't process this key again
         if not self.top or cached_geometry_data is None:
             if self.top:
-                # geometry_data is unused if the mesh already exists
                 geometry_data = GeometryData()
-
-            if self.file.is_like_model():
-                if self.file.has_geometry():
-                    self.bfc_certified = False
-                else:
-                    self.bfc_certified = True
-            else:
-                self.bfc_certified = None
 
             local_cull = True
             winding = "CCW"

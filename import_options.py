@@ -105,6 +105,3 @@ class ImportOptions:
 
     defaults['treat_shortcut_as_model'] = False  # TODO: if true parent to empty at median of group
     treat_shortcut_as_model = defaults['treat_shortcut_as_model']
-
-    defaults['treat_models_with_subparts_as_parts'] = True
-    treat_models_with_subparts_as_parts = defaults['treat_models_with_subparts_as_parts']
