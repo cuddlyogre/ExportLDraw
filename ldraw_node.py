@@ -127,11 +127,18 @@ class LDrawNode:
         obj_key = LDrawNode.__build_key(self.file.name, color_code, pe_tex_info)
         geometry_data_key = obj_key
 
-        # if a file has geometry, treat it like a part otherwise that geometry won't be rendered
+        # there are occasions where files with part_type of model have geometry so you can't rely on its part_type
+        # example: 10252 - 10252_towel.dat in 10252-1 - Volkswagen Beetle.mpd
+        # the only way to be sure is if a file has geometry, always treat it like a part otherwise that geometry won't be rendered
         # geometry_data is always None if the geometry_data with this key has already been processed
         # if is_shortcut_part, always treat like top level part, otherwise shortcuts that
         # are children of other shortcuts will be treated as top level parts won't be treated as top level parts
-        # TODO: is_shortcut_model splits 99141c01.dat into its subparts - ensure the battery contacts are correct
+        # this allows the button on part u9158.dat to be its own separate object
+        # this allows the horse's head on part 4493c04.dat to be its own object, as well as both halves of its body
+        # TODO: force special parts to always be a top level part - such as the horse head or button
+        #  in cases where they aren't part of a shortcut
+        # TODO: is_shortcut_model splits 99141c01.dat and u9158.dat into its subparts -
+        #  u9158.dat - ensure the battery contacts are correct
         cached_geometry_data = None
         if geometry_data is None and (self.file.has_geometry() or self.file.is_shortcut_part()):
             # top-level part
