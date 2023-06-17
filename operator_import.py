@@ -144,12 +144,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         default=ImportSettings.get_setting('no_studs'),
     )
 
-    preserve_hierarchy: bpy.props.BoolProperty(
-        name="Preserve file structure",
-        description="Don't merge the constituent subparts and primitives into the top level part. Some parts may not render properly",
-        default=ImportSettings.get_setting('preserve_hierarchy'),
-    )
-
     parent_to_empty: bpy.props.BoolProperty(
         name="Parent to empty",
         description="Parent the model to an empty",
@@ -485,7 +479,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         col.prop(self, "treat_shortcut_as_model")
         col.prop(self, "treat_models_with_subparts_as_parts")
         col.prop(self, "no_studs")
-        col.prop(self, "preserve_hierarchy")
 
 
 def build_import_menu(self, context):

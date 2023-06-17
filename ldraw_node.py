@@ -128,7 +128,7 @@ class LDrawNode:
             # if parent_collection is not None, this is a nested model
             if parent_collection is not None:
                 collection = group.get_filename_collection(self.file.name, parent_collection)
-        elif geometry_data is None or ImportOptions.preserve_hierarchy:  # top-level part
+        elif geometry_data is None:  # top-level part
             LDrawNode.part_count += 1
             self.top = True
             vertex_matrix = matrices.identity_matrix
@@ -137,7 +137,7 @@ class LDrawNode:
 
         # always process geometry_data if this is a subpart or
         # there is no cached_geometry_data
-        if not self.top or cached_geometry_data is None or ImportOptions.preserve_hierarchy:
+        if not self.top or cached_geometry_data is None:
             if self.top:
                 # geometry_data is unused if the mesh already exists
                 geometry_data = GeometryData()
@@ -173,7 +173,7 @@ class LDrawNode:
                         # but testing seems to indicate that adding to bpy.data.meshes does not change hash(mesh) value
                         child_node.load(
                             color_code=child_current_color,
-                            parent_matrix=vertex_matrix if not ImportOptions.preserve_hierarchy else obj_matrix,
+                            parent_matrix=vertex_matrix,
                             geometry_data=geometry_data,
                             accum_cull=self.bfc_certified and accum_cull and local_cull,
                             accum_invert=(accum_invert ^ invert_next),  # xor
@@ -183,7 +183,7 @@ class LDrawNode:
                         )
                         # for node in child_node.load(
                         #         color_code=child_current_color,
-                        #         parent_matrix=matrix if not ImportOptions.preserve_hierarchy else obj_matrix,
+                        #         parent_matrix=vertex_matrix,
                         #         geometry_data=geometry_data,
                         #         accum_cull=self.bfc_certified and accum_cull and local_cull,
                         #         accum_invert=(accum_invert ^ invert_next),  # xor

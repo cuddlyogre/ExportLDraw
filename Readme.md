@@ -172,14 +172,6 @@ BFC processing. It is recommended to keep unchecked if processing BFC commands i
 **Treat shortcut parts as models:** Treat shortcut parts as if they were models by splitting them into their constituent
 parts instead of merging them.  
 **No studs:** Don't import studs. Not particularly useful but is neat to see.  
-**Preserve file structure:** Don't merge the constituent subfiles into the top level part. This is helpful when you want
-to see how a part is made.
-
-**Notes about Preserve file structure**  
-It is my understanding that LDraw uses a shear matrix to transform vertex data. When transforming the actual vertices, 
-Blender has no problem with this. But it appears that a shear matrix can't be applied on the object level in the same 
-way, so some parts that use that technique won't render properly. There may be something that can be done to mitigate 
-this, but I haven't been unable to figure it out.
 
 Properly rendered
 ![Examples of correct render](examples/import/preserve_file_structure_3623.jpg)

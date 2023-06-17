@@ -64,9 +64,6 @@ def __process_top_object_matrix(obj, obj_matrix):
 
 
 def __process_top_object_gap(obj, obj_matrix):
-    if ImportOptions.preserve_hierarchy:
-        return
-
     if ImportOptions.make_gaps and ImportOptions.gap_target == "object":
         if ImportOptions.gap_scale_strategy == "object":
             matrix_world = matrices.transform_matrix @ obj_matrix @ matrices.gap_scale_matrix
