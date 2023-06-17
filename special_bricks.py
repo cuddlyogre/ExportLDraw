@@ -381,10 +381,7 @@ parts_cloth = {
 # '54869.dat': (1.0, 0.052, 0.017, 1.0),
 
 def get_part_slopes(filename):
-    if filename in part_slopes:
-        return part_slopes[filename]
-    else:
-        return None
+    return part_slopes.get(filename)
 
 
 def get_parts_cloth(filename):
