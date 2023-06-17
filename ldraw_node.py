@@ -147,6 +147,9 @@ class LDrawNode:
             self.bfc_certified = None
             vertex_matrix = matrices.identity_matrix
             color_code = "16"
+            # TODO: extend this to subparts so commnly used subparts don't have to be processed every time, like studs or box.
+            #  It is very likely this won't make much difference since the vertices still have to be processed to work with its parent
+            #  mesh_key = (self.file.name, color_code, pe_tex_info, vertex_matrix)
             cached_geometry_data = LDrawNode.geometry_datas.get(geometry_data_key)
         else:
             if self.file.is_like_model():
@@ -179,9 +182,6 @@ class LDrawNode:
                         else:
                             pe_tex_info = self.pe_tex_infos.get(self.subfile_line_index)
 
-                        # TODO: preload file, return mesh.name and get mesh and merge that mesh with the current mesh
-                        # may crash based on https://docs.blender.org/api/current/info_gotcha.html#help-my-script-crashes-blender
-                        # but testing seems to indicate that adding to bpy.data.meshes does not change hash(mesh) value
                         child_node.load(
                             color_code=child_current_color,
                             parent_matrix=vertex_matrix,
