@@ -164,7 +164,8 @@ be scaled to adjust to gaps between parts.
 **Smooth type:** Use an edge split modifier to smooth part faces, split edges during mesh processing, or use auto smooth.  
 **Shade smooth:**  Use flat or smooth shading for part faces.  
 **Recalculate normals:** Recalculate normals during import to ensure all normals face outside. Completely overwrites any 
-BFC processing. It is recommended to keep unchecked if processing BFC commands is checked
+BFC processing. It is recommended to keep unchecked if processing BFC commands is checked  
+**Triangulate faces:** Triangulate the mesh during import. Turns quads and ngons into tris.  
 
 **Extras**
 
