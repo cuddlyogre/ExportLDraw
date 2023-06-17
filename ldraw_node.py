@@ -124,8 +124,7 @@ class LDrawNode:
         # obj_key is essentially a list of attributes that are unique to parts that share the same file
         # texmap parts are defined as parts so it should be safe to exclude that from the key
         # pe_tex_info is defined like an mpd so mutliple instances sharing the same part name will share the same texture unless it is included in the key
-        obj_key = LDrawNode.__build_key(self.file.name, color_code, pe_tex_info)
-        geometry_data_key = obj_key
+        geometry_data_key = LDrawNode.__build_key(self.file.name, color_code, pe_tex_info)
 
         # there are occasions where files with part_type of model have geometry so you can't rely on its part_type
         # example: 10252 - 10252_towel.dat in 10252-1 - Volkswagen Beetle.mpd
@@ -267,11 +266,10 @@ class LDrawNode:
                     invert_next = False
 
         if self.top:
-            cached_geometry_data = LDrawNode.geometry_datas.setdefault(geometry_data_key, geometry_data)
-
             # geometry_data will not be None if this is a new mesh
             # geometry_data will be None if the mesh already exists
-            obj = LDrawNode.__create_obj(self, obj_key, cached_geometry_data, obj_matrix, obj_color_code, collection)
+            cached_geometry_data = LDrawNode.geometry_datas.setdefault(geometry_data_key, geometry_data)
+            obj = LDrawNode.__create_obj(self, geometry_data_key, cached_geometry_data, obj_matrix, obj_color_code, collection)
 
             # if LDrawNode.part_count == 1:
             #     raise BaseException("done")
