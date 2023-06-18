@@ -103,9 +103,6 @@ class LDrawNode:
             group.ungrouped_collection = _collection
             helpers.hide_obj(group.ungrouped_collection)
 
-        # if it's a model, don't start collecting geometry
-        # else if there's no geometry, start collecting geometry
-
         # by default, treat this as anything other than a top level part
         # keep track of the matrix and color up to this point
         # if it's a top level part, obj_matrix is its global transformation and obj_color_code will be what 16 is replaced with
@@ -117,15 +114,13 @@ class LDrawNode:
         obj_matrix = vertex_matrix
         obj_color_code = color_code
 
-        # parent_is_top
-        # true == the parent node is a part
-        # false == parent node is a model
         # when a part is used on its own and also treated as a subpart like with a shortcut, the part will not render in the shortcut
         # obj_key is essentially a list of attributes that are unique to parts that share the same file
         # texmap parts are defined as parts so it should be safe to exclude that from the key
         # pe_tex_info is defined like an mpd so mutliple instances sharing the same part name will share the same texture unless it is included in the key
         geometry_data_key = LDrawNode.__build_key(self.file.name, color_code, pe_tex_info)
 
+        # if there's no geometry, it's a top level part so start collecting geometry
         # there are occasions where files with part_type of model have geometry so you can't rely on its part_type
         # example: 10252 - 10252_towel.dat in 10252-1 - Volkswagen Beetle.mpd
         # the only way to be sure is if a file has geometry, always treat it like a part otherwise that geometry won't be rendered
@@ -143,18 +138,17 @@ class LDrawNode:
             # top-level part
             LDrawNode.part_count += 1
             self.top = True
-            self.bfc_certified = None
             vertex_matrix = matrices.identity_matrix
             color_code = "16"
-            # TODO: extend this to subparts so commnly used subparts don't have to be processed every time, like studs or box.
+            # TODO: extend this to subparts so commonly used subparts don't have to be processed every time, like studs or box.
             #  It is very likely this won't make much difference since the vertices still have to be processed to work with its parent
             #  mesh_key = (self.file.name, color_code, pe_tex_info, vertex_matrix)
             cached_geometry_data = LDrawNode.geometry_datas.get(geometry_data_key)
         else:
             if self.file.is_like_model():
-                self.bfc_certified = True  # or else accum_cull will be false
-                # if parent_collection is not None, this is a nested model
+                self.bfc_certified = True  # or else accum_cull will be false, which turns off bfc processing
                 if parent_collection is not None:
+                    # if parent_collection is not None, this is a nested model
                     collection = group.get_filename_collection(self.file.name, parent_collection)
 
         # always process geometry_data if this is a subpart or there is no cached_geometry_data
