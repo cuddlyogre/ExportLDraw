@@ -470,10 +470,10 @@ def __handle_vertex_winding(child_node, matrix, winding):
     if winding == "CW":
         if vert_count == 3:
             verts = [vertices[0], vertices[2], vertices[1]]
-            vertices = [matrix @ m for m in verts]
+            vertices = [matrix @ v for v in verts]
         elif vert_count == 4:
             verts = [vertices[0], vertices[3], vertices[2], vertices[1]]
-            vertices = [matrix @ m for m in verts]
+            vertices = [matrix @ v for v in verts]
 
             # handle bowtie quadrilaterals - 6582.dat
             # https://github.com/TobyLobster/ImportLDraw/pull/65/commits/3d8cebee74bf6d0447b616660cc989e870f00085
@@ -488,7 +488,7 @@ def __handle_vertex_winding(child_node, matrix, winding):
     else:  # winding == "CCW" or winding is None:
         # this is the default vertex order so don't do anything
         verts = vertices
-        vertices = [matrix @ m for m in verts]
+        vertices = [matrix @ v for v in verts]
 
     return vertices
 
