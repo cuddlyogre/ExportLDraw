@@ -16,6 +16,9 @@ def set_props(obj, ldraw_file, color_code):
     obj.ldraw_props.optional_qualifier = ldraw_file.optional_qualifier or ""
     obj.ldraw_props.update_date = ldraw_file.update_date or ""
     obj.ldraw_props.license = ldraw_file.license or ""
+    # obj.ldraw_props.category = ldraw_file.category or ""
+    # obj.ldraw_props.keywords = ldraw_file.keywords or ""
+    # obj.ldraw_props.history = "; ".join(ldraw_file.history or [])
     obj.ldraw_props.color_code = color_code
 
 
@@ -34,16 +37,24 @@ def get_header_lines(obj, is_model=False):
 
     part_type_parts = []
     part_type_parts.append(obj.ldraw_props.part_type)
-    if obj.ldraw_props.optional_qualifier is not None:
+    if obj.ldraw_props.optional_qualifier is not None and obj.ldraw_props.optional_qualifier.strip() != "":
         part_type_parts.append(obj.ldraw_props.optional_qualifier)
-    if obj.ldraw_props.update_date is not None:
+    if obj.ldraw_props.update_date is not None and obj.ldraw_props.update_date.strip() != "":
         part_type_parts.append(f"UPDATE {obj.ldraw_props.update_date}")
 
     header_lines.append(f"0 !LDRAW_ORG {' '.join(part_type_parts)}")
     header_lines.append(f"0 !LICENSE {obj.ldraw_props.license}")
+
     if not is_model:  # only include bfc information if the obj is not a model
         header_lines.append(f"\n")
         header_lines.append(f"0 BFC CERTIFY CCW")
+
+    # if obj.ldraw_props.category is not None and obj.ldraw_props.category.strip() != "":
+    #     header_lines.append(f"\n")
+    #     header_lines.append(f"0 !CATEGORY {obj.ldraw_props.category}")
+    # header_lines.append(f"0 !KEYWORDS {obj.ldraw_props.keywords}")
+    # header_lines.append(f"0 !HISTORY {obj.ldraw_props.history}")
+
     return header_lines
 
     # header_text = "\n".join(header_lines)
@@ -119,6 +130,119 @@ class LDrawProps(bpy.types.PropertyGroup):
         description="LDraw license",
         default="Redistributable under CCAL version 2.0 : see CAreadme.txt",
     )
+
+    # https://www.ldraw.org/article/340.html#categorylist
+    # categories = [
+    #     "",
+    #     "Animal",
+    #     "Antenna",
+    #     "Arch",
+    #     "Arm",
+    #     "Bar",
+    #     "Baseplate",
+    #     "Belville",
+    #     "Boat",
+    #     "Bracket",
+    #     "Brick",
+    #     "Car",
+    #     "Clikits",
+    #     "Cockpit",
+    #     "Cone",
+    #     "Constraction",
+    #     "Constraction Accessory",
+    #     "Container",
+    #     "Conveyor",
+    #     "Crane",
+    #     "Cylinder",
+    #     "Dish",
+    #     "Door",
+    #     "Duplo",
+    #     "Electric",
+    #     "Exhaust",
+    #     "Fence",
+    #     "Figure",
+    #     "Figure Accessory",
+    #     "Flag",
+    #     "Forklift",
+    #     "Freestyle",
+    #     "Garage",
+    #     "Glass",
+    #     "Grab",
+    #     """Helper, only parts with part type "Helper" can use this category""",
+    #     "Hinge",
+    #     "Homemaker",
+    #     "Hose",
+    #     "Ladder",
+    #     "Lever",
+    #     "Magnet",
+    #     "Minifig",
+    #     "Minifig Accessory",
+    #     "Minifig Footwear",
+    #     "Minifig Headwear",
+    #     "Minifig Hipwear",
+    #     "Minifig Neckwear",
+    #     "Monorail",
+    #     """Moved, only "Moved to" can use this category""",
+    #     "Obsolete, only obsolete parts can use this category",
+    #     "Panel",
+    #     "Plane",
+    #     "Plant",
+    #     "Plate",
+    #     "Platform",
+    #     "Pov-RAY, depreciated and with be removed upon revision to light.dat",
+    #     "Propeller",
+    #     "Rack",
+    #     "Roadsign",
+    #     "Rock",
+    #     "Scala",
+    #     "Screw",
+    #     "Sheet Cardboard",
+    #     "Sheet Fabric",
+    #     "Sheet Plastic",
+    #     "Slope",
+    #     "Sphere",
+    #     "Staircase",
+    #     "Sticker",
+    #     "String",
+    #     "Support",
+    #     "Tail",
+    #     "Tap",
+    #     "Technic",
+    #     "Tile",
+    #     "Tipper",
+    #     "Tractor",
+    #     "Trailer",
+    #     "Train",
+    #     "Turntable",
+    #     "Tyre",
+    #     "Vehicle",
+    #     "Wedge",
+    #     "Wheel",
+    #     "Winch",
+    #     "Window",
+    #     "Windscreen",
+    #     "Wing",
+    #     "Znap",
+    # ]
+    # category: bpy.props.EnumProperty(
+    #     name="Category",
+    #     description="Category of this part",
+    #     items=list(((c, c, c) for c in categories)),
+    #     default="",
+    # )
+
+    # keywords: bpy.props.StringProperty(
+    #     name="Keywords",
+    #     description="Keywords describing this part",
+    #     default="",
+    # )
+
+    # history: bpy.props.StringProperty(
+    #     options={'HIDDEN'},
+    #     name="History",
+    #     description="",
+    #     default="",
+    # )
 
     def test_update(self, context):
         if context.object is None:

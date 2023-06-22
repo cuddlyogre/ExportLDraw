@@ -50,7 +50,19 @@ def do_export(filepath):
         print(f"Active object {active_object.name} does not have a name")
         return False
 
-    ldraw_file = LDrawFile(name)
+    ldraw_file = LDrawFile("")
+    ldraw_file.filename = active_object.ldraw_props.filename
+    ldraw_file.description = active_object.ldraw_props.description
+    ldraw_file.name = active_object.ldraw_props.name
+    ldraw_file.author = active_object.ldraw_props.author
+    ldraw_file.part_type = active_object.ldraw_props.part_type
+    ldraw_file.actual_part_type = active_object.ldraw_props.actual_part_type
+    ldraw_file.optional_qualifier = active_object.ldraw_props.optional_qualifier
+    ldraw_file.update_date = active_object.ldraw_props.update_date
+    ldraw_file.license = active_object.ldraw_props.license
+    # ldraw_file.category = active_object.ldraw_props.category
+    # ldraw_file.keywords = active_object.ldraw_props.keywords
+    # ldraw_file.history = active_object.ldraw_props.history
 
     is_like_model = ldraw_file.is_model() or ldraw_file.is_shortcut()
     hlines = ldraw_props.get_header_lines(active_object, is_like_model)

@@ -67,9 +67,12 @@ class CO_PT_ldraw_panel(bpy.types.Panel):
             col.prop(obj.ldraw_props, 'name')
             col.prop(obj.ldraw_props, 'author')
             col.prop(obj.ldraw_props, 'part_type')
+            col.prop(obj.ldraw_props, 'actual_part_type')
             col.prop(obj.ldraw_props, 'optional_qualifier')
             col.prop(obj.ldraw_props, 'update_date')
-            col.prop(obj.ldraw_props, 'actual_part_type')
+            # col.prop(obj.ldraw_props, 'category')
+            # col.prop(obj.ldraw_props, 'keywords')
+            # col.prop(obj.ldraw_props, 'history')
 
             layout.separator(factor=0.3)
             col = layout.column()
