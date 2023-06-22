@@ -289,10 +289,15 @@ class LDrawNode:
     # must include matrix, so that parts that are just mirrored versions of other parts
     # such as 32527.dat (mirror of 32528.dat) will render
     @staticmethod
-    def __build_key(filename, color_code=None, pe_tex_info=None):
+    def __build_key(filename, color_code=None, pe_tex_info=None, matrix=None):
         _key = (filename, color_code,)
+
         if pe_tex_info is not None:
             _key += ((pe_tex_info.image, pe_tex_info.matrix, pe_tex_info.v1, pe_tex_info.v1),)
+        else:
+            _key += (None,)
+
+        _key += (matrix,)
 
         key = LDrawNode.key_map.get(_key)
         if key is None:
