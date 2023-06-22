@@ -526,7 +526,7 @@ class LDrawFile:
                 name = parts[0]
                 name_parts = name.split('-')
                 stud_name = name_parts[0]
-                chosen_logo = ImportOptions.chosen_logo
+                chosen_logo = ImportOptions.chosen_logo_value()
                 ext = parts[1]
                 filename = f"{stud_name}-{chosen_logo}.{ext}"
 

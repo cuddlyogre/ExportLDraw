@@ -78,7 +78,7 @@ def __get_edge_indices(verts, geometry_data):
 
 
 def __process_bmesh_edges(bm, geometry_data):
-    if ImportOptions.smooth_type == "bmesh_split":
+    if ImportOptions.smooth_type_value() == "bmesh_split":
         edge_indices = __get_edge_indices(bm.verts, geometry_data)
 
         # Find the appropriate mesh edges and make them sharp (i.e. not smooth)
@@ -162,14 +162,14 @@ def __process_mesh_edges(ldraw_node, key, geometry_data):
 
 
 def __process_mesh_sharp_edges(mesh, geometry_data):
-    if ImportOptions.smooth_type == "edge_split" or ImportOptions.use_freestyle_edges or ImportOptions.bevel_edges:
+    if ImportOptions.smooth_type_value() == "edge_split" or ImportOptions.use_freestyle_edges or ImportOptions.bevel_edges:
         edge_indices = __get_edge_indices(mesh.vertices, geometry_data)
 
         for edge in mesh.edges:
             v0 = edge.vertices[0]
             v1 = edge.vertices[1]
             if (v0, v1) in edge_indices:
-                if ImportOptions.smooth_type == "edge_split":
+                if ImportOptions.smooth_type_value() == "edge_split":
                     edge.use_edge_sharp = True
                 if ImportOptions.use_freestyle_edges:
                     edge.use_freestyle_mark = True
@@ -178,11 +178,11 @@ def __process_mesh_sharp_edges(mesh, geometry_data):
 
 
 def __process_mesh(mesh):
-    if ImportOptions.smooth_type == "auto_smooth" or ImportOptions.smooth_type == "bmesh_split":
+    if ImportOptions.smooth_type_value() == "auto_smooth" or ImportOptions.smooth_type_value() == "bmesh_split":
         mesh.use_auto_smooth = ImportOptions.shade_smooth
         mesh.auto_smooth_angle = matrices.auto_smooth_angle
 
-    if ImportOptions.make_gaps and ImportOptions.gap_target == "mesh":
+    if ImportOptions.make_gaps and ImportOptions.gap_target_value() == "mesh":
         mesh.transform(matrices.gap_scale_matrix)
 
 
@@ -196,5 +196,5 @@ def __create_edge_mesh(ldraw_node, key, e_edges, e_faces, e_verts):
         edge_mesh.from_pydata(e_verts, e_edges, e_faces)
         helpers.finish_mesh(edge_mesh)
 
-        if ImportOptions.make_gaps and ImportOptions.gap_target == "mesh":
+        if ImportOptions.make_gaps and ImportOptions.gap_target_value() == "mesh":
             edge_mesh.transform(matrices.gap_scale_matrix)

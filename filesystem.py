@@ -64,8 +64,18 @@ class FileSystem:
     defaults['prefer_unofficial'] = False
     prefer_unofficial = defaults['prefer_unofficial']
 
-    defaults['resolution'] = 'Standard'
+    resolution_choices = (
+        ("Low", "Low resolution primitives", "Import using low resolution primitives."),
+        ("Standard", "Standard primitives", "Import using standard resolution primitives."),
+        ("High", "High resolution primitives", "Import using high resolution primitives."),
+    )
+
+    defaults['resolution'] = 1
     resolution = defaults['resolution']
+
+    @staticmethod
+    def resolution_value():
+        return FileSystem.resolution_choices[FileSystem.resolution][0]
 
     search_dirs = []
     lowercase_paths = {}
@@ -119,10 +129,10 @@ class FileSystem:
             path = os.path.join(root, "p")
             cls.append_search_path(path)
 
-            if cls.resolution == "High":
+            if cls.resolution_value() == "High":
                 path = os.path.join(root, "p", "48")
                 cls.append_search_path(path)
-            elif cls.resolution == "Low":
+            elif cls.resolution_value() == "Low":
                 path = os.path.join(root, "p", "8")
                 cls.append_search_path(path)
 

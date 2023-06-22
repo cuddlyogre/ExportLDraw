@@ -1,3 +1,4 @@
+# TODO: remove class
 class ImportOptions:
     defaults = {}
 
@@ -43,8 +44,15 @@ class ImportOptions:
     defaults['display_logo'] = False
     display_logo = defaults['display_logo']
 
-    defaults['chosen_logo'] = "logo3"
+    # cast items as list or "EnumProperty(..., default='logo3'): not found in enum members" and a messed up menu
+    chosen_logo_choices = list(((logo, logo, logo) for logo in ["logo", "logo2", "logo3", "logo4", "logo5", "high-contrast"]))
+
+    defaults['chosen_logo'] = 2
     chosen_logo = defaults['chosen_logo']
+
+    @staticmethod
+    def chosen_logo_value():
+        return ImportOptions.chosen_logo_choices[ImportOptions.chosen_logo]
 
     defaults['shade_smooth'] = True
     shade_smooth = defaults['shade_smooth']
@@ -70,14 +78,42 @@ class ImportOptions:
     defaults['set_timeline_markers'] = False
     set_timeline_markers = defaults['set_timeline_markers']
 
-    defaults['smooth_type'] = ["edge_split", "auto_smooth", "bmesh_split"][0]
+    smooth_type_choices = (
+        ("edge_split", "Edge split", "Use an edge split modifier"),
+        ("auto_smooth", "Auto smooth", "Use auto smooth"),
+        ("bmesh_split", "bmesh smooth", "Split during initial mesh processing"),
+    )
+
+    defaults['smooth_type'] = 0
     smooth_type = defaults['smooth_type']
 
-    defaults['gap_target'] = ["object", "mesh"][0]
+    @staticmethod
+    def smooth_type_value():
+        return ImportOptions.smooth_type_choices[ImportOptions.smooth_type][0]
+
+    gap_target_choices = (
+        ("object", "Object", "Scale the object to create the gap"),
+        ("mesh", "Mesh", "Transform the mesh to create the gap"),
+    )
+
+    defaults['gap_target'] = 0
     gap_target = defaults['gap_target']
 
-    defaults['gap_scale_strategy'] = ["constraint", "object"][1]
+    @staticmethod
+    def gap_target_value():
+        return ImportOptions.gap_target_choices[ImportOptions.gap_target][0]
+
+    gap_scale_strategy_choices = (
+        ("object", "Object", "Apply gap directly to the object"),
+        ("constraint", "Constraint", "Use a constraint, allowing the gap to easily be adjusted later"),
+    )
+
+    defaults['gap_scale_strategy'] = 0
     gap_scale_strategy = defaults['gap_scale_strategy']
+
+    @staticmethod
+    def gap_scale_strategy_value():
+        return ImportOptions.gap_scale_strategy_choices[ImportOptions.gap_scale_strategy][0]
 
     defaults['import_edges'] = False
     import_edges = defaults['import_edges']

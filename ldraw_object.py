@@ -64,11 +64,11 @@ def __process_top_object_matrix(obj, obj_matrix):
 
 
 def __process_top_object_gap(obj, obj_matrix):
-    if ImportOptions.make_gaps and ImportOptions.gap_target == "object":
-        if ImportOptions.gap_scale_strategy == "object":
+    if ImportOptions.make_gaps and ImportOptions.gap_target_value() == "object":
+        if ImportOptions.gap_scale_strategy_value() == "object":
             matrix_world = matrices.transform_matrix @ obj_matrix @ matrices.gap_scale_matrix
             obj.matrix_world = matrix_world
-        elif ImportOptions.gap_scale_strategy == "constraint":
+        elif ImportOptions.gap_scale_strategy_value() == "constraint":
             global gap_scale_empty
             if gap_scale_empty is None:
                 gap_scale_empty = bpy.data.objects.new("gap_scale", None)
@@ -92,7 +92,7 @@ def __process_top_object_edges(obj):
         bevel_modifier.width = ImportOptions.bevel_width
         bevel_modifier.segments = ImportOptions.bevel_segments
 
-    if ImportOptions.smooth_type == "edge_split":
+    if ImportOptions.smooth_type_value() == "edge_split":
         edge_modifier = obj.modifiers.new("Edge Split", type='EDGE_SPLIT')
         edge_modifier.use_edge_sharp = True
         # need this or else items with right angles but aren't marked as sharp aren't shaded properly

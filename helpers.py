@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import os
 
+
 try:
     from .definitions import APP_ROOT
 except ImportError as e:
@@ -54,22 +55,20 @@ def fix_string_encoding(string):
     return new_string
 
 
-def write_json(folder, filename, dictionary):
+def write_json(filepath, obj):
     try:
-        folder = os.path.join(APP_ROOT, folder)
-        Path(folder).mkdir(parents=True, exist_ok=True)
-        filepath = os.path.join(folder, filename)
-        with open(filepath, 'w', encoding='utf-8', newline="\n") as file:
-            file.write(json.dumps(dictionary))
+        full_path = os.path.join(APP_ROOT, filepath)
+        Path(os.path.dirname(full_path)).mkdir(parents=True, exist_ok=True)
+        with open(full_path, 'w', encoding='utf-8', newline="\n") as file:
+            file.write(json.dumps(obj))
     except Exception as e:
         print(e)
 
 
-def read_json(folder, filename, default=None):
+def read_json(filepath, default=None):
     try:
-        folder = os.path.join(APP_ROOT, folder)
-        filepath = os.path.join(folder, filename)
-        with open(filepath, 'r', encoding='utf-8') as file:
+        full_path = os.path.join(APP_ROOT, filepath)
+        with open(full_path, 'r', encoding='utf-8') as file:
             return json.load(file)
     except Exception as e:
         print(e)

@@ -1,3 +1,5 @@
+import os.path
+
 from .import_options import ImportOptions
 from .filesystem import FileSystem
 from .ldraw_colors import LDrawColor
@@ -5,6 +7,7 @@ from . import helpers
 
 
 class ImportSettings:
+    settings_path = os.path.join('config', 'ImportOptions.json')
     settings = None
 
     filesystem_defaults = FileSystem.defaults
@@ -16,6 +19,13 @@ class ImportSettings:
         **ldraw_color_defaults,
         **import_options_defaults
     }
+
+    @classmethod
+    def settings_dict(cls, key):
+        return {
+            "get": lambda self: cls.get_setting(key),
+            "set": lambda self, value: cls.set_setting(key, value),
+        }
 
     @classmethod
     def get_setting(cls, key):
@@ -32,15 +42,20 @@ class ImportSettings:
             return default
 
     @classmethod
-    def load_settings(cls):
-        cls.settings = helpers.read_json('config', 'ImportOptions.json', cls.default_settings)
+    def __setattr__(cls, key, value):
+        cls.settings[key] = value
 
     @classmethod
-    def save_settings(cls, has_settings):
-        cls.settings = {}
-        for k, v in cls.default_settings.items():
-            cls.settings[k] = getattr(has_settings, k, v)
-        helpers.write_json('config', 'ImportOptions.json', cls.settings)
+    def set_setting(cls, k, v):
+        cls.settings[k] = v
+
+    @classmethod
+    def load_settings(cls):
+        cls.settings = helpers.read_json(cls.settings_path, cls.default_settings)
+
+    @classmethod
+    def save_settings(cls):
+        helpers.write_json(cls.settings_path, cls.settings)
 
     @classmethod
     def apply_settings(cls):

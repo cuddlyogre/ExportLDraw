@@ -102,17 +102,17 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
         min=0,
     )
 
-    resolution: bpy.props.EnumProperty(
-        name="Part resolution",
-        options={'HIDDEN'},
-        description="Resolution of part primitives, ie. how much geometry they have",
-        default="Standard",
-        items=(
-            ("Low", "Low resolution primitives", "Import using low resolution primitives."),
-            ("Standard", "Standard primitives", "Import using standard resolution primitives."),
-            ("High", "High resolution primitives", "Import using high resolution primitives."),
-        ),
-    )
+    # resolution: bpy.props.EnumProperty(
+    #     name="Part resolution",
+    #     options={'HIDDEN'},
+    #     description="Resolution of part primitives, ie. how much geometry they have",
+    #     default="Standard",
+    #     items=(
+    #         ("Low", "Low resolution primitives", "Import using low resolution primitives."),
+    #         ("Standard", "Standard primitives", "Import using standard resolution primitives."),
+    #         ("High", "High resolution primitives", "Import using high resolution primitives."),
+    #     ),
+    # )
 
     def execute(self, context):
         start = time.perf_counter()
@@ -121,7 +121,7 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
 
         FileSystem.ldraw_path = self.ldraw_path
         FileSystem.studio_ldraw_path = self.studio_ldraw_path
-        FileSystem.resolution = self.resolution
+        # FileSystem.resolution = self.resolution
         LDrawColor.use_alt_colors = self.use_alt_colors
 
         ExportOptions.selection_only = self.selection_only
