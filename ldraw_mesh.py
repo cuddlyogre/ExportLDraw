@@ -149,11 +149,9 @@ def __process_mesh_edges(ldraw_node, key, geometry_data):
 
     i = 0
     for edge_data in geometry_data.edge_data:
-        edge_verts = []
         face_indices = []
         for vertex in edge_data.vertices:
             e_verts.append(vertex)
-            edge_verts.append(vertex)
             face_indices.append(i)
             i += 1
         e_faces.append(face_indices)
