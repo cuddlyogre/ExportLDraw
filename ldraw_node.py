@@ -105,14 +105,12 @@ class LDrawNode:
 
         # by default, treat this as anything other than a top level part
         # keep track of the matrix and color up to this point
-        # if it's a top level part, obj_matrix is its global transformation and obj_color_code will be what 16 is replaced with
+        # if it's a top level part, obj_matrix is its global transformation
         # if it's anything else, vertex_matrix is what is used to tranform the vertices
         # obj_matrix is the matrix up to the point and used for placement of objects
         # vertex_matrix is the matrix that gets passed to subparts
-        # obj_color_code is the color code that this node will use if it is a top level part
         vertex_matrix = (parent_matrix @ self.matrix).freeze()
         obj_matrix = vertex_matrix
-        obj_color_code = color_code
 
         # when a part is used on its own and also treated as a subpart like with a shortcut, the part will not render in the shortcut
         # obj_key is essentially a list of attributes that are unique to parts that share the same file
@@ -139,10 +137,6 @@ class LDrawNode:
             LDrawNode.part_count += 1
             self.top = True
             vertex_matrix = matrices.identity_matrix
-            color_code = "16"
-            # TODO: extend this to subparts so commonly used subparts don't have to be processed every time, like studs or box.
-            #  It is very likely this won't make much difference since the vertices still have to be processed to work with its parent
-            #  mesh_key = (self.file.name, color_code, pe_tex_info, vertex_matrix)
             cached_geometry_data = LDrawNode.geometry_datas.get(geometry_data_key)
         else:
             if self.file.is_like_model():
@@ -263,7 +257,7 @@ class LDrawNode:
             # geometry_data will not be None if this is a new mesh
             # geometry_data will be None if the mesh already exists
             cached_geometry_data = LDrawNode.geometry_datas.setdefault(geometry_data_key, geometry_data)
-            obj = LDrawNode.__create_obj(self, geometry_data_key, cached_geometry_data, obj_matrix, obj_color_code, collection)
+            obj = LDrawNode.__create_obj(self, geometry_data_key, cached_geometry_data, obj_matrix, color_code, collection)
 
             # if LDrawNode.part_count == 1:
             #     raise BaseException("done")
@@ -273,7 +267,7 @@ class LDrawNode:
 
     @staticmethod
     def __create_obj(ldraw_node, key, geometry_data, matrix, color_code, collection):
-        mesh = ldraw_mesh.create_mesh(ldraw_node, key, geometry_data, color_code)
+        mesh = ldraw_mesh.create_mesh(ldraw_node, key, geometry_data)
         obj = ldraw_object.process_top_object(ldraw_node, mesh, key, matrix, color_code, collection)
         return obj
 
