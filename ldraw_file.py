@@ -543,8 +543,8 @@ class LDrawFile:
             self.child_nodes.append(ldraw_node)
 
             if ldraw_file.is_geometry():
-                self.geometry_commands.setdefault("subfiles", 0)
-                self.geometry_commands["subfiles"] += 1
+                self.geometry_commands.setdefault(_params[0], 0)
+                self.geometry_commands[_params[0]] += 1
 
             return True
         return False
