@@ -172,7 +172,10 @@ class FileSystem:
 
         for dir in cls.search_dirs:
             full_path = os.path.join(dir, part_path)
-            full_path = cls.lowercase_paths.get(full_path.lower()) or full_path
+            lc_path = full_path.lower()
+            if lc_path in cls.lowercase_paths:
+                full_path = cls.lowercase_paths.get(lc_path)
+
             if os.path.isfile(full_path):
                 return full_path
 
