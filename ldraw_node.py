@@ -111,12 +111,17 @@ class LDrawNode:
         # vertex_matrix is the matrix that gets passed to subparts
         vertex_matrix = (parent_matrix @ self.matrix).freeze()
         obj_matrix = vertex_matrix
+        obj_color_code = color_code
 
         # when a part is used on its own and also treated as a subpart like with a shortcut, the part will not render in the shortcut
         # obj_key is essentially a list of attributes that are unique to parts that share the same file
         # texmap parts are defined as parts so it should be safe to exclude that from the key
         # pe_tex_info is defined like an mpd so mutliple instances sharing the same part name will share the same texture unless it is included in the key
-        geometry_data_key = LDrawNode.__build_key(self.file.name, color_code, pe_tex_info)
+        # the only thing unique about a geometry_data object is its filename and whether it has pe_tex_info
+        geometry_data_key = LDrawNode.__build_key(self.file.name, pe_tex_info)
+        # blender mesh data is unique also based on color
+        # this means a geometry_data for a file is created only once, but a mesh is created for every color that uses that geometry_data
+        obj_key = f"{geometry_data_key}_{color_code}"
 
         # if there's no geometry, it's a top level part so start collecting geometry
         # there are occasions where files with part_type of model have geometry so you can't rely on its part_type
@@ -138,6 +143,10 @@ class LDrawNode:
             self.top = True
             vertex_matrix = matrices.identity_matrix
             cached_geometry_data = LDrawNode.geometry_datas.get(geometry_data_key)
+            # set top level parts to 16 so that geometry_data is only created once per filename
+            # then change their 16 faces to obj_color_code
+            # TODO: replace material of 16 faces with geometry nodes
+            color_code = "16"
         else:
             if self.file.is_like_model():
                 self.bfc_certified = True  # or else accum_cull will be false, which turns off bfc processing
@@ -257,7 +266,7 @@ class LDrawNode:
             # geometry_data will not be None if this is a new mesh
             # geometry_data will be None if the mesh already exists
             cached_geometry_data = LDrawNode.geometry_datas.setdefault(geometry_data_key, geometry_data)
-            obj = LDrawNode.__create_obj(self, geometry_data_key, cached_geometry_data, obj_matrix, color_code, collection)
+            obj = LDrawNode.__create_obj(self, obj_key, cached_geometry_data, obj_matrix, obj_color_code, collection)
 
             # if LDrawNode.part_count == 1:
             #     raise BaseException("done")
@@ -267,7 +276,7 @@ class LDrawNode:
 
     @staticmethod
     def __create_obj(ldraw_node, key, geometry_data, matrix, color_code, collection):
-        mesh = ldraw_mesh.create_mesh(ldraw_node, key, geometry_data)
+        mesh = ldraw_mesh.create_mesh(ldraw_node, key, geometry_data, color_code)
         obj = ldraw_object.process_top_object(ldraw_node, mesh, key, matrix, color_code, collection)
         return obj
 
