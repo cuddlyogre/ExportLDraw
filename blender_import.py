@@ -119,7 +119,9 @@ def __load_materials(file):
     # slope texture demonstration
     obj = do_import('3044.dat')
     if obj is not None:
-        obj.location.y = 5
+        obj.location.x = 0.0
+        obj.location.y = 5.0
+        obj.location.z = 0.5
 
     # texmap demonstration
     obj = do_import('27062p01.dat')
