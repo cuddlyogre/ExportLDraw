@@ -80,6 +80,11 @@ def __scene_setup():
     bpy.context.scene.eevee.use_taa_reprojection = True
 
     # https://blender.stackexchange.com/a/146838
+    # TODO: use line art modifier with grease pencil object
+    #  parts can't be in more than one group if those group's parent is targeted by the modifier
+    #  groups and ungroup collections can't be under model.ldr collection or else the lines don't render
+    #  studs, and maybe other intersecting geometry, may have broken lines
+    #  checking "overlapping edges as contour" helps, applying edge split, scale, marking freestyle edge does not seem to make a difference
     if ImportOptions.use_freestyle_edges:
         bpy.context.scene.render.use_freestyle = True
         linesets = bpy.context.view_layer.freestyle_settings.linesets
