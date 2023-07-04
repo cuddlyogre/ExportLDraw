@@ -82,8 +82,8 @@ class FileSystem:
 
     @classmethod
     def reset_caches(cls):
-        cls.search_dirs = []
-        cls.lowercase_paths = {}
+        cls.search_dirs.clear()
+        cls.lowercase_paths.clear()
 
     @classmethod
     def build_search_paths(cls, parent_filepath=None):

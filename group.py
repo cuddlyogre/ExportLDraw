@@ -28,11 +28,11 @@ def reset_caches():
     parts_collection = None
     groups_collection = None
     ungrouped_collection = None
-    next_collections = []
+    next_collections.clear()
     next_collection = None
     end_next_collection = False
     current_step_group = None
-    collection_id_map = {}
+    collection_id_map.clear()
 
 
 def get_scene_collection():

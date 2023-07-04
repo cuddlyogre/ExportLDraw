@@ -14,7 +14,7 @@ class BlenderMaterials:
 
     @classmethod
     def reset_caches(cls):
-        cls.__key_map = {}
+        cls.__key_map.clear()
 
     # https://github.com/bblanimation/abs-plastic-materials
     @classmethod

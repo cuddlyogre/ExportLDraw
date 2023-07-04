@@ -22,8 +22,8 @@ class LDrawNode:
     @classmethod
     def reset_caches(cls):
         cls.part_count = 0
-        cls.key_map = {}
-        cls.geometry_datas = {}
+        cls.key_map.clear()
+        cls.geometry_datas.clear()
 
     @classmethod
     def import_setup(cls):

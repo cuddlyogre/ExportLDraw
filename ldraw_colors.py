@@ -41,7 +41,7 @@ class LDrawColor:
 
     @classmethod
     def reset_caches(cls):
-        cls.__colors = {}
+        cls.__colors.clear()
         cls.__bad_color = None
 
     def __init__(self):

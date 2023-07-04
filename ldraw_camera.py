@@ -5,7 +5,7 @@ cameras = []
 
 def reset_caches():
     global cameras
-    cameras = []
+    cameras.clear()
 
 
 class LDrawCamera:

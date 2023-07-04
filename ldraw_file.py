@@ -20,8 +20,8 @@ class LDrawFile:
 
     @classmethod
     def reset_caches(cls):
-        cls.__raw_files = {}
-        cls.__file_cache = {}
+        cls.__raw_files.clear()
+        cls.__file_cache.clear()
 
     def __init__(self, filename):
         self.filename = filename
