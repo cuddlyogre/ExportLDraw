@@ -137,7 +137,7 @@ class LDrawNode:
         # TODO: is_shortcut_model splits 99141c01.dat and u9158.dat into its subparts -
         #  u9158.dat - ensure the battery contacts are correct
         cached_geometry_data = None
-        if geometry_data is None and (self.file.has_geometry() or self.file.is_shortcut_part()):
+        if geometry_data is None and (self.file.has_geometry() or self.file.is_part() or self.file.is_shortcut_part()):
             # top-level part
             LDrawNode.part_count += 1
             self.top = True
