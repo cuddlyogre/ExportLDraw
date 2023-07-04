@@ -7,7 +7,7 @@ from .ldraw_file import LDrawFile
 from .ldraw_node import LDrawNode
 from .filesystem import FileSystem
 from . import blender_camera
-from .ldraw_colors import LDrawColor
+from .ldraw_color import LDrawColor
 from . import helpers
 from . import strings
 

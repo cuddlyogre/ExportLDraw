@@ -6,7 +6,7 @@ import time
 from .export_options import ExportOptions
 from .import_settings import ImportSettings
 from .filesystem import FileSystem
-from .ldraw_colors import LDrawColor
+from .ldraw_color import LDrawColor
 from . import ldraw_export
 
 

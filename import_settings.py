@@ -2,7 +2,7 @@ import os.path
 
 from .import_options import ImportOptions
 from .filesystem import FileSystem
-from .ldraw_colors import LDrawColor
+from .ldraw_color import LDrawColor
 from . import helpers
 
 

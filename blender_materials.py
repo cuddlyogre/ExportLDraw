@@ -4,7 +4,7 @@ import os
 import uuid
 
 from .definitions import APP_ROOT
-from .ldraw_colors import LDrawColor
+from .ldraw_color import LDrawColor
 from .filesystem import FileSystem
 from . import strings
 

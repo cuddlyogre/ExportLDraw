@@ -6,7 +6,7 @@ import re
 from .import_options import ImportOptions
 from .filesystem import FileSystem
 from .ldraw_node import LDrawNode
-from .ldraw_colors import LDrawColor
+from .ldraw_color import LDrawColor
 from . import base64_handler
 
 from . import helpers
