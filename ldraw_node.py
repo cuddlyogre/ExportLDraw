@@ -31,7 +31,6 @@ class LDrawNode:
 
     def __init__(self):
         self.is_root = False
-        self.top = False
         self.file = None
         self.line = ""
         self.color_code = "16"
@@ -109,6 +108,7 @@ class LDrawNode:
         # if it's anything else, vertex_matrix is what is used to tranform the vertices
         # obj_matrix is the matrix up to the point and used for placement of objects
         # vertex_matrix is the matrix that gets passed to subparts
+        top = False
         vertex_matrix = (parent_matrix @ self.matrix).freeze()
         obj_matrix = vertex_matrix
         obj_color_code = color_code
@@ -140,7 +140,7 @@ class LDrawNode:
         if geometry_data is None and (self.file.has_geometry() or self.file.is_part() or self.file.is_shortcut_part()):
             # top-level part
             LDrawNode.part_count += 1
-            self.top = True
+            top = True
             vertex_matrix = matrices.identity_matrix
             cached_geometry_data = LDrawNode.geometry_datas.get(geometry_data_key)
             # set top level parts to 16 so that geometry_data is only created once per filename
@@ -156,8 +156,8 @@ class LDrawNode:
 
         # always process geometry_data if this is a subpart or there is no cached_geometry_data
         # if geometry_data exists, this is a top level part that has already been processed so don't process this key again
-        if not self.top or cached_geometry_data is None:
-            if self.top:
+        if not top or cached_geometry_data is None:
+            if top:
                 geometry_data = GeometryData()
 
             local_cull = True
@@ -262,7 +262,7 @@ class LDrawNode:
                 elif child_node.meta_command == "bfc" and child_node.meta_args["command"] != "INVERTNEXT":
                     invert_next = False
 
-        if self.top:
+        if top:
             # geometry_data will not be None if this is a new mesh
             # geometry_data will be None if the mesh already exists
             cached_geometry_data = LDrawNode.geometry_datas.setdefault(geometry_data_key, geometry_data)
