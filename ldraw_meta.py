@@ -451,8 +451,8 @@ def meta_edge(child_node, color_code, matrix, geometry_data):
     vertices = [matrix @ v for v in child_node.vertices]
 
     geometry_data.add_edge_data(
-        color_code=color_code,
         vertices=vertices,
+        color_code=color_code,
     )
 
 
@@ -461,8 +461,8 @@ def meta_face(ldraw_node, child_node, color_code, matrix, geometry_data, winding
     pe_texmap = __build_pe_texmap(ldraw_node, child_node)
 
     geometry_data.add_face_data(
-        color_code=color_code,
         vertices=vertices,
+        color_code=color_code,
         texmap=ldraw_node.texmap,
         pe_texmap=pe_texmap,
     )
@@ -553,6 +553,6 @@ def meta_line(child_node, color_code, matrix, geometry_data):
     vertices = [matrix @ v for v in child_node.vertices]
 
     geometry_data.add_line_data(
-        color_code=color_code,
         vertices=vertices,
+        color_code=color_code,
     )
