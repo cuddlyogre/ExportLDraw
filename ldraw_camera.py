@@ -1,12 +1,5 @@
 import mathutils
 
-cameras = []
-
-
-def reset_caches():
-    global cameras
-    cameras.clear()
-
 
 class LDrawCamera:
     """Data about a camera"""

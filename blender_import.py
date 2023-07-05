@@ -6,15 +6,13 @@ from .import_options import ImportOptions
 from .ldraw_file import LDrawFile
 from .ldraw_node import LDrawNode
 from .filesystem import FileSystem
-from . import blender_camera
 from .ldraw_color import LDrawColor
+from . import blender_camera
 from . import helpers
 from . import strings
-
 from . import group
 from . import ldraw_meta
 from . import ldraw_object
-from . import ldraw_camera
 from . import matrices
 
 
@@ -28,7 +26,6 @@ def do_import(filepath):
     group.reset_caches()
     ldraw_meta.reset_caches()
     ldraw_object.reset_caches()
-    ldraw_camera.reset_caches()
     matrices.reset_caches()
 
     FileSystem.build_search_paths(parent_filepath=filepath)
@@ -56,7 +53,7 @@ def do_import(filepath):
             bpy.context.scene.frame_set(bpy.context.scene.frame_end)
 
     max_clip_end = 0
-    for camera in ldraw_camera.cameras:
+    for camera in ldraw_meta.cameras:
         camera = blender_camera.create_camera(camera, empty=ldraw_object.top_empty, collection=group.top_collection)
         if bpy.context.scene.camera is None:
             if camera.data.clip_end > max_clip_end:

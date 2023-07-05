@@ -40,8 +40,6 @@ class LDrawNode:
         self.meta_command = None
         self.meta_args = {}
 
-        self.camera = None
-
         self.texmap_start = False
         self.texmap_next = False
         self.texmap_fallback = False
@@ -252,7 +250,7 @@ class LDrawNode:
                     elif child_node.meta_command.startswith("group"):
                         ldraw_meta.meta_group(child_node)
                     elif child_node.meta_command == "leocad_camera":
-                        ldraw_meta.meta_leocad_camera(self, child_node, vertex_matrix)
+                        ldraw_meta.meta_leocad_camera(child_node, vertex_matrix)
 
                 if self.texmap_next:
                     ldraw_meta.set_texmap_end(self)

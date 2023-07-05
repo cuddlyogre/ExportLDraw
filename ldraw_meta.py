@@ -10,14 +10,20 @@ from .pe_texmap import PETexInfo, PETexmap
 
 current_frame = 0
 current_step = 0
+cameras = []
+camera = None
 
 
 def reset_caches():
     global current_frame
     global current_step
+    global cameras
+    global camera
 
     current_frame = 0
     current_step = 0
+    cameras.clear()
+    camera = None
 
 
 def meta_bfc(ldraw_node, child_node, matrix, local_cull, winding, invert_next, accum_invert):
@@ -211,58 +217,60 @@ def meta_root_group_nxt(ldraw_node, child_node):
                 group.next_collection = None
 
 
-def meta_leocad_camera(ldraw_node, child_node, matrix):
+def meta_leocad_camera(child_node, matrix):
+    global camera
+
     clean_line = child_node.line
     _params = helpers.get_params(clean_line, lowercase=True)[3:]
 
-    if ldraw_node.camera is None:
-        ldraw_node.camera = ldraw_camera.LDrawCamera()
+    if camera is None:
+        camera = ldraw_camera.LDrawCamera()
 
     # https://www.leocad.org/docs/meta.html
     # "Camera commands can be grouped in the same line"
     # _params = _params[1:] at the end bumps promotes _params[2] to _params[1]
     while len(_params) > 0:
         if _params[0] == "fov":
-            ldraw_node.camera.fov = float(_params[1])
+            camera.fov = float(_params[1])
             _params = _params[2:]
         elif _params[0] == "znear":
-            ldraw_node.camera.z_near = float(_params[1])
+            camera.z_near = float(_params[1])
             _params = _params[2:]
         elif _params[0] == "zfar":
-            ldraw_node.camera.z_far = float(_params[1])
+            camera.z_far = float(_params[1])
             _params = _params[2:]
         elif _params[0] == "position":
             (x, y, z) = map(float, _params[1:4])
             vector = matrix @ mathutils.Vector((x, y, z))
-            ldraw_node.camera.position = vector
+            camera.position = vector
             _params = _params[4:]
         elif _params[0] == "target_position":
             (x, y, z) = map(float, _params[1:4])
             vector = matrix @ mathutils.Vector((x, y, z))
-            ldraw_node.camera.target_position = vector
+            camera.target_position = vector
             _params = _params[4:]
         elif _params[0] == "up_vector":
             (x, y, z) = map(float, _params[1:4])
             vector = matrix @ mathutils.Vector((x, y, z))
-            ldraw_node.camera.up_vector = vector
+            camera.up_vector = vector
             _params = _params[4:]
         elif _params[0] == "orthographic":
-            ldraw_node.camera.orthographic = True
+            camera.orthographic = True
             _params = _params[1:]
         elif _params[0] == "hidden":
-            ldraw_node.camera.hidden = True
+            camera.hidden = True
             _params = _params[1:]
         elif _params[0] == "name":
             # "0 !LEOCAD CAMERA NAME Camera  2".split("NAME ")[1] => "Camera  2"
             # "NAME Camera  2".split("NAME ")[1] => "Camera  2"
             name_args = clean_line.split("NAME ")
-            ldraw_node.camera.name = name_args[1]
+            camera.name = name_args[1]
 
             # By definition this is the last of the parameters
             _params = []
 
-            ldraw_camera.cameras.append(ldraw_node.camera)
-            ldraw_node.camera = None
+            cameras.append(camera)
+            camera = None
         else:
             _params = _params[1:]
 
