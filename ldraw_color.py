@@ -282,7 +282,10 @@ class LDrawColor:
             print(e)
         except IndexError as e:
             # color code indices are not in the colors list
-            print(e)
+            print(color_code)
+            from inspect import currentframe, getframeinfo
+            frameinfo = getframeinfo(currentframe())
+            print(frameinfo.filename, frameinfo.lineno)
 
         return hex_digits
 
