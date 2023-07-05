@@ -47,6 +47,9 @@ def do_import(filepath):
     # return root_node.load()
     obj = root_node.load()
 
+    # s = {str(k): v for k, v in sorted(LDrawNode.geometry_datas2.items(), key=lambda ele: ele[1], reverse=True)}
+    # helpers.write_json("gs2.json", s, indent=4)
+
     if ImportOptions.meta_step:
         if ImportOptions.set_end_frame:
             bpy.context.scene.frame_end = ldraw_meta.current_frame + ImportOptions.frames_per_step
