@@ -1,9 +1,9 @@
 import bpy
 
-from . import group
-from . import strings
 from .import_options import ImportOptions
 from .ldraw_color import LDrawColor
+from . import group
+from . import strings
 from . import ldraw_props
 from . import ldraw_meta
 from . import ldraw_mesh

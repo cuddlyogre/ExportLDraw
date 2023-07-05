@@ -1,12 +1,12 @@
 import bpy
 import mathutils
 
-from . import group
 from .import_options import ImportOptions
+from .pe_texmap import PETexInfo, PETexmap
 from .texmap import TexMap
+from . import group
 from . import helpers
 from . import ldraw_camera
-from .pe_texmap import PETexInfo, PETexmap
 
 current_frame = 0
 current_step = 0

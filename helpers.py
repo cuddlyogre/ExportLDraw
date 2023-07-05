@@ -6,7 +6,6 @@ import json
 from pathlib import Path
 import os
 
-
 try:
     from .definitions import APP_ROOT
 except ImportError as e:

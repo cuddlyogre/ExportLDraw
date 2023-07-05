@@ -2,10 +2,10 @@ import bpy
 import bmesh
 import mathutils
 
-from . import special_bricks
-from . import strings
 from .blender_materials import BlenderMaterials
 from .import_options import ImportOptions
+from . import special_bricks
+from . import strings
 from . import helpers
 from . import matrices
 

@@ -1,8 +1,8 @@
 import uuid
 
-from . import group
 from .geometry_data import GeometryData
 from .import_options import ImportOptions
+from . import group
 from . import helpers
 from . import ldraw_mesh
 from . import ldraw_object

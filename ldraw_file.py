@@ -8,7 +8,6 @@ from .filesystem import FileSystem
 from .ldraw_node import LDrawNode
 from .ldraw_color import LDrawColor
 from . import base64_handler
-
 from . import helpers
 from . import ldraw_part_types
 from . import texmap
