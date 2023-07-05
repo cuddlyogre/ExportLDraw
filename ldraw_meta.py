@@ -218,6 +218,7 @@ def meta_root_group_nxt(ldraw_node, child_node):
 
 
 def meta_leocad_camera(child_node, matrix):
+    global cameras
     global camera
 
     clean_line = child_node.line
