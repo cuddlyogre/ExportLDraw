@@ -80,6 +80,15 @@ class LDrawFile:
         ldraw_file = LDrawFile.get_file(filename)
         if filename == alt_filename and ldraw_file is None:
             ldraw_file = LDrawFile.get_file(standard_filename)
+
+        # import all materials
+        # from .blender_materials import BlenderMaterials
+        # for line in ldraw_file.lines:
+        #     clean_line = helpers.clean_line(line)
+        #     if clean_line.startswith("0 !COLOUR "):
+        #         color_code = LDrawColor.parse_color(clean_line)
+        #         material = BlenderMaterials.get_material(color_code, easy_key=True)
+
         return ldraw_file
 
     @classmethod
