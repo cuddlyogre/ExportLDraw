@@ -1,6 +1,6 @@
 class FaceData:
     """
-    The data required to transform a file's face info into the needed mesh part.
+    Raw vertex information
     """
 
     def __init__(self, vertices, color_code, texmap=None, pe_texmap=None):
@@ -12,7 +12,7 @@ class FaceData:
 
 class GeometryData:
     """
-    Accumulated FaceData used to build the final mesh.
+    Raw mesh data used to build the final mesh.
     """
 
     def __init__(self):

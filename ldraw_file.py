@@ -15,6 +15,10 @@ from . import texmap
 
 
 class LDrawFile:
+    """
+    A file that has been loaded and its lines converted to header data and ldraw_nodes.
+    """
+
     __raw_files = {}
     __file_cache = {}
 

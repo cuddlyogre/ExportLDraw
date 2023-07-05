@@ -12,7 +12,7 @@ from . import matrices
 
 class LDrawNode:
     """
-    All of the data that makes up a part.
+    A line of a file that has been processed into something usable.
     """
 
     part_count = 0
