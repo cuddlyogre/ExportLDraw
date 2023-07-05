@@ -49,7 +49,6 @@ class LDrawFile:
         self.history = []
 
         self.child_nodes = []
-        self.extra_child_nodes = None
         self.geometry_commands = {}
 
     def __str__(self):
