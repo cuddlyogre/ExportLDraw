@@ -460,7 +460,7 @@ def meta_edge(child_node, color_code, matrix, geometry_data):
 
 def meta_face(ldraw_node, child_node, color_code, matrix, geometry_data, winding):
     vertices = FaceData.handle_vertex_winding(child_node, matrix, winding)
-    pe_texmap = __build_pe_texmap(ldraw_node, child_node)
+    pe_texmap = PETexmap.build_pe_texmap(ldraw_node, child_node)
 
     geometry_data.add_face_data(
         vertices=vertices,
@@ -468,34 +468,6 @@ def meta_face(ldraw_node, child_node, color_code, matrix, geometry_data, winding
         texmap=ldraw_node.texmap,
         pe_texmap=pe_texmap,
     )
-
-def __build_pe_texmap(ldraw_node, child_node):
-    pe_texmap = None
-
-    if ldraw_node.pe_tex_info is not None:
-        clean_line = child_node.line
-        _params = clean_line.split()
-
-        vert_count = len(child_node.vertices)
-
-        # if we have uv data and a pe_tex_info, otherwise pass
-        # # custom minifig head > 3626tex.dat (has no pe_tex) > 3626texpole.dat (has no uv data)
-        if len(_params) > 14:
-            pe_texmap = PETexmap()
-            pe_texmap.texture = ldraw_node.pe_tex_info.image
-            if vert_count == 3:
-                for i in range(vert_count):
-                    x = round(float(_params[i * 2 + 11]), 3)
-                    y = round(float(_params[i * 2 + 12]), 3)
-                    uv = mathutils.Vector((x, y))
-                    pe_texmap.uvs.append(uv)
-            elif vert_count == 4:
-                for i in range(vert_count):
-                    x = round(float(_params[i * 2 + 13]), 3)
-                    y = round(float(_params[i * 2 + 14]), 3)
-                    uv = mathutils.Vector((x, y))
-                    pe_texmap.uvs.append(uv)
-    return pe_texmap
 
 
 def meta_line(child_node, color_code, matrix, geometry_data):
