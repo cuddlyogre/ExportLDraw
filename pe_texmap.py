@@ -48,8 +48,10 @@ class PETexmap:
                         pe_texmap.uvs.append(uv)
             else:  # calculate uvs
                 if vert_count == 3:
+                    # print("unwrap 3")
                     ...
                 elif vert_count == 4:
+                    # print("unwrap 4")
                     ...
 
         return pe_texmap

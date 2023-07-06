@@ -385,29 +385,30 @@ def meta_pe_tex(ldraw_node, child_node, matrix):
             meta_pe_tex_path(ldraw_node, child_node)
 
 
+# 0 PE_TEX_PATH 5 0
+# 0 PE_TEX_INFO -0.5346 -0.1464 2.2554 3.1670 0.8638 -1.5619 2.4660 -0.0307 -2.4765 12.9236 -0.0535 13.1611 -4.1933 16.2951 8.3761 3.6621 PNGBASE64==
+# 0 PE_TEX_PATH 5 2
+# 0 PE_TEX_INFO 0.3341 0.3594 6.3035 -1.9794 -0.5399 0.9762 3.5733 -0.0208 2.1631 -5.7369 0.0881 9.8519 7.3309 23.9951 19.4351 14.5649 PNGBASE64==
+# 0 PE_TEX_PATH 5 4
+# 0 PE_TEX_NEXT_SHEAR
+# 0 PE_TEX_INFO 0.6682 7.2554 13.4921 -3.9588 -1.0797 1.9523 -40.5715 0.2365 -24.6051 -16.5249 0.2054 16.5954 15.5934 18.4983 19.7776 12.8449 PNGBASE64==
 # -1 is this file
-# >= 0 is the nth geometry line where n = PE_TEX_PATH
-# a second arg is the geometry line for that subfile
-
+# >= 0 is the file at the nth subfile_line_index
+# second arg is the nth subfile_line_index of line of file at that line
+# PE_TEX_PATH 5 4 is self.line_type_1_list[5].line_type_1_list[4]
 def meta_pe_tex_path(ldraw_node, child_node):
     clean_line = child_node.line
     _params = clean_line.split()
 
-    pe_tex_path = int(_params[2])
-
-    try:
-        pe_tex_path_1 = int(_params[2])
-    except IndexError as e:
-        pe_tex_path_1 = None
-
-    ldraw_node.current_pe_tex_path = pe_tex_path
+    ldraw_node.current_pe_tex_path = int(_params[2])
+    if len(_params) == 4:
+        ldraw_node.current_subfile_pe_tex_path = int(_params[3])
 
 
 # PE_TEX_INFO bse64_str uses the file's uvs
 # PE_TEX_INFO x,y,z,a,b,c,d,e,f,g,h,i,bl/tl,tr/br is matrix and plane coordinates for uv calculations
 # if there are multiple PE_TEX_INFO immediately following PE_TEX_PATH, use the last one
 # if no matrix, identity @ rotation?
-
 def meta_pe_tex_info(ldraw_node, child_node, matrix):
     if ldraw_node.current_pe_tex_path is None:
         return
@@ -417,9 +418,13 @@ def meta_pe_tex_info(ldraw_node, child_node, matrix):
 
     pe_tex_info = PETexInfo()
     base64_str = None
-    if len(_params) == 3:  # this tex_info applies to
+    if len(_params) == 3:
+        # current_pe_tex_path should be -1
+        # meaning this pe_tex_info applies to this file
         base64_str = _params[2]
     elif len(_params) == 19:
+        # this pe_tex_info applies to the subfile at current_pe_tex_path or
+        # the subfile's subfile at subfile_pe_tex_infos[current_pe_tex_path][current_subfile_pe_tex_path]
         base64_str = _params[18]
         (x, y, z, a, b, c, d, e, f, g, h, i, bl_x, bl_y, tr_x, tr_y) = map(float, _params[2:18])
         _matrix = mathutils.Matrix((
@@ -443,7 +448,11 @@ def meta_pe_tex_info(ldraw_node, child_node, matrix):
 
     pe_tex_info.image = image.name
 
-    ldraw_node.pe_tex_infos[ldraw_node.current_pe_tex_path] = pe_tex_info
+    if ldraw_node.current_subfile_pe_tex_path is not None:
+        ldraw_node.subfile_pe_tex_infos.setdefault(ldraw_node.current_pe_tex_path, {})
+        ldraw_node.subfile_pe_tex_infos[ldraw_node.current_pe_tex_path][ldraw_node.current_subfile_pe_tex_path] = pe_tex_info
+    else:
+        ldraw_node.pe_tex_infos[ldraw_node.current_pe_tex_path] = pe_tex_info
 
     if ldraw_node.current_pe_tex_path == -1:
         ldraw_node.pe_tex_info = ldraw_node.pe_tex_infos[ldraw_node.current_pe_tex_path]
