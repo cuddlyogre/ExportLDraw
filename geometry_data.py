@@ -9,6 +9,58 @@ class FaceData:
         self.texmap = texmap
         self.pe_texmap = pe_texmap
 
+    # https://github.com/rredford/LdrawToObj/blob/802924fb8d42145c4f07c10824e3a7f2292a6717/LdrawData/LdrawToData.cs#L219
+    # https://github.com/rredford/LdrawToObj/blob/802924fb8d42145c4f07c10824e3a7f2292a6717/LdrawData/LdrawToData.cs#L260
+    @staticmethod
+    def handle_vertex_winding(child_node, matrix, winding):
+        vert_count = len(child_node.vertices)
+
+        vertices = []
+        if winding == "CW":
+            if vert_count == 3:
+                vertices = [
+                    matrix @ child_node.vertices[0],
+                    matrix @ child_node.vertices[2],
+                    matrix @ child_node.vertices[1],
+                ]
+            elif vert_count == 4:
+                vertices = [
+                    matrix @ child_node.vertices[0],
+                    matrix @ child_node.vertices[3],
+                    matrix @ child_node.vertices[2],
+                    matrix @ child_node.vertices[1],
+                ]
+                FaceData.__fix_bowties(vertices)
+        else:  # winding == "CCW" or winding is None:
+            if vert_count == 3:
+                vertices = [
+                    matrix @ child_node.vertices[0],
+                    matrix @ child_node.vertices[1],
+                    matrix @ child_node.vertices[2],
+                ]
+            elif vert_count == 4:
+                vertices = [
+                    matrix @ child_node.vertices[0],
+                    matrix @ child_node.vertices[1],
+                    matrix @ child_node.vertices[2],
+                    matrix @ child_node.vertices[3],
+                ]
+                FaceData.__fix_bowties(vertices)
+
+        return vertices
+
+    # handle bowtie quadrilaterals - 6582.dat
+    # https://github.com/TobyLobster/ImportLDraw/pull/65/commits/3d8cebee74bf6d0447b616660cc989e870f00085
+    @staticmethod
+    def __fix_bowties(vertices):
+        nA = (vertices[1] - vertices[0]).cross(vertices[2] - vertices[0])
+        nB = (vertices[2] - vertices[1]).cross(vertices[3] - vertices[1])
+        nC = (vertices[3] - vertices[2]).cross(vertices[0] - vertices[2])
+        if nA.dot(nB) < 0:
+            vertices[2], vertices[3] = vertices[3], vertices[2]
+        elif nB.dot(nC) < 0:
+            vertices[2], vertices[1] = vertices[1], vertices[2]
+
 
 class GeometryData:
     """

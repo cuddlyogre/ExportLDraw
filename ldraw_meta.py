@@ -4,6 +4,7 @@ import mathutils
 from .import_options import ImportOptions
 from .pe_texmap import PETexInfo, PETexmap
 from .texmap import TexMap
+from .geometry_data import FaceData
 from . import group
 from . import helpers
 from . import ldraw_camera
@@ -458,7 +459,7 @@ def meta_edge(child_node, color_code, matrix, geometry_data):
 
 
 def meta_face(ldraw_node, child_node, color_code, matrix, geometry_data, winding):
-    vertices = __handle_vertex_winding(child_node, matrix, winding)
+    vertices = FaceData.handle_vertex_winding(child_node, matrix, winding)
     pe_texmap = __build_pe_texmap(ldraw_node, child_node)
 
     geometry_data.add_face_data(
@@ -467,59 +468,6 @@ def meta_face(ldraw_node, child_node, color_code, matrix, geometry_data, winding
         texmap=ldraw_node.texmap,
         pe_texmap=pe_texmap,
     )
-
-
-# handle bowtie quadrilaterals - 6582.dat
-# https://github.com/TobyLobster/ImportLDraw/pull/65/commits/3d8cebee74bf6d0447b616660cc989e870f00085
-def __fix_bowties(vertices):
-    nA = (vertices[1] - vertices[0]).cross(vertices[2] - vertices[0])
-    nB = (vertices[2] - vertices[1]).cross(vertices[3] - vertices[1])
-    nC = (vertices[3] - vertices[2]).cross(vertices[0] - vertices[2])
-    if nA.dot(nB) < 0:
-        vertices[2], vertices[3] = vertices[3], vertices[2]
-    elif nB.dot(nC) < 0:
-        vertices[2], vertices[1] = vertices[1], vertices[2]
-
-
-# https://github.com/rredford/LdrawToObj/blob/802924fb8d42145c4f07c10824e3a7f2292a6717/LdrawData/LdrawToData.cs#L219
-# https://github.com/rredford/LdrawToObj/blob/802924fb8d42145c4f07c10824e3a7f2292a6717/LdrawData/LdrawToData.cs#L260
-def __handle_vertex_winding(child_node, matrix, winding):
-    vert_count = len(child_node.vertices)
-
-    vertices = []
-    if winding == "CW":
-        if vert_count == 3:
-            vertices = [
-                matrix @ child_node.vertices[0],
-                matrix @ child_node.vertices[2],
-                matrix @ child_node.vertices[1],
-            ]
-        elif vert_count == 4:
-            vertices = [
-                matrix @ child_node.vertices[0],
-                matrix @ child_node.vertices[3],
-                matrix @ child_node.vertices[2],
-                matrix @ child_node.vertices[1],
-            ]
-            __fix_bowties(vertices)
-    else:  # winding == "CCW" or winding is None:
-        if vert_count == 3:
-            vertices = [
-                matrix @ child_node.vertices[0],
-                matrix @ child_node.vertices[1],
-                matrix @ child_node.vertices[2],
-            ]
-        elif vert_count == 4:
-            vertices = [
-                matrix @ child_node.vertices[0],
-                matrix @ child_node.vertices[1],
-                matrix @ child_node.vertices[2],
-                matrix @ child_node.vertices[3],
-            ]
-            __fix_bowties(vertices)
-
-    return vertices
-
 
 def __build_pe_texmap(ldraw_node, child_node):
     pe_texmap = None
