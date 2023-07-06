@@ -290,7 +290,7 @@ class LDrawNode:
         _key = (filename, color_code,)
 
         if pe_tex_info is not None:
-            _key += ((pe_tex_info.image, pe_tex_info.matrix, pe_tex_info.v1, pe_tex_info.v1),)
+            _key += ((pe_tex_info.image, pe_tex_info.matrix, pe_tex_info.v1, pe_tex_info.v2),)
         else:
             _key += (None,)
 
