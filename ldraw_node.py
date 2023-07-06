@@ -25,10 +25,6 @@ class LDrawNode:
         cls.key_map.clear()
         cls.geometry_datas.clear()
 
-    @classmethod
-    def import_setup(cls):
-        ldraw_meta.meta_step()
-
     def __init__(self):
         self.is_root = False
         self.file = None
