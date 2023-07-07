@@ -39,7 +39,6 @@ class LDrawNode:
         self.texmap_start = False
         self.texmap_next = False
         self.texmap_fallback = False
-
         self.texmaps = []
         self.texmap = None
 
