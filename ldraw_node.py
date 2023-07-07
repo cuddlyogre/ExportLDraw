@@ -47,7 +47,7 @@ class LDrawNode:
         self.current_subfile_pe_tex_path = None
         self.pe_tex_infos = {}
         self.subfile_pe_tex_infos = {}
-        self.pe_tex_info = None
+        self.pe_tex_info = []
 
     def load(self,
              color_code="16",
@@ -111,7 +111,7 @@ class LDrawNode:
         # texmap parts are defined as parts so it should be safe to exclude that from the key
         # pe_tex_info is defined like an mpd so mutliple instances sharing the same part name will share the same texture unless it is included in the key
         # the only thing unique about a geometry_data object is its filename and whether it has pe_tex_info
-        geometry_data_key = LDrawNode.__build_key(self.file.name, self.pe_tex_info)
+        geometry_data_key = LDrawNode.__build_key(self.file.name, pe_tex_info=self.pe_tex_info)
         # blender mesh data is unique also based on color
         # this means a geometry_data for a file is created only once, but a mesh is created for every color that uses that geometry_data
         obj_key = f"{geometry_data_key}_{color_code}"
@@ -166,8 +166,8 @@ class LDrawNode:
                     if child_node.meta_command == "1":
                         # if we have no pe_tex_info, try to get one from pe_tex_infos otherwise keep using the one we have
                         # custom minifig head > 3626tex.dat (has no pe_tex) > 3626texshell.dat
-                        if self.pe_tex_info is None:
-                            child_node.pe_tex_info = self.pe_tex_infos.get(subfile_line_index)
+                        if len(self.pe_tex_info) < 1:
+                            child_node.pe_tex_info = self.pe_tex_infos.get(subfile_line_index, [])
                         else:
                             child_node.pe_tex_info = self.pe_tex_info
 
@@ -292,7 +292,8 @@ class LDrawNode:
         _key = (filename, color_code,)
 
         if pe_tex_info is not None:
-            _key += ((pe_tex_info.image, pe_tex_info.matrix, pe_tex_info.v1, pe_tex_info.v2),)
+            for p in pe_tex_info:
+                _key += ((p.image, p.matrix, p.v1, p.v2),)
         else:
             _key += (None,)
 

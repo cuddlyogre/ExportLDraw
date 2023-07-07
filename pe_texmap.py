@@ -20,10 +20,17 @@ class PETexmap:
             loop[uv_layer].uv = self.uvs[i]
 
     @staticmethod
-    def build_pe_texmap(ldraw_node, child_node):
-        pe_texmap = None
+    def flatten_pe_texmaps(pe_texmaps):
+        if len(pe_texmaps) < 1:
+            return None
+        # TODO: flatten
+        return pe_texmaps[-1]
 
-        if ldraw_node.pe_tex_info is not None:
+    @staticmethod
+    def build_pe_texmap(ldraw_node, child_node):
+        pe_texmaps = []
+
+        for p in ldraw_node.pe_tex_info:
             clean_line = child_node.line
             _params = clean_line.split()
 
@@ -31,9 +38,10 @@ class PETexmap:
 
             # if we have uv data and a pe_tex_info, otherwise pass
             # # custom minifig head > 3626tex.dat (has no pe_tex) > 3626texpole.dat (has no uv data)
+            # TODO: flatten all pe_texmap items into one
+            pe_texmap = PETexmap()
+            pe_texmap.texture = p.image
             if len(_params) > 14:  # use uvs provided in file
-                pe_texmap = PETexmap()
-                pe_texmap.texture = ldraw_node.pe_tex_info.image
                 if vert_count == 3:
                     for i in range(vert_count):
                         x = round(float(_params[i * 2 + 11]), 3)
@@ -47,6 +55,7 @@ class PETexmap:
                         uv = mathutils.Vector((x, y))
                         pe_texmap.uvs.append(uv)
             else:  # calculate uvs
+                continue
                 if vert_count == 3:
                     # print("unwrap 3")
                     ...
@@ -54,4 +63,7 @@ class PETexmap:
                     # print("unwrap 4")
                     ...
 
-        return pe_texmap
+            pe_texmaps.append(pe_texmap)
+
+        flattened_pe_texmap = PETexmap.flatten_pe_texmaps(pe_texmaps)
+        return flattened_pe_texmap

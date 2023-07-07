@@ -407,7 +407,7 @@ def meta_pe_tex_path(ldraw_node, child_node):
 
 # PE_TEX_INFO bse64_str uses the file's uvs
 # PE_TEX_INFO x,y,z,a,b,c,d,e,f,g,h,i,bl/tl,tr/br is matrix and plane coordinates for uv calculations
-# if there are multiple PE_TEX_INFO immediately following PE_TEX_PATH, use the last one
+# multiple PE_TEX_INFO have to be flattened into one
 # if no matrix, identity @ rotation?
 def meta_pe_tex_info(ldraw_node, child_node, matrix):
     if ldraw_node.current_pe_tex_path is None:
@@ -450,9 +450,11 @@ def meta_pe_tex_info(ldraw_node, child_node, matrix):
 
     if ldraw_node.current_subfile_pe_tex_path is not None:
         ldraw_node.subfile_pe_tex_infos.setdefault(ldraw_node.current_pe_tex_path, {})
-        ldraw_node.subfile_pe_tex_infos[ldraw_node.current_pe_tex_path][ldraw_node.current_subfile_pe_tex_path] = pe_tex_info
+        ldraw_node.subfile_pe_tex_infos[ldraw_node.current_pe_tex_path].setdefault(ldraw_node.current_subfile_pe_tex_path, [])
+        ldraw_node.subfile_pe_tex_infos[ldraw_node.current_pe_tex_path][ldraw_node.current_subfile_pe_tex_path].append(pe_tex_info)
     else:
-        ldraw_node.pe_tex_infos[ldraw_node.current_pe_tex_path] = pe_tex_info
+        ldraw_node.pe_tex_infos.setdefault(ldraw_node.current_pe_tex_path, [])
+        ldraw_node.pe_tex_infos[ldraw_node.current_pe_tex_path].append(pe_tex_info)
 
     if ldraw_node.current_pe_tex_path == -1:
         ldraw_node.pe_tex_info = ldraw_node.pe_tex_infos[ldraw_node.current_pe_tex_path]
