@@ -106,11 +106,11 @@ def __process_bmesh_faces(ldraw_node, geometry_data, mesh, color_code):
         parts_cloth = special_bricks.get_parts_cloth(ldraw_node.file.name)
         material = BlenderMaterials.get_material(
             color_code=color_code if face_data.color_code == "16" else face_data.color_code,
+            use_backface_culling=ldraw_node.bfc_certified,
             part_slopes=part_slopes,
             parts_cloth=parts_cloth,
             texmap=face_data.texmap,
             pe_texmap=face_data.pe_texmap,
-            use_backface_culling=ldraw_node.bfc_certified
         )
 
         material_index = mesh.materials.find(material.name)
