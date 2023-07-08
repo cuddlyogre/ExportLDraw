@@ -29,7 +29,7 @@ def reset_caches():
 
 def meta_bfc(ldraw_node, child_node, matrix, local_cull, winding, invert_next, accum_invert):
     clean_line = child_node.line
-    _params = clean_line.split()
+    _params = clean_line.split()[2:]
 
     # https://www.ldraw.org/article/415.html#processing
     if ldraw_node.bfc_certified is None and "NOCERTIFY" not in _params:
