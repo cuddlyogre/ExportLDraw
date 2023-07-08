@@ -398,11 +398,11 @@ def meta_pe_tex(ldraw_node, child_node, matrix):
 # PE_TEX_PATH 5 4 is self.line_type_1_list[5].line_type_1_list[4]
 def meta_pe_tex_path(ldraw_node, child_node):
     clean_line = child_node.line
-    _params = clean_line.split()
+    _params = clean_line.split()[2:]
 
-    ldraw_node.current_pe_tex_path = int(_params[2])
+    ldraw_node.current_pe_tex_path = int(_params[0])
     if len(_params) == 4:
-        ldraw_node.current_subfile_pe_tex_path = int(_params[3])
+        ldraw_node.current_subfile_pe_tex_path = int(_params[1])
 
 
 # PE_TEX_INFO bse64_str uses the file's uvs
@@ -414,31 +414,112 @@ def meta_pe_tex_info(ldraw_node, child_node, matrix):
         return
 
     clean_line = child_node.line
-    _params = clean_line.split()
+    _params = clean_line.split()[2:]
 
     pe_tex_info = PETexInfo()
     base64_str = None
-    if len(_params) == 3:
+    if len(_params) == 1:
         # current_pe_tex_path should be -1
         # meaning this pe_tex_info applies to this file
-        base64_str = _params[2]
-    elif len(_params) == 19:
-        # this pe_tex_info applies to the subfile at current_pe_tex_path or
-        # the subfile's subfile at subfile_pe_tex_infos[current_pe_tex_path][current_subfile_pe_tex_path]
-        base64_str = _params[18]
-        (x, y, z, a, b, c, d, e, f, g, h, i, bl_x, bl_y, tr_x, tr_y) = map(float, _params[2:18])
+        base64_str = _params[0]
+    elif len(_params) == 17:
+        # defines a bounding box and its transformation
+        # rotated 90 deg on x, similar to the original part export matrix
+        # aa = __reverse_rotation @ obj.matrix_world
+        params = _params
+
+        # m03 = float(params[0])
+        # m13 = float(params[1])
+        # m23 = -float(params[2])
+        #
+        # m00 = float(params[3])
+        # m01 = float(params[4])
+        # m02 = -float(params[5])
+        #
+        # m10 = float(params[6])
+        # m11 = float(params[7])
+        # m12 = -float(params[8])
+        #
+        # m20 = -float(params[9])
+        # m21 = -float(params[10])
+        # m22 = float(params[11])
+        #
+        # m30 = 0.0
+        # m31 = 0.0
+        # m32 = 0.0
+        # m33 = 1
+        #
+        # _matrix = mathutils.Matrix((
+        #     (m00, m01, m02, m03),
+        #     (m10, m11, m12, m13),
+        #     (m20, m21, m22, m23),
+        #     (m30, m31, m32, m33)
+        # ))
+
+        x = float(params[0])
+        y = float(params[1])
+        z = -float(params[2])
+
+        a = float(params[3])
+        b = float(params[4])
+        c = -float(params[5])
+
+        d = float(params[6])
+        e = float(params[7])
+        f = -float(params[8])
+
+        g = -float(params[9])
+        h = -float(params[10])
+        i = float(params[11])
+
         _matrix = mathutils.Matrix((
             (a, b, c, x),
             (d, e, f, y),
             (g, h, i, z),
             (0, 0, 0, 1)
         ))
-        bl = mathutils.Vector((bl_x, bl_y))
-        tr = mathutils.Vector((tr_x, tr_y))
 
+        # this is the original transformation of the bounding box
+        _inverse_matrix = _matrix.inverted()
+
+        point_min = mathutils.Vector((0, 0))
+        point_max = mathutils.Vector((0, 0))
+        point_min.x = float(params[12])
+        point_min.y = float(params[13])
+        point_max.x = float(params[14])
+        point_max.y = float(params[15])
+        point_diff = point_max - point_min
+        box_extents = 0.5 * mathutils.Vector((1, 1))
+
+        pe_tex_info.point_min = point_min.freeze()
+        pe_tex_info.point_max = point_max.freeze()
+        pe_tex_info.point_diff = point_diff.freeze()
+        pe_tex_info.box_extents = box_extents.freeze()
         pe_tex_info.matrix = (matrix @ _matrix).freeze()
-        pe_tex_info.v1 = bl.freeze()
-        pe_tex_info.v2 = tr.freeze()
+        pe_tex_info.matrix_inverse = _inverse_matrix.freeze()
+
+        # this pe_tex_info applies to the subfile at current_pe_tex_path or
+        # the subfile's subfile at subfile_pe_tex_infos[current_pe_tex_path][current_subfile_pe_tex_path]
+        base64_str = _params[16]
+
+        # (x, y, z, a, b, c, d, e, f, g, h, i, bl_x, bl_y, tr_x, tr_y) = map(float, _params[0:16])
+        # _matrix = mathutils.Matrix((
+        #     (a, b, c, x),
+        #     (d, e, f, y),
+        #     (g, h, i, z),
+        #     (0, 0, 0, 1)
+        # ))
+        # bl = mathutils.Vector((bl_x, bl_y))
+        # tr = mathutils.Vector((tr_x, tr_y))
+        # diff = tr - bl
+        # extents = 0.5 * mathutils.Vector((1, 1))
+
+        # pe_tex_info.min_point = bl.freeze()
+        # pe_tex_info.tr = tr.freeze()
+        # pe_tex_info.diff = diff
+        # pe_tex_info.extents = extents
+        # pe_tex_info.matrix = (matrix @ _matrix).freeze()
+        # pe_tex_info.matrix_inverse = pe_tex_info.matrix.inverted()
 
     if base64_str is None:
         return

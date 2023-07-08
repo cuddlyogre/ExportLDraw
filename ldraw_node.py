@@ -292,7 +292,7 @@ class LDrawNode:
 
         if pe_tex_info is not None:
             for p in pe_tex_info:
-                _key += ((p.image, p.matrix, p.v1, p.v2),)
+                _key += ((p.point_min, p.point_max, p.matrix, p.image),)
         else:
             _key += (None,)
 
