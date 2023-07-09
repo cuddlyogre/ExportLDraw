@@ -22,22 +22,21 @@ def reset_caches():
 
 
 # TODO: to add rigid body - must apply scale and cannot be parented to empty
-def process_top_object(ldraw_node, mesh, key, obj_matrix, color_code, collection):
-    obj = __get_top_object(ldraw_node, mesh, color_code)
-    __process_top_object_matrix(obj, obj_matrix)
-    __process_top_object_gap(obj, obj_matrix)
+def process_top_object(key, mesh, geometry_data, color_code, matrix, collection):
+    obj = __get_top_object(mesh, geometry_data, color_code)
+    __process_top_object_matrix(obj, matrix)
+    __process_top_object_gap(obj, matrix)
     __process_top_object_edges(obj)
     ldraw_meta.do_meta_step(obj)
     __link_obj_to_collection(collection, obj)
-    ldraw_props.set_props(obj, ldraw_node.file, color_code)
-    __process_top_edges(ldraw_node, key, obj, color_code, collection)
+    __process_top_edges(key, obj, geometry_data, color_code, collection)
 
     return obj
 
 
-def __get_top_object(ldraw_node, mesh, color_code):
+def __get_top_object(mesh, geometry_data, color_code):
     obj = bpy.data.objects.new(mesh.name, mesh)
-    obj[strings.ldraw_filename_key] = ldraw_node.file.name
+    obj[strings.ldraw_filename_key] = geometry_data.file.name
     obj[strings.ldraw_color_code_key] = color_code
 
     # bpy.context.space_data.shading.color_type = 'MATERIAL'
@@ -45,6 +44,9 @@ def __get_top_object(ldraw_node, mesh, color_code):
     # Shading > Color > Object to see object colors
     color = LDrawColor.get_color(color_code)
     obj.color = color.color_a
+
+    ldraw_props.set_props(obj, geometry_data.file, color_code)
+
     return obj
 
 
@@ -101,12 +103,12 @@ def __process_top_object_edges(obj):
         edge_modifier.split_angle = matrices.auto_smooth_angle
 
 
-def __process_top_edges(ldraw_node, key, obj, color_code, collection):
+def __process_top_edges(key, obj, geometry_data, color_code, collection):
     if ImportOptions.import_edges:
         edge_key = f"e_{key}"
         edge_mesh = ldraw_mesh.get_mesh(edge_key)
         edge_obj = bpy.data.objects.new(edge_mesh.name, edge_mesh)
-        edge_obj[strings.ldraw_filename_key] = f"{ldraw_node.file.name}_edges"
+        edge_obj[strings.ldraw_filename_key] = f"{geometry_data.file.name}_edges"
         edge_obj[strings.ldraw_color_code_key] = color_code
 
         color = LDrawColor.get_color(color_code)

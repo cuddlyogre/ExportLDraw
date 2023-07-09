@@ -68,6 +68,9 @@ class GeometryData:
     """
 
     def __init__(self):
+        self.key = None
+        self.file = None
+        self.bfc_certified = None
         self.edge_data = []
         self.face_data = []
         self.line_data = []

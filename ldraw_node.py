@@ -111,9 +111,6 @@ class LDrawNode:
         # pe_tex_info is defined like an mpd so mutliple instances sharing the same part name will share the same texture unless it is included in the key
         # the only thing unique about a geometry_data object is its filename and whether it has pe_tex_info
         geometry_data_key = LDrawNode.__build_key(self.file.name, pe_tex_info=self.pe_tex_info)
-        # blender mesh data is unique also based on color
-        # this means a geometry_data for a file is created only once, but a mesh is created for every color that uses that geometry_data
-        obj_key = f"{geometry_data_key}_{color_code}"
 
         # if there's no geometry, it's a top level part so start collecting geometry
         # there are occasions where files with part_type of model have geometry so you can't rely on its part_type
@@ -260,8 +257,14 @@ class LDrawNode:
         if top:
             # geometry_data will not be None if this is a new mesh
             # geometry_data will be None if the mesh already exists
-            cached_geometry_data = LDrawNode.geometry_datas.setdefault(geometry_data_key, geometry_data)
-            obj = LDrawNode.__create_obj(self, obj_key, cached_geometry_data, obj_matrix, obj_color_code, collection)
+            if geometry_data is not None:
+                geometry_data.key = geometry_data_key
+                geometry_data.file = self.file
+                geometry_data.bfc_certified = self.bfc_certified
+                LDrawNode.geometry_datas[geometry_data_key] = geometry_data
+            geometry_data = LDrawNode.geometry_datas[geometry_data_key]
+
+            obj = LDrawNode.__create_obj(geometry_data, obj_color_code, obj_matrix, collection)
 
             # if LDrawNode.part_count == 1:
             #     raise BaseException("done")
@@ -270,9 +273,13 @@ class LDrawNode:
             return obj
 
     @staticmethod
-    def __create_obj(ldraw_node, key, geometry_data, matrix, color_code, collection):
-        mesh = ldraw_mesh.create_mesh(ldraw_node, key, geometry_data, color_code)
-        obj = ldraw_object.process_top_object(ldraw_node, mesh, key, matrix, color_code, collection)
+    def __create_obj(geometry_data, color_code, matrix, collection):
+        # blender mesh data is unique also based on color
+        # this means a geometry_data for a file is created only once, but a mesh is created for every color that uses that geometry_data
+        key = f"{geometry_data.key}_{color_code}"
+
+        mesh = ldraw_mesh.create_mesh(key, geometry_data, color_code)
+        obj = ldraw_object.process_top_object(key, mesh, geometry_data, color_code, matrix, collection)
         return obj
 
     # set the working color code to this file's
