@@ -45,6 +45,9 @@ def do_import(filepath):
     root_node = LDrawNode()
     root_node.is_root = True
     root_node.file = ldraw_file
+
+    group.groups_setup(root_node)
+
     # return root_node.load()
     obj = root_node.load()
 

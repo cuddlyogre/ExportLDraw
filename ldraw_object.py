@@ -28,7 +28,7 @@ def process_top_object(key, mesh, geometry_data, color_code, matrix, collection)
     __process_top_object_gap(obj, matrix)
     __process_top_object_edges(obj)
     ldraw_meta.do_meta_step(obj)
-    __link_obj_to_collection(collection, obj)
+    __link_obj_to_collection(obj, collection)
     __process_top_edges(key, obj, geometry_data, color_code, collection)
 
     return obj
@@ -116,14 +116,16 @@ def __process_top_edges(key, obj, geometry_data, color_code, collection):
 
         ldraw_meta.do_meta_step(edge_obj)
 
-        __link_obj_to_collection(collection, edge_obj)
+        __link_obj_to_collection(edge_obj, collection)
 
         edge_obj.parent = obj
         edge_obj.matrix_world = obj.matrix_world
 
 
-def __link_obj_to_collection(_collection, obj):
+def __link_obj_to_collection(obj, _collection):
     group.link_obj(_collection, obj)
+
+    group.link_obj(group.parts_collection, obj)
 
     if group.current_step_group is not None:
         group.link_obj(group.current_step_group, obj)

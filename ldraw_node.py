@@ -3,7 +3,6 @@ import uuid
 from .geometry_data import GeometryData
 from .import_options import ImportOptions
 from . import group
-from . import helpers
 from . import ldraw_mesh
 from . import ldraw_object
 from . import ldraw_meta
@@ -62,42 +61,13 @@ class LDrawNode:
         if self.file.is_stud() and ImportOptions.no_studs:
             return
 
-        if parent_matrix is None:
-            parent_matrix = matrices.identity_matrix
-
-        collection = parent_collection
-
-        if group.top_collection is None:
-            collection_name = self.file.name
-            host_collection = group.get_scene_collection()
-            collection = group.get_filename_collection(collection_name, host_collection)
-            group.top_collection = collection
-
-            collection_name = 'Parts'
-            host_collection = group.top_collection
-            collection = group.get_collection(collection_name, host_collection)
-            group.parts_collection = collection
-
-        if ImportOptions.meta_group:
-            collection_name = 'Groups'
-            host_collection = group.top_collection
-            _collection = group.get_collection(collection_name, host_collection)
-            group.groups_collection = _collection
-            helpers.hide_obj(group.groups_collection)
-
-            collection_name = 'Ungrouped'
-            host_collection = group.top_collection
-            _collection = group.get_collection(collection_name, host_collection)
-            group.ungrouped_collection = _collection
-            helpers.hide_obj(group.ungrouped_collection)
-
         # by default, treat this as anything other than a top level part
         # keep track of the matrix and color up to this point
         # if it's a top level part, obj_matrix is its global transformation
         # if it's anything else, vertex_matrix is what is used to tranform the vertices
         # obj_matrix is the matrix up to the point and used for placement of objects
         # vertex_matrix is the matrix that gets passed to subparts
-        top = False
+        parent_matrix = parent_matrix or matrices.identity_matrix
         vertex_matrix = (parent_matrix @ self.matrix).freeze()
         obj_matrix = vertex_matrix
         obj_color_code = color_code
@@ -109,9 +79,11 @@ class LDrawNode:
         # the only thing unique about a geometry_data object is its filename and whether it has pe_tex_info
         geometry_data_key = LDrawNode.__build_key(self.file.name, pe_tex_info=self.pe_tex_info)
 
-        # if there's no geometry, it's a top level part so start collecting geometry
+        # if there's no geometry_data and some part type, it's a top level part so start collecting geometry
         # there are occasions where files with part_type of model have geometry so you can't rely on its part_type
         # example: 10252 - 10252_towel.dat in 10252-1 - Volkswagen Beetle.mpd
+        # sometimes a part will be a subpart, so you have to check if there's already geometry_data started, or else you'll create a new part
+        # example: 3044.dat -> 3044b.dat
         # the only way to be sure is if a file has geometry, always treat it like a part otherwise that geometry won't be rendered
         # geometry_data is always None if the geometry_data with this key has already been processed
         # if is_shortcut_part, always treat like top level part, otherwise shortcuts that
@@ -122,28 +94,34 @@ class LDrawNode:
         #  in cases where they aren't part of a shortcut
         # TODO: is_shortcut_model splits 99141c01.dat and u9158.dat into its subparts -
         #  u9158.dat - ensure the battery contacts are correct
+        top_part = geometry_data is None and (self.file.has_geometry() or self.file.is_part() or self.file.is_shortcut_part())
+        top_model = geometry_data is None and self.file.is_like_model()
         cached_geometry_data = None
-        if geometry_data is None and (self.file.has_geometry() or self.file.is_part() or self.file.is_shortcut_part()):
-            # top-level part
-            LDrawNode.part_count += 1
-            top = True
-            vertex_matrix = matrices.identity_matrix
-            cached_geometry_data = LDrawNode.geometry_datas.get(geometry_data_key)
-            # set top level parts to 16 so that geometry_data is only created once per filename
-            # then change their 16 faces to obj_color_code
-            # TODO: replace material of 16 faces with geometry nodes
-            color_code = "16"
-        else:
-            if self.file.is_like_model():
+        collection = None
+        if top_part or top_model:
+            if top_part:
+                # top-level part
+                LDrawNode.part_count += 1
+                vertex_matrix = matrices.identity_matrix
+                cached_geometry_data = LDrawNode.geometry_datas.get(geometry_data_key)
+                # set top level parts to 16 so that geometry_data is only created once per filename
+                # then change their 16 faces to obj_color_code
+                # TODO: replace material of 16 faces with geometry nodes
+                color_code = "16"
+            elif top_model:
                 self.bfc_certified = True  # or else accum_cull will be false, which turns off bfc processing
-                if parent_collection is not None:
+
+            collection = group.top_collection
+            if parent_collection is not None:
+                collection = parent_collection
+                if self.file.is_like_model():
                     # if parent_collection is not None, this is a nested model
                     collection = group.get_filename_collection(self.file.name, parent_collection)
 
         # always process geometry_data if this is a subpart or there is no cached_geometry_data
         # if geometry_data exists, this is a top level part that has already been processed so don't process this key again
-        if not top or cached_geometry_data is None:
-            if top:
+        if not top_part or cached_geometry_data is None:
+            if top_part:
                 geometry_data = GeometryData()
 
             local_cull = True
@@ -251,7 +229,7 @@ class LDrawNode:
                 elif child_node.meta_command == "bfc" and child_node.meta_args["command"] != "INVERTNEXT":
                     invert_next = False
 
-        if top:
+        if top_part:
             # geometry_data will not be None if this is a new mesh
             # geometry_data will be None if the mesh already exists
             if geometry_data is not None:

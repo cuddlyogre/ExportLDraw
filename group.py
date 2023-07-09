@@ -1,6 +1,7 @@
 import bpy
-
 import os
+from . import helpers
+from .import_options import ImportOptions
 
 top_collection = None
 parts_collection = None
@@ -33,6 +34,36 @@ def reset_caches():
     end_next_collection = False
     current_step_group = None
     collection_id_map.clear()
+
+
+def groups_setup(ldraw_node):
+    global top_collection
+    global parts_collection
+    global groups_collection
+    global ungrouped_collection
+
+    collection_name = ldraw_node.file.name
+    host_collection = get_scene_collection()
+    collection = get_filename_collection(collection_name, host_collection)
+    top_collection = collection
+
+    collection_name = 'Parts'
+    host_collection = get_scene_collection()
+    collection = get_collection(collection_name, host_collection)
+    parts_collection = collection
+
+    if ImportOptions.meta_group:
+        collection_name = 'Groups'
+        host_collection = top_collection
+        collection = get_collection(collection_name, host_collection)
+        groups_collection = collection
+        helpers.hide_obj(groups_collection)
+
+        collection_name = 'Ungrouped'
+        host_collection = top_collection
+        collection = get_collection(collection_name, host_collection)
+        ungrouped_collection = collection
+        helpers.hide_obj(ungrouped_collection)
 
 
 def get_scene_collection():
