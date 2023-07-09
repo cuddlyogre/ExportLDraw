@@ -55,7 +55,6 @@ class LDrawNode:
              accum_cull=True,
              accum_invert=False,
              parent_collection=None,
-             texmap=None,
              ):
 
         if self.file.is_edge_logo() and not ImportOptions.display_logo:
@@ -65,8 +64,6 @@ class LDrawNode:
 
         if parent_matrix is None:
             parent_matrix = matrices.identity_matrix
-
-        self.texmap = texmap
 
         collection = parent_collection
 
@@ -160,6 +157,8 @@ class LDrawNode:
                 if child_node.meta_command in ["1", "2", "3", "4", "5"] and not self.texmap_fallback:
                     child_current_color = LDrawNode.__determine_color(color_code, child_node.color_code)
                     if child_node.meta_command == "1":
+                        child_node.texmap = self.texmap
+
                         # if we have no pe_tex_info, try to get one from pe_tex_infos otherwise keep using the one we have
                         # custom minifig head > 3626tex.dat (has no pe_tex) > 3626texshell.dat
                         if len(self.pe_tex_info) < 1:
@@ -179,7 +178,6 @@ class LDrawNode:
                             accum_cull=self.bfc_certified and accum_cull and local_cull,
                             accum_invert=(accum_invert ^ invert_next),  # xor
                             parent_collection=collection,
-                            texmap=self.texmap,
                         )
                         # for node in child_node.load(
                         #         color_code=child_current_color,
@@ -188,7 +186,6 @@ class LDrawNode:
                         #         accum_cull=self.bfc_certified and accum_cull and local_cull,
                         #         accum_invert=(accum_invert ^ invert_next),  # xor
                         #         parent_collection=collection,
-                        #         texmap=self.texmap,
                         # ):
                         #     yield node
 
