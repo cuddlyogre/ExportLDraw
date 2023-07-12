@@ -104,7 +104,7 @@ class BlenderMaterials:
 
         out = cls.__node_output_material(nodes, 200, 0)
 
-        node, rgb_node, mix_rgb_node = cls.__node_group_color_code_old(color, nodes, links, 200, 0)
+        node, rgb_node, mix_rgb_node = cls.__node_group_color_code(color, nodes, links, 200, 0)
         links.new(node.outputs["Shader"], out.inputs["Surface"])
 
         diff_color = color.color_a
@@ -173,7 +173,7 @@ class BlenderMaterials:
         return node
 
     @classmethod
-    def __node_group_color_code_old(cls, color, nodes, links, x, y):
+    def __node_group_color_code(cls, color, nodes, links, x, y):
         diff_color = color.color_d
         rgb_node = cls.__node_rgb(nodes, x + -600, y + 60)
         rgb_node.outputs["Color"].default_value = diff_color
@@ -187,53 +187,6 @@ class BlenderMaterials:
         links.new(mix_rgb_node.outputs["Color"], node.inputs["Color"])
 
         return node, rgb_node, mix_rgb_node
-
-    @classmethod
-    def __node_group_color_code(cls, color, x, y):
-        group_name = color.code
-        if group_name not in bpy.data.node_groups:
-            node_group = cls.__node_tree(group_name)
-
-            node_tree_input = cls.__node_group_input(node_group.nodes, x + -600, y + -200)
-            node_tree_output = cls.__node_group_output(node_group.nodes, x, y)
-
-            node_group.inputs.new("NodeSocketColor", "Texture Color")
-
-            node_group.inputs.new("NodeSocketFloatFactor", "Texture Alpha")
-            node_group.inputs["Texture Alpha"].default_value = 0.0
-            node_group.inputs["Texture Alpha"].min_value = 0.0
-            node_group.inputs["Texture Alpha"].max_value = 1.0
-
-            node_group.inputs.new("NodeSocketFloatFactor", "Specular")
-            node_group.inputs["Specular"].default_value = 0.5
-            node_group.inputs["Specular"].min_value = 0.0
-            node_group.inputs["Specular"].max_value = 1.0
-
-            node_group.inputs.new("NodeSocketVectorDirection", "Normal")
-            node_group.inputs["Normal"].min_value = 0.0
-            node_group.inputs["Normal"].max_value = 1.0
-
-            node_group.outputs.new("NodeSocketShader", "Shader")
-
-            diff_color = color.color_d
-            rgb_node = cls.__node_rgb(node_group.nodes, x + -600, y + 60)
-            rgb_node.outputs["Color"].default_value = diff_color
-
-            mix_rgb_node = cls.__node_mix_rgb(node_group.nodes, x + -400, y + 0)
-            mix_rgb_node.inputs["Fac"].default_value = 0
-
-            color_code_node = cls.__node_color_code_material(node_group.nodes, color, x + -200, y + 0)
-
-            node_group.links.new(rgb_node.outputs["Color"], mix_rgb_node.inputs["Color1"])
-            node_group.links.new(node_tree_input.outputs["Texture Color"], mix_rgb_node.inputs["Color2"])
-            node_group.links.new(node_tree_input.outputs["Texture Alpha"], mix_rgb_node.inputs["Fac"])
-            node_group.links.new(mix_rgb_node.outputs["Color"], color_code_node.inputs["Color"])
-            node_group.links.new(node_tree_input.outputs["Specular"], color_code_node.inputs["Specular"])
-            node_group.links.new(node_tree_input.outputs["Normal"], color_code_node.inputs["Normal"])
-            node_group.links.new(color_code_node.outputs["Shader"], node_tree_output.inputs["Shader"])
-
-            group_name = node_group.name
-        return group_name
 
     @classmethod
     def __node_color_code_material(cls, nodes, color, x, y):
