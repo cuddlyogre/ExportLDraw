@@ -104,13 +104,7 @@ class BlenderMaterials:
 
         out = cls.__node_output_material(nodes, 200, 0)
 
-        new_way = True  # slower but color codes are encompassed in their own node groups
-        new_way = False  # faster but color codes are directly created within the material
-        if new_way:
-            group_name = cls.__node_group_color_code(color, 200, 0)
-            node = cls.__node_group(group_name, nodes, 0, 0)
-        else:
-            node, rgb_node, mix_rgb_node = cls.__node_group_color_code_old(color, nodes, links, 200, 0)
+        node, rgb_node, mix_rgb_node = cls.__node_group_color_code_old(color, nodes, links, 200, 0)
         links.new(node.outputs["Shader"], out.inputs["Surface"])
 
         diff_color = color.color_a
@@ -130,10 +124,7 @@ class BlenderMaterials:
             cls.__create_cloth(nodes, links, node, -200, -100)
 
         if texmap is not None or pe_texmap is not None:
-            if new_way:
-                cls.__create_texmap(nodes, links, -460, 180, texmap, pe_texmap, node.inputs["Texture Color"], node.inputs["Texture Alpha"], node.inputs["Specular"])
-            else:
-                cls.__create_texmap(nodes, links, -500, -140, texmap, pe_texmap, mix_rgb_node.inputs["Color2"], mix_rgb_node.inputs["Fac"], node.inputs["Specular"])
+            cls.__create_texmap(nodes, links, -500, -140, texmap, pe_texmap, mix_rgb_node.inputs["Color2"], mix_rgb_node.inputs["Fac"], node.inputs["Specular"])
 
         return material
 
