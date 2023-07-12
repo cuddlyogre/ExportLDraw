@@ -46,6 +46,16 @@ class TexMap:
         elif self.is_spherical():
             self.__map_spherical(bm, face)
 
+    def uv_unwrap_face_basic(self, bm, face):
+        uv_layer = bm.loops.layers.uv.verify()
+        uvs = {}
+        for i, loop in enumerate(face.loops):
+            p = loop.vert.co.copy().freeze()
+            if p not in uvs:
+                uv = [0, 0]
+                uvs[p] = uv
+            loop[uv_layer].uv = uvs[p]
+
     # negative v because blender uv starts at bottom left of image, LDraw orientation of up=-y so use top left
     def __map_planar(self, bm, face):
         a = self.parameters[0]
