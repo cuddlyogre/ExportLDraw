@@ -51,6 +51,7 @@ def groups_setup(ldraw_node):
     host_collection = get_scene_collection()
     collection = get_collection(collection_name, host_collection)
     parts_collection = collection
+    helpers.hide_obj(parts_collection)
 
     if ImportOptions.meta_group:
         collection_name = 'Groups'
