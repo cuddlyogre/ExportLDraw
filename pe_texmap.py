@@ -34,7 +34,7 @@ class PETexmap:
         for p in ldraw_node.pe_tex_info:
             # if we have uv data and a pe_tex_info, otherwise pass
             # # custom minifig head > 3626tex.dat (has no pe_tex) > 3626texpole.dat (has no uv data)
-            if len(_params) > 12:  # use uvs provided in file
+            if len(_params) == 15:  # use uvs provided in file
                 pe_texmap = PETexmap()
                 pe_texmap.texture = p.image
 
@@ -64,15 +64,14 @@ class PETexmap:
                     face_normal_within_texture_normal = False
 
                 for i in range(vert_count):
-                    if p.point_min is None: continue
                     # if face is within p.boundingbox
                     vert = child_node.vertices[i]
                     # is_intersecting = (p.matrix @ p.bounding_box).interects(vert)
 
                     if face_normal_within_texture_normal:  # and is_intersecting:
                         uv = mathutils.Vector((0, 0))
-                        zero2.x = (vert.x - p.point_min.x) / p.point_diff.x
-                        zero2.y = (vert.z - p.point_min.y) / p.point_diff.y
+                        uv.x = (vert.x - p.point_min.x) / p.point_diff.x
+                        uv.y = (vert.z - p.point_min.y) / p.point_diff.y
                         pe_texmap.uvs.append(uv)
 
         return pe_texmap
