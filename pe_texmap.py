@@ -19,8 +19,12 @@ class PETexmap:
 
     def uv_unwrap_face(self, bm, face):
         uv_layer = bm.loops.layers.uv.verify()
+        uvs = {}
         for i, loop in enumerate(face.loops):
-            loop[uv_layer].uv = self.uvs[i]
+            p = loop.vert.co.copy().freeze()
+            if p not in uvs:
+                uvs[p] = self.uvs[i]
+            loop[uv_layer].uv = uvs[p]
 
     @staticmethod
     def build_pe_texmap(ldraw_node, child_node):
