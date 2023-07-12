@@ -77,7 +77,7 @@ class LDrawColor:
         cls.__colors[color.code] = color
         return color.code
 
-    def parse_color_params(self, clean_line, linear=True):
+    def parse_color_params(self, clean_line, linear=False):
         # name CODE x VALUE v EDGE e required
         # 0 !COLOUR Black CODE 0 VALUE #1B2A34 EDGE #2B4354
 

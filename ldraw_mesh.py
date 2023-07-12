@@ -4,6 +4,7 @@ import mathutils
 
 from .blender_materials import BlenderMaterials
 from .import_options import ImportOptions
+from .ldraw_color import LDrawColor
 from . import special_bricks
 from . import strings
 from . import helpers
@@ -98,14 +99,38 @@ def __process_bmesh_edges(bm, geometry_data):
 def __process_bmesh_faces(mesh, geometry_data, color_code):
     bm = bmesh.new()
 
+    # https://blender.stackexchange.com/a/280720
+    """
+    Vertex        Byte Color    bm.verts.layers.color
+    Vertex        Float Color   bm.verts.layers.float_color
+    Face Corner   Byte Color    bm.loops.layers.color
+    Face Corner   Float Color   bm.loops.layers.float_color
+    """
+    vertex_colors = bm.loops.layers.color.new("LDraw Colors")
+
+    if bpy.app.version < (3, 4):
+        ...
+        # seems to pick them without having to set them as active
+        # mesh.attributes.active = mesh.attributes[vertex_colors.name]
+    else:
+        mesh.attributes.active_color_name = vertex_colors.name
+
     for face_data in geometry_data.face_data:
         verts = [bm.verts.new(vertex) for vertex in face_data.vertices]
         face = bm.faces.new(verts)
 
+        c = color_code if face_data.color_code == "16" else face_data.color_code
+
+        color = LDrawColor.get_color(c)
+        for loop in face.loops:
+            # linear=True makes these colors too dark
+            loop[vertex_colors] = color.color_a
+
         part_slopes = special_bricks.get_part_slopes(geometry_data.file.name)
         parts_cloth = special_bricks.get_parts_cloth(geometry_data.file.name)
         material = BlenderMaterials.get_material(
-            color_code=color_code if face_data.color_code == "16" else face_data.color_code,
+            color_code=c,
+            vertex_colors=vertex_colors,
             use_backface_culling=geometry_data.bfc_certified,
             part_slopes=part_slopes,
             parts_cloth=parts_cloth,

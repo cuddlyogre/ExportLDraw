@@ -39,9 +39,6 @@ def __get_top_object(mesh, geometry_data, color_code):
     obj[strings.ldraw_filename_key] = geometry_data.file.name
     obj[strings.ldraw_color_code_key] = color_code
 
-    # bpy.context.space_data.shading.color_type = 'MATERIAL'
-    # bpy.context.space_data.shading.color_type = 'OBJECT'
-    # Shading > Color > Object to see object colors
     color = LDrawColor.get_color(color_code)
     obj.color = color.color_a
 
