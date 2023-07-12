@@ -32,14 +32,30 @@ def meta_bfc(ldraw_node, child_node, matrix, local_cull, winding, invert_next, a
     _params = clean_line.split()[2:]
 
     # https://www.ldraw.org/article/415.html#processing
-    if ldraw_node.bfc_certified is None and "NOCERTIFY" not in _params:
-        ldraw_node.bfc_certified = True
+    if ldraw_node.bfc_certified is not False:
+        if ldraw_node.bfc_certified is None and "NOCERTIFY" not in _params:
+            ldraw_node.bfc_certified = True
 
-    if "CERTIFY" in _params:
-        ldraw_node.bfc_certified = True
+        if "CERTIFY" in _params:
+            ldraw_node.bfc_certified = True
 
-    if "NOCERTIFY" in _params:
-        ldraw_node.bfc_certified = False
+        if "NOCERTIFY" in _params:
+            ldraw_node.bfc_certified = False
+
+        """
+        https://www.ldraw.org/article/415.html#rendering
+        Degenerate Matrices. Some orientation matrices do not allow calculation of a determinate.
+        This calculation is central to BFC processing. If an orientation matrix for a subfile is
+        degenerate, then culling will not be possible for that subfile.
+
+        https://math.stackexchange.com/a/792591
+        A singular matrix, also known as a degenerate matrix, is a square matrix whose determinate is zero.
+        https://www.algebrapracticeproblems.com/singular-degenerate-matrix/
+        A singular (or degenerate) matrix is a square matrix whose inverse matrix cannot be calculated.
+        Therefore, the determinant of a singular matrix is equal to 0.
+        """
+        if matrix.determinant() == 0:
+            ldraw_node.bfc_certified = False
 
     if "CLIP" in _params:
         local_cull = True
@@ -84,20 +100,6 @@ def meta_bfc(ldraw_node, child_node, matrix, local_cull, winding, invert_next, a
                 winding = "CCW"
             else:
                 winding = "CW"
-    """
-    https://www.ldraw.org/article/415.html#rendering
-    Degenerate Matrices. Some orientation matrices do not allow calculation of a determinate.
-    This calculation is central to BFC processing. If an orientation matrix for a subfile is
-    degenerate, then culling will not be possible for that subfile.
-
-    https://math.stackexchange.com/a/792591
-    A singular matrix, also known as a degenerate matrix, is a square matrix whose determinate is zero.
-    https://www.algebrapracticeproblems.com/singular-degenerate-matrix/
-    A singular (or degenerate) matrix is a square matrix whose inverse matrix cannot be calculated.
-    Therefore, the determinant of a singular matrix is equal to 0.
-    """
-    if matrix.determinant() == 0:
-        ldraw_node.bfc_certified = False
 
     return local_cull, winding, invert_next
 
