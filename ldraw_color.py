@@ -9,7 +9,7 @@ try:
 except ImportError as e:
     import helpers
 
-BlendColor = namedtuple("Color", "r g b")
+BlendColor = namedtuple("BlendColor", "r g b")
 blend_colors = [
     BlendColor(51, 51, 51),
     BlendColor(0, 51, 178),
@@ -208,11 +208,28 @@ class LDrawColor:
             hex_digits = cls.__extract_hex_digits(color_code)
 
         if hex_digits is not None:
-            new_color = cls.create_new_color_from_hex_digits(color_code, hex_digits)
-            if new_color is not None:
-                return new_color
+            try:
+                # FFFFFF == 6 means no alpha
+                # FFFFFFFF == 8 means alpha
+                # 1009022 == #f657e -> ValueError
+                alpha = ''
+                if len(hex_digits) == 8:
+                    alpha_val = struct.unpack("B", bytes.fromhex(hex_digits[6:8]))[0]
+                    alpha = f"ALPHA {alpha_val}"
 
-        return cls.get_bad_color(color_code)
+                clean_line = f"0 !COLOUR {color_code} CODE {color_code} VALUE #{hex_digits} EDGE #333333 {alpha}"
+                color_code = cls.parse_color(clean_line)
+                return cls.__colors[color_code]
+            except Exception as e:
+                print(e)
+
+        print(f"Bad color code: {color_code}")
+        if cls.__bad_color is None:
+            clean_line = f"0 !COLOUR Bad_Color CODE {color_code} VALUE #FF0000 EDGE #00FF00"
+            color_code = cls.parse_color(clean_line)
+            cls.__bad_color = cls.__colors[color_code]
+
+        return cls.__colors[color_code]
 
     # n1 = (nb - 256) / 16
     # n2 = (nb - 256) mod 16
@@ -310,36 +327,6 @@ class LDrawColor:
             print(e)
 
         return hex_digits
-
-    @classmethod
-    def create_new_color_from_hex_digits(cls, color_code, hex_digits):
-        new_color = None
-
-        try:
-            alpha = ''
-            # FFFFFF == 6 means no alpha
-            # FFFFFFFF == 8 means alpha
-            # 1009022 == #f657e -> ValueError
-            if len(hex_digits) == 8:
-                alpha_val = struct.unpack("B", bytes.fromhex(hex_digits[6:8]))[0]
-                alpha = f"ALPHA {alpha_val}"
-
-            clean_line = f"0 !COLOUR {color_code} CODE {color_code} VALUE #{hex_digits} EDGE #333333 {alpha}"
-            color_code = cls.parse_color(clean_line)
-            new_color = cls.__colors[color_code]
-        except Exception as e:
-            print(e)
-
-        return new_color
-
-    @classmethod
-    def get_bad_color(cls, color_code):
-        if cls.__bad_color is None:
-            clean_line = f"0 !COLOUR Bad_Color CODE {color_code} VALUE #FF0000 EDGE #00FF00"
-            color_code = cls.parse_color(clean_line)
-            cls.__bad_color = cls.__colors[color_code]
-        print(f"Bad color code: {color_code}")
-        return cls.__colors[cls.__bad_color.code]
 
     @classmethod
     def __get_rgb_color_value(cls, value, linear=True):
