@@ -142,8 +142,11 @@ class BlenderMaterials:
         if parts_cloth:
             cls.__create_cloth(nodes, links, node, -200, -100)
 
-        if texmap is not None or pe_texmap is not None:
-            cls.__create_texmap(nodes, links, -500, -140, texmap, pe_texmap, mix_rgb_node.inputs["Color2"], mix_rgb_node.inputs["Fac"], node.inputs["Specular"])
+        if texmap is not None:
+            cls.__create_texmap(nodes, links, -500, -140, texmap, mix_rgb_node.inputs["Color2"], mix_rgb_node.inputs["Fac"], node.inputs["Specular"])
+
+        if pe_texmap is not None:
+            cls.__create_texture(nodes, links, -500, -140, pe_texmap, mix_rgb_node.inputs["Color2"], mix_rgb_node.inputs["Fac"])
 
         return material
 
@@ -273,20 +276,18 @@ class BlenderMaterials:
         return node
 
     @classmethod
-    def __create_texmap(cls, nodes, links, x, y, texmap, pe_texmap, color_input, alpha_input, specular_input):
-        image_name = None
-        if texmap is not None:
-            image_name = texmap.texture
-        elif pe_texmap is not None:
-            image_name = pe_texmap.texture
+    def __create_texture(cls, nodes, links, x, y, texmap, color_input, alpha_input):
+        image_name = texmap.texture
         if image_name is not None:
             texmap_image = cls.__node_tex_image_closest_clip(nodes, x, y, image_name, "sRGB")
             links.new(texmap_image.outputs["Color"], color_input)
             links.new(texmap_image.outputs["Alpha"], alpha_input)
 
-        image_name = None
-        if texmap is not None:
-            image_name = texmap.glossmap
+    @classmethod
+    def __create_texmap(cls, nodes, links, x, y, texmap, color_input, alpha_input, specular_input):
+        cls.__create_texture(nodes, links, x, y, texmap, color_input, alpha_input)
+
+        image_name = texmap.glossmap
         if image_name is not None:
             glossmap_image = cls.__node_tex_image_closest_clip(nodes, x, y - 280, image_name, "Non-Color")
             links.new(glossmap_image.outputs["Color"], specular_input)
