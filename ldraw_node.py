@@ -114,7 +114,7 @@ class LDrawNode:
             collection = group.top_collection
             if parent_collection is not None:
                 collection = parent_collection
-                if self.file.is_like_model():
+                if top_model:
                     # if parent_collection is not None, this is a nested model
                     collection = group.get_filename_collection(self.file.name, parent_collection)
 
