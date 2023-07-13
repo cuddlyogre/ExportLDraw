@@ -123,7 +123,6 @@ def __process_bmesh_faces(mesh, geometry_data, color_code):
 
         color = LDrawColor.get_color(c)
         for loop in face.loops:
-            # linear=True makes these colors too dark
             loop[vertex_colors] = color.color_a
 
         part_slopes = special_bricks.get_part_slopes(geometry_data.file.name)

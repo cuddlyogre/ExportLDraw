@@ -40,7 +40,7 @@ def __get_top_object(mesh, geometry_data, color_code):
     obj[strings.ldraw_color_code_key] = color_code
 
     color = LDrawColor.get_color(color_code)
-    obj.color = color.color_a
+    obj.color = color.linear_color_a
 
     ldraw_props.set_props(obj, geometry_data.file, color_code)
 

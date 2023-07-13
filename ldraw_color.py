@@ -47,21 +47,38 @@ class LDrawColor:
     def __init__(self):
         self.name = None
         self.code = None
+
+        self.color_hex = None
         self.color = None
         self.color_i = None
-        self.color_hex = None
         self.color_d = None
         self.color_a = None
+
+        self.linear_color = None
+        self.linear_color_i = None
+        self.linear_color_d = None
+        self.linear_color_a = None
+
+        self.edge_color_hex = None
         self.edge_color = None
         self.edge_color_i = None
-        self.edge_color_hex = None
         self.edge_color_d = None
+
+        self.linear_edge_color = None
+        self.linear_edge_color_i = None
+        self.linear_edge_color_d = None
+
         self.alpha = None
         self.luminance = None
         self.material_name = None
+
+        self.material_color_hex = None
         self.material_color = None
         self.material_color_i = None
-        self.material_color_hex = None
+
+        self.linear_material_color = None
+        self.linear_material_color_i = None
+
         self.material_alpha = None
         self.material_luminance = None
         self.material_fraction = None
@@ -77,7 +94,7 @@ class LDrawColor:
         cls.__colors[color.code] = color
         return color.code
 
-    def parse_color_params(self, clean_line, linear=False):
+    def parse_color_params(self, clean_line):
         # name CODE x VALUE v EDGE e required
         # 0 !COLOUR Black CODE 0 VALUE #1B2A34 EDGE #2B4354
 
@@ -96,19 +113,31 @@ class LDrawColor:
 
         i = lparams.index("value")
         value = lparams[i + 1]
-        rgb = self.__get_rgb_color_value(value, linear)
+        self.color_hex = value
+
+        rgb = self.__get_rgb_color_value(value, linear=False)
         self.color = rgb
         self.color_i = tuple(round(i * 255) for i in rgb)
-        self.color_hex = value
         self.color_d = rgb + (1.0,)
+
+        lrgb = self.__get_rgb_color_value(value, linear=True)
+        self.linear_color = lrgb
+        self.linear_color_i = tuple(round(i * 255) for i in lrgb)
+        self.linear_color_d = lrgb + (1.0,)
 
         i = lparams.index("edge")
         edge = lparams[i + 1]
-        e_rgb = self.__get_rgb_color_value(edge, linear)
+        self.edge_color_hex = edge
+
+        e_rgb = self.__get_rgb_color_value(edge, linear=False)
         self.edge_color = e_rgb
         self.edge_color_i = tuple(round(i * 255) for i in e_rgb)
-        self.edge_color_hex = edge
         self.edge_color_d = e_rgb + (1.0,)
+
+        le_rgb = self.__get_rgb_color_value(edge, linear=True)
+        self.linear_edge_color = le_rgb
+        self.linear_edge_color_i = tuple(round(i * 255) for i in le_rgb)
+        self.linear_edge_color_d = le_rgb + (1.0,)
 
         # [ALPHA a] [LUMINANCE l] [ CHROME | PEARLESCENT | RUBBER | MATTE_METALLIC | METAL | MATERIAL <params> ]
         alpha = 255
@@ -116,7 +145,9 @@ class LDrawColor:
             i = lparams.index("alpha")
             alpha = int(lparams[i + 1])
         self.alpha = alpha / 255
+
         self.color_a = rgb + (self.alpha,)
+        self.linear_color_a = lrgb + (self.alpha,)
 
         luminance = 0
         if "luminance" in lparams:
@@ -142,10 +173,15 @@ class LDrawColor:
 
             i = lparams.index("value")
             material_value = lparams[i + 1]
-            material_rgba = self.__get_rgb_color_value(material_value, linear)
+            self.material_color_hex = material_value
+
+            material_rgba = self.__get_rgb_color_value(material_value, linear=False)
             self.material_color = material_rgba
             self.material_color_i = tuple(round(i * 255) for i in material_rgba)
-            self.material_color_hex = material_value
+
+            lmaterial_rgba = self.__get_rgb_color_value(material_value, linear=True)
+            self.linear_material_color = lmaterial_rgba
+            self.linear_material_color_i = tuple(round(i * 255) for i in lmaterial_rgba)
 
             material_alpha = 255
             if "alpha" in material_parts:

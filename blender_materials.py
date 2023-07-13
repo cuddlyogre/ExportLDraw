@@ -128,9 +128,6 @@ class BlenderMaterials:
         node, vertex_color_node, mix_rgb_node = cls.__node_group_color_code(color, vertex_colors, nodes, links, 200, 0)
         links.new(node.outputs["Shader"], out.inputs["Surface"])
 
-        diff_color = color.color_a
-        material.diffuse_color = diff_color
-
         is_transparent = color.alpha < 1.0
         if is_transparent:
             material.use_screen_refraction = True

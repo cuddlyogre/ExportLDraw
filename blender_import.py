@@ -89,6 +89,8 @@ def __scene_setup():
             if area.type == 'VIEW_3D':
                 for space in area.spaces:
                     if space.type == 'VIEW_3D':
+                        if ImportOptions.meta_bfc:
+                            space.shading.show_backface_culling = True
                         space.shading.type = 'SOLID'
                         # Shading > Color > Object to see object colors
                         space.shading.color_type = 'VERTEX'
@@ -210,7 +212,7 @@ def __load_materials(file):
             obj.location.y = -j * 3
 
             color = LDrawColor.get_color(color_code)
-            obj.color = color.color_a
+            obj.color = color.linear_color_a
 
             group.link_obj(collection, obj)
         j += 1
