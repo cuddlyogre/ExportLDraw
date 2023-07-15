@@ -76,7 +76,8 @@ def get_collection(collection_name, host_collection):
     collection = bpy.data.collections.get(collection_name)
     if collection is None:
         collection = bpy.data.collections.new(collection_name)
-        link_child(collection, host_collection)
+        if host_collection is not None:
+            link_child(collection, host_collection)
     return collection
 
 

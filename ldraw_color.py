@@ -39,6 +39,8 @@ class LDrawColor:
     __colors = {}
     __bad_color = None
 
+    materials = ["chrome", "pearlescent", "rubber", "matte_metallic", "metal"]
+
     @classmethod
     def reset_caches(cls):
         cls.__colors.clear()
@@ -98,14 +100,13 @@ class LDrawColor:
         # name CODE x VALUE v EDGE e required
         # 0 !COLOUR Black CODE 0 VALUE #1B2A34 EDGE #2B4354
 
+        # Tags are case-insensitive.
+        # https://www.ldraw.org/article/299
         _params = helpers.get_params(clean_line)[2:]
+        lparams = helpers.get_params(clean_line.lower())[2:]
 
         name = _params[0]
         self.name = name
-
-        # Tags are case-insensitive.
-        # https://www.ldraw.org/article/299
-        lparams = [x.lower() for x in _params]
 
         i = lparams.index("code")
         code = lparams[i + 1]
@@ -156,7 +157,7 @@ class LDrawColor:
         self.luminance = luminance
 
         material_name = None
-        for _material in ["chrome", "pearlescent", "rubber", "matte_metallic", "metal"]:
+        for _material in self.materials:
             if _material in lparams:
                 material_name = _material
                 break
@@ -175,13 +176,13 @@ class LDrawColor:
             material_value = lparams[i + 1]
             self.material_color_hex = material_value
 
-            material_rgba = self.__get_rgb_color_value(material_value, linear=False)
-            self.material_color = material_rgba
-            self.material_color_i = tuple(round(i * 255) for i in material_rgba)
+            material_rgb = self.__get_rgb_color_value(material_value, linear=False)
+            self.material_color = material_rgb
+            self.material_color_i = tuple(round(i * 255) for i in material_rgb)
 
-            lmaterial_rgba = self.__get_rgb_color_value(material_value, linear=True)
-            self.linear_material_color = lmaterial_rgba
-            self.linear_material_color_i = tuple(round(i * 255) for i in lmaterial_rgba)
+            lmaterial_rgb = self.__get_rgb_color_value(material_value, linear=True)
+            self.linear_material_color = lmaterial_rgb
+            self.linear_material_color_i = tuple(round(i * 255) for i in lmaterial_rgb)
 
             material_alpha = 255
             if "alpha" in material_parts:

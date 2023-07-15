@@ -74,7 +74,6 @@ class BlenderMaterials:
         _key = ()
 
         # key is everything but the color
-        # _key += (color.name, color.code,)
         _key += (
             color.alpha,
             color.luminance,
@@ -93,14 +92,17 @@ class BlenderMaterials:
 
         _key += (use_backface_culling,)
 
-        if LDrawColor.use_alt_colors:
-            _key += ("alt",)
+        _key += (LDrawColor.use_alt_colors,)
+
         if part_slopes is not None:
             _key += (part_slopes,)
+
         if parts_cloth:
             _key += ("cloth",)
+
         if texmap is not None:
             _key += (texmap.method, texmap.texture, texmap.glossmap,)
+
         if pe_texmap is not None:
             _key += (pe_texmap.texture,)
 
