@@ -174,12 +174,6 @@ BFC processing. It is recommended to keep unchecked if processing BFC commands i
 parts instead of merging them.  
 **No studs:** Don't import studs. Not particularly useful but is neat to see.  
 
-Properly rendered
-![Examples of correct render](examples/import/preserve_file_structure_3623.jpg)
-
-Incorrectly rendered
-![Examples of correct render](examples/import/preserve_file_structure_3823.jpg)
-
 # Exporting
 
 Exporting a part properly requires a bit of setup, but once that's taken care of it works well. Exported faces are
