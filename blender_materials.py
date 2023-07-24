@@ -6,6 +6,7 @@ import uuid
 from .definitions import APP_ROOT
 from .ldraw_color import LDrawColor
 from .filesystem import FileSystem
+from .import_options import ImportOptions
 from . import strings
 
 
@@ -43,7 +44,7 @@ class BlenderMaterials:
             node_group.use_fake_user = True
 
     @classmethod
-    def get_material(cls, color_code, vertex_colors, use_backface_culling=True, part_slopes=None, parts_cloth=False, texmap=None, pe_texmap=None, easy_key=False):
+    def get_material(cls, color_code, vertex_colors=None, use_backface_culling=True, part_slopes=None, parts_cloth=False, texmap=None, pe_texmap=None, easy_key=False):
         color = LDrawColor.get_color(color_code)
         use_backface_culling = use_backface_culling is True
 
@@ -73,22 +74,25 @@ class BlenderMaterials:
     def __build_key(cls, color, use_backface_culling, part_slopes, parts_cloth, texmap, pe_texmap):
         _key = ()
 
-        # key is everything but the color
-        _key += (
-            color.alpha,
-            color.luminance,
-            color.material_name,
-            color.material_color,
-            color.material_color_i,
-            color.material_color_hex,
-            color.material_alpha,
-            color.material_luminance,
-            color.material_fraction,
-            color.material_vfraction,
-            color.material_size,
-            color.material_minsize,
-            color.material_maxsize,
-        )
+        if ImportOptions.color_strategy_value() == "vertex_colors":
+            # key is everything but the color
+            _key += (
+                color.alpha,
+                color.luminance,
+                color.material_name,
+                color.material_color,
+                color.material_color_i,
+                color.material_color_hex,
+                color.material_alpha,
+                color.material_luminance,
+                color.material_fraction,
+                color.material_vfraction,
+                color.material_size,
+                color.material_minsize,
+                color.material_maxsize,
+            )
+        else:
+            _key += (color.name, color.code,)
 
         _key += (use_backface_culling,)
 
@@ -127,7 +131,15 @@ class BlenderMaterials:
 
         out = cls.__node_output_material(nodes, 200, 0)
 
-        node, vertex_color_node, mix_rgb_node = cls.__node_group_color_code(color, vertex_colors, nodes, links, 200, 0)
+        if ImportOptions.color_strategy_value() == "vertex_colors":
+            node, vertex_color_node, mix_rgb_node = cls.__node_group_vertex_color_code(color, vertex_colors, nodes, links, 200, 0)
+        else:
+            node, rgb_node, mix_rgb_node = cls.__node_group_color_code(color, nodes, links, 200, 0)
+            diff_color = color.linear_color_a
+            material.diffuse_color = diff_color
+            material[strings.ldraw_color_code_key] = color.code
+            material[strings.ldraw_color_name_key] = color.name
+
         links.new(node.outputs["Shader"], out.inputs["Surface"])
 
         is_transparent = color.alpha < 1.0
@@ -200,7 +212,23 @@ class BlenderMaterials:
         return node
 
     @classmethod
-    def __node_group_color_code(cls, color, vertex_colors, nodes, links, x, y):
+    def __node_group_color_code(cls, color, nodes, links, x, y):
+        diff_color = color.linear_color_d
+        rgb_node = cls.__node_rgb(nodes, x + -600, y + 60)
+        rgb_node.outputs["Color"].default_value = diff_color
+
+        mix_rgb_node = cls.__node_mix_rgb(nodes, x + -400, y + 0)
+        mix_rgb_node.inputs["Fac"].default_value = 0
+
+        node = cls.__node_color_code_material(nodes, color, x + -200, y + 0)
+
+        links.new(rgb_node.outputs["Color"], mix_rgb_node.inputs["Color1"])
+        links.new(mix_rgb_node.outputs["Color"], node.inputs["Color"])
+
+        return node, rgb_node, mix_rgb_node
+
+    @classmethod
+    def __node_group_vertex_color_code(cls, color, vertex_colors, nodes, links, x, y):
         vertex_color_node = cls.__node_vertex_color(nodes, x + -600, y + 60)
         vertex_color_node.layer_name = vertex_colors.name
 

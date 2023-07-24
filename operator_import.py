@@ -123,6 +123,13 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         items=ImportOptions.gap_scale_strategy_choices,
     )
 
+    color_strategy: bpy.props.EnumProperty(
+        name="Color strategy",
+        description="How to color parts",
+        **ImportSettings.settings_dict('color_strategy'),
+        items=ImportOptions.color_strategy_choices,
+    )
+
     no_studs: bpy.props.BoolProperty(
         name="No studs",
         description="Don't import studs",
@@ -399,6 +406,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         col.prop(self, "prefer_unofficial")
         col.prop(self, "use_alt_colors")
         col.prop(self, "resolution")
+        col.prop(self, "color_strategy")
         col.prop(self, "display_logo")
         col.prop(self, "chosen_logo")
         col.prop(self, "use_freestyle_edges")

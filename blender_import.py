@@ -83,19 +83,20 @@ def __scene_setup():
     bpy.context.scene.eevee.use_ssr_refraction = True
     bpy.context.scene.eevee.use_taa_reprojection = True
 
-    # view vertex colors in solid view
-    for window in bpy.context.window_manager.windows:
-        for area in window.screen.areas:
-            if area.type == 'VIEW_3D':
-                for space in area.spaces:
-                    if space.type == 'VIEW_3D':
-                        if ImportOptions.meta_bfc:
-                            space.shading.show_backface_culling = True
-                        space.shading.type = 'SOLID'
-                        # Shading > Color > Object to see object colors
-                        space.shading.color_type = 'VERTEX'
-                        # space.shading.color_type = 'MATERIAL'
-                        # space.shading.color_type = 'OBJECT'
+    if ImportOptions.color_strategy_value() == "vertex_colors":
+        # view vertex colors in solid view
+        for window in bpy.context.window_manager.windows:
+            for area in window.screen.areas:
+                if area.type == 'VIEW_3D':
+                    for space in area.spaces:
+                        if space.type == 'VIEW_3D':
+                            if ImportOptions.meta_bfc:
+                                space.shading.show_backface_culling = True
+                            space.shading.type = 'SOLID'
+                            # Shading > Color > Object to see object colors
+                            space.shading.color_type = 'VERTEX'
+                            # space.shading.color_type = 'MATERIAL'
+                            # space.shading.color_type = 'OBJECT'
 
     # https://blender.stackexchange.com/a/146838
     # TODO: use line art modifier with grease pencil object

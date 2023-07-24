@@ -99,21 +99,23 @@ def __process_bmesh_edges(bm, geometry_data):
 def __process_bmesh_faces(mesh, geometry_data, color_code):
     bm = bmesh.new()
 
-    # https://blender.stackexchange.com/a/280720
-    """
-    Vertex        Byte Color    bm.verts.layers.color
-    Vertex        Float Color   bm.verts.layers.float_color
-    Face Corner   Byte Color    bm.loops.layers.color
-    Face Corner   Float Color   bm.loops.layers.float_color
-    """
-    vertex_colors = bm.loops.layers.color.new("LDraw Colors")
+    vertex_colors = None
+    if ImportOptions.color_strategy_value() == "vertex_colors":
+        # https://blender.stackexchange.com/a/280720
+        """
+        Vertex        Byte Color    bm.verts.layers.color
+        Vertex        Float Color   bm.verts.layers.float_color
+        Face Corner   Byte Color    bm.loops.layers.color
+        Face Corner   Float Color   bm.loops.layers.float_color
+        """
+        vertex_colors = bm.loops.layers.color.new("LDraw Colors")
 
-    if bpy.app.version < (3, 4):
-        ...
-        # seems to pick them without having to set them as active
-        # mesh.attributes.active = mesh.attributes[vertex_colors.name]
-    else:
-        mesh.attributes.active_color_name = vertex_colors.name
+        if bpy.app.version < (3, 4):
+            ...
+            # seems to pick them without having to set them as active
+            # mesh.attributes.active = mesh.attributes[vertex_colors.name]
+        else:
+            mesh.attributes.active_color_name = vertex_colors.name
 
     for face_data in geometry_data.face_data:
         verts = [bm.verts.new(vertex) for vertex in face_data.vertices]
@@ -121,9 +123,10 @@ def __process_bmesh_faces(mesh, geometry_data, color_code):
 
         c = color_code if face_data.color_code == "16" else face_data.color_code
 
-        color = LDrawColor.get_color(c)
-        for loop in face.loops:
-            loop[vertex_colors] = color.color_a
+        if ImportOptions.color_strategy_value() == "vertex_colors":
+            color = LDrawColor.get_color(c)
+            for loop in face.loops:
+                loop[vertex_colors] = color.color_a
 
         part_slopes = special_bricks.get_part_slopes(geometry_data.file.name)
         parts_cloth = special_bricks.get_parts_cloth(geometry_data.file.name)

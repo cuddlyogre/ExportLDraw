@@ -77,7 +77,7 @@ class LDrawNode:
         # texmap parts are defined as parts so it should be safe to exclude that from the key
         # pe_tex_info is defined like an mpd so mutliple instances sharing the same part name will share the same texture unless it is included in the key
         # the only thing unique about a geometry_data object is its filename and whether it has pe_tex_info
-        geometry_data_key = LDrawNode.__build_key(self.file.name, pe_tex_info=self.pe_tex_info)
+        geometry_data_key = LDrawNode.__build_key(self.file.name, color_code=color_code, pe_tex_info=self.pe_tex_info)
 
         # if there's no geometry_data and some part type, it's a top level part so start collecting geometry
         # there are occasions where files with part_type of model have geometry so you can't rely on its part_type
@@ -107,7 +107,8 @@ class LDrawNode:
                 # set top level parts to 16 so that geometry_data is only created once per filename
                 # then change their 16 faces to obj_color_code
                 # TODO: replace material of 16 faces with geometry nodes
-                color_code = "16"
+                if ImportOptions.color_strategy_value() == "vertex_colors":
+                    color_code = "16"
             elif top_model:
                 self.bfc_certified = True  # or else accum_cull will be false, which turns off bfc processing
 
@@ -270,7 +271,10 @@ class LDrawNode:
     # such as 32527.dat (mirror of 32528.dat) will render
     @staticmethod
     def __build_key(filename, color_code=None, pe_tex_info=None, matrix=None):
-        _key = (filename, color_code,)
+        if ImportOptions.color_strategy_value() == "vertex_colors":
+            _key = (filename, None,)
+        else:
+            _key = (filename, color_code,)
 
         if pe_tex_info is not None:
             for p in pe_tex_info:
