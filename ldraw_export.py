@@ -216,7 +216,7 @@ def __export_polygons(obj, lines):
     if obj.data is None:
         return False
 
-    if not getattr(obj.data, 'polygons', None):
+    if obj.type != 'MESH':
         return False
 
     mesh = __clean_mesh(obj)
