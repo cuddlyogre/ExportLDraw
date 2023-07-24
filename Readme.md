@@ -124,6 +124,8 @@ viewed with **snakeviz**.
 **Use alternate colors:** Uses LDCfgalt.ldr for more accurate colors.  
 **Part resolution:** The quality of parts to use. Low resolution is quicker to import, but doesn't look as good. High
 resolution looks better but take longer to import.  
+**Color strategy:** How to color parts. **Vertex colors** are slightly faster but harder to work with. **Material** is 
+recommended if you're going to be exporting parts.  
 **Display logo:** Display the logo on the stud.  
 **Chosen logo:** Which logo to display. logo and logo2 aren't used and are only included for completeness.  
 **Freestyle edges:** Render LDraw edges using Freestyle.  
