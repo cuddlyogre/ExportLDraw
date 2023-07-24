@@ -54,12 +54,15 @@ def fix_string_encoding(string):
     return new_string
 
 
-def write_json(filepath, obj, indent=None):
+def write_json(filepath, obj, indent=None, do_print=False):
     try:
         full_path = os.path.join(APP_ROOT, filepath)
         Path(os.path.dirname(full_path)).mkdir(parents=True, exist_ok=True)
         with open(full_path, 'w', encoding='utf-8', newline="\n") as file:
-            file.write(json.dumps(obj, indent=indent))
+            j = json.dumps(obj, indent=indent, ensure_ascii=False)
+            if do_print:
+                print(j)
+            file.write(j)
     except Exception as e:
         print(e)
 
