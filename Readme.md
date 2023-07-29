@@ -119,6 +119,8 @@ It will be blank if nothing is found or on non-Windows systems.
 
 **Prefer Stud.io library:** Look in the Stud.io parts library first.  
 **Prefer unofficial parts:** Look in the unofficial parts folder first.  
+**Case-sensitive filesystem:** Defaults to false on Windows and Mac, true on linux. Set to true if you have set your LDraw path to be
+case-sensitive on otherwise case-insensitive filesystems. Import speeds are slightly improved on case-insensitive filesystems.  
 **Profile:** Runs cProfile during import. Saves **export_ldraw_import.prof** to the user's home folder. This file can be
 viewed with **snakeviz**.
 **Use alternate colors:** Uses LDCfgalt.ldr for more accurate colors.  

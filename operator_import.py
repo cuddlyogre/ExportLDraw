@@ -49,6 +49,12 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         **ImportSettings.settings_dict('prefer_studio'),
     )
 
+    case_sensitive_filesystem: bpy.props.BoolProperty(
+        name="Case-sensitive filesystem",
+        description="Filesystem is case sensitive",
+        **ImportSettings.settings_dict('case_sensitive_filesystem'),
+    )
+
     prefer_unofficial: bpy.props.BoolProperty(
         name="Prefer unofficial parts",
         description="Search for unofficial parts first",
@@ -404,6 +410,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         col.label(text="Import Options")
         col.prop(self, "prefer_studio")
         col.prop(self, "prefer_unofficial")
+        col.prop(self, "case_sensitive_filesystem")
         col.prop(self, "use_alt_colors")
         col.prop(self, "resolution")
         col.prop(self, "color_strategy")
