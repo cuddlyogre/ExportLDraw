@@ -102,8 +102,8 @@ class LDrawColor:
 
         # Tags are case-insensitive.
         # https://www.ldraw.org/article/299
-        _params = helpers.get_params(clean_line)[2:]
-        lparams = helpers.get_params(clean_line.lower())[2:]
+        _params = clean_line.split()[2:]
+        lparams = clean_line.lower().split()[2:]
 
         name = _params[0]
         self.name = name

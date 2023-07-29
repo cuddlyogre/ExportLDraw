@@ -225,7 +225,7 @@ def meta_leocad_camera(child_node, matrix):
     global camera
 
     clean_line = child_node.line
-    _params = helpers.get_params(clean_line, lowercase=True)[3:]
+    _params = clean_line.lower().split()[3:]
 
     if camera is None:
         camera = ldraw_camera.LDrawCamera()
