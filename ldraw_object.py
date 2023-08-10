@@ -22,27 +22,20 @@ def reset_caches():
 
 
 # TODO: to add rigid body - must apply scale and cannot be parented to empty
-def process_top_object(key, mesh, geometry_data, color_code, matrix, collection):
-    obj = __get_top_object(mesh, geometry_data, color_code)
+def create_object(key, mesh, geometry_data, color_code, matrix, collection):
+    obj = bpy.data.objects.new(mesh.name, mesh)
+    obj[strings.ldraw_filename_key] = geometry_data.file.name
+    obj[strings.ldraw_color_code_key] = color_code
+    color = LDrawColor.get_color(color_code)
+    obj.color = color.linear_color_a
+
+    ldraw_props.set_props(obj, geometry_data.file, color_code)
     __process_top_object_matrix(obj, matrix)
     __process_top_object_gap(obj, matrix)
     __process_top_object_edges(obj)
     ldraw_meta.do_meta_step(obj)
     __link_obj_to_collection(obj, collection)
     __process_top_edges(key, obj, geometry_data, color_code, collection)
-
-    return obj
-
-
-def __get_top_object(mesh, geometry_data, color_code):
-    obj = bpy.data.objects.new(mesh.name, mesh)
-    obj[strings.ldraw_filename_key] = geometry_data.file.name
-    obj[strings.ldraw_color_code_key] = color_code
-
-    color = LDrawColor.get_color(color_code)
-    obj.color = color.linear_color_a
-
-    ldraw_props.set_props(obj, geometry_data.file, color_code)
 
     return obj
 

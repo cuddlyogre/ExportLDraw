@@ -255,7 +255,7 @@ class LDrawNode:
         key = f"{geometry_data.key}_{color_code}"
 
         mesh = ldraw_mesh.create_mesh(key, geometry_data, color_code)
-        obj = ldraw_object.process_top_object(key, mesh, geometry_data, color_code, matrix, collection)
+        obj = ldraw_object.create_object(key, mesh, geometry_data, color_code, matrix, collection)
         return obj
 
     # set the working color code to this file's
