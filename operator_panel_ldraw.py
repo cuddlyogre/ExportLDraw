@@ -2,7 +2,8 @@ import bpy
 
 
 # bpy.context.mode == 'OBJECT'
-# bpy.context.mode == 'EDIT_MESH' # TODO: panel that add color code to face's material
+# bpy.context.mode == 'EDIT_MESH'
+# TODO: panel that add color code to face's material
 class CO_PT_ldraw_panel(bpy.types.Panel):
     """This is a test panel"""
 
