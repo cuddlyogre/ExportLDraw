@@ -1,6 +1,7 @@
 import bpy
 
 import getpass
+from .export_options import ExportOptions
 
 
 def set_props(obj, ldraw_file, color_code):
@@ -265,7 +266,7 @@ class LDrawProps(bpy.types.PropertyGroup):
     export_precision: bpy.props.IntProperty(
         name="Export precision",
         description="Round vertex coordinates to this number of places",
-        default=2,
+        default=ExportOptions.export_precision,
         min=0,
     )
 

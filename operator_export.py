@@ -95,13 +95,6 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
         ],
     )
 
-    export_precision: bpy.props.IntProperty(
-        name="Export precision",
-        description="Round vertex coordinates to this number of places",
-        default=2,
-        min=0,
-    )
-
     # resolution: bpy.props.EnumProperty(
     #     name="Part resolution",
     #     options={'HIDDEN'},
@@ -125,7 +118,6 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
         LDrawColor.use_alt_colors = self.use_alt_colors
 
         ExportOptions.selection_only = self.selection_only
-        ExportOptions.export_precision = self.export_precision
         ExportOptions.remove_doubles = self.remove_doubles
         ExportOptions.merge_distance = self.merge_distance
         ExportOptions.recalculate_normals = self.recalculate_normals
@@ -163,7 +155,6 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
         col.label(text="Export Options")
         # col.prop(self, "selection_only")
         col.prop(self, "use_alt_colors")
-        col.prop(self, "export_precision")
 
         layout.separator(factor=space_factor)
         col = layout.column()

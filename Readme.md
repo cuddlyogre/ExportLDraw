@@ -217,9 +217,6 @@ For exported polygons, add this to any materials that are used in your mesh. The
 necessarily match the color you'll see in the viewport, so you'll probably want to adjust the diffuse color to something
 similar to prevent confusion.
 
-**ldraw_export_precision**  
-Defaults to 2 if missing or invalid.
-
 This is used to round the decimal places that objects and polygon vertices are rounded to. 2 is more than sufficient for
 most applications, but should you need more, use this value. To prevent unexpected results make sure you place your
 vertices in such a way that there are only 2 decimal places when modeling.
@@ -234,7 +231,6 @@ __File > Export > LDraw (.mpd/.ldr/.l3b/.dat)__
 
 **Selection only:** Only export selected objects.  
 **Use alternate colors:** Same as above. Used for validating color codes.  
-**Export precision:** How many vertex position decimal points to keep. 2 is sufficient for almost everything.
 
 **Cleanup Options**
 
