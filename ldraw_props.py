@@ -1,6 +1,5 @@
 import bpy
 
-import getpass
 from .export_options import ExportOptions
 
 
@@ -84,7 +83,7 @@ class LDrawProps(bpy.types.PropertyGroup):
     author: bpy.props.StringProperty(
         name="Author",
         description="LDraw author",
-        default=getpass.getuser(),
+        default="",
     )
 
     part_type_items = (
