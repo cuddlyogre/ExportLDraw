@@ -134,7 +134,7 @@ recommended if you're going to be exporting parts.
 ![No freestyle vs freestyle demo](examples/import/freestyle.gif)
 
 **Bevel Options**
-**Bevel edges:** Bevel edges using a modifier. Some parts don't render correctly, so this is set to false by default.  
+**Bevel edges:** Bevel edges using a modifier. Some parts, namely logo studs, don't render correctly, so this is set to false by default.  
 **Bevel weight:** **Bevel Weight** value applied to mesh edges 
 **Bevel width:** Bevel modifier **Amount** value 
 **Bevel Segments:** Bevel modifier **Segments** value 
@@ -178,6 +178,38 @@ BFC processing. It is recommended to keep unchecked if processing BFC commands i
 parts instead of merging them.  
 **No studs:** Don't import studs. Not particularly useful but is neat to see.  
 
+### LDraw Panel
+
+![LDraw Panel](examples/import/ldraw_panel.jpg)
+
+The LDraw panel is where you can view LDraw properties of the active object, or the scene if no object is selected.
+The LDraw properties of the scene are not used anywhere currently, but that may change.  
+
+LDraw properties are set during import. This is also where the values that will be used during export are set. Not all
+header fields are handled here, so you may still need to edit the exported file by hand to complete the header.
+
+#### Header
+
+On export, **Header** values populate that header value in the exported file. [Read more here.](https://www.ldraw.org/article/398.html)
+
+**A note on the **Part type** fields**  
+**Part type** is the **part_type** as determined by the importer.
+**Actual part type** isn't used during export. It is the **part_type** as provided in the file at import.  
+
+#### Part Attributes
+
+During export, these values only apply to objects that do not have **Export polygons** checked    
+
+**Color code**: The **color code** of the **line type 1**.  
+**Filename**: The **part name** at the end of the **line type 1**. If a part was imported directly, this will be the full path to the part file.
+Be sure to change this before you export unless you intend for the exported part to have a hardcoded absolute path.
+
+#### Export Options
+
+**Export polygons**: Specifies whether the object will be exported as polygons or a **line type 1**.  
+**Export precision**: This is used to round the decimal places that objects and polygon vertices are rounded to. 2 is more than sufficient for
+most applications.
+
 # Exporting
 
 Exporting a part properly requires a bit of setup, but once that's taken care of it works well. Exported faces are
@@ -190,36 +222,24 @@ the workflow needs to be figured out for that to be any kind of fun.
 
 If you're building a part from absolute scratch, model it like you normally would.
 
-Strictly speaking, you don't _need_ to import anything, and could just use empties in their place with the proper
-transforms but that is hard to work with. To make things easier to visualize, if you are building with subparts import
-those subparts as needed and apply rotation and clear scale. If you don't, subparts will be exported with an
-unpredictable rotation and scale.
+The exported file's header is determined by the **active object**.
 
-### Custom Properties
+The bare minimum an file needs to be successfully exported is a **Filename** to be set in the **active object**.
+If a part file isn't generated on export, or a file you expected to be overwritten doesn't change, check that the 
+**Filename** isn't blank.
 
-**ldraw_filename**  
-When exporting, the exporter will look for a text with this name. It will use this text as a basis to build the part
-file from. Otherwise, it will just export the lines as is without the header information.
+Strictly speaking, you don't _need_ to import a part if you don't intend to export it as polygons. You could just 
+use empties in their place with the proper transforms and **Filename** set, but that would be hard to visualize. 
 
-When exporting subfiles, this is the file name that is at the end of line type 1 lines.
+Objects **must** have a rotation of **-90 degrees X** in order to be exported with the correct rotation. 
 
-**ldraw_export_polygons**  
-Defaults to false if missing or invalid. ldraw_filename required if false, or nothing will be exported.
+Parent objects you plan to export to an empty with a rotation of **-90 degrees X** to make things easier to 
+work with. This will also allow you to set the header values for the exported file independently of its parts, such as
+when you are exporting a model.
 
-Specifies whether the object will be exported as polygons or line type 1 lines.
-
-**ldraw_color_code**  
-Defaults to 16 if missing or invalid.
-
-Added to subpart objects to specify what color code should be assigned to them.
-
-For exported polygons, add this to any materials that are used in your mesh. The LDraw colors of this code won't
-necessarily match the color you'll see in the viewport, so you'll probably want to adjust the diffuse color to something
-similar to prevent confusion.
-
-This is used to round the decimal places that objects and polygon vertices are rounded to. 2 is more than sufficient for
-most applications, but should you need more, use this value. To prevent unexpected results make sure you place your
-vertices in such a way that there are only 2 decimal places when modeling.
+Objects are exported with their scale applied, which may result in a part that isn't the size you expect. Always clear the 
+scale of parts you are working with, including parts you import. You can save time by setting **Import scale** to **1** and 
+unchecking **Parent to empty** and **Make gaps** during import.
 
 ### Export Panel
 
@@ -236,9 +256,9 @@ __File > Export > LDraw (.mpd/.ldr/.l3b/.dat)__
 
 **Remove doubles:** Same as above. Helps minimize file size.  
 **Merge distance:** Same as above.  
-**Recalculate normals:** Use Blender to determine face winding instead of having to deal with BFC.  
+**Recalculate normals:** Recalculate mesh normals. Does not affect **line type 1** exports.  
 **Triangulate mesh:** Triangulate the mesh. Turns quads and ngons into tris.  
-**Ngon handling:** If there is an ngon, what to do with it. Skip ignores any ngons. Triangulate splits them into
+**Ngon handling:** How to handle ngons. Skip ignores any ngons. Triangulate splits them into
 triangles.
 
 ### Development
@@ -247,4 +267,5 @@ If you want to make changes to the plugin, this will help
 ```pip install fake-bpy-module-2.82```  
 ```pip install fake-bpy-module-2.93```  
 ```pip install fake-bpy-module-3.0```  
+```pip install fake-bpy-module-latest```  
 More information here: https://github.com/nutti/fake-bpy-module
