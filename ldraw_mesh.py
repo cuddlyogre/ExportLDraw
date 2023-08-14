@@ -187,19 +187,17 @@ def __process_mesh_edges(key, geometry_data):
 
 
 def __process_mesh_sharp_edges(mesh, geometry_data):
-    if ImportOptions.smooth_type_value() == "edge_split" or ImportOptions.use_freestyle_edges or ImportOptions.bevel_edges:
-        edge_indices = __get_edge_indices(mesh.vertices, geometry_data)
+    edge_indices = __get_edge_indices(mesh.vertices, geometry_data)
 
-        for edge in mesh.edges:
-            v0 = edge.vertices[0]
-            v1 = edge.vertices[1]
-            if (v0, v1) in edge_indices:
-                if ImportOptions.smooth_type_value() == "edge_split":
-                    edge.use_edge_sharp = True
-                if ImportOptions.use_freestyle_edges:
-                    edge.use_freestyle_mark = True
-                if ImportOptions.bevel_edges:
-                    edge.bevel_weight = ImportOptions.bevel_weight
+    for edge in mesh.edges:
+        v0 = edge.vertices[0]
+        v1 = edge.vertices[1]
+        if (v0, v1) in edge_indices:
+            edge.use_edge_sharp = True
+            if ImportOptions.use_freestyle_edges:
+                edge.use_freestyle_mark = True
+            if ImportOptions.bevel_edges:
+                edge.bevel_weight = ImportOptions.bevel_weight
 
 
 def __process_mesh(mesh):
