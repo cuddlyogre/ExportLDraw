@@ -86,6 +86,8 @@ class CO_PT_ldraw_panel(bpy.types.Panel):
             col.label(text="Export Options")
             if obj.type == 'MESH':
                 col.prop(obj.ldraw_props, 'export_polygons')
+            col.prop(obj.ldraw_props, 'invert_import_scale_matrix')
+            col.prop(obj.ldraw_props, 'invert_gap_scale_matrix')
             col.prop(obj.ldraw_props, 'export_precision')
 
 

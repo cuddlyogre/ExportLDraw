@@ -45,6 +45,8 @@ def __process_top_object_matrix(obj, obj_matrix):
         global top_empty
         if top_empty is None:
             top_empty = bpy.data.objects.new(group.top_collection.name, None)
+            if ImportOptions.parent_to_empty:
+                top_empty.ldraw_props.invert_import_scale_matrix = True
             group.link_obj(group.top_collection, top_empty)
 
         top_empty.matrix_world = matrices.transform_matrix

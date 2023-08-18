@@ -1,5 +1,6 @@
 import bpy
 
+from .import_options import ImportOptions
 from .export_options import ExportOptions
 
 
@@ -20,6 +21,10 @@ def set_props(obj, ldraw_file, color_code):
     # obj.ldraw_props.keywords = ldraw_file.keywords or ""
     # obj.ldraw_props.history = "; ".join(ldraw_file.history or [])
     obj.ldraw_props.color_code = color_code
+    if not ImportOptions.parent_to_empty:
+        obj.ldraw_props.invert_import_scale_matrix = True
+    if ImportOptions.make_gaps:
+        obj.ldraw_props.invert_gap_scale_matrix = True
 
 
 def get_header_lines(obj, is_model=False):
@@ -254,6 +259,18 @@ class LDrawProps(bpy.types.PropertyGroup):
         description="LDraw color code",
         default="16",
         # update=test_update
+    )
+
+    invert_import_scale_matrix: bpy.props.BoolProperty(
+        name="Invert import scale matrix",
+        description="If true, import scale matrix will be inverted on export",
+        default=False
+    )
+
+    invert_gap_scale_matrix: bpy.props.BoolProperty(
+        name="Invert gap scale matrix",
+        description="If true, gap scale matrix will be inverted on export",
+        default=False
     )
 
     export_polygons: bpy.props.BoolProperty(

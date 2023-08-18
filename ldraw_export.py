@@ -1,8 +1,5 @@
 import bpy
 import bmesh
-import mathutils
-
-import math
 
 from .ldraw_file import LDrawFile
 from .ldraw_node import LDrawNode
@@ -12,9 +9,7 @@ from .export_options import ExportOptions
 from . import strings
 from . import helpers
 from . import ldraw_props
-
-__rotation_matrix = mathutils.Matrix.Rotation(math.radians(-90), 4, 'X').freeze()
-__reverse_rotation = mathutils.Matrix.Rotation(math.radians(90), 4, 'X').freeze()
+from . import matrices
 
 
 # edges marked sharp will be output as line type 2
@@ -87,14 +82,16 @@ def do_export(filepath):
         ldraw_file.lines.append("\n")
     for name in subfile_obj_names:
         obj = bpy.data.objects.get(name)
-        __export_subfiles(obj, ldraw_file.lines)
+        aa = get_matrix(obj)
+        __export_subfiles(obj, aa, ldraw_file.lines)
 
     if len(polygon_obj_names) > 0:
         ldraw_file.lines.append("\n")
     part_lines = []
     for name in polygon_obj_names:
         obj = bpy.data.objects.get(name)
-        __export_polygons(obj, part_lines)
+        aa = get_matrix(obj)
+        __export_polygons(obj, aa, part_lines)
 
     sorted_part_lines = sorted(part_lines, key=lambda pl: (int(pl[1]), int(pl[0])))
 
@@ -126,6 +123,29 @@ def do_export(filepath):
             obj.select_set(True)
 
     bpy.context.view_layer.objects.active = active_objects
+
+
+# if object wasn't imported, export it directly
+# if object was imported, invert import matrices
+# inverting parent matrix doesn't work for some reason
+# parent.matrix_world is already applied to obj.matrix_world
+def get_matrix(obj):
+    parent_invert_import_scale_matrix = obj.parent and obj.parent.ldraw_props.invert_import_scale_matrix
+    object_invert_import_scale_matrix = obj.ldraw_props.invert_import_scale_matrix
+    invert_import_scale_matrix = parent_invert_import_scale_matrix or object_invert_import_scale_matrix
+
+    invert_gap_scale_matrix = obj.ldraw_props.invert_gap_scale_matrix
+
+    if invert_import_scale_matrix and invert_gap_scale_matrix:
+        aa = matrices.import_scale_matrix.inverted() @ obj.matrix_world @ matrices.gap_scale_matrix.inverted()
+    elif invert_import_scale_matrix:
+        aa = matrices.import_scale_matrix.inverted() @ obj.matrix_world
+    elif invert_gap_scale_matrix:
+        aa = obj.matrix_world @ matrices.gap_scale_matrix.inverted()
+    else:
+        aa = obj.matrix_world
+
+    return matrices.rotation_matrix.inverted() @ aa
 
 
 # https://devtalk.blender.org/t/to-mesh-and-creating-new-object-issues/8557/4
@@ -173,7 +193,7 @@ def __fix_round(number, places=None):
 
 # TODO: if obj["section_label"] then:
 #  0 // f{obj["section_label"]}
-def __export_subfiles(obj, lines):
+def __export_subfiles(obj, aa, lines):
     filename = obj.ldraw_props.filename
     if filename == "" or filename is None:
         print(f"Object {obj.name} does not have a filename")
@@ -188,8 +208,6 @@ def __export_subfiles(obj, lines):
     color_code = color.code
 
     precision = obj.ldraw_props.export_precision
-
-    aa = __reverse_rotation @ obj.matrix_world
 
     a = __fix_round(aa[0][0], precision)
     b = __fix_round(aa[0][1], precision)
@@ -211,7 +229,7 @@ def __export_subfiles(obj, lines):
     lines.append(line)
 
 
-def __export_polygons(obj, lines):
+def __export_polygons(obj, aa, lines):
     # obj is an empty
     if obj.data is None:
         return False
@@ -256,7 +274,6 @@ def __export_polygons(obj, lines):
 
         line = [line_type, color_code]
         for v in polygon.vertices:
-            aa = __reverse_rotation @ obj.matrix_world
             co = aa @ mesh.vertices[v].co
             for vv in co:
                 line.append(__fix_round(vv, precision))
@@ -270,7 +287,6 @@ def __export_polygons(obj, lines):
 
         line = ["2", "24"]
         for v in e.vertices:
-            aa = __reverse_rotation @ obj.matrix_world
             co = aa @ mesh.vertices[v].co
             for vv in co:
                 line.append(__fix_round(vv, precision))

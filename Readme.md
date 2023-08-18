@@ -208,7 +208,11 @@ Be sure to change this before you export unless you intend for the exported part
 
 **Export polygons**: Specifies whether the object will be exported as polygons or a **line type 1**.  
 **Export precision**: This is used to round the decimal places that objects and polygon vertices are rounded to. 2 is more than sufficient for
-most applications.
+most applications.  
+
+These are important for exporting properly sized parts. These will be checked by default on imported objects.  
+**Invert import scale matrix**: Negate **import_scale_matrix** on imported objects during export.   
+**Invert gap scale matrix**: Negate **gap_scale_matrix** on imported objects during export.  
 
 # Exporting
 
