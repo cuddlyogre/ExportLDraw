@@ -49,18 +49,19 @@ def __process_top_object_matrix(obj, obj_matrix):
                 top_empty.ldraw_props.invert_import_scale_matrix = True
             group.link_obj(group.top_collection, top_empty)
 
-        top_empty.matrix_world = matrices.transform_matrix
+        matrix_world = matrices.rotation_matrix @ matrices.import_scale_matrix
+        top_empty.matrix_world = matrix_world
         obj.matrix_world = obj_matrix
         obj.parent = top_empty  # must be after matrix_world set or else transform is incorrect
     else:
-        matrix_world = matrices.transform_matrix @ obj_matrix
+        matrix_world = matrices.rotation_matrix @ matrices.import_scale_matrix @ obj_matrix
         obj.matrix_world = matrix_world
 
 
 def __process_top_object_gap(obj, obj_matrix):
     if ImportOptions.make_gaps and ImportOptions.gap_target_value() == "object":
         if ImportOptions.gap_scale_strategy_value() == "object":
-            matrix_world = matrices.transform_matrix @ obj_matrix @ matrices.gap_scale_matrix
+            matrix_world = matrices.rotation_matrix @ matrices.import_scale_matrix @ obj_matrix @ matrices.gap_scale_matrix
             obj.matrix_world = matrix_world
         elif ImportOptions.gap_scale_strategy_value() == "constraint":
             global gap_scale_empty
@@ -72,7 +73,7 @@ def __process_top_object_gap(obj, obj_matrix):
                     gap_scale_empty.matrix_world = matrix_world
                     gap_scale_empty.parent = top_empty
                 else:
-                    matrix_world = matrices.transform_matrix @ matrices.gap_scale_matrix
+                    matrix_world = matrices.rotation_matrix @ matrices.import_scale_matrix @ matrices.gap_scale_matrix
                     gap_scale_empty.matrix_world = matrix_world
                 group.link_obj(group.top_collection, gap_scale_empty)
             copy_scale_constraint = obj.constraints.new("COPY_SCALE")
