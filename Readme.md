@@ -241,9 +241,11 @@ Parent objects you plan to export to an empty with a rotation of **-90 degrees X
 work with. This will also allow you to set the header values for the exported file independently of its parts, such as
 when you are exporting a model.
 
-Objects are exported with their scale applied, which may result in a part that isn't the size you expect. Always clear the 
-scale of parts you are working with, including parts you import. You can save time by setting **Import scale** to **1** and 
-unchecking **Parent to empty** and **Make gaps** during import.
+Objects are exported with their scale applied, which may result in a part that isn't the size you expect. If you are building
+the object by hand, clear the scale. 
+
+Don't alter the scale of imported objects. The import matrices of imported objects will be negated on export so long as the respective
+checkbox is checked. For that reason, 
 
 ### Export Panel
 
