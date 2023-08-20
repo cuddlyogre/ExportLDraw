@@ -52,7 +52,7 @@ class ImportOptions:
 
     @staticmethod
     def chosen_logo_value():
-        return ImportOptions.chosen_logo_choices[ImportOptions.chosen_logo]
+        return ImportOptions.chosen_logo_choices[ImportOptions.chosen_logo][0]
 
     defaults['shade_smooth'] = True
     shade_smooth = defaults['shade_smooth']
