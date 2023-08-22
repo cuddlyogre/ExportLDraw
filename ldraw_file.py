@@ -114,7 +114,7 @@ class LDrawFile:
         if filepath is None:
             return None
 
-        try:
+        with open(filepath, 'r', encoding='utf-8') as file:
             hit_not_blank_line = False
             is_mpd = None
             no_file = False
@@ -123,103 +123,99 @@ class LDrawFile:
             current_data_filename = None
             current_data = None
 
-            with open(filepath, 'r', encoding='utf-8') as file:
-                for line in file:
-                    clean_line = helpers.clean_line(line)
-                    strip_line = line.strip()
+            for line in file:
+                clean_line = helpers.clean_line(line)
+                strip_line = line.strip()
 
-                    if clean_line == "":
-                        continue
+                if clean_line == "":
+                    continue
 
-                    # if we're working on a data block, keep adding to it
-                    # until we reach a line that is not is_texmap_line
-                    # at that point, process the data block
-                    if current_data_filename is not None:
-                        if texmap.is_texmap_line(clean_line):
-                            if ImportOptions.meta_texmap:
-                                try:
-                                    base64_data = texmap.clean_line(strip_line)
-                                    current_data.append(base64_data)
-                                except IndexError as e:
-                                    print(e)
-                                continue
-                        else:
-                            base64_handler.named_png_from_base64_str(current_data_filename, "".join(current_data))
-                            current_data_filename = None
-                            current_data = None
+                # if we're working on a data block, keep adding to it
+                # until we reach a line that is not is_texmap_line
+                # at that point, process the data block
+                if current_data_filename is not None:
+                    if texmap.is_texmap_line(clean_line):
+                        if ImportOptions.meta_texmap:
+                            try:
+                                base64_data = texmap.clean_line(strip_line)
+                                current_data.append(base64_data)
+                            except IndexError as e:
+                                print(e)
+                            continue
+                    else:
+                        base64_handler.named_png_from_base64_str(current_data_filename, "".join(current_data))
+                        current_data_filename = None
+                        current_data = None
 
-                    is_file_line = clean_line.startswith("0 FILE ")
-                    is_nofile_line = clean_line.startswith("0 NOFILE")
-                    is_data_line = clean_line.startswith("0 !DATA ")
-                    is_mpd_line = is_file_line or is_data_line
+                is_file_line = clean_line.startswith("0 FILE ")
+                is_nofile_line = clean_line.startswith("0 NOFILE")
+                is_data_line = clean_line.startswith("0 !DATA ")
+                is_mpd_line = is_file_line or is_data_line
 
-                    # if the first non-blank line is 0 FILE, this is an mpd
-                    if not hit_not_blank_line:
-                        is_mpd = is_mpd_line
+                # if the first non-blank line is 0 FILE, this is an mpd
+                if not hit_not_blank_line:
+                    is_mpd = is_mpd_line
 
-                    hit_not_blank_line = True
+                hit_not_blank_line = True
 
-                    # clean up texmap geometry line prefixes
-                    if ImportOptions.meta_texmap:
-                        line = texmap.clean_line(line)
+                # clean up texmap geometry line prefixes
+                if ImportOptions.meta_texmap:
+                    line = texmap.clean_line(line)
 
-                    # not mpd -> regular ldr/dat file
-                    if not is_mpd:
+                # not mpd -> regular ldr/dat file
+                if not is_mpd:
+                    current_file = cls.__raw_files.get(filename)
+                    if current_file is None:
+                        cls.__raw_files[filename] = LDrawFile(filename)
                         current_file = cls.__raw_files.get(filename)
-                        if current_file is None:
-                            cls.__raw_files[filename] = LDrawFile(filename)
-                            current_file = cls.__raw_files.get(filename)
-                        current_file.lines.append(line)
-                        continue
+                    current_file.lines.append(line)
+                    continue
 
-                    if is_mpd_line:
-                        no_file = False
+                if is_mpd_line:
+                    no_file = False
 
-                    if is_file_line:
-                        mpd_filename = strip_line.split(maxsplit=2)[2].lower()
-                        if first_mpd_filename is None:
-                            first_mpd_filename = mpd_filename
-
-                        if current_mpd_file is not None:
-                            cls.__raw_files[current_mpd_file.filename] = current_mpd_file
-                        current_mpd_file = LDrawFile(mpd_filename)
-                        continue
-
-                    if is_nofile_line:
-                        no_file = True
-                        if current_mpd_file is not None:
-                            cls.__raw_files[current_mpd_file.filename] = current_mpd_file
-                        current_mpd_file = None
-                        continue
-
-                    if is_data_line:
-                        current_data_filename = strip_line.split(maxsplit=2)[2]
-                        current_data = []
-                        continue
-
-                    if no_file:
-                        continue
+                if is_file_line:
+                    mpd_filename = strip_line.split(maxsplit=2)[2].lower()
+                    if first_mpd_filename is None:
+                        first_mpd_filename = mpd_filename
 
                     if current_mpd_file is not None:
-                        current_mpd_file.lines.append(line)
-                        continue
+                        cls.__raw_files[current_mpd_file.filename] = current_mpd_file
+                    current_mpd_file = LDrawFile(mpd_filename)
+                    continue
 
-                if current_data_filename is not None:
-                    base64_handler.named_png_from_base64_str(current_data_filename, "".join(current_data))
-                    current_data_filename = None
-                    current_data = None
+                if is_nofile_line:
+                    no_file = True
+                    if current_mpd_file is not None:
+                        cls.__raw_files[current_mpd_file.filename] = current_mpd_file
+                    current_mpd_file = None
+                    continue
 
-                # last file in mpd will not be added to the file cache if it doesn't end in 0 NOFILE
+                if is_data_line:
+                    current_data_filename = strip_line.split(maxsplit=2)[2]
+                    current_data = []
+                    continue
+
+                if no_file:
+                    continue
+
                 if current_mpd_file is not None:
-                    cls.__raw_files[current_mpd_file.filename] = current_mpd_file
+                    current_mpd_file.lines.append(line)
+                    continue
 
-                if first_mpd_filename is not None:
-                    filename = first_mpd_filename
+            if current_data_filename is not None:
+                base64_handler.named_png_from_base64_str(current_data_filename, "".join(current_data))
+                current_data_filename = None
+                current_data = None
 
-                return cls.__raw_files.get(filename)
-        except Exception as e:
-            print(e)
-            return None
+            # last file in mpd will not be added to the file cache if it doesn't end in 0 NOFILE
+            if current_mpd_file is not None:
+                cls.__raw_files[current_mpd_file.filename] = current_mpd_file
+
+            if first_mpd_filename is not None:
+                filename = first_mpd_filename
+
+            return cls.__raw_files.get(filename)
 
     # create meta nodes when those commands affect the scene
     # process meta command in place if it only affects the file

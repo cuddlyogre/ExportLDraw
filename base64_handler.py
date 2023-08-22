@@ -46,9 +46,14 @@ def image_from_data(name, data, height=1, width=1):
 # TODO: will be used for stud.io parts that have textures
 # TexMap.base64_to_png(filename, img_data)
 def base64_to_png_data(base64_str):
-    if type(base64_str) is str:
+    try:  # bytes
+        return base64.decodebytes(base64_str)
+    except TypeError as e:  # string
         base64_str = bytes(base64_str.encode())
-    return base64.decodebytes(base64_str)
+        return base64.decodebytes(base64_str)
+    except Exception as e:
+        print(e)
+        return None
 
 
 def image_from_base64_str(filename, base64_str):
