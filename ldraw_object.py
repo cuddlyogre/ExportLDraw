@@ -31,7 +31,6 @@ def create_object(key, mesh, geometry_data, color_code, matrix, collection):
 
     ldraw_props.set_props(obj, geometry_data.file, color_code)
     __process_top_object_matrix(obj, matrix)
-    __process_top_object_gap(obj, matrix)
     __process_top_object_edges(obj)
     ldraw_meta.do_meta_step(obj)
     __link_obj_to_collection(obj, collection)
@@ -41,43 +40,36 @@ def create_object(key, mesh, geometry_data, color_code, matrix, collection):
 
 
 def __process_top_object_matrix(obj, obj_matrix):
+    global top_empty
+
+    import_scale_matrix = matrices.rotation_matrix @ matrices.import_scale_matrix
+
     if ImportOptions.parent_to_empty:
-        global top_empty
         if top_empty is None:
             top_empty = bpy.data.objects.new(group.top_collection.name, None)
-            if ImportOptions.parent_to_empty:
-                top_empty.ldraw_props.invert_import_scale_matrix = True
+            top_empty.ldraw_props.invert_import_scale_matrix = True
             group.link_obj(group.top_collection, top_empty)
 
-        matrix_world = matrices.rotation_matrix @ matrices.import_scale_matrix
-        top_empty.matrix_world = matrix_world
-        obj.matrix_world = obj_matrix
-        obj.parent = top_empty  # must be after matrix_world set or else transform is incorrect
-    else:
-        matrix_world = matrices.rotation_matrix @ matrices.import_scale_matrix @ obj_matrix
+        top_empty.matrix_world = import_scale_matrix
+
+        matrix_world = obj_matrix
+        matrix_world = __process_gap_scale_matrix(obj, matrix_world)
         obj.matrix_world = matrix_world
 
+        obj.parent = top_empty  # must be after matrix_world set or else transform is incorrect
+    else:
+        matrix_world = import_scale_matrix @ obj_matrix
+        matrix_world = __process_gap_scale_matrix(obj, matrix_world)
+        obj.matrix_world = matrix_world
 
-def __process_top_object_gap(obj, obj_matrix):
-    if ImportOptions.make_gaps and ImportOptions.gap_target_value() == "object":
-        if ImportOptions.gap_scale_strategy_value() == "object":
-            matrix_world = matrices.rotation_matrix @ matrices.import_scale_matrix @ obj_matrix @ matrices.gap_scale_matrix
-            obj.matrix_world = matrix_world
-        elif ImportOptions.gap_scale_strategy_value() == "constraint":
-            global gap_scale_empty
-            if gap_scale_empty is None:
-                gap_scale_empty = bpy.data.objects.new("gap_scale", None)
-                gap_scale_empty.use_fake_user = True
-                if ImportOptions.parent_to_empty:
-                    matrix_world = matrices.gap_scale_matrix
-                    gap_scale_empty.matrix_world = matrix_world
-                    gap_scale_empty.parent = top_empty
-                else:
-                    matrix_world = matrices.rotation_matrix @ matrices.import_scale_matrix @ matrices.gap_scale_matrix
-                    gap_scale_empty.matrix_world = matrix_world
-                group.link_obj(group.top_collection, gap_scale_empty)
-            copy_scale_constraint = obj.constraints.new("COPY_SCALE")
-            copy_scale_constraint.target = gap_scale_empty
+        obj.ldraw_props.invert_import_scale_matrix = True
+
+
+def __process_gap_scale_matrix(obj, matrix_world):
+    if ImportOptions.make_gaps:
+        matrix_world = matrix_world @ matrices.gap_scale_matrix
+        obj.ldraw_props.invert_gap_scale_matrix = True
+    return matrix_world
 
 
 def __process_top_object_edges(obj):
@@ -103,7 +95,6 @@ def __process_top_edges(key, obj, geometry_data, color_code, collection):
         edge_obj = bpy.data.objects.new(edge_mesh.name, edge_mesh)
         edge_obj[strings.ldraw_filename_key] = f"{geometry_data.file.name}_edges"
         edge_obj[strings.ldraw_color_code_key] = color_code
-
         color = LDrawColor.get_color(color_code)
         edge_obj.color = color.edge_color_d
 

@@ -208,9 +208,6 @@ def __process_mesh(mesh):
         mesh.use_auto_smooth = ImportOptions.shade_smooth
         mesh.auto_smooth_angle = matrices.auto_smooth_angle
 
-    if ImportOptions.make_gaps and ImportOptions.gap_target_value() == "mesh":
-        mesh.transform(matrices.gap_scale_matrix)
-
 
 def __create_edge_mesh(key, geometry_data, e_edges, e_faces, e_verts):
     if ImportOptions.import_edges:
@@ -221,6 +218,3 @@ def __create_edge_mesh(key, geometry_data, e_edges, e_faces, e_verts):
 
         edge_mesh.from_pydata(e_verts, e_edges, e_faces)
         helpers.finish_mesh(edge_mesh)
-
-        if ImportOptions.make_gaps and ImportOptions.gap_target_value() == "mesh":
-            edge_mesh.transform(matrices.gap_scale_matrix)

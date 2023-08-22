@@ -115,20 +115,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         items=ImportOptions.smooth_type_choices,
     )
 
-    gap_target: bpy.props.EnumProperty(
-        name="Gap target",
-        description="Where to apply gap",
-        **ImportSettings.settings_dict('gap_target'),
-        items=ImportOptions.gap_target_choices,
-    )
-
-    gap_scale_strategy: bpy.props.EnumProperty(
-        name="Gap strategy",
-        description="How to scale the object to create the gap",
-        **ImportSettings.settings_dict('gap_scale_strategy'),
-        items=ImportOptions.gap_scale_strategy_choices,
-    )
-
     color_strategy: bpy.props.EnumProperty(
         name="Color strategy",
         description="How to color parts",
@@ -425,8 +411,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         col.prop(self, "parent_to_empty")
         col.prop(self, "make_gaps")
         col.prop(self, "gap_scale")
-        col.prop(self, "gap_target")
-        col.prop(self, "gap_scale_strategy")
 
         layout.separator(factor=space_factor)
         col = layout.column()

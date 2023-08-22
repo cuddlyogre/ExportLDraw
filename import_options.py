@@ -91,30 +91,6 @@ class ImportOptions:
     def smooth_type_value():
         return ImportOptions.smooth_type_choices[ImportOptions.smooth_type][0]
 
-    gap_target_choices = (
-        ("object", "Object", "Scale the object to create the gap"),
-        ("mesh", "Mesh", "Transform the mesh to create the gap"),
-    )
-
-    defaults['gap_target'] = 0
-    gap_target = defaults['gap_target']
-
-    @staticmethod
-    def gap_target_value():
-        return ImportOptions.gap_target_choices[ImportOptions.gap_target][0]
-
-    gap_scale_strategy_choices = (
-        ("object", "Object", "Apply gap directly to the object"),
-        ("constraint", "Constraint", "Use a constraint, allowing the gap to easily be adjusted later"),
-    )
-
-    defaults['gap_scale_strategy'] = 0
-    gap_scale_strategy = defaults['gap_scale_strategy']
-
-    @staticmethod
-    def gap_scale_strategy_value():
-        return ImportOptions.gap_scale_strategy_choices[ImportOptions.gap_scale_strategy][0]
-
     defaults['import_edges'] = False
     import_edges = defaults['import_edges']
 
