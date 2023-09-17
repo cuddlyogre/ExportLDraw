@@ -206,11 +206,20 @@ Be sure to change this before you export unless you intend for the exported part
 
 #### Export Options
 
-**Export polygons**: Specifies whether the object will be exported as polygons or a **line type 1**.  
 **Export precision**: This is used to round the decimal places that objects and polygon vertices are rounded to. 2 is more than sufficient for
 most applications.  
+**Export polygons**: Specifies whether the object will be exported as polygons or a **line type 1**.  
 
-These are important for exporting properly sized parts. These will be checked by default on imported objects.  
+**Shade Smooth**: When exporting polygons, export all edges that are not marked sharp as **line type 5**.  
+This is needed because LDView and several other LDraw viewers use **line type 5** to calculate smoothing. Smoothing works 
+correctly in LDView for exported parts without any additional work, but these exported condtional lines don't render entirely 
+correctly in LDView, so you may wish to use a dedicated utility like [Edger2](https://www.philohome.com/isecalc/edger2.htm) to 
+generate conditional lines.
+
+![ldview_smooth.jpg](examples/import/ldview_smooth.jpg)  
+![ldview_flat.jpg](examples/import/ldview_flat.jpg)
+
+***These are important for exporting properly sized parts. These will be checked by default on imported objects.***  
 **Invert import scale matrix**: Negate **import_scale_matrix** on imported objects during export.   
 **Invert gap scale matrix**: Negate **gap_scale_matrix** on imported objects during export.  
 
