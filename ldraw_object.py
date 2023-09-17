@@ -34,7 +34,7 @@ def create_object(key, mesh, geometry_data, color_code, matrix, collection):
     __process_top_object_edges(obj)
     ldraw_meta.do_meta_step(obj)
     __link_obj_to_collection(obj, collection)
-    __process_top_edges(key, obj, geometry_data, color_code, collection)
+    __create_edge_obj(key, obj, geometry_data, color_code, collection)
 
     return obj
 
@@ -88,7 +88,7 @@ def __process_top_object_edges(obj):
         edge_modifier.split_angle = matrices.auto_smooth_angle
 
 
-def __process_top_edges(key, obj, geometry_data, color_code, collection):
+def __create_edge_obj(key, obj, geometry_data, color_code, collection):
     if ImportOptions.import_edges:
         edge_key = f"e_{key}"
         edge_mesh = ldraw_mesh.get_mesh(edge_key)

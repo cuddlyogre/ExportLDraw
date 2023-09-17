@@ -23,9 +23,9 @@ def create_mesh(key, geometry_data, color_code):
         mesh[strings.ldraw_filename_key] = geometry_data.file.name
 
         __process_bmesh(mesh, geometry_data, color_code)
-        __process_mesh_edges(key, geometry_data)
         __process_mesh_sharp_edges(mesh, geometry_data)
         __process_mesh(mesh)
+        __create_edge_mesh(key, geometry_data)
 
     return mesh
 
@@ -169,21 +169,28 @@ def __clean_bmesh(bm):
 
 # for edge_data in geometry_data.line_data:
 # for vertex in edge_data.vertices[0:2]:  # in case line_data is being used since it has 4 verts
-def __process_mesh_edges(key, geometry_data):
-    e_verts = []
-    e_edges = []
-    e_faces = []
+def __create_edge_mesh(key, geometry_data):
+    if ImportOptions.import_edges:
+        e_verts = []
+        e_edges = []
+        e_faces = []
 
-    i = 0
-    for edge_data in geometry_data.edge_data:
-        face_indices = []
-        for vertex in edge_data.vertices:
-            e_verts.append(vertex)
-            face_indices.append(i)
-            i += 1
-        e_faces.append(face_indices)
+        i = 0
+        for edge_data in geometry_data.edge_data:
+            face_indices = []
+            for vertex in edge_data.vertices:
+                e_verts.append(vertex)
+                face_indices.append(i)
+                i += 1
+            e_faces.append(face_indices)
 
-    __create_edge_mesh(key, geometry_data, e_edges, e_faces, e_verts)
+        edge_key = f"e_{key}"
+        edge_mesh = bpy.data.meshes.new(edge_key)
+        edge_mesh.name = edge_key
+        edge_mesh[strings.ldraw_filename_key] = geometry_data.file.name
+
+        edge_mesh.from_pydata(e_verts, e_edges, e_faces)
+        helpers.finish_mesh(edge_mesh)
 
 
 def __process_mesh_sharp_edges(mesh, geometry_data):
@@ -207,14 +214,3 @@ def __process_mesh(mesh):
     if ImportOptions.smooth_type_value() == "auto_smooth" or ImportOptions.smooth_type_value() == "bmesh_split":
         mesh.use_auto_smooth = ImportOptions.shade_smooth
         mesh.auto_smooth_angle = matrices.auto_smooth_angle
-
-
-def __create_edge_mesh(key, geometry_data, e_edges, e_faces, e_verts):
-    if ImportOptions.import_edges:
-        edge_key = f"e_{key}"
-        edge_mesh = bpy.data.meshes.new(edge_key)
-        edge_mesh.name = edge_key
-        edge_mesh[strings.ldraw_filename_key] = geometry_data.file.name
-
-        edge_mesh.from_pydata(e_verts, e_edges, e_faces)
-        helpers.finish_mesh(edge_mesh)
