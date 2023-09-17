@@ -165,7 +165,11 @@ be scaled to adjust to gaps between parts.
 
 **Remove doubles:** Merge vertices that are within a certain distance.  
 **Merge distance:** How close the vertices have to be to merge them.  
+
 **Smooth type:** Use an edge split modifier to smooth part faces, split edges during mesh processing, or use auto smooth.  
+**Edge split** and **bmesh smooth** use **line type 2** to split sharp edges. If you want **line type 2** edges to be
+marked sharp in edit mode, use **Edge split**.
+
 **Shade smooth:**  Use flat or smooth shading for part faces.  
 **Recalculate normals:** Recalculate normals during import to ensure all normals face outside. Completely overwrites any 
 BFC processing. It is recommended to keep unchecked if processing BFC commands is checked  
@@ -214,7 +218,8 @@ most applications.
 This is needed because LDView and several other LDraw viewers use **line type 5** to calculate smoothing. Smoothing works 
 correctly in LDView for exported parts without any additional work, but these exported condtional lines don't render entirely 
 correctly in LDView, so you may wish to use a dedicated utility like [Edger2](https://www.philohome.com/isecalc/edger2.htm) to 
-generate conditional lines.
+generate conditional lines. If the part was imported with **Shade smooth** checked, this will be checked by default.  
+**Note**: If this is unchecked, no **line type 5** is exported. Edges marked sharp are always exported as **line type 2**.   
 
 ![ldview_smooth.jpg](examples/import/ldview_smooth.jpg)  
 ![ldview_flat.jpg](examples/import/ldview_flat.jpg)

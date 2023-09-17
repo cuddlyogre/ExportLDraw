@@ -81,7 +81,7 @@ class ImportOptions:
     smooth_type_choices = (
         ("edge_split", "Edge split", "Use an edge split modifier"),
         ("auto_smooth", "Auto smooth", "Use auto smooth"),
-        ("bmesh_split", "bmesh smooth", "Split during initial mesh processing"),
+        ("bmesh_split", "bmesh smooth", "Split while processing bmesh"),
     )
 
     defaults['smooth_type'] = 0
