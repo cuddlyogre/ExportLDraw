@@ -415,6 +415,8 @@ class LDrawFile:
 
             # 0 !LDCAD GROUP_DEF [topLevel=true] [LID=119507361] [GID=FsMGcO9CYmY] [name=Group 12] [center=0 0 0]
             _params = re.search(r"\S+\s+\S+\s+\S+\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])\s+(\[.*\])", clean_line)
+            if not _params:
+                return
 
             lid_str = _params[2]  # "[LID=119507361]"
             lid_args = re.search(r"\[(.*)=(.*)\]", lid_str)
