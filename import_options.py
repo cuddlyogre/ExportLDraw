@@ -84,7 +84,7 @@ class ImportOptions:
         ("bmesh_split", "bmesh smooth", "Split during initial mesh processing"),
     )
 
-    defaults['smooth_type'] = 2
+    defaults['smooth_type'] = 0
     smooth_type = defaults['smooth_type']
 
     @staticmethod
