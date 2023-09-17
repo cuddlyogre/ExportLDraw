@@ -430,6 +430,12 @@ class LDrawFile:
             name_args = re.search(r"\[(.*)=(.*)\]", name_str)
             ldraw_node.meta_args["name"] = name_args[2]  # "Group 12"
 
+            center_str = _params[5]  # "[center=0 0 0]"
+            name_args = re.search(r"\[(.*)=(.*)\]", center_str)
+            center_str_val = name_args[2]  # "0 0 0"
+            (x, y, z) = map(float, center_str_val.split())
+            ldraw_node.meta_args["center"] = mathutils.Vector((x, y, z))
+
             self.child_nodes.append(ldraw_node)
             return True
 
