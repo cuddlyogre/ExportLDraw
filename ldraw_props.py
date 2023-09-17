@@ -313,13 +313,14 @@ def register():
     registerClasses()
     bpy.types.Scene.ldraw_props = bpy.props.PointerProperty(type=LDrawProps)
     bpy.types.Object.ldraw_props = bpy.props.PointerProperty(type=LDrawProps)
+    # bpy.types.MeshEdge.ldraw_props = bpy.props.PointerProperty(type=LDrawProps)
     # bpy.types.Object.get_header_lines = get_header_lines
     # hlines = active_object.get_header_lines()
-    # bpy.types.Object.ldraw_filename = bpy.props.StringProperty(name='LDraw filename')
-    # bpy.types.Mesh.ldraw_filename = bpy.props.StringProperty(name='LDraw filename')
-    # bpy.types.Collection.ldraw_filename = bpy.props.StringProperty(name='LDraw filename')
-    # bpy.types.Image.ldraw_filename = bpy.props.StringProperty(name='LDraw filename')
-    # bpy_types.MeshEdge.ldraw_color_code = bpy.props.StringProperty(name='LDraw color code')
+    # bpy.types.Object.ldraw_props.ldraw_filename = bpy.props.StringProperty(name='LDraw filename')
+    # bpy.types.Mesh.ldraw_props.ldraw_filename = bpy.props.StringProperty(name='LDraw filename')
+    # bpy.types.Collection.ldraw_props.ldraw_filename = bpy.props.StringProperty(name='LDraw filename')
+    # bpy.types.Image.ldraw_props.ldraw_filename = bpy.props.StringProperty(name='LDraw filename')
+    # bpy.types.MeshEdge.ldraw_props.ldraw_color_code = bpy.props.StringProperty(name='LDraw color code')
 
 
 def unregister():
