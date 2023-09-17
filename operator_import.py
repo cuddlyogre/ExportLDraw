@@ -441,8 +441,8 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         col.label(text="Cleanup Options")
         col.prop(self, "remove_doubles")
         col.prop(self, "merge_distance")
-        col.prop(self, "smooth_type")
         col.prop(self, "shade_smooth")
+        col.prop(self, "smooth_type")
         col.prop(self, "recalculate_normals")
         col.prop(self, "triangulate")
 

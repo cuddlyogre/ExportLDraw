@@ -281,15 +281,30 @@ def __export_polygons(obj, aa, lines):
         lines.append(line)
 
     # export edges
+    # https://www.ldraw.org/article/218.html#coords
+    # https://www.ldraw.org/article/218.html#lt5
     for e in mesh.edges:
-        if not e.use_edge_sharp:
-            continue
+        if e.use_edge_sharp:
+            line = ["2", "24"]
+        else:
+            if not obj.ldraw_props.export_shade_smooth:
+                continue
+            line = ["5", "24"]
 
-        line = ["2", "24"]
+        # get the edge vertices and add them to the line
+        edge_vertices = []
         for v in e.vertices:
             co = aa @ mesh.vertices[v].co
             for vv in co:
-                line.append(__fix_round(vv, precision))
+                edge_vertices.append(__fix_round(vv, precision))
+        line.extend(edge_vertices)
+
+        # if the edge is not sharp, it's a line type 5, so add the edge again as the control point
+        # this may not look correct when viewing condtional lines in LDView, but it does allow LDView to calculate smoothing
+        if e.use_edge_sharp:
+            ...
+        else:
+            line.extend(edge_vertices)
 
         lines.append(line)
 

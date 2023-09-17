@@ -24,6 +24,7 @@ def set_props(obj, ldraw_file, color_code):
     # obj.ldraw_props.keywords = ldraw_file.keywords or ""
     # obj.ldraw_props.history = "; ".join(ldraw_file.history or [])
     obj.ldraw_props.color_code = color_code
+    obj.ldraw_props.export_shade_smooth = ImportOptions.shade_smooth
 
 
 def get_header_lines(obj, is_model=False):
@@ -276,6 +277,12 @@ class LDrawProps(bpy.types.PropertyGroup):
         name="Export polygons",
         description="If true, export object as polygons. If false, export as line type 1.",
         default=False
+    )
+
+    export_shade_smooth: bpy.props.BoolProperty(
+        name="Shade smooth",
+        description="Export edges that are not marked sharp as line type 5 so that they can be used to calculate shading in other programs. Only applies when exporting polygons",
+        default=True,
     )
 
     export_precision: bpy.props.IntProperty(
