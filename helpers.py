@@ -9,6 +9,9 @@ import os
 try:
     from .definitions import APP_ROOT
 except ImportError as e:
+    print(e)
+    import traceback
+    print(traceback.format_exc())
     from definitions import APP_ROOT
 
 
@@ -29,6 +32,9 @@ def parse_csv_line(line, min_params=0):
     try:
         parts = list(csv.reader(io.StringIO(line), delimiter=' ', quotechar='"', skipinitialspace=True))
     except csv.Error as e:
+        print(e)
+        import traceback
+        print(traceback.format_exc())
         parts = [re.split(r"\s+", line)]
 
     if len(parts) == 0:
@@ -65,6 +71,8 @@ def write_json(filepath, obj, indent=None, do_print=False):
             file.write(j)
     except Exception as e:
         print(e)
+        import traceback
+        print(traceback.format_exc())
 
 
 def read_json(filepath, default=None):
@@ -74,6 +82,8 @@ def read_json(filepath, default=None):
             return json.load(file)
     except Exception as e:
         print(e)
+        import traceback
+        print(traceback.format_exc())
         return default
 
 

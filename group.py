@@ -90,6 +90,9 @@ def link_child(collection, host_collection):
     try:
         host_collection.children.link(collection)
     except RuntimeError as e:
+        print(e)
+        import traceback
+        print(traceback.format_exc())
         """already in collection"""
 
 
@@ -97,4 +100,7 @@ def link_obj(collection, obj):
     try:
         collection.objects.link(obj)
     except RuntimeError as e:
+        print(e)
+        import traceback
+        print(traceback.format_exc())
         """already in collection"""

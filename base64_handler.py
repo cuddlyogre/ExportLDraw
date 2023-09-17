@@ -7,6 +7,9 @@ import base64
 try:
     from .definitions import APP_ROOT
 except ImportError as e:
+    print(e)
+    import traceback
+    print(traceback.format_exc())
     from definitions import APP_ROOT
 
 
@@ -49,10 +52,15 @@ def base64_to_png_data(base64_str):
     try:  # bytes
         return base64.decodebytes(base64_str)
     except TypeError as e:  # string
+        print(e)
+        import traceback
+        print(traceback.format_exc())
         base64_str = bytes(base64_str.encode())
         return base64.decodebytes(base64_str)
     except Exception as e:
         print(e)
+        import traceback
+        print(traceback.format_exc())
         return None
 
 

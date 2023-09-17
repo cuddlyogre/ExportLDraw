@@ -210,6 +210,9 @@ def meta_group_end():
     try:
         group.next_collection = group.next_collections.pop()
     except IndexError as e:
+        print(e)
+        import traceback
+        print(traceback.format_exc())
         group.next_collection = None
 
 
@@ -369,6 +372,9 @@ def set_texmap_end(ldraw_node):
     try:
         ldraw_node.texmap = ldraw_node.texmaps.pop()
     except IndexError as e:
+        print(e)
+        import traceback
+        print(traceback.format_exc())
         ldraw_node.texmap = None
 
     ldraw_node.texmap_start = False

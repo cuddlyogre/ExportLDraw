@@ -7,6 +7,9 @@ from collections import namedtuple
 try:
     from . import helpers
 except ImportError as e:
+    print(e)
+    import traceback
+    print(traceback.format_exc())
     import helpers
 
 BlendColor = namedtuple("BlendColor", "r g b")
@@ -259,6 +262,8 @@ class LDrawColor:
                 return cls.__colors[color_code]
             except Exception as e:
                 print(e)
+                import traceback
+                print(traceback.format_exc())
 
         print(f"Bad color code: {color_code}")
         if cls.__bad_color is None:
@@ -332,9 +337,14 @@ class LDrawColor:
             hbcolor = f"0x{hex(bcolor.r)[2:]}{hex(bcolor.g)[2:]}{hex(bcolor.b)[2:]}"
             hex_digits = cls.__extract_hex_digits(hbcolor)
         except ValueError as e:
-            # color code is not an int
             print(e)
+            import traceback
+            print(traceback.format_exc())
+            # color code is not an int
         except IndexError as e:
+            print(e)
+            import traceback
+            print(traceback.format_exc())
             # color code indices are not in the colors list
             print(color_code)
             from inspect import currentframe, getframeinfo
@@ -362,6 +372,8 @@ class LDrawColor:
             hex_digits = cls.__extract_hex_digits(hicolor_code)
         except ValueError as e:
             print(e)
+            import traceback
+            print(traceback.format_exc())
 
         return hex_digits
 
