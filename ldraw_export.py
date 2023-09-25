@@ -1,5 +1,6 @@
 import bpy
 import bmesh
+import math
 
 from .ldraw_file import LDrawFile
 from .ldraw_node import LDrawNode
@@ -242,7 +243,16 @@ def __export_polygons(obj, aa, lines):
     precision = obj.ldraw_props.export_precision
 
     # export faces
+    face_edge_maps = {}
     for polygon in mesh.polygons:
+        # build list of edges and their shared faces
+        for ff in mesh.polygons:
+            if polygon.index == ff.index:
+                continue
+            for fek in polygon.edge_keys:
+                ek = edge_key(fek[0], fek[1])
+                face_edge_maps.setdefault(ek, set()).add(polygon.index)
+
         length = len(polygon.vertices)
         line_type = None
         if length == 3:
@@ -280,34 +290,95 @@ def __export_polygons(obj, aa, lines):
 
         lines.append(line)
 
-    # export edges
-    # https://www.ldraw.org/article/218.html#coords
-    # https://www.ldraw.org/article/218.html#lt5
+    af = 1.0
+    ac = 60
+    ae = 90
+    flat = []
+    shallow = []
+    sharp = []
+
+    for edge_keys, faces in face_edge_maps.items():
+        f_list = list(faces)
+        if len(f_list) < 2:
+            continue
+
+        n1 = mesh.polygons[f_list[0]].normal
+        n2 = mesh.polygons[f_list[1]].normal
+
+        dot = n1.dot(n2)
+        # domain error workaround for when dot <-1 or >1
+        if dot > 1:
+            dot = 1
+        elif dot < -1:
+            dot = -1
+
+        rad_angle = abs(math.acos(dot))
+        deg_angle = math.degrees(rad_angle)
+
+        if deg_angle < af:  # angle is flat, no condline
+            flat.append(edge_keys)
+        elif deg_angle < ac:  # angle is shallow, condline
+            shallow.append(edge_keys)
+        else:  # elif deg_angle < ae: # angle is steep. make sharp edge, for best results, manually mark desired sharp edges as sharp, also add edges where model sections interect
+            sharp.append(edge_keys)
+
     for e in mesh.edges:
-        if e.use_edge_sharp:
+        ek = edge_key(e.vertices[0], e.vertices[1])
+
+        if ek in sharp or e.use_edge_sharp:
             line = ["2", "24"]
+            for v in e.vertices:
+                co = aa @ mesh.vertices[v].co
+                for vv in co:
+                    line.append(__fix_round(vv, precision))
+            lines.append(line)
+        # elif ek in shallow: # for best results, if edge isn't sharp, it's a condline
         else:
             if not obj.ldraw_props.export_shade_smooth:
                 continue
+
             line = ["5", "24"]
+            for v in e.vertices:
+                co = aa @ mesh.vertices[v].co
+                for vv in co:
+                    line.append(__fix_round(vv, precision))
 
-        # get the edge vertices and add them to the line
-        edge_vertices = []
-        for v in e.vertices:
-            co = aa @ mesh.vertices[v].co
-            for vv in co:
-                edge_vertices.append(__fix_round(vv, precision))
-        line.extend(edge_vertices)
+            faces = list(face_edge_maps[ek])
 
-        # if the edge is not sharp, it's a line type 5, so add the edge again as the control point
-        # this may not look correct when viewing condtional lines in LDView, but it does allow LDView to calculate smoothing
-        if e.use_edge_sharp:
-            ...
-        else:
-            line.extend(edge_vertices)
+            # don't use edges that have less than 2 faces
+            if len(faces) < 2:
+                continue
 
-        lines.append(line)
+            f1 = faces[0]
+            f2 = faces[1]
+
+            face1 = mesh.polygons[f1]
+            face2 = mesh.polygons[f2]
+
+            # choose edges that are connected to the condline that aren't the condline
+            edge_keys1 = [x for x in face1.edge_keys if edge_key(x[0], x[1]) != ek]
+            edge_keys2 = [x for x in face2.edge_keys if edge_key(x[0], x[1]) != ek]
+
+            # use the points that aren't the pin as the control points
+            pin = ek[0]
+            control_points = []
+            for _edge_keys in [edge_keys1, edge_keys2]:
+                for yy in _edge_keys:
+                    if pin in yy:
+                        control_point = [x for x in yy if x != pin][0]
+                        control_points.append(control_point)
+
+            for v in control_points:
+                co = aa @ mesh.vertices[v].co
+                for vv in co:
+                    line.append(__fix_round(vv, precision))
+
+            lines.append(line)
 
     bpy.data.meshes.remove(mesh)
 
     return True
+
+
+def edge_key(i1, i2):
+    return (min(i1, i2), max(i1, i2))
