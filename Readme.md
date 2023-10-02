@@ -261,7 +261,8 @@ the object by hand, clear the scale.
 Don't alter the scale of imported objects. The import matrices of imported objects will be negated on export so long as the respective
 checkbox is checked. For that reason, 
 
-#### If you want to export just mesh edges
+#### If you want to export just the edges of a Blender mesh as line type 2
+
 face select mode > select all > delete **Just Faces** > edge select mode > 
 select all > right click > **Mark Sharp** > make sure the values are filled in correctly in the 
 LDraw panel > check **Export polygons** > and export as normal.
