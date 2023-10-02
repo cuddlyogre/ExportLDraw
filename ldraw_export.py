@@ -337,17 +337,20 @@ def __export_polygons(obj, aa, lines):
             if not obj.ldraw_props.export_shade_smooth:
                 continue
 
-            line = ["5", "24"]
-            for v in e.vertices:
-                co = aa @ mesh.vertices[v].co
-                for vv in co:
-                    line.append(__fix_round(vv, precision))
+            if ek not in face_edge_maps:
+                continue
 
             faces = list(face_edge_maps[ek])
 
             # don't use edges that have less than 2 faces
             if len(faces) < 2:
                 continue
+
+            line = ["5", "24"]
+            for v in e.vertices:
+                co = aa @ mesh.vertices[v].co
+                for vv in co:
+                    line.append(__fix_round(vv, precision))
 
             f1 = faces[0]
             f2 = faces[1]
