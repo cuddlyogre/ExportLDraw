@@ -262,7 +262,7 @@ Don't alter the scale of imported objects. The import matrices of imported objec
 checkbox is checked. For that reason, 
 
 If you want to export just mesh edges, go into face select mode, delete **Just Faces**, go into edge select mode, select all, right click, 
-and choose **Mark Sharp**. Make sure the part values are filled in correctly in the LDraw panel, and export as normal.
+and choose **Mark Sharp**. Make sure the part values are filled in correctly in the LDraw panel, check **Export polygons**, and export as normal.
 
 ### Export Panel
 
