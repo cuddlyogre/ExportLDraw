@@ -15,6 +15,9 @@ class LDrawNode:
     """
 
     part_count = 0
+    current_filename = ""
+    current_model_filename = ""
+
     key_map = {}
     geometry_datas = {}
 
@@ -61,6 +64,8 @@ class LDrawNode:
         if self.file.is_stud() and ImportOptions.no_studs:
             return
 
+        LDrawNode.current_filename = self.file.name
+
         # by default, treat this as anything other than a top level part
         # keep track of the matrix and color up to this point
         # if it's a top level part, obj_matrix is its global transformation
@@ -94,6 +99,13 @@ class LDrawNode:
         #  in cases where they aren't part of a shortcut
         # TODO: is_shortcut_model splits 99141c01.dat and u9158.dat into its subparts -
         #  u9158.dat - ensure the battery contacts are correct
+        if self.file.is_like_part():
+            # creature_015_mangreengraysuitmustache.ldr is a BFC NOCERTIFY model which causes parts used by it to be NOCERTIFY everywhere
+            # reset bfc for top parts - top level parts aren't inverted
+            accum_cull = True
+            accum_invert = False
+            self.bfc_certified = None
+
         top_part = geometry_data is None and (self.file.has_geometry() or self.file.is_part() or self.file.is_shortcut_part())
         top_model = geometry_data is None and self.file.is_like_model()
         cached_geometry_data = None
@@ -110,7 +122,7 @@ class LDrawNode:
                 if ImportOptions.color_strategy_value() == "vertex_colors":
                     color_code = "16"
             elif top_model:
-                self.bfc_certified = True  # or else accum_cull will be false, which turns off bfc processing
+                LDrawNode.current_model_filename = self.file.name
 
             collection = group.top_collection
             if parent_collection is not None:
@@ -198,6 +210,7 @@ class LDrawNode:
                             geometry_data,
                         )
                 elif child_node.meta_command == "bfc":
+                    # does it make sense for models to have bfc info? maybe if that model has geometry, but then it would be treated like a part
                     if ImportOptions.meta_bfc:
                         local_cull, winding, invert_next = ldraw_meta.meta_bfc(self, child_node, vertex_matrix, local_cull, winding, invert_next, accum_invert)
                 elif child_node.meta_command == "texmap":
