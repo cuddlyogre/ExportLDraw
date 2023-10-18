@@ -4,7 +4,7 @@ class ExportOptions:
     defaults['remove_doubles'] = True
     remove_doubles = defaults['remove_doubles']
 
-    defaults['recalculate_normals'] = True
+    defaults['recalculate_normals'] = False
     recalculate_normals = defaults['recalculate_normals']
 
     defaults['merge_distance'] = 0.05
