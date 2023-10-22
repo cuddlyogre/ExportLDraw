@@ -109,21 +109,21 @@ class LDrawNode:
         top_part = geometry_data is None and (self.file.has_geometry() or self.file.is_part() or self.file.is_shortcut_part())
         top_model = geometry_data is None and self.file.is_like_model()
         cached_geometry_data = None
+        if top_part:
+            # top-level part
+            LDrawNode.part_count += 1
+            vertex_matrix = matrices.identity_matrix
+            cached_geometry_data = LDrawNode.geometry_datas.get(geometry_data_key)
+            # set top level parts to 16 so that geometry_data is only created once per filename
+            # then change their 16 faces to obj_color_code
+            # TODO: replace material of 16 faces with geometry nodes
+            if ImportOptions.color_strategy_value() == "vertex_colors":
+                color_code = "16"
+        elif top_model:
+            LDrawNode.current_model_filename = self.file.name
+
         collection = None
         if top_part or top_model:
-            if top_part:
-                # top-level part
-                LDrawNode.part_count += 1
-                vertex_matrix = matrices.identity_matrix
-                cached_geometry_data = LDrawNode.geometry_datas.get(geometry_data_key)
-                # set top level parts to 16 so that geometry_data is only created once per filename
-                # then change their 16 faces to obj_color_code
-                # TODO: replace material of 16 faces with geometry nodes
-                if ImportOptions.color_strategy_value() == "vertex_colors":
-                    color_code = "16"
-            elif top_model:
-                LDrawNode.current_model_filename = self.file.name
-
             collection = group.top_collection
             if parent_collection is not None:
                 collection = parent_collection
