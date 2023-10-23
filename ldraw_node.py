@@ -52,6 +52,7 @@ class LDrawNode:
 
     def load(self,
              color_code="16",
+             accum_matrix=None,
              parent_matrix=None,
              geometry_data=None,
              accum_cull=True,
@@ -66,23 +67,27 @@ class LDrawNode:
 
         LDrawNode.current_filename = self.file.name
 
-        # by default, treat this as anything other than a top level part
         # keep track of the matrix and color up to this point
-        # if it's a top level part, obj_matrix is its global transformation
-        # if it's anything else, vertex_matrix is what is used to tranform the vertices
-        # obj_matrix is the matrix up to the point and used for placement of objects
-        # vertex_matrix is the matrix that gets passed to subparts
+        # parent_matrix is the previous level's transform
+        # current_matrix is the matrix up to this point and used for placement of objects
+        # accum_matrix is every transform up to this point
+        # child_matrix is what is used to tranform this level and set the parent transform of the next level
         parent_matrix = parent_matrix or matrices.identity_matrix
-        vertex_matrix = (parent_matrix @ self.matrix).freeze()
-        obj_matrix = vertex_matrix
-        obj_color_code = color_code
+        accum_matrix = accum_matrix or matrices.identity_matrix
+
+        current_matrix = parent_matrix @ self.matrix
+        accum_matrix = accum_matrix @ current_matrix
+        child_matrix = current_matrix
+
+        # current_color_code is the color_code up to this point
+        current_color_code = color_code
 
         # when a part is used on its own and also treated as a subpart like with a shortcut, the part will not render in the shortcut
         # obj_key is essentially a list of attributes that are unique to parts that share the same file
         # texmap parts are defined as parts so it should be safe to exclude that from the key
         # pe_tex_info is defined like an mpd so mutliple instances sharing the same part name will share the same texture unless it is included in the key
         # the only thing unique about a geometry_data object is its filename and whether it has pe_tex_info
-        geometry_data_key = LDrawNode.__build_key(self.file.name, color_code=color_code, pe_tex_info=self.pe_tex_info)
+        geometry_data_key = LDrawNode.__build_key(self.file.name, color_code=current_color_code, pe_tex_info=self.pe_tex_info)
 
         # if there's no geometry_data and some part type, it's a top level part so start collecting geometry
         # there are occasions where files with part_type of model have geometry so you can't rely on its part_type
@@ -108,14 +113,13 @@ class LDrawNode:
 
         top_part = geometry_data is None and (self.file.has_geometry() or self.file.is_part() or self.file.is_shortcut_part())
         top_model = geometry_data is None and self.file.is_like_model()
-        cached_geometry_data = None
         if top_part:
             # top-level part
             LDrawNode.part_count += 1
-            vertex_matrix = matrices.identity_matrix
-            cached_geometry_data = LDrawNode.geometry_datas.get(geometry_data_key)
+            child_matrix = matrices.identity_matrix
+            geometry_data = LDrawNode.geometry_datas.get(geometry_data_key)
             # set top level parts to 16 so that geometry_data is only created once per filename
-            # then change their 16 faces to obj_color_code
+            # then change their 16 faces to current_color_code
             # TODO: replace material of 16 faces with geometry nodes
             if ImportOptions.color_strategy_value() == "vertex_colors":
                 color_code = "16"
@@ -131,10 +135,11 @@ class LDrawNode:
                     # if parent_collection is not None, this is a nested model
                     collection = group.get_filename_collection(self.file.name, parent_collection)
 
-        # always process geometry_data if this is a subpart or there is no cached_geometry_data
+        # always process geometry_data if this is a subpart or there is no geometry_data
         # if geometry_data exists, this is a top level part that has already been processed so don't process this key again
-        if not top_part or cached_geometry_data is None:
-            if top_part:
+        is_top = top_part
+        if not is_top or geometry_data is None:
+            if is_top:
                 geometry_data = GeometryData()
 
             local_cull = True
@@ -164,7 +169,7 @@ class LDrawNode:
 
                         child_node.load(
                             color_code=child_current_color,
-                            parent_matrix=vertex_matrix,
+                            parent_matrix=child_matrix,
                             geometry_data=geometry_data,
                             accum_cull=self.bfc_certified and accum_cull and local_cull,
                             accum_invert=(accum_invert ^ invert_next),  # xor
@@ -172,7 +177,7 @@ class LDrawNode:
                         )
                         # for node in child_node.load(
                         #         color_code=child_current_color,
-                        #         parent_matrix=vertex_matrix,
+                        #         parent_matrix=child_matrix,
                         #         geometry_data=geometry_data,
                         #         accum_cull=self.bfc_certified and accum_cull and local_cull,
                         #         accum_invert=(accum_invert ^ invert_next),  # xor
@@ -186,7 +191,7 @@ class LDrawNode:
                         ldraw_meta.meta_edge(
                             child_node,
                             child_current_color,
-                            vertex_matrix,
+                            child_matrix,
                             geometry_data,
                         )
                     elif child_node.meta_command in ["3", "4"]:
@@ -198,7 +203,7 @@ class LDrawNode:
                             self,
                             child_node,
                             child_current_color,
-                            vertex_matrix,
+                            child_matrix,
                             geometry_data,
                             _winding,
                         )
@@ -206,17 +211,17 @@ class LDrawNode:
                         ldraw_meta.meta_line(
                             child_node,
                             child_current_color,
-                            vertex_matrix,
+                            child_matrix,
                             geometry_data,
                         )
                 elif child_node.meta_command == "bfc":
                     # does it make sense for models to have bfc info? maybe if that model has geometry, but then it would be treated like a part
                     if ImportOptions.meta_bfc:
-                        local_cull, winding, invert_next = ldraw_meta.meta_bfc(self, child_node, vertex_matrix, local_cull, winding, invert_next, accum_invert)
+                        local_cull, winding, invert_next = ldraw_meta.meta_bfc(self, child_node, child_matrix, local_cull, winding, invert_next, accum_invert)
                 elif child_node.meta_command == "texmap":
-                    ldraw_meta.meta_texmap(self, child_node, vertex_matrix)
+                    ldraw_meta.meta_texmap(self, child_node, child_matrix)
                 elif child_node.meta_command.startswith("pe_tex_"):
-                    ldraw_meta.meta_pe_tex(self, child_node, vertex_matrix)
+                    ldraw_meta.meta_pe_tex(self, child_node, child_matrix)
                 else:
                     # these meta commands really only make sense if they are encountered at the model level
                     # these should never be encoutered when geometry_data not None
@@ -233,7 +238,7 @@ class LDrawNode:
                     elif child_node.meta_command.startswith("group"):
                         ldraw_meta.meta_group(child_node)
                     elif child_node.meta_command == "leocad_camera":
-                        ldraw_meta.meta_leocad_camera(child_node, vertex_matrix)
+                        ldraw_meta.meta_leocad_camera(child_node, child_matrix)
 
                 if self.texmap_next:
                     ldraw_meta.set_texmap_end(self)
@@ -243,7 +248,7 @@ class LDrawNode:
                 elif child_node.meta_command == "bfc" and child_node.meta_args["command"] != "INVERTNEXT":
                     invert_next = False
 
-        if top_part:
+        if is_top:
             # geometry_data will not be None if this is a new mesh
             # geometry_data will be None if the mesh already exists
             if geometry_data is not None:
@@ -253,7 +258,8 @@ class LDrawNode:
                 LDrawNode.geometry_datas[geometry_data_key] = geometry_data
             geometry_data = LDrawNode.geometry_datas[geometry_data_key]
 
-            obj = LDrawNode.__create_obj(geometry_data, obj_color_code, obj_matrix, collection)
+            matrix = current_matrix
+            obj = LDrawNode.__create_obj(geometry_data, current_color_code, matrix, collection)
 
             # if LDrawNode.part_count == 1:
             #     raise BaseException("done")
