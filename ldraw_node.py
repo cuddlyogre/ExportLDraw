@@ -52,8 +52,8 @@ class LDrawNode:
 
     def load(self,
              color_code="16",
-             accum_matrix=None,
              parent_matrix=None,
+             accum_matrix=None,
              geometry_data=None,
              accum_cull=True,
              accum_invert=False,
@@ -113,6 +113,18 @@ class LDrawNode:
 
         top_part = geometry_data is None and (self.file.has_geometry() or self.file.is_part() or self.file.is_shortcut_part())
         top_model = geometry_data is None and self.file.is_like_model()
+
+        treat_model_as_part = self.file.name == "10261 - candyflosscart.ldr"
+        treat_model_as_part = self.file.name == "40271 - Bunny.ldr"
+        treat_model_as_part = self.file.name == "10261 - main.ldr"
+        treat_model_as_part = False
+        top_part = top_part or treat_model_as_part
+
+        merge_model = self.file.is_like_model() and not self.is_root
+        merge_model = self.file.is_like_model()
+        merge_model = False
+        top_part = top_part or merge_model
+
         if top_part:
             # top-level part
             LDrawNode.part_count += 1
@@ -170,6 +182,7 @@ class LDrawNode:
                         child_node.load(
                             color_code=child_current_color,
                             parent_matrix=child_matrix,
+                            accum_matrix=accum_matrix,
                             geometry_data=geometry_data,
                             accum_cull=self.bfc_certified and accum_cull and local_cull,
                             accum_invert=(accum_invert ^ invert_next),  # xor
@@ -259,6 +272,9 @@ class LDrawNode:
             geometry_data = LDrawNode.geometry_datas[geometry_data_key]
 
             matrix = current_matrix
+            if merge_model:
+                matrix = accum_matrix
+
             obj = LDrawNode.__create_obj(geometry_data, current_color_code, matrix, collection)
 
             # if LDrawNode.part_count == 1:
