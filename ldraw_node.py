@@ -292,14 +292,15 @@ class LDrawNode:
         if pe_tex_info is not None:
             for p in pe_tex_info:
                 _key += ((p.point_min, p.point_max, p.matrix, p.image),)
-        else:
-            _key += (None,)
 
-        _key += (matrix,)
+        if matrix is not None:
+            _key += (matrix,)
+
+        if len(_key) < 60:
+            return _key
 
         key = LDrawNode.key_map.get(_key)
         if key is None:
             LDrawNode.key_map[_key] = str(uuid.uuid4())
             key = LDrawNode.key_map.get(_key)
-
         return key
