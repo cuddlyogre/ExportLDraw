@@ -56,25 +56,25 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
     selection_only: bpy.props.BoolProperty(
         name="Selection only",
         description="Export selected objects only",
-        default=True,
+        default=ExportOptions.selection_only,
     )
 
     recalculate_normals: bpy.props.BoolProperty(
         name="Recalculate normals",
         description="Recalculate normals",
-        default=True,
+        default=ExportOptions.recalculate_normals,
     )
 
     triangulate: bpy.props.BoolProperty(
         name="Triangulate faces",
         description="Triangulate all faces",
-        default=False,
+        default=ExportOptions.triangulate,
     )
 
     remove_doubles: bpy.props.BoolProperty(
         name="Remove doubles",
         description="Merge overlapping vertices",
-        default=True,
+        default=ExportOptions.remove_doubles,
     )
 
     merge_distance: bpy.props.FloatProperty(
