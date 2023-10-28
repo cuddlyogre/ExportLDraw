@@ -1,3 +1,5 @@
+from . import matrices
+
 class FaceData:
     """
     Raw vertex information
@@ -14,6 +16,8 @@ class FaceData:
     @staticmethod
     def handle_vertex_winding(child_node, matrix, winding):
         vert_count = len(child_node.vertices)
+
+        # matrix = matrix @ matrices.gap_scale_matrix
 
         vertices = []
         if winding == "CW":
