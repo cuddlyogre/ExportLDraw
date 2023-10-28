@@ -111,7 +111,7 @@ class LDrawNode:
             accum_invert = False
             self.bfc_certified = None
 
-        top_part = geometry_data is None and (self.file.has_geometry() or self.file.is_part() or self.file.is_shortcut_part())
+        top_part = geometry_data is None and (self.file.has_geometry() or self.file.is_like_part())
         top_model = geometry_data is None and self.file.is_like_model()
 
         treat_model_as_part = self.file.name == "10261 - candyflosscart.ldr"
