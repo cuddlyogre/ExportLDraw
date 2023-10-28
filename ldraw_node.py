@@ -113,6 +113,7 @@ class LDrawNode:
 
         top_part = geometry_data is None and (self.file.has_geometry() or self.file.is_like_part())
         top_model = geometry_data is None and self.file.is_like_model()
+        x = top_model and self.file.name == "10261 - candyflosscart.ldr"
 
         treat_model_as_part = self.file.name == "10261 - candyflosscart.ldr"
         treat_model_as_part = self.file.name == "40271 - Bunny.ldr"
@@ -136,6 +137,8 @@ class LDrawNode:
             if ImportOptions.color_strategy_value() == "vertex_colors":
                 color_code = "16"
         elif top_model:
+            if x:
+                child_matrix = matrices.identity_matrix
             LDrawNode.current_model_filename = self.file.name
 
         collection = None
@@ -149,7 +152,7 @@ class LDrawNode:
 
         # always process geometry_data if this is a subpart or there is no geometry_data
         # if geometry_data exists, this is a top level part that has already been processed so don't process this key again
-        is_top = top_part
+        is_top = top_part or x
         if not is_top or geometry_data is None:
             if is_top:
                 geometry_data = GeometryData()
