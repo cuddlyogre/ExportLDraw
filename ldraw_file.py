@@ -280,31 +280,48 @@ class LDrawFile:
         return False
 
     def __line_part_type(self, clean_line, strip_line):
-        if (clean_line.startswith("0 !LDRAW_ORG ") or
-                clean_line.startswith("0 LDRAW_ORG ") or
-                clean_line.startswith("0 Unofficial ") or
-                clean_line.startswith("0 Un-official ")):
-            parts = strip_line.split(maxsplit=3)
-            self.actual_part_type = parts[2]
-            self.part_type = self.determine_part_type(self.actual_part_type)
+        for date_type in ['ORIGINAL', 'UPDATE']:
+            # print(strip_line)
+            try:
+                index = clean_line.index(date_type)
+                _r = clean_line[index:]
+                _p = _r.split(maxsplit=1)
+                self.update_date = _p[1]
+                clean_line = clean_line[0:index]
+            except ValueError as e:
+                pass
 
-            if 'UPDATE' in strip_line:
-                _r = parts[3]
-                if _r.startswith('UPDATE'):
-                    _p = _r.split(maxsplit=1)
-                    self.optional_qualifier = ''
-                    self.update_date = _p[1]
-                else:
-                    _p = _r.split(maxsplit=1)
-                    self.optional_qualifier = _p[0]
-                    __p = _p[1].split(maxsplit=1)
-                    self.update_date = __p[1]
-            return True
+        for optional_qualifier in ['Alias', 'Physical_Colour', 'Flexible_Section']:
+            try:
+                index = strip_line.index(optional_qualifier)
+                self.optional_qualifier = optional_qualifier
+                clean_line = clean_line[0:index]
+            except ValueError as e:
+                pass
 
-        if clean_line.startswith("0 Official LCAD "):
-            parts = strip_line.split(maxsplit=4)
-            self.actual_part_type = parts[3]
-            self.part_type = self.determine_part_type(self.actual_part_type)
+        if ("0 !LDRAW_ORG " in clean_line or
+                "0 LDRAW_ORG " in clean_line or
+                "0 Unofficial " in clean_line or
+                "0 Un-official " in clean_line or
+                "0 Official LCAD " in clean_line):
+
+            if (clean_line.startswith("0 !LDRAW_ORG ") or
+                    clean_line.startswith("0 LDRAW_ORG ")):
+                parts = clean_line.split(maxsplit=2)
+                self.actual_part_type = parts[2].strip()
+                self.part_type = self.determine_part_type(self.actual_part_type)
+
+            if (clean_line.startswith("0 Unofficial ") or
+                    clean_line.startswith("0 Un-official ")):
+                parts = clean_line.split(maxsplit=1)
+                self.actual_part_type = parts[1].strip()
+                self.part_type = self.determine_part_type(self.actual_part_type)
+
+            if clean_line.startswith("0 Official LCAD "):
+                parts = clean_line.split(maxsplit=4)
+                self.actual_part_type = parts[3].strip()
+                self.part_type = self.determine_part_type(self.actual_part_type)
+
             return True
         return False
 
