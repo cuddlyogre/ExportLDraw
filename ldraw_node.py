@@ -131,11 +131,6 @@ class LDrawNode:
             LDrawNode.part_count += 1
             child_matrix = matrices.identity_matrix
             geometry_data = LDrawNode.geometry_datas.get(geometry_data_key)
-            # set top level parts to 16 so that geometry_data is only created once per filename
-            # then change their 16 faces to current_color_code
-            # TODO: replace material of 16 faces with geometry nodes
-            if ImportOptions.color_strategy_value() == "vertex_colors":
-                color_code = "16"
         elif top_model:
             if x:
                 child_matrix = matrices.identity_matrix
@@ -278,7 +273,7 @@ class LDrawNode:
             if merge_model:
                 matrix = accum_matrix
 
-            obj = LDrawNode.__create_obj(geometry_data, current_color_code, matrix, collection)
+            obj = LDrawNode.__create_obj(geometry_data, color_code, matrix, collection)
 
             # if LDrawNode.part_count == 1:
             #     raise BaseException("done")
@@ -309,10 +304,7 @@ class LDrawNode:
     # such as 32527.dat (mirror of 32528.dat) will render
     @staticmethod
     def __build_key(filename, color_code=None, pe_tex_info=None, matrix=None):
-        if ImportOptions.color_strategy_value() == "vertex_colors":
-            _key = (filename, None,)
-        else:
-            _key = (filename, color_code,)
+        _key = (filename, color_code,)
 
         if pe_tex_info is not None:
             for p in pe_tex_info:

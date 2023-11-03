@@ -117,15 +117,3 @@ class ImportOptions:
 
     defaults['treat_shortcut_as_model'] = False  # TODO: if true parent to empty at median of group
     treat_shortcut_as_model = defaults['treat_shortcut_as_model']
-
-    color_strategy_choices = (
-        ("material", "Material", "Object color is set through the material. Easier to work with but slightly slower to import"),
-        ("vertex_colors", "Vertex Colors", "Mesh color is set through vertex colors. More difficult to work with but slightly quicker to import"),
-    )
-
-    defaults['color_strategy'] = 0
-    color_strategy = defaults['color_strategy']
-
-    @staticmethod
-    def color_strategy_value():
-        return ImportOptions.color_strategy_choices[ImportOptions.color_strategy][0]
