@@ -280,49 +280,61 @@ class LDrawFile:
         return False
 
     def __line_part_type(self, clean_line, strip_line):
-        for date_type in ['ORIGINAL', 'UPDATE']:
+        in_part_type = False
+        for date_type in ["ORIGINAL", "UPDATE"]:
             # print(strip_line)
             try:
                 index = clean_line.index(date_type)
-                _r = clean_line[index:]
-                _p = _r.split(maxsplit=1)
-                self.update_date = _p[1]
+                date_string = clean_line[index:]
+                parts = date_string.split(maxsplit=1)
+                self.update_date = parts[1]
                 clean_line = clean_line[0:index]
+                in_part_type = True
             except ValueError as e:
                 pass
 
-        for optional_qualifier in ['Alias', 'Physical_Colour', 'Flexible_Section']:
+        for optional_qualifier in ["Alias", "Physical_Colour", "Flexible_Section"]:
             try:
                 index = strip_line.index(optional_qualifier)
                 self.optional_qualifier = optional_qualifier
                 clean_line = clean_line[0:index]
+                in_part_type = True
             except ValueError as e:
                 pass
 
-        if ("0 !LDRAW_ORG " in clean_line or
-                "0 LDRAW_ORG " in clean_line or
-                "0 Unofficial " in clean_line or
-                "0 Un-official " in clean_line or
-                "0 Official LCAD " in clean_line):
-
-            if (clean_line.startswith("0 !LDRAW_ORG ") or
-                    clean_line.startswith("0 LDRAW_ORG ")):
+        for part_type_prefix in ["0 !LDRAW_ORG ", "0 LDRAW_ORG "]:
+            try:
+                index = strip_line.index(part_type_prefix)
                 parts = clean_line.split(maxsplit=2)
                 self.actual_part_type = parts[2].strip()
                 self.part_type = self.determine_part_type(self.actual_part_type)
+                in_part_type = True
+            except ValueError as e:
+                pass
 
-            if (clean_line.startswith("0 Unofficial ") or
-                    clean_line.startswith("0 Un-official ")):
+        for part_type_prefix in ["0 Unofficial ", "0 Un-official "]:
+            try:
+                index = strip_line.index(part_type_prefix)
                 parts = clean_line.split(maxsplit=1)
                 self.actual_part_type = parts[1].strip()
                 self.part_type = self.determine_part_type(self.actual_part_type)
+                in_part_type = True
+            except ValueError as e:
+                pass
 
-            if clean_line.startswith("0 Official LCAD "):
+        for part_type_prefix in ["0 Official LCAD "]:
+            try:
+                index = strip_line.index(part_type_prefix)
                 parts = clean_line.split(maxsplit=4)
                 self.actual_part_type = parts[3].strip()
                 self.part_type = self.determine_part_type(self.actual_part_type)
+                in_part_type = True
+            except ValueError as e:
+                pass
 
+        if in_part_type:
             return True
+
         return False
 
     def __line_license(self, strip_line):
