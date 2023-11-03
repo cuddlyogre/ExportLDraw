@@ -113,7 +113,8 @@ class LDrawNode:
 
         top_part = geometry_data is None and (self.file.has_geometry() or self.file.is_like_part())
         top_model = geometry_data is None and self.file.is_like_model()
-        x = top_model and self.file.name == "10261 - candyflosscart.ldr"
+        x = False
+        # x = top_model and self.file.name == "10261 - candyflosscart.ldr"
 
         treat_model_as_part = self.file.name == "10261 - candyflosscart.ldr"
         treat_model_as_part = self.file.name == "40271 - Bunny.ldr"
