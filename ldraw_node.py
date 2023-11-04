@@ -76,7 +76,7 @@ class LDrawNode:
         accum_matrix = accum_matrix or matrices.identity_matrix
 
         current_matrix = parent_matrix @ self.matrix
-        accum_matrix = accum_matrix @ current_matrix
+        child_accum_matrix = accum_matrix @ current_matrix
         child_matrix = current_matrix
 
         # current_color_code is the color_code up to this point
@@ -106,35 +106,32 @@ class LDrawNode:
         #  u9158.dat - ensure the battery contacts are correct
         if self.file.is_like_part():
             # creature_015_mangreengraysuitmustache.ldr is a BFC NOCERTIFY model which causes parts used by it to be NOCERTIFY everywhere
-            # reset bfc for top parts - top level parts aren't inverted
+            # reset bfc for parts since they are what define the bfc state of their geometry
             accum_cull = True
             accum_invert = False
             self.bfc_certified = None
 
         top_part = geometry_data is None and (self.file.has_geometry() or self.file.is_like_part())
         top_model = geometry_data is None and self.file.is_like_model()
-        x = False
-        # x = top_model and self.file.name == "10261 - candyflosscart.ldr"
 
-        treat_model_as_part = self.file.name == "10261 - candyflosscart.ldr"
-        treat_model_as_part = self.file.name == "40271 - Bunny.ldr"
-        treat_model_as_part = self.file.name == "10261 - main.ldr"
-        treat_model_as_part = False
-        top_part = top_part or treat_model_as_part
-
-        merge_model = self.file.is_like_model() and not self.is_root
-        merge_model = self.file.is_like_model()
+        merge_model = self.file.name == "10261 - candyflosscart.ldr"
         merge_model = False
-        top_part = top_part or merge_model
+        merge_model = top_model and merge_model
+
+        part_model = self.file.is_like_stud()
+        part_model = False
+        top_part = top_part or part_model
 
         if top_part:
             # top-level part
             LDrawNode.part_count += 1
+
             child_matrix = matrices.identity_matrix
             geometry_data = LDrawNode.geometry_datas.get(geometry_data_key)
         elif top_model:
-            if x:
+            if merge_model:
                 child_matrix = matrices.identity_matrix
+                geometry_data = LDrawNode.geometry_datas.get(geometry_data_key)
             LDrawNode.current_model_filename = self.file.name
 
         collection = None
@@ -148,7 +145,7 @@ class LDrawNode:
 
         # always process geometry_data if this is a subpart or there is no geometry_data
         # if geometry_data exists, this is a top level part that has already been processed so don't process this key again
-        is_top = top_part or x
+        is_top = top_part or merge_model or part_model
         if not is_top or geometry_data is None:
             if is_top:
                 geometry_data = GeometryData()
@@ -181,7 +178,7 @@ class LDrawNode:
                         child_node.load(
                             color_code=child_current_color,
                             parent_matrix=child_matrix,
-                            accum_matrix=accum_matrix,
+                            accum_matrix=child_accum_matrix,
                             geometry_data=geometry_data,
                             accum_cull=self.bfc_certified and accum_cull and local_cull,
                             accum_invert=(accum_invert ^ invert_next),  # xor
@@ -270,11 +267,16 @@ class LDrawNode:
                 LDrawNode.geometry_datas[geometry_data_key] = geometry_data
             geometry_data = LDrawNode.geometry_datas[geometry_data_key]
 
-            matrix = current_matrix
-            if merge_model:
-                matrix = accum_matrix
+            obj_matrix = current_matrix
 
-            obj = LDrawNode.__create_obj(geometry_data, color_code, matrix, collection)
+            if part_model:
+                obj_matrix = self.matrix
+                obj_matrix = parent_matrix
+                obj_matrix = current_matrix
+                obj_matrix = child_matrix
+                obj_matrix = accum_matrix @ self.matrix
+
+            obj = LDrawNode.__create_obj(geometry_data, color_code, obj_matrix, collection)
 
             # if LDrawNode.part_count == 1:
             #     raise BaseException("done")
