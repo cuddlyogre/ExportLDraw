@@ -50,6 +50,8 @@ class LDrawFile:
         self.child_nodes = []
         self.geometry_commands = {}
 
+        self.named = False
+
     def __str__(self):
         return "\n".join([
             f"filename: {self.filename}",
@@ -269,6 +271,9 @@ class LDrawFile:
     # https://forums.ldraw.org/thread-23904-post-35984.html#pid35984
     def __line_name(self, clean_line, strip_line):
         if clean_line.lower().startswith("0 Name: ".lower()):
+            if self.named:
+                return True
+            self.named = True
             self.name = strip_line.split(maxsplit=2)[2]
             return True
         return False
