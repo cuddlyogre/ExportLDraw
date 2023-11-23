@@ -269,7 +269,7 @@ class LDrawNode:
         if is_top:
             # geometry_data will not be None if this is a new mesh
             # geometry_data will be None if the mesh already exists
-            if geometry_data is not None:
+            if geometry_data_key not in LDrawNode.geometry_datas and geometry_data is not None:
                 geometry_data.key = geometry_data_key
                 geometry_data.file = self.file
                 geometry_data.bfc_certified = self.bfc_certified
