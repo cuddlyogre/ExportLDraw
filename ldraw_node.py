@@ -134,6 +134,15 @@ class LDrawNode:
                 geometry_data = LDrawNode.geometry_datas.get(geometry_data_key)
             LDrawNode.current_model_filename = self.file.name
 
+        if self.file.is_like_model() or self.file.is_like_part():
+            # creature_015_mangreengraysuitmustache.ldr is a BFC NOCERTIFY model which causes parts used by it to be NOCERTIFY everywhere
+            # reset bfc for parts since they are what define the bfc state of their geometry
+            accum_cull = True
+            accum_invert = False
+            self.bfc_certified = None
+            if geometry_data is not None:
+                self.bfc_certified = geometry_data.bfc_certified
+
         collection = None
         if top_part or top_model:
             collection = group.top_collection
