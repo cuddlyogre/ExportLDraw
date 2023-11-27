@@ -121,6 +121,7 @@ class LDrawFile:
             is_mpd = None
             no_file = False
             first_mpd_filename = None
+            current_file = None
             current_mpd_file = None
             current_data_filename = None
             current_data = None
@@ -168,10 +169,8 @@ class LDrawFile:
 
                 # not mpd -> regular ldr/dat file
                 if not is_mpd:
-                    current_file = cls.__raw_files.get(filename)
                     if current_file is None:
-                        cls.__raw_files[filename] = LDrawFile(filename)
-                        current_file = cls.__raw_files.get(filename)
+                        current_file = LDrawFile(filename)
                     current_file.lines.append(line)
                     continue
 
@@ -215,6 +214,9 @@ class LDrawFile:
             # last file in mpd will not be added to the file cache if it doesn't end in 0 NOFILE
             if current_mpd_file is not None:
                 cls.__raw_files[current_mpd_file.filename] = current_mpd_file
+
+            if current_file is not None:
+                cls.__raw_files[current_file.filename] = current_file
 
             if first_mpd_filename is not None:
                 filename = first_mpd_filename
