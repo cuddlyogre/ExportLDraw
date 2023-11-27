@@ -19,12 +19,12 @@ class LDrawFile:
     """
 
     __raw_files = {}
-    __file_cache = {}
+    __parsed_file_cache = {}
 
     @classmethod
     def reset_caches(cls):
         cls.__raw_files.clear()
-        cls.__file_cache.clear()
+        cls.__parsed_file_cache.clear()
 
     def __init__(self, filename):
         self.filename = filename
@@ -95,7 +95,7 @@ class LDrawFile:
 
     @classmethod
     def get_file(cls, filename):
-        ldraw_file = LDrawFile.__file_cache.get(filename)
+        ldraw_file = LDrawFile.__parsed_file_cache.get(filename)
         if ldraw_file is not None:
             return ldraw_file
 
@@ -107,7 +107,7 @@ class LDrawFile:
             return ldraw_file
 
         ldraw_file.__parse_file()
-        LDrawFile.__file_cache[filename] = ldraw_file
+        LDrawFile.__parsed_file_cache[filename] = ldraw_file
         return ldraw_file
 
     @classmethod
