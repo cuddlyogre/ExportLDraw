@@ -289,7 +289,7 @@ class LDrawNode:
     def __create_obj(geometry_data, color_code, matrix, collection):
         # blender mesh data is unique also based on color
         # this means a geometry_data for a file is created only once, but a mesh is created for every color that uses that geometry_data
-        key = f"{geometry_data.key}_{color_code}"
+        key = geometry_data.key
 
         mesh = ldraw_mesh.create_mesh(key, geometry_data, color_code)
         obj = ldraw_object.create_object(key, mesh, geometry_data, color_code, matrix, collection)
@@ -317,8 +317,9 @@ class LDrawNode:
         if matrix is not None:
             _key += (matrix,)
 
-        if len(_key) < 60:
-            return _key
+        str_key = str(_key)
+        if len(str_key) < 60:
+            return str(str_key)
 
         key = LDrawNode.key_map.get(_key)
         if key is None:
