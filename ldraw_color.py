@@ -36,8 +36,8 @@ blend_colors = [
 class LDrawColor:
     defaults = {}
 
-    defaults['use_alt_colors'] = True
-    use_alt_colors = defaults['use_alt_colors']
+    defaults["use_alt_colors"] = True
+    use_alt_colors = defaults["use_alt_colors"]
 
     __colors = {}
     __bad_color = None
@@ -388,15 +388,15 @@ class LDrawColor:
     @classmethod
     def __extract_hex_digits(cls, value):
         # the normal format of color values
-        if value.startswith('#'):  # '#efefefff'
+        if value.startswith("#"):  # "#efefefff"
             return value[1:]
 
         # some color codes in 973psr.dat are just hex values for the desired color, such as 0x24C4C45
-        if value.lower().startswith('0x2'):  # '0x24C4C45ff'
+        if value.lower().startswith("0x2"):  # "0x24C4C45ff"
             return value[3:]
 
-        # some color codes are ints that need to be converted to hex -> hex(intval) == '0xFFFFFFFF'
-        if value.lower().startswith('0x'):  # '0xffffffff'
+        # some color codes are ints that need to be converted to hex -> hex(intval) == "0xFFFFFFFF"
+        if value.lower().startswith("0x"):  # "0xffffffff"
             return value[2:]
 
         return None

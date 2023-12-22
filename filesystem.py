@@ -63,20 +63,20 @@ def is_case_sensitive():
 class FileSystem:
     defaults = {}
 
-    defaults['ldraw_path'] = locate_ldraw()
-    ldraw_path = defaults['ldraw_path']
+    defaults["ldraw_path"] = locate_ldraw()
+    ldraw_path = defaults["ldraw_path"]
 
-    defaults['studio_ldraw_path'] = locate_studio_ldraw()
-    studio_ldraw_path = defaults['studio_ldraw_path']
+    defaults["studio_ldraw_path"] = locate_studio_ldraw()
+    studio_ldraw_path = defaults["studio_ldraw_path"]
 
-    defaults['prefer_studio'] = False
-    prefer_studio = defaults['prefer_studio']
+    defaults["prefer_studio"] = False
+    prefer_studio = defaults["prefer_studio"]
 
-    defaults['prefer_unofficial'] = False
-    prefer_unofficial = defaults['prefer_unofficial']
+    defaults["prefer_unofficial"] = False
+    prefer_unofficial = defaults["prefer_unofficial"]
 
-    defaults['case_sensitive_filesystem'] = is_case_sensitive()
-    case_sensitive_filesystem = defaults['case_sensitive_filesystem']
+    defaults["case_sensitive_filesystem"] = is_case_sensitive()
+    case_sensitive_filesystem = defaults["case_sensitive_filesystem"]
 
     resolution_choices = (
         ("Low", "Low resolution primitives", "Import using low resolution primitives."),
@@ -84,8 +84,8 @@ class FileSystem:
         ("High", "High resolution primitives", "Import using high resolution primitives."),
     )
 
-    defaults['resolution'] = 1
-    resolution = defaults['resolution']
+    defaults["resolution"] = 1
+    resolution = defaults["resolution"]
 
     @staticmethod
     def resolution_value():

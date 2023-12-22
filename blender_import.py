@@ -145,7 +145,7 @@ def __load_materials(file):
         clean_line = helpers.clean_line(line)
         strip_line = line.strip()
 
-        if clean_line.startswith('0 // LDraw'):
+        if clean_line.startswith("0 // LDraw"):
             group_name = clean_line
             colors[group_name] = []
             continue

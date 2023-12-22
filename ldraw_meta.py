@@ -313,7 +313,7 @@ def meta_texmap(ldraw_node, child_node, matrix):
             texture_params = helpers.parse_csv_line(_params[13], 2)
             texture = texture_params[0]
             glossmap = texture_params[1]
-            if glossmap == '':
+            if glossmap == "":
                 glossmap = None
 
             new_texmap.parameters = [
@@ -331,7 +331,7 @@ def meta_texmap(ldraw_node, child_node, matrix):
             texture_params = helpers.parse_csv_line(_params[14], 2)
             texture = texture_params[0]
             glossmap = texture_params[1]
-            if glossmap == '':
+            if glossmap == "":
                 glossmap = None
 
             new_texmap.parameters = [
@@ -350,7 +350,7 @@ def meta_texmap(ldraw_node, child_node, matrix):
             texture_params = helpers.parse_csv_line(_params[15], 2)
             texture = texture_params[0]
             glossmap = texture_params[1]
-            if glossmap == '':
+            if glossmap == "":
                 glossmap = None
 
             new_texmap.parameters = [
