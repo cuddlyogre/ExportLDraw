@@ -104,12 +104,6 @@ class LDrawNode:
         #  in cases where they aren't part of a shortcut
         # TODO: is_shortcut_model splits 99141c01.dat and u9158.dat into its subparts -
         #  u9158.dat - ensure the battery contacts are correct
-        if self.file.is_like_part():
-            # creature_015_mangreengraysuitmustache.ldr is a BFC NOCERTIFY model which causes parts used by it to be NOCERTIFY everywhere
-            # reset bfc for parts since they are what define the bfc state of their geometry
-            accum_cull = True
-            accum_invert = False
-            self.bfc_certified = None
 
         top_part = geometry_data is None and (self.file.has_geometry() or self.file.is_like_part())
         top_model = geometry_data is None and self.file.is_like_model()
@@ -140,8 +134,6 @@ class LDrawNode:
             accum_cull = True
             accum_invert = False
             self.bfc_certified = None
-            if geometry_data is not None:
-                self.bfc_certified = geometry_data.bfc_certified
 
         collection = None
         if top_part or top_model:
