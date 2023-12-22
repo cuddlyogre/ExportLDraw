@@ -18,12 +18,12 @@ class LDrawFile:
     A file that has been loaded and its lines converted to header data and ldraw_nodes.
     """
 
-    __raw_files = {}
+    __unparsed_file_cache = {}
     __parsed_file_cache = {}
 
     @classmethod
     def reset_caches(cls):
-        cls.__raw_files.clear()
+        cls.__unparsed_file_cache.clear()
         cls.__parsed_file_cache.clear()
 
     def __init__(self, filename):
@@ -99,7 +99,7 @@ class LDrawFile:
         if ldraw_file is not None:
             return ldraw_file
 
-        ldraw_file = cls.__raw_files.get(filename)
+        ldraw_file = cls.__unparsed_file_cache.get(filename)
         if ldraw_file is None:
             ldraw_file = LDrawFile.read_file(filename)
 
@@ -183,14 +183,14 @@ class LDrawFile:
                         first_mpd_filename = mpd_filename
 
                     if current_mpd_file is not None:
-                        cls.__raw_files[current_mpd_file.filename] = current_mpd_file
+                        cls.__unparsed_file_cache[current_mpd_file.filename] = current_mpd_file
                     current_mpd_file = LDrawFile(mpd_filename)
                     continue
 
                 if is_nofile_line:
                     no_file = True
                     if current_mpd_file is not None:
-                        cls.__raw_files[current_mpd_file.filename] = current_mpd_file
+                        cls.__unparsed_file_cache[current_mpd_file.filename] = current_mpd_file
                     current_mpd_file = None
                     continue
 
@@ -213,15 +213,15 @@ class LDrawFile:
 
             # last file in mpd will not be added to the file cache if it doesn't end in 0 NOFILE
             if current_mpd_file is not None:
-                cls.__raw_files[current_mpd_file.filename] = current_mpd_file
+                cls.__unparsed_file_cache[current_mpd_file.filename] = current_mpd_file
 
             if current_file is not None:
-                cls.__raw_files[current_file.filename] = current_file
+                cls.__unparsed_file_cache[current_file.filename] = current_file
 
             if first_mpd_filename is not None:
                 filename = first_mpd_filename
 
-            return cls.__raw_files.get(filename)
+            return cls.__unparsed_file_cache.get(filename)
 
     # create meta nodes when those commands affect the scene
     # process meta command in place if it only affects the file
