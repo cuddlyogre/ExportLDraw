@@ -691,7 +691,7 @@ class LDrawFile:
         return self.part_type in ldraw_part_types.part_types
 
     def is_like_part(self):
-        return self.is_part() or self.is_shortcut_part()
+        return self.is_part() or self.is_shortcut_part() or self.has_geometry()
 
     def is_subpart(self):
         return self.part_type in ldraw_part_types.subpart_types

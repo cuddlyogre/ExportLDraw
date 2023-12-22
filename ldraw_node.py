@@ -105,7 +105,7 @@ class LDrawNode:
         # TODO: is_shortcut_model splits 99141c01.dat and u9158.dat into its subparts -
         #  u9158.dat - ensure the battery contacts are correct
 
-        top_part = geometry_data is None and (self.file.has_geometry() or self.file.is_like_part())
+        top_part = geometry_data is None and self.file.is_like_part()
         top_model = geometry_data is None and self.file.is_like_model()
 
         merge_model = self.file.name == "10261 - candyflosscart.ldr"
