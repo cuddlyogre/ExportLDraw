@@ -126,12 +126,12 @@ class LDrawNode:
             # top-level part
             LDrawNode.part_count += 1
 
-            child_matrix = matrices.identity_matrix
             geometry_data = LDrawNode.geometry_datas.get(geometry_data_key)
+            child_matrix = matrices.identity_matrix
         elif top_model:
             if merge_model:
-                child_matrix = matrices.identity_matrix
                 geometry_data = LDrawNode.geometry_datas.get(geometry_data_key)
+                child_matrix = matrices.identity_matrix
             LDrawNode.current_model_filename = self.file.name
 
         if self.file.is_like_model() or self.file.is_like_part():
