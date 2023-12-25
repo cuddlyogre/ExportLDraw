@@ -95,23 +95,23 @@ class LDrawFile:
 
     @classmethod
     def get_file(cls, filename):
-        ldraw_file = LDrawFile.__parsed_file_cache.get(filename)
+        ldraw_file = cls.__parsed_file_cache.get(filename)
         if ldraw_file is not None:
             return ldraw_file
 
         ldraw_file = cls.__unparsed_file_cache.get(filename)
         if ldraw_file is None:
-            ldraw_file = LDrawFile.read_file(filename)
+            ldraw_file = cls.__read_file(filename)
 
         if ldraw_file is None:
             return ldraw_file
 
         ldraw_file.__parse_file()
-        LDrawFile.__parsed_file_cache[filename] = ldraw_file
+        cls.__parsed_file_cache[filename] = ldraw_file
         return ldraw_file
 
     @classmethod
-    def read_file(cls, filename):
+    def __read_file(cls, filename):
         filepath = FileSystem.locate(filename)
         if filepath is None:
             return None
