@@ -128,7 +128,7 @@ class LDrawNode:
                 child_matrix = matrices.identity_matrix
             LDrawNode.current_model_filename = self.file.name
 
-        if (self.file.is_like_model() or self.file.is_like_part()) and geometry_data is None:
+        if top_model or top_part:
             # creature_015_mangreengraysuitmustache.ldr is a BFC NOCERTIFY model which causes parts used by it to be NOCERTIFY everywhere
             # reset bfc for parts since they are what define the bfc state of their geometry
             accum_cull = True
