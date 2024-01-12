@@ -167,6 +167,7 @@ def __create_edge_mesh(key, geometry_data):
 
         edge_mesh.from_pydata(e_verts, e_edges, e_faces)
         helpers.finish_mesh(edge_mesh)
+        __scale_mesh(edge_mesh)
 
 
 def __process_mesh_sharp_edges(mesh, geometry_data):
@@ -190,3 +191,11 @@ def __process_mesh(mesh):
     if ImportOptions.smooth_type_value() == "auto_smooth" or ImportOptions.smooth_type_value() == "bmesh_split":
         mesh.use_auto_smooth = ImportOptions.shade_smooth
         mesh.auto_smooth_angle = matrices.auto_smooth_angle
+    # scale here so edges can be marked sharp
+    __scale_mesh(mesh)
+
+
+def __scale_mesh(mesh):
+    if ImportOptions.scale_strategy_value() == "mesh":
+        aa = matrices.import_scale_matrix
+        mesh.transform(aa)
