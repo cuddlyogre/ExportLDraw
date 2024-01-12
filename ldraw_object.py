@@ -96,7 +96,7 @@ def __create_edge_obj(key, obj, geometry_data, color_code, collection):
         edge_obj[strings.ldraw_filename_key] = f"{geometry_data.file.name}_edges"
         edge_obj[strings.ldraw_color_code_key] = color_code
         color = LDrawColor.get_color(color_code)
-        edge_obj.color = color.edge_color_d
+        edge_obj.color = color.linear_edge_color_d
 
         ldraw_meta.do_meta_step(edge_obj)
 
