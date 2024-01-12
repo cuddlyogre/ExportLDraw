@@ -21,9 +21,13 @@ class BlenderMaterials:
     @classmethod
     def create_blender_node_groups(cls):
         cls.reset_caches()
+
         path = os.path.join(APP_ROOT, 'materials', 'all_monkeys.blend')
         if bpy.app.version < (3, 4):
             path = os.path.join(APP_ROOT, 'materials', 'all_monkeys_33.blend')
+        elif bpy.app.version < (4,):
+            path = os.path.join(APP_ROOT, 'materials', 'all_monkeys_36.blend')
+
         with bpy.data.libraries.load(path) as (data_from, data_to):
             all_node_groups = False
             if all_node_groups:
