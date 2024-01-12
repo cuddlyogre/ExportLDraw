@@ -95,6 +95,10 @@ class BlenderMaterials:
         if pe_texmap is not None:
             _key += (pe_texmap.texture,)
 
+        str_key = str(_key)
+        if len(str_key) < 60:
+            return str(str_key)
+
         key = cls.__key_map.get(_key)
         if key is None:
             cls.__key_map[_key] = str(uuid.uuid4())
