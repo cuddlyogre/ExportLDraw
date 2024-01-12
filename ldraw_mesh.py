@@ -4,7 +4,6 @@ import mathutils
 
 from .blender_materials import BlenderMaterials
 from .import_options import ImportOptions
-from .ldraw_color import LDrawColor
 from . import special_bricks
 from . import strings
 from . import helpers

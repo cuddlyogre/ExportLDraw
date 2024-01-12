@@ -6,7 +6,6 @@ import uuid
 from .definitions import APP_ROOT
 from .ldraw_color import LDrawColor
 from .filesystem import FileSystem
-from .import_options import ImportOptions
 from . import strings
 
 
