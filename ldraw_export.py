@@ -137,14 +137,17 @@ def get_matrix(obj):
 
     invert_gap_scale_matrix = obj.ldraw_props.invert_gap_scale_matrix
 
+    matrix_world = matrices.identity_matrix
+    matrix_world = obj.matrix_world
+
     if invert_import_scale_matrix and invert_gap_scale_matrix:
-        aa = matrices.import_scale_matrix.inverted() @ obj.matrix_world @ matrices.gap_scale_matrix.inverted()
+        aa = matrices.import_scale_matrix.inverted() @ matrix_world @ matrices.gap_scale_matrix.inverted()
     elif invert_import_scale_matrix:
-        aa = matrices.import_scale_matrix.inverted() @ obj.matrix_world
+        aa = matrices.import_scale_matrix.inverted() @ matrix_world
     elif invert_gap_scale_matrix:
-        aa = obj.matrix_world @ matrices.gap_scale_matrix.inverted()
+        aa = matrix_world @ matrices.gap_scale_matrix.inverted()
     else:
-        aa = obj.matrix_world
+        aa = matrix_world
 
     return matrices.rotation_matrix.inverted() @ aa
 
