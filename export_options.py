@@ -1,14 +1,14 @@
 class ExportOptions:
     defaults = {}
 
-    defaults["remove_doubles"] = True
+    defaults["remove_doubles"] = False
     remove_doubles = defaults["remove_doubles"]
-
-    defaults["recalculate_normals"] = False
-    recalculate_normals = defaults["recalculate_normals"]
 
     defaults["merge_distance"] = 0.05
     merge_distance = defaults["merge_distance"]
+
+    defaults["recalculate_normals"] = False
+    recalculate_normals = defaults["recalculate_normals"]
 
     defaults["triangulate"] = False
     triangulate = defaults["triangulate"]
