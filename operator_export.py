@@ -153,7 +153,7 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
         layout.separator(factor=space_factor)
         col = layout.column()
         col.label(text="Export Options")
-        # col.prop(self, "selection_only")
+        col.prop(self, "selection_only")
         col.prop(self, "use_alt_colors")
 
         layout.separator(factor=space_factor)
