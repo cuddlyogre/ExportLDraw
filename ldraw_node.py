@@ -277,23 +277,22 @@ class LDrawNode:
                 obj_matrix = child_matrix
                 obj_matrix = accum_matrix @ self.matrix
 
-            obj = LDrawNode.__create_obj(geometry_data, color_code, obj_matrix, collection)
+            # blender mesh data is unique also based on color
+            # this means a geometry_data for a file is created only once, but a mesh is created for every color that uses that geometry_data
+            key = geometry_data.key
+            mesh = ldraw_mesh.create_mesh(key, geometry_data, color_code)
+            obj = ldraw_object.create_object(mesh, geometry_data, color_code, obj_matrix, collection)
+
+            if ImportOptions.import_edges:
+                edge_key = f"e_{geometry_data.key}"
+                edge_mesh = ldraw_mesh.create_edge_mesh(edge_key, geometry_data)
+                edge_obj = ldraw_object.create_edge_obj(edge_mesh, geometry_data, color_code, obj, collection)
 
             # if LDrawNode.part_count == 1:
             #     raise BaseException("done")
 
             # yield obj
             return obj
-
-    @staticmethod
-    def __create_obj(geometry_data, color_code, matrix, collection):
-        # blender mesh data is unique also based on color
-        # this means a geometry_data for a file is created only once, but a mesh is created for every color that uses that geometry_data
-        key = geometry_data.key
-
-        mesh = ldraw_mesh.create_mesh(key, geometry_data, color_code)
-        obj = ldraw_object.create_object(key, mesh, geometry_data, color_code, matrix, collection)
-        return obj
 
     # set the working color code to this file's
     # color code if it isn't color code 16

@@ -8,6 +8,7 @@ from . import ldraw_props
 from . import ldraw_meta
 from . import matrices
 
+
 top_empty = None
 gap_scale_empty = None
 
@@ -21,21 +22,39 @@ def reset_caches():
 
 
 # TODO: to add rigid body - must apply scale and cannot be parented to empty
-def create_object(key, mesh, geometry_data, color_code, matrix, collection):
+def create_object(mesh, geometry_data, color_code, matrix, collection):
     obj = bpy.data.objects.new(mesh.name, mesh)
     obj[strings.ldraw_filename_key] = geometry_data.file.name
     obj[strings.ldraw_color_code_key] = color_code
+
     color = LDrawColor.get_color(color_code)
     obj.color = color.linear_color_a
 
     ldraw_props.set_props(obj, geometry_data.file, color_code)
     __process_top_object_matrix(obj, matrix)
     __process_top_object_edges(obj)
+
     ldraw_meta.do_meta_step(obj)
     __link_obj_to_collection(obj, collection)
-    __create_edge_obj(key, obj, geometry_data, color_code, collection)
 
     return obj
+
+
+def create_edge_obj(mesh, geometry_data, color_code, obj, collection):
+    edge_obj = bpy.data.objects.new(mesh.name, mesh)
+    edge_obj[strings.ldraw_filename_key] = f"{geometry_data.file.name}_edges"
+    edge_obj[strings.ldraw_color_code_key] = color_code
+
+    color = LDrawColor.get_color(color_code)
+    edge_obj.color = color.linear_edge_color_d
+
+    ldraw_meta.do_meta_step(edge_obj)
+    __link_obj_to_collection(edge_obj, collection)
+
+    edge_obj.parent = obj
+    edge_obj.matrix_world = obj.matrix_world
+
+    return edge_obj
 
 
 def __process_top_object_matrix(obj, obj_matrix):
@@ -85,24 +104,6 @@ def __process_top_object_edges(obj):
         # see the back blue window stripes in 10252-1 - Volkswagen Beetle.mpd
         edge_modifier.use_edge_angle = True
         edge_modifier.split_angle = matrices.auto_smooth_angle
-
-
-def __create_edge_obj(key, obj, geometry_data, color_code, collection):
-    if ImportOptions.import_edges:
-        edge_key = f"e_{key}"
-        edge_mesh = ldraw_mesh.get_mesh(edge_key)
-        edge_obj = bpy.data.objects.new(edge_mesh.name, edge_mesh)
-        edge_obj[strings.ldraw_filename_key] = f"{geometry_data.file.name}_edges"
-        edge_obj[strings.ldraw_color_code_key] = color_code
-        color = LDrawColor.get_color(color_code)
-        edge_obj.color = color.linear_edge_color_d
-
-        ldraw_meta.do_meta_step(edge_obj)
-
-        __link_obj_to_collection(edge_obj, collection)
-
-        edge_obj.parent = obj
-        edge_obj.matrix_world = obj.matrix_world
 
 
 def __link_obj_to_collection(obj, _collection):

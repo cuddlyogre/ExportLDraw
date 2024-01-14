@@ -10,12 +10,8 @@ from . import helpers
 from . import matrices
 
 
-def get_mesh(key):
-    return bpy.data.meshes.get(key)
-
-
 def create_mesh(key, geometry_data, color_code):
-    mesh = get_mesh(key)
+    mesh = bpy.data.meshes.get(key)
     if mesh is None:
         mesh = bpy.data.meshes.new(key)
         mesh.name = key
@@ -24,7 +20,35 @@ def create_mesh(key, geometry_data, color_code):
         __process_bmesh(mesh, geometry_data, color_code)
         __process_mesh_sharp_edges(mesh, geometry_data)
         __process_mesh(mesh)
-        __create_edge_mesh(key, geometry_data)
+
+    return mesh
+
+
+# for edge_data in geometry_data.line_data:
+# for vertex in edge_data.vertices[0:2]:  # in case line_data is being used since it has 4 verts
+def create_edge_mesh(key, geometry_data):
+    mesh = bpy.data.meshes.get(key)
+    if mesh is None:
+        e_verts = []
+        e_edges = []
+        e_faces = []
+
+        i = 0
+        for edge_data in geometry_data.edge_data:
+            face_indices = []
+            for vertex in edge_data.vertices:
+                e_verts.append(vertex)
+                face_indices.append(i)
+                i += 1
+            e_faces.append(face_indices)
+
+        mesh = bpy.data.meshes.new(key)
+        mesh.name = key
+        mesh[strings.ldraw_filename_key] = geometry_data.file.name
+
+        mesh.from_pydata(e_verts, e_edges, e_faces)
+        helpers.finish_mesh(mesh)
+        __scale_mesh(mesh)
 
     return mesh
 
@@ -142,35 +166,7 @@ def __clean_bmesh(bm):
         bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
 
 
-# for edge_data in geometry_data.line_data:
-# for vertex in edge_data.vertices[0:2]:  # in case line_data is being used since it has 4 verts
-def __create_edge_mesh(key, geometry_data):
-    if ImportOptions.import_edges:
-        e_verts = []
-        e_edges = []
-        e_faces = []
-
-        i = 0
-        for edge_data in geometry_data.edge_data:
-            face_indices = []
-            for vertex in edge_data.vertices:
-                e_verts.append(vertex)
-                face_indices.append(i)
-                i += 1
-            e_faces.append(face_indices)
-
-        edge_key = f"e_{key}"
-        edge_mesh = bpy.data.meshes.new(edge_key)
-        edge_mesh.name = edge_key
-        edge_mesh[strings.ldraw_filename_key] = geometry_data.file.name
-
-        edge_mesh.from_pydata(e_verts, e_edges, e_faces)
-        helpers.finish_mesh(edge_mesh)
-        __scale_mesh(edge_mesh)
-
-
 def __process_mesh_sharp_edges(mesh, geometry_data):
-    # TODO: ImportOptions.mark_edges_as_sharp
     if ImportOptions.smooth_type_value() == "edge_split" or ImportOptions.use_freestyle_edges or ImportOptions.bevel_edges:
         edge_indices = __get_edge_indices(mesh.vertices, geometry_data)
 
