@@ -21,8 +21,6 @@ from . import matrices
 # if obj.ldraw_props.export_polygons current object being iterated will be exported as line type 2,3,4
 # otherwise line type 1
 def do_export(filepath):
-    LDrawFile.reset_caches()
-    LDrawNode.reset_caches()
     FileSystem.build_search_paths(parent_filepath=filepath)
     LDrawFile.read_color_table()
 

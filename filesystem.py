@@ -101,8 +101,6 @@ class FileSystem:
 
     @classmethod
     def build_search_paths(cls, parent_filepath=None):
-        cls.reset_caches()
-
         ldraw_roots = []
 
         # append top level file's directory

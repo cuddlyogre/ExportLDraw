@@ -63,8 +63,6 @@ class LDrawFile:
 
     @classmethod
     def read_color_table(cls):
-        LDrawColor.reset_caches()
-
         """Reads the color values from the LDConfig.ldr file. For details of the
         LDraw color system see: http://www.ldraw.org/article/547"""
 

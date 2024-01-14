@@ -25,13 +25,6 @@ def do_import(filepath):
 
     __scene_setup()
 
-    LDrawFile.reset_caches()
-    LDrawNode.reset_caches()
-    group.reset_caches()
-    ldraw_meta.reset_caches()
-    ldraw_object.reset_caches()
-    matrices.reset_caches()
-
     FileSystem.build_search_paths(parent_filepath=filepath)
     LDrawFile.read_color_table()
     BlenderMaterials.create_blender_node_groups()
@@ -78,6 +71,16 @@ def do_import(filepath):
                 if space.type == "VIEW_3D":
                     if space.clip_end < max_clip_end:
                         space.clip_end = max_clip_end
+
+    BlenderMaterials.reset_caches()
+    FileSystem.reset_caches()
+    LDrawColor.reset_caches()
+    LDrawFile.reset_caches()
+    LDrawNode.reset_caches()
+    group.reset_caches()
+    ldraw_meta.reset_caches()
+    ldraw_object.reset_caches()
+    matrices.reset_caches()
 
     return obj
 
