@@ -108,7 +108,7 @@ def __process_bmesh_faces(mesh, geometry_data, color_code):
         parts_cloth = special_bricks.get_parts_cloth(geometry_data.file.name)
         material = BlenderMaterials.get_material(
             color_code=c,
-            use_backface_culling=geometry_data.bfc_certified,
+            bfc_certified=geometry_data.bfc_certified,
             part_slopes=part_slopes,
             parts_cloth=parts_cloth,
             texmap=face_data.texmap,

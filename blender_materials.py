@@ -47,14 +47,14 @@ class BlenderMaterials:
             node_group.use_fake_user = True
 
     @classmethod
-    def get_material(cls, color_code, use_backface_culling=True, part_slopes=None, parts_cloth=False, texmap=None, pe_texmap=None, easy_key=False):
+    def get_material(cls, color_code, bfc_certified=True, part_slopes=None, parts_cloth=False, texmap=None, pe_texmap=None, easy_key=False):
         color = LDrawColor.get_color(color_code)
-        use_backface_culling = use_backface_culling is True
+        bfc_certified = bfc_certified is True
 
         if easy_key:
             key = color_code
         else:
-            key = cls.__build_key(color, use_backface_culling, part_slopes, parts_cloth, texmap, pe_texmap)
+            key = cls.__build_key(color, bfc_certified, part_slopes, parts_cloth, texmap, pe_texmap)
 
         # Reuse current material if it exists, otherwise create a new material
         material = bpy.data.materials.get(key)
@@ -64,7 +64,7 @@ class BlenderMaterials:
         material = cls.__create_node_based_material(
             key,
             color,
-            use_backface_culling=use_backface_culling,
+            bfc_certified=bfc_certified,
             part_slopes=part_slopes,
             parts_cloth=parts_cloth,
             texmap=texmap,
@@ -73,12 +73,12 @@ class BlenderMaterials:
         return material
 
     @classmethod
-    def __build_key(cls, color, use_backface_culling, part_slopes, parts_cloth, texmap, pe_texmap):
+    def __build_key(cls, color, bfc_certified, part_slopes, parts_cloth, texmap, pe_texmap):
         _key = ()
 
         _key += (color.name, color.code,)
 
-        _key += (use_backface_culling,)
+        _key += (bfc_certified,)
 
         _key += (LDrawColor.use_alt_colors,)
 
@@ -106,11 +106,11 @@ class BlenderMaterials:
         return key
 
     @classmethod
-    def __create_node_based_material(cls, key, color, use_backface_culling=True, part_slopes=None, parts_cloth=False, texmap=None, pe_texmap=None):
+    def __create_node_based_material(cls, key, color, bfc_certified=True, part_slopes=None, parts_cloth=False, texmap=None, pe_texmap=None):
         material = bpy.data.materials.new(key)
         material.use_fake_user = True
         material.use_nodes = True
-        material.use_backface_culling = use_backface_culling
+        material.use_backface_culling = bfc_certified
 
         nodes = material.node_tree.nodes
         links = material.node_tree.links
