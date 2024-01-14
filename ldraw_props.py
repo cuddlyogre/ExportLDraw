@@ -275,7 +275,7 @@ class LDrawProps(bpy.types.PropertyGroup):
 
     export_polygons: bpy.props.BoolProperty(
         name="Export polygons",
-        description="If true, export object as polygons. If false, export as line type 1.",
+        description="If true, export object as polygons. If false, export as line type 1",
         default=False
     )
 
