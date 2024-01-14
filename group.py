@@ -47,20 +47,20 @@ def groups_setup(ldraw_node):
     collection = get_filename_collection(collection_name, host_collection)
     top_collection = collection
 
-    collection_name = 'Parts'
-    host_collection = get_scene_collection()
+    collection_name = f"{top_collection.name} Parts"
+    host_collection = top_collection
     collection = get_collection(collection_name, host_collection)
     parts_collection = collection
     helpers.hide_obj(parts_collection)
 
     if ImportOptions.meta_group:
-        collection_name = 'Groups'
+        collection_name = f"{top_collection.name} Groups"
         host_collection = top_collection
         collection = get_collection(collection_name, host_collection)
         groups_collection = collection
         helpers.hide_obj(groups_collection)
 
-        collection_name = 'Ungrouped'
+        collection_name = f"{top_collection.name} Ungrouped"
         host_collection = top_collection
         collection = get_collection(collection_name, host_collection)
         ungrouped_collection = collection
