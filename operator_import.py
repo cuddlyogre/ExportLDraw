@@ -332,9 +332,6 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
 
         # bpy.ops.object.mode_set(mode='OBJECT')
 
-        ImportSettings.save_settings()
-        ImportSettings.apply_settings()
-
         # wm = context.window_manager
         # self._timer = wm.event_timer_add(0.01, window=context.window)
         # wm.modal_handler_add(self)

@@ -1,8 +1,9 @@
 import bpy
 import bmesh
 
-from .blender_materials import BlenderMaterials
+from .import_settings import ImportSettings
 from .import_options import ImportOptions
+from .blender_materials import BlenderMaterials
 from .ldraw_file import LDrawFile
 from .ldraw_node import LDrawNode
 from .filesystem import FileSystem
@@ -18,6 +19,9 @@ from . import matrices
 
 def do_import(filepath):
     print(filepath)  # TODO: multiple filepaths?
+
+    ImportSettings.save_settings()
+    ImportSettings.apply_settings()
 
     __scene_setup()
 
