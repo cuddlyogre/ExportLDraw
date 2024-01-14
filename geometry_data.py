@@ -1,5 +1,3 @@
-from . import matrices
-
 class FaceData:
     """
     Raw vertex information

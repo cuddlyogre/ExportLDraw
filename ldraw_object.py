@@ -6,7 +6,6 @@ from . import group
 from . import strings
 from . import ldraw_props
 from . import ldraw_meta
-from . import ldraw_mesh
 from . import matrices
 
 top_empty = None
