@@ -117,3 +117,16 @@ class ImportOptions:
 
     defaults["treat_shortcut_as_model"] = False  # TODO: if true parent to empty at median of group
     treat_shortcut_as_model = defaults["treat_shortcut_as_model"]
+
+    scale_strategy_choices = (
+        ("mesh", "Scale mesh", "Apply import scaling to mesh. Recommended for rendering"),
+        ("object", "Scale object", "Apply import scaling to object. Recommended for part editing"),
+    )
+
+    defaults["scale_strategy"] = 1
+    defaults["scale_strategy"] = 0
+    scale_strategy = defaults["scale_strategy"]
+
+    @staticmethod
+    def scale_strategy_value():
+        return ImportOptions.scale_strategy_choices[ImportOptions.scale_strategy][0]

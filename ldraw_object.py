@@ -82,6 +82,9 @@ def __process_top_object_matrix(obj, obj_matrix):
 
         obj.ldraw_props.invert_import_scale_matrix = True
 
+    if ImportOptions.scale_strategy_value() == "mesh":
+        obj.matrix_world = matrix_world @ matrices.import_scale_matrix.inverted()
+
 
 def __process_gap_scale_matrix(obj, matrix_world):
     if ImportOptions.make_gaps:

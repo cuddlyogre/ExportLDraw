@@ -127,6 +127,13 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         **ImportSettings.settings_dict('parent_to_empty'),
     )
 
+    scale_strategy: bpy.props.EnumProperty(
+        name="Scale strategy",
+        description="How to apply import scaling",
+        **ImportSettings.settings_dict('scale_strategy'),
+        items=ImportOptions.scale_strategy_choices,
+    )
+
     import_scale: bpy.props.FloatProperty(
         name="Import scale",
         description="Scale the entire model by this amount",
@@ -396,6 +403,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         layout.separator(factor=space_factor)
         col = layout.column()
         col.label(text="Scaling Options")
+        col.prop(self, "scale_strategy")
         col.prop(self, "import_scale")
         col.prop(self, "parent_to_empty")
         col.prop(self, "make_gaps")
