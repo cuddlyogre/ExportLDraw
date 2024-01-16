@@ -83,7 +83,10 @@ def get_collection(collection_name, host_collection):
 
 def get_filename_collection(collection_name, host_collection):
     collection_name = os.path.basename(collection_name)
-    return get_collection(collection_name, host_collection)
+    collection = bpy.data.collections.new(collection_name)
+    if host_collection is not None:
+        link_child(collection, host_collection)
+    return collection
 
 
 def link_child(collection, host_collection):
