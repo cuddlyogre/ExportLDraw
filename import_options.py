@@ -112,7 +112,7 @@ class ImportOptions:
     defaults["import_scale"] = 0.02
     import_scale = defaults["import_scale"]
 
-    defaults["parent_to_empty"] = True  # True False
+    defaults["parent_to_empty"] = False  # True False
     parent_to_empty = defaults["parent_to_empty"]
 
     defaults["treat_shortcut_as_model"] = False  # TODO: if true parent to empty at median of group
