@@ -11,7 +11,7 @@ from . import ldraw_export
 
 
 class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
-    """Export an LDraw model File."""
+    """Export an LDraw model File"""
 
     bl_idname = "ldraw_exporter.export_operator"
     bl_label = "Export LDraw"
