@@ -14,6 +14,7 @@ from . import ldraw_props
 from . import operator_import
 from . import operator_export
 from . import operator_panel_ldraw
+from . import ldraw_operators
 
 
 def register():
@@ -21,6 +22,7 @@ def register():
     operator_import.register()
     operator_export.register()
     operator_panel_ldraw.register()
+    ldraw_operators.register()
 
 
 def unregister():
@@ -28,6 +30,7 @@ def unregister():
     operator_import.unregister()
     operator_export.unregister()
     operator_panel_ldraw.unregister()
+    ldraw_operators.unregister()
 
 
 if __name__ == "__main__":
