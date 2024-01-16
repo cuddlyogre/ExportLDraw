@@ -58,6 +58,7 @@ class LDrawNode:
              accum_cull=True,
              accum_invert=False,
              parent_collection=None,
+             return_mesh=False,
              ):
 
         if self.file.is_edge_logo() and not ImportOptions.display_logo:
@@ -280,7 +281,9 @@ class LDrawNode:
             # blender mesh data is unique also based on color
             # this means a geometry_data for a file is created only once, but a mesh is created for every color that uses that geometry_data
             key = geometry_data.key
-            mesh = ldraw_mesh.create_mesh(key, geometry_data, color_code)
+            mesh = ldraw_mesh.create_mesh(key, geometry_data, color_code, return_mesh=return_mesh)
+            if return_mesh:
+                return mesh
             obj = ldraw_object.create_object(mesh, geometry_data, color_code, obj_matrix, collection)
 
             if ImportOptions.import_edges:

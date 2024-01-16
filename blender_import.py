@@ -17,7 +17,7 @@ from . import ldraw_object
 from . import matrices
 
 
-def do_import(filepath):
+def do_import(filepath, color_code="16", return_mesh=False):
     print(filepath)  # TODO: multiple filepaths?
 
     ImportSettings.save_settings()
@@ -46,7 +46,7 @@ def do_import(filepath):
     group.groups_setup(root_node)
 
     # return root_node.load()
-    obj = root_node.load()
+    obj = root_node.load(color_code=color_code, return_mesh=return_mesh)
 
     # s = {str(k): v for k, v in sorted(LDrawNode.geometry_datas2.items(), key=lambda ele: ele[1], reverse=True)}
     # helpers.write_json("gs2.json", s, indent=4)

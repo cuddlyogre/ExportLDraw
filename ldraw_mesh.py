@@ -10,10 +10,11 @@ from . import helpers
 from . import matrices
 
 
-def create_mesh(key, geometry_data, color_code):
+def create_mesh(key, geometry_data, color_code, return_mesh=False):
     mesh = bpy.data.meshes.get(key)
-    if mesh is None:
-        mesh = bpy.data.meshes.new(key)
+    if mesh is None or return_mesh:
+        if mesh is None:
+            mesh = bpy.data.meshes.new(key)
         mesh.name = key
         mesh[strings.ldraw_filename_key] = geometry_data.file.name
 
