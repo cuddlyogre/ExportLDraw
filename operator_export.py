@@ -17,6 +17,9 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
     bl_label = "Export LDraw"
     bl_options = {'PRESET'}
 
+    # TODO: set export filename to current obj ldraw part_name
+    # TODO: export polygons as individual parts
+
     filename_ext: bpy.props.EnumProperty(
         name='File extension',
         description='Choose File Format:',
