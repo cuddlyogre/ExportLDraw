@@ -287,7 +287,7 @@ class LDrawProps(bpy.types.PropertyGroup):
     )
 
     export_precision: bpy.props.IntProperty(
-        name="Export precision",
+        name="Vertex precision",
         description="Round vertex coordinates to this number of places",
         default=ExportOptions.export_precision,
         min=0,
