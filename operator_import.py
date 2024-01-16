@@ -399,13 +399,13 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         col.prop(self, "display_logo")
         col.prop(self, "chosen_logo")
         col.prop(self, "use_freestyle_edges")
+        col.prop(self, "parent_to_empty")
 
         layout.separator(factor=space_factor)
         col = layout.column()
         col.label(text="Scaling Options")
         col.prop(self, "scale_strategy")
         col.prop(self, "import_scale")
-        col.prop(self, "parent_to_empty")
         col.prop(self, "make_gaps")
         col.prop(self, "gap_scale")
 
