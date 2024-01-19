@@ -19,11 +19,11 @@ class BlenderMaterials:
     # https://github.com/bblanimation/abs-plastic-materials
     @classmethod
     def create_blender_node_groups(cls):
-        path = os.path.join(APP_ROOT, 'materials', 'all_monkeys.blend')
+        path = os.path.join(APP_ROOT, 'inc', 'all_monkeys.blend')
         if bpy.app.version < (3, 4):
-            path = os.path.join(APP_ROOT, 'materials', 'all_monkeys_33.blend')
+            path = os.path.join(APP_ROOT, 'inc', 'all_monkeys_33.blend')
         elif bpy.app.version < (4,):
-            path = os.path.join(APP_ROOT, 'materials', 'all_monkeys_36.blend')
+            path = os.path.join(APP_ROOT, 'inc', 'all_monkeys_36.blend')
 
         with bpy.data.libraries.load(path) as (data_from, data_to):
             all_node_groups = False
