@@ -3,6 +3,21 @@ import bpy
 from . import ldraw_operators
 
 
+def do_poll(context):
+    selected_objects = context.selected_objects
+    obj = context.object
+    obj = context.active_object
+
+    if not obj:
+        return False
+
+    picked_obj = len(selected_objects) > 0
+    if not picked_obj:
+        return False
+
+    return True
+
+
 # TODO: panel that add color code to face's material
 class CO_PT_ldraw_panel(bpy.types.Panel):
     """LDraw part header panel"""
@@ -18,17 +33,10 @@ class CO_PT_ldraw_panel(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        selected_objects = context.selected_objects
-        return len(selected_objects) > 0
+        return do_poll(context)
 
     def draw(self, context):
-        scene = context.scene
-
-        selected_objects = context.selected_objects
         obj = context.object
-        obj = context.active_object
-
-        picked_obj = len(selected_objects) > 0
 
         layout = self.layout
         layout.use_property_split = True
@@ -64,14 +72,6 @@ class CO_PT_ldraw_eo_panel(bpy.types.Panel):
     bl_category = 'LDraw'
 
     def draw(self, context):
-        scene = context.scene
-
-        selected_objects = context.selected_objects
-        obj = context.object
-        obj = context.active_object
-
-        picked_obj = len(selected_objects) > 0
-
         layout = self.layout
         # layout.use_property_split = True
         layout.use_property_decorate = False
@@ -82,13 +82,15 @@ class CO_PT_ldraw_eo_panel(bpy.types.Panel):
         col.operator(ldraw_operators.SnapToPlateOperator.bl_idname)
         col.operator(ldraw_operators.ResetGridOperator.bl_idname)
 
+        if not do_poll(context):
+            return
+
         layout.separator(factor=0.3)
         col = layout.column()
-        if picked_obj:
-            col.operator(ldraw_operators.AddBevelOperator.bl_idname)
-            col.operator(ldraw_operators.RemoveBevelOperator.bl_idname)
-            col.operator(ldraw_operators.AddEdgeSplitOperator.bl_idname)
-            col.operator(ldraw_operators.ReimportOperator.bl_idname)
+        col.operator(ldraw_operators.AddBevelOperator.bl_idname)
+        col.operator(ldraw_operators.RemoveBevelOperator.bl_idname)
+        col.operator(ldraw_operators.AddEdgeSplitOperator.bl_idname)
+        col.operator(ldraw_operators.ReimportOperator.bl_idname)
 
 
 class CO_PT_ldraw_cu_panel(bpy.types.Panel):
@@ -102,17 +104,10 @@ class CO_PT_ldraw_cu_panel(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        selected_objects = context.selected_objects
-        return len(selected_objects) > 0
+        return do_poll(context)
 
     def draw(self, context):
-        scene = context.scene
-
-        selected_objects = context.selected_objects
         obj = context.object
-        obj = context.active_object
-
-        picked_obj = len(selected_objects) > 0
 
         layout = self.layout
         # layout.use_property_split = True
@@ -134,17 +129,10 @@ class CO_PT_ldraw_ex_panel(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        selected_objects = context.selected_objects
-        return len(selected_objects) > 0
+        return do_poll(context)
 
     def draw(self, context):
-        scene = context.scene
-
-        selected_objects = context.selected_objects
         obj = context.object
-        obj = context.active_object
-
-        picked_obj = len(selected_objects) > 0
 
         layout = self.layout
         # layout.use_property_split = True
