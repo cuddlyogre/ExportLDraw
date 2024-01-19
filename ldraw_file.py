@@ -42,7 +42,7 @@ class LDrawFile:
         self.update_date = None
         self.license = None
         self.help = []
-        self.category = None
+        self.category = []
         self.keywords = []
         self.cmdline = None
         self.history = []
@@ -356,7 +356,7 @@ class LDrawFile:
 
     def __line_category(self, strip_line):
         if strip_line.startswith("0 !CATEGORY "):
-            self.category = strip_line.split(maxsplit=2)[2]
+            self.category.append(strip_line.split(maxsplit=2)[2])
             return True
         return False
 
