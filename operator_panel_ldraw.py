@@ -91,6 +91,7 @@ class CO_PT_ldraw_eo_panel(bpy.types.Panel):
         col.operator(ldraw_operators.RemoveBevelOperator.bl_idname)
         col.operator(ldraw_operators.AddEdgeSplitOperator.bl_idname)
         col.operator(ldraw_operators.ReimportOperator.bl_idname)
+        col.operator(ldraw_operators.RigMinifigOperator.bl_idname)
 
 
 class CO_PT_ldraw_cu_panel(bpy.types.Panel):
