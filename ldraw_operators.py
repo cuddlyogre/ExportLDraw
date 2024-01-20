@@ -234,7 +234,7 @@ class RigMinifigOperator(bpy.types.Operator):
                 self.parent(arm_obj, obj, 'torso')
 
             if "Minifig Torso" in obj.ldraw_props.description:
-                self.parent(arm_obj, obj, 'torso_rock')
+                self.parent(arm_obj, obj, 'torso')
 
             if "Minifig Hand" in obj.ldraw_props.description:
                 hand_objs.append(obj)
@@ -249,7 +249,7 @@ class RigMinifigOperator(bpy.types.Operator):
                 self.parent(arm_obj, obj, 'torso')
 
             if "Minifig Neckwear" in obj.ldraw_props.category:
-                self.parent(arm_obj, obj, 'torso_rock')
+                self.parent(arm_obj, obj, 'torso')
 
         collection = hand_objs
         l_bone_name = 'hand.l'
@@ -316,6 +316,7 @@ class RigMinifigOperator(bpy.types.Operator):
                 self.parent(arm_obj, obj2, r_bone_name)
 
     def show_bone_groups(self, arm_obj):
+        return
         if bpy.app.version >= (4,):
             # make all used bone groups visible so they can be used here
             # can't select bones in hidden groups
@@ -325,6 +326,7 @@ class RigMinifigOperator(bpy.types.Operator):
     # if the collection is not visible, we can't select the bones
     # so show them all at the start then hide them when we're done
     def hide_bone_groups(self, arm_obj):
+        return
         if bpy.app.version >= (4,):
             arm_obj.data.collections["rock"].is_visible = False
         else:
