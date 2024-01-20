@@ -386,6 +386,23 @@ class RigPartsOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class MakeGapsOperator(bpy.types.Operator):
+    """Apply gap scale to selected objects"""
+    bl_idname = "export_ldraw.make_gaps"
+    bl_label = "Make gaps"
+    bl_options = {'UNDO'}
+
+    def execute(self, context):
+        for obj in context.selected_objects:
+            if obj.type != 'MESH':
+                continue
+            obj.scale[0] = ImportOptions.gap_scale
+            obj.scale[1] = ImportOptions.gap_scale
+            obj.scale[2] = ImportOptions.gap_scale
+
+        return {'FINISHED'}
+
+
 def parent(arm, obj, bone_name):
     obj.select_set(True)
 
@@ -408,6 +425,7 @@ classesToRegister = [
     AddEdgeSplitOperator,
     RigMinifigOperator,
     RigPartsOperator,
+    MakeGapsOperator,
 ]
 
 # https://wiki.blender.org/wiki/Reference/Release_Notes/2.80/Python_API/Addons
