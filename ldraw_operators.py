@@ -354,7 +354,7 @@ class RigPartsOperator(bpy.types.Operator):
         context.scene.cursor.location = active_obj.location
 
         bpy.ops.object.armature_add()
-        arm_obj = bpy.data.objects[-1]
+        arm_obj = bpy.context.selected_objects[-1]
         arm_obj.show_in_front = True
 
         bpy.ops.object.select_all(action='DESELECT')
@@ -362,24 +362,30 @@ class RigPartsOperator(bpy.types.Operator):
         context.view_layer.objects.active = arm_obj
         bpy.ops.object.mode_set(mode='EDIT', toggle=False)
 
-        first_bone = None
+        # first bone is created when armature is created so skip that object
+        edit_bone = arm_obj.data.bones[-1]
+        first_bone = edit_bone.name
+
         for obj in selected_objects:
             if obj.type != 'MESH':
                 continue
+
+            # don't add bone for first object since that bone is created when the armature is created
             if obj.name != active_obj.name:
                 context.scene.cursor.location = obj.location
-                if not first_bone:
-                    first_bone = arm_obj.data.edit_bones[0].name
                 bpy.ops.armature.bone_primitive_add()
-                arm_obj.data.edit_bones[-1].parent = arm_obj.data.edit_bones[first_bone]
 
             bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
-            parent(arm_obj, obj, arm_obj.data.bones[-1].name)
+            edit_bone = arm_obj.data.bones[-1]
+            parent(arm_obj, obj, edit_bone.name)
 
             bpy.ops.object.select_all(action='DESELECT')
             arm_obj.select_set(True)
             context.view_layer.objects.active = arm_obj
             bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+
+        for edit_bone in arm_obj.data.edit_bones:
+            edit_bone.parent = arm_obj.data.edit_bones[first_bone]
 
         bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 
