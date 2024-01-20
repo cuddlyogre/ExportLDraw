@@ -213,28 +213,28 @@ class RigMinifigOperator(bpy.types.Operator):
 
         for obj in selected_objects:
             if "Minifig Leg Left" in obj.ldraw_props.description:
-                self.parent(arm_obj, obj, 'leg.l')
+                parent(arm_obj, obj, 'leg.l')
 
             if "Minifig Leg Right" in obj.ldraw_props.description:
-                self.parent(arm_obj, obj, 'leg.r')
+                parent(arm_obj, obj, 'leg.r')
 
             #    if "Minifig Footwear" in obj.ldraw_props.category:
             #        foot_objs.append(obj)
 
             if "Minifig Arm Left" in obj.ldraw_props.description:
-                self.parent(arm_obj, obj, 'arm.l')
+                parent(arm_obj, obj, 'arm.l')
 
             if "Minifig Arm Right" in obj.ldraw_props.description:
-                self.parent(arm_obj, obj, 'arm.r')
+                parent(arm_obj, obj, 'arm.r')
 
             if "Minifig Head" in obj.ldraw_props.description:
-                self.parent(arm_obj, obj, 'head')
+                parent(arm_obj, obj, 'head')
 
             if "Minifig Hips" in obj.ldraw_props.description:
-                self.parent(arm_obj, obj, 'torso')
+                parent(arm_obj, obj, 'torso')
 
             if "Minifig Torso" in obj.ldraw_props.description:
-                self.parent(arm_obj, obj, 'torso')
+                parent(arm_obj, obj, 'torso')
 
             if "Minifig Hand" in obj.ldraw_props.description:
                 hand_objs.append(obj)
@@ -243,13 +243,13 @@ class RigMinifigOperator(bpy.types.Operator):
             #        hand_objs.append(obj)
 
             if "Minifig Headwear" in obj.ldraw_props.category:
-                self.parent(arm_obj, obj, 'head_accessory')
+                parent(arm_obj, obj, 'head_accessory')
 
             if "Minifig Hipwear" in obj.ldraw_props.category:
-                self.parent(arm_obj, obj, 'torso')
+                parent(arm_obj, obj, 'torso')
 
             if "Minifig Neckwear" in obj.ldraw_props.category:
-                self.parent(arm_obj, obj, 'torso')
+                parent(arm_obj, obj, 'torso')
 
         collection = hand_objs
         l_bone_name = 'hand.l'
@@ -263,16 +263,6 @@ class RigMinifigOperator(bpy.types.Operator):
         #    obj.select_set(selected)
 
         return {'FINISHED'}
-
-    def parent(self, arm, obj, bone_name):
-        obj.select_set(True)
-
-        arm.select_set(True)
-        bpy.context.view_layer.objects.active = arm
-        arm.data.bones.active = arm.data.bones[bone_name]
-
-        bpy.ops.object.parent_set(type='BONE', keep_transform=True)
-        bpy.ops.object.select_all(action='DESELECT')
 
     def set_bone_layer(self, bone, layer):
         for x in range(0, 32):
@@ -295,9 +285,9 @@ class RigMinifigOperator(bpy.types.Operator):
             d1r = obj1.location - r_bone_loc
 
             if d1l < d1r:
-                self.parent(arm_obj, obj1, l_bone_name)
+                parent(arm_obj, obj1, l_bone_name)
             else:
-                self.parent(arm_obj, obj1, r_bone_name)
+                parent(arm_obj, obj1, r_bone_name)
         elif len(collection) == 2:
             # if there are two hands, assign the first one to the closest hand bone
             # and assign the other hand to the other hand bone
@@ -309,11 +299,11 @@ class RigMinifigOperator(bpy.types.Operator):
             d1r = obj1.location - r_bone_loc
 
             if d1l < d1r:
-                self.parent(arm_obj, obj1, r_bone_name)
-                self.parent(arm_obj, obj2, l_bone_name)
+                parent(arm_obj, obj1, r_bone_name)
+                parent(arm_obj, obj2, l_bone_name)
             else:
-                self.parent(arm_obj, obj1, l_bone_name)
-                self.parent(arm_obj, obj2, r_bone_name)
+                parent(arm_obj, obj1, l_bone_name)
+                parent(arm_obj, obj2, r_bone_name)
 
     def show_bone_groups(self, arm_obj):
         return
@@ -346,6 +336,67 @@ class RigMinifigOperator(bpy.types.Operator):
             # bpy.ops.object.mode_set(mode='POSE', toggle=False)
 
 
+class RigPartsOperator(bpy.types.Operator):
+    """Add an armature to the selected parts"""
+    bl_idname = "export_ldraw.rig_parts"
+    bl_label = "Rig parts"
+    bl_options = {'UNDO'}
+
+    def execute(self, context):
+        active_obj = context.active_object
+        if active_obj is None or active_obj.type != 'MESH':
+            return
+
+        selected_objects = bpy.context.selected_objects
+        if len(selected_objects) < 1:
+            return
+
+        context.scene.cursor.location = active_obj.location
+
+        bpy.ops.object.armature_add()
+        arm_obj = bpy.data.objects[-1]
+        arm_obj.show_in_front = True
+
+        bpy.ops.object.select_all(action='DESELECT')
+        arm_obj.select_set(True)
+        context.view_layer.objects.active = arm_obj
+        bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+
+        first_bone = None
+        for obj in selected_objects:
+            if obj.type != 'MESH':
+                continue
+            if obj.name != active_obj.name:
+                context.scene.cursor.location = obj.location
+                if not first_bone:
+                    first_bone = arm_obj.data.edit_bones[0].name
+                bpy.ops.armature.bone_primitive_add()
+                arm_obj.data.edit_bones[-1].parent = arm_obj.data.edit_bones[first_bone]
+
+            bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+            parent(arm_obj, obj, arm_obj.data.bones[-1].name)
+
+            bpy.ops.object.select_all(action='DESELECT')
+            arm_obj.select_set(True)
+            context.view_layer.objects.active = arm_obj
+            bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+
+        bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+
+        return {'FINISHED'}
+
+
+def parent(arm, obj, bone_name):
+    obj.select_set(True)
+
+    arm.select_set(True)
+    bpy.context.view_layer.objects.active = arm
+    arm.data.bones.active = arm.data.bones[bone_name]
+
+    bpy.ops.object.parent_set(type='BONE', keep_transform=True)
+    bpy.ops.object.select_all(action='DESELECT')
+
+
 classesToRegister = [
     VertPrecisionOperator,
     ResetGridOperator,
@@ -356,6 +407,7 @@ classesToRegister = [
     AddBevelOperator,
     AddEdgeSplitOperator,
     RigMinifigOperator,
+    RigPartsOperator,
 ]
 
 # https://wiki.blender.org/wiki/Reference/Release_Notes/2.80/Python_API/Addons
