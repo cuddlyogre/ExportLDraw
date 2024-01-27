@@ -136,14 +136,14 @@ class LDrawNode:
             accum_invert = False
             self.bfc_certified = None
 
-        collection = None
-        if top_part or top_model:
+        collection = parent_collection
+        if collection is None:
             collection = group.top_collection
-            if parent_collection is not None:
-                collection = parent_collection
-                if top_model:
-                    # if parent_collection is not None, this is a nested model
-                    collection = group.get_filename_collection(self.file.name, parent_collection)
+            if top_model:
+                collection = group.files_collection
+
+        if top_model:
+            collection = group.get_filename_collection(self.file.name, collection)
 
         # always process geometry_data if this is a subpart or there is no geometry_data
         # if geometry_data exists, this is a top level part that has already been processed so don't process this key again
@@ -290,6 +290,9 @@ class LDrawNode:
                 edge_key = f"e_{geometry_data.key}"
                 edge_mesh = ldraw_mesh.create_edge_mesh(edge_key, geometry_data)
                 edge_obj = ldraw_object.create_edge_obj(edge_mesh, geometry_data, color_code, obj, collection)
+
+            if group.end_next_collection:
+                group.next_collection = None
 
             # if LDrawNode.part_count == 1:
             #     raise BaseException("done")

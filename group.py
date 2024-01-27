@@ -3,11 +3,15 @@ import os
 from . import helpers
 from .import_options import ImportOptions
 
+
 top_collection = None
+current_file_collection = None
 parts_collection = None
+files_collection = None
 groups_collection = None
 ungrouped_collection = None
 next_collections = []
+stored_collection = None
 next_collection = None
 end_next_collection = False
 current_step_group = None
@@ -16,7 +20,9 @@ collection_id_map = {}
 
 def reset_caches():
     global top_collection
+    global current_file_collection
     global parts_collection
+    global files_collection
     global groups_collection
     global ungrouped_collection
     global next_collections
@@ -26,7 +32,9 @@ def reset_caches():
     global collection_id_map
 
     top_collection = None
+    current_file_collection = None
     parts_collection = None
+    files_collection = None
     groups_collection = None
     ungrouped_collection = None
     next_collections.clear()
@@ -36,16 +44,23 @@ def reset_caches():
     collection_id_map.clear()
 
 
-def groups_setup(ldraw_node):
+def groups_setup(top_collection_name):
     global top_collection
+    global current_file_collection
     global parts_collection
+    global files_collection
     global groups_collection
     global ungrouped_collection
 
-    collection_name = ldraw_node.file.name
+    collection_name = top_collection_name
     host_collection = get_scene_collection()
     collection = get_filename_collection(collection_name, host_collection)
     top_collection = collection
+
+    collection_name = f"{top_collection.name} Files"
+    host_collection = top_collection
+    collection = get_collection(collection_name, host_collection)
+    files_collection = collection
 
     collection_name = f"{top_collection.name} Parts"
     host_collection = top_collection
@@ -61,10 +76,9 @@ def groups_setup(ldraw_node):
         helpers.hide_obj(groups_collection)
 
         collection_name = f"{top_collection.name} Ungrouped"
-        host_collection = top_collection
+        host_collection = groups_collection
         collection = get_collection(collection_name, host_collection)
         ungrouped_collection = collection
-        helpers.hide_obj(ungrouped_collection)
 
 
 def get_scene_collection():
@@ -81,10 +95,12 @@ def get_collection(collection_name, host_collection):
     return collection
 
 
-def get_filename_collection(collection_name, host_collection):
+def get_filename_collection(collection_name, host_collection=None):
     collection_name = os.path.basename(collection_name)
     collection = bpy.data.collections.new(collection_name)
-    if host_collection is not None:
+    if host_collection is None:
+        link_child(collection, top_collection)
+    else:
         link_child(collection, host_collection)
     return collection
 

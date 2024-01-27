@@ -37,13 +37,12 @@ def do_import(filepath, color_code="16", return_mesh=False):
         __load_materials(ldraw_file)
         return
 
-    ldraw_meta.meta_step()
-
     root_node = LDrawNode()
     root_node.is_root = True
     root_node.file = ldraw_file
 
-    group.groups_setup(root_node)
+    group.groups_setup(filepath)
+    ldraw_meta.meta_step()
 
     # return root_node.load()
     obj = root_node.load(color_code=color_code, return_mesh=return_mesh)
