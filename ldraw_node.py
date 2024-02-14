@@ -76,6 +76,9 @@ class LDrawNode:
         parent_matrix = parent_matrix or matrices.identity_matrix
         accum_matrix = accum_matrix or matrices.identity_matrix
 
+        if self.is_root:
+            self.matrix = self.matrix @ matrices.rotation_matrix
+
         current_matrix = parent_matrix @ self.matrix
         child_accum_matrix = accum_matrix @ current_matrix
         child_matrix = current_matrix
@@ -118,10 +121,9 @@ class LDrawNode:
         top_part = top_part or part_model
 
         if top_part:
-            # top-level part
             LDrawNode.part_count += 1
-
             geometry_data = LDrawNode.geometry_datas.get(geometry_data_key)
+            current_matrix = current_matrix @ matrices.reverse_rotation_matrix
             child_matrix = matrices.identity_matrix
         elif top_model:
             if merge_model:

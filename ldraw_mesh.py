@@ -22,6 +22,8 @@ def create_mesh(key, geometry_data, color_code, return_mesh=False):
         __process_mesh_sharp_edges(mesh, geometry_data)
         __process_mesh(mesh)
 
+        mesh.transform(matrices.rotation_matrix)
+
     return mesh
 
 

@@ -60,15 +60,13 @@ def create_edge_obj(mesh, geometry_data, color_code, obj, collection):
 def __process_top_object_matrix(obj, obj_matrix):
     global top_empty
 
-    import_scale_matrix = matrices.rotation_matrix @ matrices.import_scale_matrix
-
     if ImportOptions.parent_to_empty:
         if top_empty is None:
             top_empty = bpy.data.objects.new(group.top_collection.name, None)
             top_empty.ldraw_props.invert_import_scale_matrix = True
             group.link_obj(group.top_collection, top_empty)
 
-        top_empty.matrix_world = import_scale_matrix
+        top_empty.matrix_world = matrices.import_scale_matrix
 
         matrix_world = obj_matrix
         matrix_world = __process_gap_scale_matrix(obj, matrix_world)
@@ -76,7 +74,7 @@ def __process_top_object_matrix(obj, obj_matrix):
 
         obj.parent = top_empty  # must be after matrix_world set or else transform is incorrect
     else:
-        matrix_world = import_scale_matrix @ obj_matrix
+        matrix_world = matrices.import_scale_matrix @ obj_matrix
         matrix_world = __process_gap_scale_matrix(obj, matrix_world)
         obj.matrix_world = matrix_world
 
