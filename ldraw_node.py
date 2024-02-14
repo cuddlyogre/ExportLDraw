@@ -125,8 +125,8 @@ class LDrawNode:
             geometry_data = LDrawNode.geometry_datas.get(geometry_data_key)
             current_matrix = current_matrix @ matrices.reverse_rotation_matrix
             # clean up floating point errors
-            for i in range(4):
-                for j in range(4):
+            for i in range(len(current_matrix)):
+                for j in range(len(current_matrix[i])):
                     current_matrix[i][j] = round(current_matrix[i][j], 6)
                     print(current_matrix[i][j])
             child_matrix = matrices.identity_matrix
