@@ -124,6 +124,11 @@ class LDrawNode:
             LDrawNode.part_count += 1
             geometry_data = LDrawNode.geometry_datas.get(geometry_data_key)
             current_matrix = current_matrix @ matrices.reverse_rotation_matrix
+            # clean up floating point errors
+            for i in range(4):
+                for j in range(4):
+                    current_matrix[i][j] = round(current_matrix[i][j], 6)
+                    print(current_matrix[i][j])
             child_matrix = matrices.identity_matrix
         elif top_model:
             if merge_model:
