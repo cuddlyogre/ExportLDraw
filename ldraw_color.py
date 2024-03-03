@@ -266,6 +266,7 @@ class LDrawColor:
                 print(traceback.format_exc())
 
         print(f"Bad color code: {color_code}")
+        color_code = '99999'
         if cls.__bad_color is None:
             clean_line = f"0 !COLOUR Bad_Color CODE {color_code} VALUE #FF0000 EDGE #00FF00"
             color_code = cls.parse_color(clean_line)
