@@ -49,6 +49,12 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
         default=ImportSettings.get_setting('studio_ldraw_path'),
     )
 
+    studio_custom_parts_path: bpy.props.StringProperty(
+        name="Stud.io CustomParts path",
+        description="Full filepath to the CustomParts path",
+        **ImportSettings.settings_dict('studio_custom_parts_path'),
+    )
+
     use_alt_colors: bpy.props.BoolProperty(
         name="Use alternate colors",
         # options={'HIDDEN'},
@@ -117,6 +123,7 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
 
         FileSystem.ldraw_path = self.ldraw_path
         FileSystem.studio_ldraw_path = self.studio_ldraw_path
+        FileSystem.studio_custom_parts_path = self.studio_custom_parts_path
         # FileSystem.resolution = self.resolution
         LDrawColor.use_alt_colors = self.use_alt_colors
 

@@ -50,6 +50,21 @@ def locate_studio_ldraw():
     return ""
 
 
+def locate_studio_custom_parts():
+    if platform == "linux" or platform == "linux2":
+        pass
+        # linux
+    elif platform == "darwin":
+        pass
+        # OS X
+    elif platform == "win32":
+        path = os.path.join(os.getenv('LOCALAPPDATA'), 'Stud.io', 'CustomParts')
+        if os.path.isdir(path):
+            return path
+
+    return ""
+
+
 def is_case_sensitive():
     # By default mkstemp() creates a file with
     # a name that begins with 'tmp' (lowercase)
@@ -68,6 +83,9 @@ class FileSystem:
 
     defaults["studio_ldraw_path"] = locate_studio_ldraw()
     studio_ldraw_path = defaults["studio_ldraw_path"]
+
+    defaults["studio_custom_parts_path"] = locate_studio_custom_parts()
+    studio_custom_parts_path = defaults["studio_custom_parts_path"]
 
     defaults["prefer_studio"] = False
     prefer_studio = defaults["prefer_studio"]
@@ -115,9 +133,11 @@ class FileSystem:
             if cls.prefer_unofficial:
                 ldraw_roots.append(os.path.join(cls.studio_ldraw_path, "unofficial"))
                 ldraw_roots.append(os.path.join(cls.ldraw_path, "unofficial"))
+                ldraw_roots.append(os.path.join(cls.studio_custom_parts_path))
                 ldraw_roots.append(os.path.join(cls.studio_ldraw_path))
                 ldraw_roots.append(os.path.join(cls.ldraw_path))
             else:
+                ldraw_roots.append(os.path.join(cls.studio_custom_parts_path))
                 ldraw_roots.append(os.path.join(cls.studio_ldraw_path))
                 ldraw_roots.append(os.path.join(cls.ldraw_path))
                 ldraw_roots.append(os.path.join(cls.studio_ldraw_path, "unofficial"))
@@ -127,9 +147,11 @@ class FileSystem:
                 ldraw_roots.append(os.path.join(cls.ldraw_path, "unofficial"))
                 ldraw_roots.append(os.path.join(cls.studio_ldraw_path, "unofficial"))
                 ldraw_roots.append(os.path.join(cls.ldraw_path))
+                ldraw_roots.append(os.path.join(cls.studio_custom_parts_path))
                 ldraw_roots.append(os.path.join(cls.studio_ldraw_path))
             else:
                 ldraw_roots.append(os.path.join(cls.ldraw_path))
+                ldraw_roots.append(os.path.join(cls.studio_custom_parts_path))
                 ldraw_roots.append(os.path.join(cls.studio_ldraw_path))
                 ldraw_roots.append(os.path.join(cls.ldraw_path, "unofficial"))
                 ldraw_roots.append(os.path.join(cls.studio_ldraw_path, "unofficial"))

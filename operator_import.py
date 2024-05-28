@@ -43,6 +43,12 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         **ImportSettings.settings_dict('studio_ldraw_path'),
     )
 
+    studio_custom_parts_path: bpy.props.StringProperty(
+        name="Stud.io CustomParts path",
+        description="Full filepath to the CustomParts path",
+        **ImportSettings.settings_dict('studio_custom_parts_path'),
+    )
+
     prefer_studio: bpy.props.BoolProperty(
         name="Prefer Stud.io library",
         description="Search for parts in Stud.io library first",
@@ -383,6 +389,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         col = layout.column()
         col.prop(self, "ldraw_path")
         col.prop(self, "studio_ldraw_path")
+        col.prop(self, "studio_custom_parts_path")
 
         layout.separator(factor=space_factor)
         col = layout.column()
