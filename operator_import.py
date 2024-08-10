@@ -21,7 +21,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
     filter_glob: bpy.props.StringProperty(
         name="Extensions",
         options={'HIDDEN'},
-        default="*.mpd;*.ldr;*.dat",
+        default="*.mpd;*.ldr;*.dat;*.io",
     )
 
     filepath: bpy.props.StringProperty(
@@ -459,7 +459,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
 
 
 def build_import_menu(self, context):
-    self.layout.operator(IMPORT_OT_do_ldraw_import.bl_idname, text="LDraw (.mpd/.ldr/.l3b/.dat)")
+    self.layout.operator(IMPORT_OT_do_ldraw_import.bl_idname, text="LDraw (.mpd/.ldr/.l3b/.dat/.io)")
 
 
 classesToRegister = [

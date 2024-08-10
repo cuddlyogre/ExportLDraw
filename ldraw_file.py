@@ -2,6 +2,7 @@ import mathutils
 
 import os
 import re
+import zipfile
 
 from .import_options import ImportOptions
 from .filesystem import FileSystem
@@ -113,6 +114,11 @@ class LDrawFile:
         filepath = FileSystem.locate(filename)
         if filepath is None:
             return None
+
+        if filename.endswith('.io') and zipfile.is_zipfile(filename):
+            with zipfile.ZipFile(filename, 'r') as zip:
+                model_ldr = zip.read('model.ldr').decode('utf-8-sig')
+                return cls.__read_file(model_ldr.splitlines(), filename)
 
         with open(filepath, 'r', encoding='utf-8') as file:
             return cls.__read_file(file, filename)
