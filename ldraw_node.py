@@ -128,7 +128,7 @@ class LDrawNode:
             for i in range(len(current_matrix)):
                 for j in range(len(current_matrix[i])):
                     current_matrix[i][j] = round(current_matrix[i][j], 6)
-                    print(current_matrix[i][j])
+                    # print(current_matrix[i][j])
             child_matrix = matrices.identity_matrix
         elif top_model:
             if merge_model:
