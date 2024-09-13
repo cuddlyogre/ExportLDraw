@@ -57,11 +57,12 @@ due to a more challenging part of the wholly undocumented pe_tex spec that Stud.
 ![Image of PartDesigner](examples/import/stud_io_imported.jpg)
 
 **A note about Stud.io projects**  
-Stud.io project files are in actuality just password-protected zip files, but due to regulations related to DRM, 
-importing Stud.io projects will not ever be implemented here, even though it would be relatively trivial. 
+Stud.io project files are in actuality just password-protected zip files. Older projects are protected by a password, but 
+due to regulations related to DRM, importing those projects can't be implemented here even though it would be relatively trivial.
 
-Eevee and Cycles are both supported.
+However, newer projects are no longer password protected and are able to be imported like any other project file.
 
+**Eevee and Cycles**  
 **Eevee**  
 ![Examples of Eevee import](examples/import/eevee.jpg)
 
