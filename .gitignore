@@ -12,3 +12,4 @@ thumbs/*
 experiments/*
 brickset/*
 inc/tmp/*
+.build/

@@ -1,5 +1,6 @@
 import os
 import sys
+import tomllib
 import pathlib
 from shutil import copytree, rmtree
 from definitions import APP_ROOT
@@ -43,20 +44,10 @@ def callbackIgnore(paths):
     return ignoref
 
 
-patterns = [
-    "__pycache__",
-    ".git",
-    ".idea",
-    ".pytest_cache",
-    ".build",
-    "brickset",
-    "experiments",
-    "inc/tmp",
-    "*.blend1",
-    ".gitattributes",
-    ".gitignore",
-    "_deploy.py",
-    "requirements.txt",
-]
+file_path = "blender_manifest.toml"
+with open(file_path, "rb") as file:
+    toml_data = tomllib.load(file)
+
+patterns = toml_data['build']['paths_exclude_pattern']
 
 copytree(APP_ROOT, target, dirs_exist_ok=True, ignore=callbackIgnore(patterns))
