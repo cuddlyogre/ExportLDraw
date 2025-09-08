@@ -173,7 +173,7 @@ class LDrawNode:
             winding = "CCW"
             invert_next = False
 
-            pe_tex_info = None
+            current_pe_tex_info = None
             current_pe_tex_path = None
             current_subfile_pe_tex_path = None
             subfile_pe_tex_infos = {}
@@ -182,7 +182,7 @@ class LDrawNode:
             for child_node in self.file.child_nodes:
                 # PE_TEX_NEXT_SHEAR always comes before PE_TEX_INFO
                 if not child_node.meta_command.startswith("pe_tex"):
-                    pe_tex_info = None
+                    current_pe_tex_info = None
 
                 # texmap_fallback will only be true if ImportOptions.meta_texmap == True and you're on a fallback line
                 # if ImportOptions.meta_texmap == False, it will always be False
@@ -306,10 +306,10 @@ class LDrawNode:
                         clean_line = child_node.line
                         _params = clean_line.split()[2:]
 
-                        pe_tex_info = PETexInfo()
-                        pe_tex_info.tex_path = [int(x) for x in _params]
+                        current_pe_tex_info = PETexInfo()
+                        current_pe_tex_info.tex_path = [int(x) for x in _params]
                     elif child_node.meta_command == "pe_tex_next_shear":
-                        pe_tex_info.next_shear = True
+                        current_pe_tex_info.next_shear = True
                     elif child_node.meta_command == "pe_tex_info":
                         clean_line = child_node.line
                         _params = clean_line.split()[2:]
@@ -317,7 +317,7 @@ class LDrawNode:
                         # if there is one or 17, use the last item as the image data
                         base64_str = _params[-1]
                         image = base64_handler.named_png_from_base64_str(f"{self.file.name}_{current_pe_tex_path}.png", base64_str)
-                        pe_tex_info.image = image.name
+                        current_pe_tex_info.image = image.name
 
                         # if there is 17, it defines the boundingbox
                         if len(_params) == 17:
@@ -333,7 +333,7 @@ class LDrawNode:
                                 (0, 0, 0, 1)
                             ))
 
-                            pe_tex_info.matrix = matrix.freeze()
+                            current_pe_tex_info.matrix = matrix.freeze()
 
                             point_min = mathutils.Vector((0, 0))
                             point_max = mathutils.Vector((0, 0))
@@ -343,24 +343,24 @@ class LDrawNode:
                             point_max.y = float(_params[15])
                             point_diff = point_max - point_min
 
-                            pe_tex_info.point_min = point_min.freeze()
-                            pe_tex_info.point_max = point_max.freeze()
-                            pe_tex_info.point_diff = point_diff.freeze()
+                            current_pe_tex_info.point_min = point_min.freeze()
+                            current_pe_tex_info.point_max = point_max.freeze()
+                            current_pe_tex_info.point_diff = point_diff.freeze()
 
                         # if tex_path == -1, use this text_info just for this ldraw_node's 3,4 lines
-                        # if len(text_path) == 1 use that tex_info for that child lines 1 lines
-                        #  if len(text_path) > 1 use that tex_info for that child lines 1 lines
-                        current_pe_tex_path = pe_tex_info.tex_path[0]
+                        # if len(text_path) >= 1 use that tex_info for that child_node's 3,4 lines at those subfile indices
+                        # when passing a tex_path without subfile tex_paths, treat that one as a -1
+                        current_pe_tex_path = current_pe_tex_info.tex_path[0]
                         if len(_params) == 2:
-                            current_subfile_pe_tex_path = pe_tex_info.tex_path[1]
+                            current_subfile_pe_tex_path = current_pe_tex_info.tex_path[1]
 
                         if current_subfile_pe_tex_path is not None:
                             subfile_pe_tex_infos.setdefault(current_pe_tex_path, {})
                             subfile_pe_tex_infos[current_pe_tex_path].setdefault(current_subfile_pe_tex_path, [])
-                            subfile_pe_tex_infos[current_pe_tex_path][current_subfile_pe_tex_path].append(pe_tex_info)
+                            subfile_pe_tex_infos[current_pe_tex_path][current_subfile_pe_tex_path].append(current_pe_tex_info)
                         else:
                             pe_tex_info_lists.setdefault(current_pe_tex_path, [])
-                            pe_tex_info_lists[current_pe_tex_path].append(pe_tex_info)
+                            pe_tex_info_lists[current_pe_tex_path].append(current_pe_tex_info)
 
                         if current_pe_tex_path == -1:
                             pe_tex_info_list = pe_tex_info_lists[current_pe_tex_path]
