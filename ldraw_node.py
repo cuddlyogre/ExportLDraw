@@ -303,20 +303,11 @@ class LDrawNode:
                     # 0 PE_TEX_NEXT_SHEAR -> optional
                     # 0 PE_TEX_INFO ...
                     if child_node.meta_command == "pe_tex_path":
-                        pe_tex_info = PETexInfo()
-
                         clean_line = child_node.line
                         _params = clean_line.split()[2:]
 
-                        tex_path = _params
-                        pe_tex_info.tex_path = tex_path
-
-                        current_pe_tex_path = int(_params[0])
-                        # if tex_path == -1, use this text_info just for this ldraw_node's 3,4 lines
-                        # if len(text_path) == 1 use that tex_info for that child lines 1 lines
-                        #  if len(text_path) > 1 use that tex_info for that child lines 1 lines
-                        if len(_params) == 2:
-                            current_subfile_pe_tex_path = int(_params[1])
+                        pe_tex_info = PETexInfo()
+                        pe_tex_info.tex_path = [int(x) for x in _params]
                     elif child_node.meta_command == "pe_tex_next_shear":
                         pe_tex_info.next_shear = True
                     elif child_node.meta_command == "pe_tex_info":
@@ -342,6 +333,8 @@ class LDrawNode:
                                 (0, 0, 0, 1)
                             ))
 
+                            pe_tex_info.matrix = matrix.freeze()
+
                             point_min = mathutils.Vector((0, 0))
                             point_max = mathutils.Vector((0, 0))
                             point_min.x = float(_params[12])
@@ -353,7 +346,13 @@ class LDrawNode:
                             pe_tex_info.point_min = point_min.freeze()
                             pe_tex_info.point_max = point_max.freeze()
                             pe_tex_info.point_diff = point_diff.freeze()
-                            pe_tex_info.matrix = matrix.freeze()
+
+                        # if tex_path == -1, use this text_info just for this ldraw_node's 3,4 lines
+                        # if len(text_path) == 1 use that tex_info for that child lines 1 lines
+                        #  if len(text_path) > 1 use that tex_info for that child lines 1 lines
+                        current_pe_tex_path = pe_tex_info.tex_path[0]
+                        if len(_params) == 2:
+                            current_subfile_pe_tex_path = pe_tex_info.tex_path[1]
 
                         if current_subfile_pe_tex_path is not None:
                             subfile_pe_tex_infos.setdefault(current_pe_tex_path, {})

@@ -58,6 +58,10 @@ class PETexmap:
                         pe_texmap.uvs.append(uv)
 
             elif pe_tex_info.matrix:
+                next_shear = pe_tex_info.next_shear
+                # if next_shear:
+                # process shear
+
                 (translation, rotation, scale) = (ldraw_node.matrix @ pe_tex_info.matrix).decompose()
 
                 mirroring = mathutils.Vector((1, 1, 1))
