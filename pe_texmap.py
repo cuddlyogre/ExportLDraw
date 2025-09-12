@@ -1,4 +1,5 @@
 import mathutils
+from .geometry_data import FaceData
 
 
 class PETexInfo:
@@ -85,16 +86,18 @@ class PETexmap:
                         vertices[2],
                         vertices[1],
                     ]
+                    FaceData.fix_bowties(vertices)
 
-            if not intersect(vertices, scale): return None
+            # if not intersect(vertices, scale): return None
 
             ab = vertices[1] - vertices[0]
             bc = vertices[2] - vertices[1]
             face_normal = ab.cross(bc).normalized()
             texture_normal = mathutils.Vector((0, -1, 0))
             dot = face_normal.dot(texture_normal)
-            # if abs(dot) < 0.001: continue
+            # if abs(dot) <= 0.001: return None
             if dot <= 0.001: return None
+            # if dot == 0: return None
 
             for vert in vertices:
                 u = (vert.x - pe_tex_info.point_min.x) / pe_tex_info.point_diff.x
@@ -118,16 +121,24 @@ def intersect(polygon, box_extents):
     for i in range(3):
         for j in range(3):
             e = edges[j]
+            ex = e.x
+            ey = e.y
+            ez = e.z
+
             be = box_extents
+            bx = be.x
+            by = be.y
+            bz = be.z
+
             if i == 0:
-                rhs = mathutils.Vector((0, -e.z, e.y))
-                num = be.y * abs(e.z) + be.z * abs(e.y)
+                rhs = mathutils.Vector((0, -ez, ey))
+                num = by * abs(ex) + bz * abs(ex)
             elif i == 1:
-                rhs = mathutils.Vector((e.z, 0, -e.x))
-                num = be.x * abs(e.z) + be.z * abs(e.x)
-            else:
-                rhs = mathutils.Vector((-e.y, e.x, 0))
-                num = be.x * abs(e.y) + be.y * abs(e.x)
+                rhs = mathutils.Vector((ez, 0, -ex))
+                num = bx * abs(ez) + bz * abs(ex)
+            elif i == 2:
+                rhs = mathutils.Vector((-ey, ex, 0))
+                num = bx * abs(ey) + by * abs(ex)
 
             dot_products = [v.dot(rhs) for v in (a, b, c)]
             miximum = max(-max(dot_products), min(dot_products))

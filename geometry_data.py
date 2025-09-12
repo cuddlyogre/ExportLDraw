@@ -30,7 +30,7 @@ class FaceData:
                     matrix @ child_node.vertices[2],
                     matrix @ child_node.vertices[1],
                 ]
-                FaceData.__fix_bowties(vertices)
+                FaceData.fix_bowties(vertices)
         else:  # winding == "CCW" or winding is None:
             if vert_count == 3:
                 vertices = [
@@ -45,14 +45,14 @@ class FaceData:
                     matrix @ child_node.vertices[2],
                     matrix @ child_node.vertices[3],
                 ]
-                FaceData.__fix_bowties(vertices)
+                FaceData.fix_bowties(vertices)
 
         return vertices
 
     # handle bowtie quadrilaterals - 6582.dat
     # https://github.com/TobyLobster/ImportLDraw/pull/65/commits/3d8cebee74bf6d0447b616660cc989e870f00085
     @staticmethod
-    def __fix_bowties(vertices):
+    def fix_bowties(vertices):
         nA = (vertices[1] - vertices[0]).cross(vertices[2] - vertices[0])
         nB = (vertices[2] - vertices[1]).cross(vertices[3] - vertices[1])
         nC = (vertices[3] - vertices[2]).cross(vertices[0] - vertices[2])

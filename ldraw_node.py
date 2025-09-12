@@ -64,7 +64,7 @@ class LDrawNode:
         if pe_tex_infos is None:
             pe_tex_infos = {}
 
-        pe_tex_info = pe_tex_infos.get(-1)
+        pe_tex_info = pe_tex_infos.get(None)
 
         if self.file.is_edge_logo() and not ImportOptions.display_logo:
             return
@@ -187,13 +187,16 @@ class LDrawNode:
 
                     if child_node.meta_command == "1":
                         _pe_tex_infos = {}
-                        for pe_tex_info in pe_tex_infos.get(subfile_line_index, []):
-                            if len(pe_tex_info.tex_path) == 1:
-                                _pe_tex_infos[-1] = pe_tex_info
+                        if pe_tex_info is not None and pe_tex_info.matrix is None:
+                            _pe_tex_infos[None] = pe_tex_info
+
+                        for _pe_tex_info in pe_tex_infos.get(subfile_line_index, []):
+                            if len(_pe_tex_info.tex_path) == 1:
+                                _pe_tex_infos[None] = _pe_tex_info
                             else:
-                                pe_tex_info.tex_path = pe_tex_info.tex_path[1:]
-                                _pe_tex_infos.setdefault(pe_tex_info.tex_path[0], [])
-                                _pe_tex_infos[pe_tex_info.tex_path[0]].append(pe_tex_info)
+                                _pe_tex_info.tex_path = _pe_tex_info.tex_path[1:]
+                                _pe_tex_infos.setdefault(_pe_tex_info.tex_path[0], [])
+                                _pe_tex_infos[_pe_tex_info.tex_path[0]].append(_pe_tex_info)
 
                         child_node.load(
                             color_code=child_current_color,

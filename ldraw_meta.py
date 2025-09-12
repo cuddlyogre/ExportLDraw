@@ -3,7 +3,7 @@ import mathutils
 
 from . import matrices
 from .import_options import ImportOptions
-from .pe_texmap import PETexInfo, PETexmap
+from .pe_texmap import PETexmap
 from .texmap import TexMap
 from .geometry_data import FaceData
 from . import group
@@ -440,6 +440,7 @@ def meta_edge(child_node, color_code, matrix, geometry_data):
 
 def meta_face(ldraw_node, child_node, color_code, matrix, geometry_data, winding, texmap, pe_tex_info):
     vertices = FaceData.handle_vertex_winding(child_node, matrix, winding)
+
     pe_texmap = None
     if pe_tex_info is not None:
         pe_texmap = PETexmap.build_pe_texmap(ldraw_node, child_node, winding, pe_tex_info)
