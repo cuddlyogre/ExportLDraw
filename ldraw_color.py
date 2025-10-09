@@ -76,6 +76,7 @@ class LDrawColor:
         self.alpha = None
         self.luminance = None
         self.material_name = None
+        self.material_fabric = None
 
         self.material_color_hex = None
         self.material_color = None
@@ -168,6 +169,7 @@ class LDrawColor:
 
         # MATERIAL SPECKLE VALUE #898788 FRACTION 0.4               MINSIZE 1    MAXSIZE 3
         # MATERIAL GLITTER VALUE #FFFFFF FRACTION 0.8 VFRACTION 0.6 MINSIZE 0.02 MAXSIZE 0.1
+        # MATERIAL FABRIC [VELVET | CANVAS | STRING | FUR]
         if "material" in lparams:
             i = lparams.index("material")
             material_parts = lparams[i:]
@@ -175,8 +177,14 @@ class LDrawColor:
             material_name = material_parts[1]
             self.material_name = material_name
 
-            i = lparams.index("value")
-            material_value = lparams[i + 1]
+            if "fabric" in material_name:
+                i = lparams.index("fabric")
+                self.material_fabric = material_parts[i + 1]
+            
+            material_value = "000000"
+            if "value" in material_parts:
+                i = lparams.index("value")
+                material_value = lparams[i + 1]
             self.material_color_hex = material_value
 
             material_rgb = self.__get_rgb_color_value(material_value, linear=False)
