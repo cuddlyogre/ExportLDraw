@@ -14,18 +14,13 @@ class FaceData:
         self.texmap = texmap
         self.pe_tex_path = pe_tex_path
 
-        self.vertices = self.child_node.vertices
+        self.vertices = self.child_node.vertices.copy()
         self.vert_count = len(self.vertices)
+        self.__handle_winding()
         self.pe_texmaps = []
 
-    def process(self):
-        self.__transform_vertices()
-        self.__process_bowties()
-        self.__process_pe_tex_path()
-
-    # https://github.com/rredford/LdrawToObj/blob/802924fb8d42145c4f07c10824e3a7f2292a6717/LdrawData/LdrawToData.cs#L219
-    # https://github.com/rredford/LdrawToObj/blob/802924fb8d42145c4f07c10824e3a7f2292a6717/LdrawData/LdrawToData.cs#L260
-    def __transform_vertices(self):
+    def __handle_winding(self):
+        if self.child_node.meta_command not in ["3", "4"]: return
         if self.winding == "CW":  # else winding == "CCW" or winding is None:
             if self.vert_count == 3:
                 self.vertices = [
@@ -41,6 +36,14 @@ class FaceData:
                     self.vertices[1],
                 ]
 
+    def process(self):
+        self.__transform_vertices()
+        self.__process_bowties()
+        self.__process_pe_tex_path()
+
+    # https://github.com/rredford/LdrawToObj/blob/802924fb8d42145c4f07c10824e3a7f2292a6717/LdrawData/LdrawToData.cs#L219
+    # https://github.com/rredford/LdrawToObj/blob/802924fb8d42145c4f07c10824e3a7f2292a6717/LdrawData/LdrawToData.cs#L260
+    def __transform_vertices(self):
         self.vertices = [self.matrix @ v for v in self.vertices]
 
     def __process_bowties(self):
