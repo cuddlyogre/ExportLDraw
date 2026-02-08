@@ -44,7 +44,7 @@ def do_import(filepath, color_code="16", return_mesh=False):
         return
 
     if ldraw_file.is_configuration():
-        __load_materials(ldraw_file)
+        __load_material_samples(ldraw_file)
         return
 
     root_node = LDrawNode()
@@ -124,35 +124,56 @@ def __scene_setup():
         lineset.select_material_boundary = False
 
 
-def __load_materials(file):
+def __load_material_samples(file):
     ImportOptions.meta_group = False
     ImportOptions.parent_to_empty = False
     ImportOptions.make_gaps = False
 
-    # slope texture demonstration
-    obj = do_import('3044.dat')
+    # 4 slope texture demonstration
+    obj = do_import('6153p7a.dat')
     if obj is not None:
         obj.location.x = 0.0
         obj.location.y = 5.0
         obj.location.z = 0.5
 
-    # texmap demonstration
-    obj = do_import('27062p01.dat')
+    # 3 slope texture demonstration
+    obj = do_import('4856.dat')
     if obj is not None:
-        obj.location.x = 3
-        obj.location.y = 5
+        obj.location.x = 3.0
+        obj.location.y = 5.0
+        obj.location.z = 0.5
 
-    # texmap demonstration
-    obj = do_import('10202pb022.dat')
+    # 2 slope texture demonstration
+    obj = do_import('6069ps2.dat')
     if obj is not None:
-        obj.location.x = 10
-        obj.location.y = 5
+        obj.location.x = 6.0
+        obj.location.y = 5.0
+        obj.location.z = 0.5
+
+    # 1 slope texture demonstration
+    obj = do_import('3044.dat')
+    if obj is not None:
+        obj.location.x = 9.0
+        obj.location.y = 5.0
+        obj.location.z = 0.5
 
     # cloth demonstration
     obj = do_import('600880p02.dat')
     if obj is not None:
-        obj.location.x = 6
-        obj.location.y = 5
+        obj.location.x = 12.0
+        obj.location.y = 5.0
+
+    # texmap demonstration
+    obj = do_import('27062p01.dat')
+    if obj is not None:
+        obj.location.x = 15.0
+        obj.location.y = 5.0
+
+    # pe_texmap demonstration
+    obj = do_import('10202pb022.dat')
+    if obj is not None:
+        obj.location.x = 18.0
+        obj.location.y = 5.0
 
     colors = {}
     group_name = 'blank'
