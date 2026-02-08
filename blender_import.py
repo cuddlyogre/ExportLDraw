@@ -142,8 +142,14 @@ def __load_materials(file):
         obj.location.x = 3
         obj.location.y = 5
 
+    # texmap demonstration
+    obj = do_import('10202pb022.dat')
+    if obj is not None:
+        obj.location.x = 10
+        obj.location.y = 5
+
     # cloth demonstration
-    obj = do_import('50231.dat')
+    obj = do_import('600880p02.dat')
     if obj is not None:
         obj.location.x = 6
         obj.location.y = 5
@@ -187,7 +193,7 @@ def __load_materials(file):
             mesh = bpy.data.meshes.new(f"{prefix}_{color_code}")
             mesh[strings.ldraw_color_code_key] = color_code
 
-            material = BlenderMaterials.get_material(color_code, easy_key=True)
+            material = BlenderMaterials.get_material(color_code)
 
             # https://blender.stackexchange.com/questions/23905/select-faces-depending-on-material
             if material.name not in mesh.materials:

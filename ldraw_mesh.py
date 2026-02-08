@@ -144,12 +144,10 @@ def __process_bmesh_faces(mesh, geometry_data, color_code):
         color_code = helpers.determine_color(color_code, face_data.color_code)
 
         part_slopes = special_bricks.get_part_slopes(geometry_data.file.name)
-        parts_cloth = special_bricks.get_parts_cloth(geometry_data.file.name)
         material = BlenderMaterials.get_material(
             color_code=color_code,
             bfc_certified=geometry_data.bfc_certified,
             part_slopes=part_slopes,
-            parts_cloth=parts_cloth,
             texmap=face_data.texmap,
             pe_texmaps=face_data.pe_texmaps,
         )

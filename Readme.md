@@ -1,4 +1,4 @@
-LDraw Handler for Blender 2.82+ and 3.0+, written by 
+LDraw Handler for Blender 4.0+, written by 
 Matthew Morrison [cuddlyogre] - cuddlyogre@gmail.com - www.cuddlyogre.com
 
 ##### Pull requests and examples of this plugin in action are welcome.

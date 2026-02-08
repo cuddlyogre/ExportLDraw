@@ -13,7 +13,7 @@ except ImportError as e:
     print(traceback.format_exc())
     import helpers
 
-BlendColor = namedtuple("BlendColor", "r g b")
+BlendColor = namedtuple("BlendColor", ["r", "g", "b", "a"], defaults=[255, 255, 255, 255])
 blend_colors = [
     BlendColor(51, 51, 51),
     BlendColor(0, 51, 178),
@@ -76,22 +76,24 @@ class LDrawColor:
 
         self.alpha = None
         self.luminance = None
-        self.material_name = None
 
+        self.material_name = None
         self.material_color_hex = None
+
         self.material_color = None
         self.material_color_i = None
+        self.material_color_d = None
 
         self.linear_material_color = None
         self.linear_material_color_i = None
+        self.linear_material_color_d = None
 
-        self.material_alpha = None
-        self.material_luminance = None
         self.material_fraction = None
         self.material_vfraction = None
         self.material_size = None
         self.material_minsize = None
         self.material_maxsize = None
+        self.material_fabric_type = None
 
     @classmethod
     def parse_color(cls, clean_line):
@@ -158,7 +160,7 @@ class LDrawColor:
         if "luminance" in lparams:
             i = lparams.index("luminance")
             luminance = int(lparams[i + 1])
-        self.luminance = luminance
+        self.luminance = luminance / 255
 
         material_name = None
         for _material in self.materials:
@@ -169,65 +171,63 @@ class LDrawColor:
 
         # MATERIAL SPECKLE VALUE #898788 FRACTION 0.4               MINSIZE 1    MAXSIZE 3
         # MATERIAL GLITTER VALUE #FFFFFF FRACTION 0.8 VFRACTION 0.6 MINSIZE 0.02 MAXSIZE 0.1
+        # MATERIAL FABRIC CANVAS
         if "material" in lparams:
-            i = lparams.index("material")
-            material_parts = lparams[i:]
+            mparams = lparams[lparams.index("material"):]
+
+            i = mparams.index("material")
+            material_parts = mparams[i:]
 
             material_name = material_parts[1]
             self.material_name = material_name
 
-            i = lparams.index("value")
-            material_value = lparams[i + 1]
-            self.material_color_hex = material_value
+            if "value" in mparams:
+                i = mparams.index("value")
+                material_value = mparams[i + 1]
+                self.material_color_hex = material_value
 
-            material_rgb = self.__get_rgb_color_value(material_value, linear=False)
-            self.material_color = material_rgb
-            self.material_color_i = tuple(round(i * 255) for i in material_rgb)
+                material_rgb = self.__get_rgb_color_value(material_value, linear=False)
+                self.material_color = material_rgb
+                self.material_color_i = tuple(round(i * 255) for i in material_rgb)
+                self.material_color_d = material_rgb + (1.0,)
 
-            lmaterial_rgb = self.__get_rgb_color_value(material_value, linear=True)
-            self.linear_material_color = lmaterial_rgb
-            self.linear_material_color_i = tuple(round(i * 255) for i in lmaterial_rgb)
+                lmaterial_rgb = self.__get_rgb_color_value(material_value, linear=True)
+                self.linear_material_color = lmaterial_rgb
+                self.linear_material_color_i = tuple(round(i * 255) for i in lmaterial_rgb)
+                self.linear_material_color_d = lmaterial_rgb + (1.0,)
 
-            material_alpha = 255
-            if "alpha" in material_parts:
-                i = material_parts.index("alpha")
-                material_alpha = int(material_parts[i + 1])
-            self.material_alpha = material_alpha / 255
-
-            material_luminance = 0
-            if "luminance" in material_parts:
-                i = material_parts.index("luminance")
-                material_luminance = int(material_parts[i + 1])
-            self.material_luminance = material_luminance
-
-            material_minsize = 0.0
-            material_maxsize = 0.0
             if "size" in material_parts:
                 i = material_parts.index("size")
-                material_minsize = float(material_parts[i + 1])
-                material_maxsize = float(material_parts[i + 1])
+                material_size = float(material_parts[i + 1])
+                self.material_size = material_size
 
             if "minsize" in material_parts:
                 i = material_parts.index("minsize")
                 material_minsize = float(material_parts[i + 1])
+                self.material_minsize = material_minsize
 
             if "maxsize" in material_parts:
                 i = material_parts.index("maxsize")
                 material_maxsize = float(material_parts[i + 1])
-            self.material_minsize = material_minsize
-            self.material_maxsize = material_maxsize
+                self.material_maxsize = material_maxsize
 
-            material_fraction = 0.0
             if "fraction" in material_parts:
                 i = material_parts.index("fraction")
                 material_fraction = float(material_parts[i + 1])
-            self.material_fraction = material_fraction
+                self.material_fraction = material_fraction
 
-            material_vfraction = 0.0
             if "vfraction" in material_parts:
                 i = material_parts.index("vfraction")
                 material_vfraction = float(material_parts[i + 1])
-            self.material_vfraction = material_vfraction
+                self.material_vfraction = material_vfraction
+
+            if "fabric" in material_parts:
+                i = material_parts.index("fabric")
+                try:
+                    material_fabric_type = material_parts[i + 1]
+                    self.material_fabric_type = material_fabric_type
+                except ValueError:
+                    '''stick with default'''
 
     # get colors loaded from ldconfig if they exist
     # otherwise convert the color code to a usable color and return that
