@@ -377,8 +377,6 @@ class BlenderMaterials:
     @classmethod
     # TODO: slight variation in strength for each material
     def __create_slope(cls, color, nodes, links, mix_node, node_principled, part_slopes=None):
-        cls.__node_slope_texture_by_angle(color, nodes, links, 0, 0, part_slopes)
-
         node_tex_voronoi0 = cls.__node_tex_voronoi(nodes, -820, 0)
         node_tex_voronoi0.normalize = True
         node_tex_voronoi0.inputs['Scale'].default_value = 200
@@ -390,53 +388,133 @@ class BlenderMaterials:
         links.new(node_tex_voronoi0.outputs["Distance"], node_bump.inputs["Height"])
         links.new(node_bump.outputs["Normal"], node_principled.inputs["Normal"])
 
-    @classmethod
-    def __node_slope_texture_by_angle(cls, color, nodes, links, x, y, angles):
-        if len(angles) > 0:
-            ...
-        if len(angles) > 1:
-            ...
-        if len(angles) > 2:
-            ...
-        if len(angles) > 3:
-            ...
+        cls.__node_slope_texture_by_angle(color, nodes, links, node_bump, part_slopes)
 
-        x = -1200
-        y = 1000
+    @classmethod
+    def __node_slope_if_angle(cls, color, nodes, links, angle, x=0, y=0):
         offset = mathutils.Vector((x, y))
 
-        node_texture_coordinate = cls.__node_texture_coordinate(nodes, -1820, -220)
-        node_vector_math = cls.__node_vector_math_normalize(nodes, -1620, -220)
-        node_separate_xyz = cls.__node_separate_xyz(nodes, -1420, -220)
-        node_math_multiply = cls.__node_math_multiply(nodes, -1220, -220)
-        node_math_maximum = cls.__node_math_maximum(nodes, -1030, -220)
-        node_math_minimum = cls.__node_math_minimum(nodes, -860, -220)
-        node_math_arccosine = cls.__node_math_arccosine(nodes, -660, -220)
-        node_math_to_degrees = cls.__node_math_to_degrees(nodes, -460, -220)
-        node_math_add = cls.__node_math_add(nodes, -260, -220)
-        node_math_compare = cls.__node_math_compare(nodes, -60, -220)
-        node_math_absolute = cls.__node_math_absolute(nodes, -60, 40)
-        node_math_greater_than = cls.__node_math_greater_than(nodes, 120, 40)
+        # get the faces's up vector relative to down, Z up -Z down
+        # =====================
+        node_texture_coordinate = cls.__node_texture_coordinate(nodes, -2540, -180)
+        node_separate_xyz = cls.__node_separate_xyz(nodes, -2360, -180)
 
-        node_value = cls.__node_value(nodes, -260, -80)
-        node_value.outputs["Value"].default_value = angles[0]
-        # node_value.outputs["Value"].default_value = angles[1]
-        # node_value.outputs["Value"].default_value = angles[2]
-        # node_value.outputs["Value"].default_value = angles[3]
+        node_math_multiply = cls.__node_math_multiply(nodes, -2180, -180)
+        node_math_multiply.inputs[1].default_value = -1
+
+        node_math_arccosine = cls.__node_math_arccosine(nodes, -2000, -180)
+
+        node_math_to_degrees = cls.__node_math_to_degrees(nodes, -1820, -180)
+        # =====================
+
+        # blender up is Z, LDraw up is -Y, so rotate the face's up to match with the list up angles in the slopes list
+        # if the slope angles in the list used blender up, this could be skipped, but using ldraw up in the list is more portable
+        # =====================
+        node_math_add = cls.__node_math_add(nodes, -1640, -180)
+        node_math_add.inputs[1].default_value = -90
+        node_math_add.label = "Blender Up to LDraw Up"
+        # =====================
+
+        # face with this angle get the slope texture
+        # =====================
+        node_value = cls.__node_value(nodes, -1640, -20)
+        node_value.outputs["Value"].default_value = angle
+        # =====================
+
+        # make sure value != 0 so that when value == 0, vertical faces don't get slope texture
+        # if value of multiple node == 0, and that is connected to bum strength, that will prevent the texture from showing on those faces
+        # =====================
+        node_math_absolute = cls.__node_math_absolute(nodes, -1460, 160)
+
+        node_math_greater_than = cls.__node_math_greater_than(nodes, -1280, 160)
+        node_math_greater_than.inputs[1].default_value = 0.0
+
+        node_math_multiply1 = cls.__node_math_multiply(nodes, -1100, 160)
+        # =====================
+
+        # does the face angle == value within 5 degrees
+        # =====================
+        node_math_compare = cls.__node_math_compare(nodes, -1460, -20)
+        node_math_compare.inputs[2].default_value = 5.0
+        # =====================
+
+        links.new(node_texture_coordinate.outputs["Normal"], node_separate_xyz.inputs["Vector"])
+        links.new(node_separate_xyz.outputs["Z"], node_math_multiply.inputs[0])
+        links.new(node_math_multiply.outputs["Value"], node_math_arccosine.inputs[0])
+        links.new(node_math_arccosine.outputs["Value"], node_math_to_degrees.inputs[0])
+        links.new(node_math_to_degrees.outputs["Value"], node_math_add.inputs[0])
+        links.new(node_value.outputs["Value"], node_math_compare.inputs[0])
+        links.new(node_math_add.outputs["Value"], node_math_compare.inputs[1])
+        links.new(node_value.outputs["Value"], node_math_absolute.inputs[0])
+        links.new(node_math_absolute.outputs["Value"], node_math_greater_than.inputs[0])
+        links.new(node_math_greater_than.outputs["Value"], node_math_multiply1.inputs[0])
+        links.new(node_math_compare.outputs["Value"], node_math_multiply1.inputs[1])
 
         node_texture_coordinate.location += offset
-        node_vector_math.location += offset
         node_separate_xyz.location += offset
         node_math_multiply.location += offset
-        node_math_maximum.location += offset
-        node_math_minimum.location += offset
         node_math_arccosine.location += offset
         node_math_to_degrees.location += offset
         node_math_add.location += offset
+        node_value.location += offset
         node_math_compare.location += offset
         node_math_absolute.location += offset
         node_math_greater_than.location += offset
-        node_value.location += offset
+        node_math_multiply1.location += offset
+
+        return node_math_multiply1
+
+    @classmethod
+    def __node_slope_texture_by_angle(cls, color, nodes, links, node_bump, angles):
+        node_math_add = cls.__node_math_add(nodes, -1000, 0)
+        node_math_add.inputs[0].default_value = 0
+        node_math_add.inputs[1].default_value = 0
+
+        links.new(node_math_add.outputs['Value'], node_bump.inputs["Strength"])
+
+        if len(angles) == 4:
+            node_math_multiply1 = cls.__node_slope_if_angle(color, nodes, links, angles[0], x=-500, y=1000)
+            node_math_multiply2 = cls.__node_slope_if_angle(color, nodes, links, angles[1], x=-500, y=300)
+            node_math_multiply3 = cls.__node_slope_if_angle(color, nodes, links, angles[2], x=-500, y=-300)
+            node_math_multiply4 = cls.__node_slope_if_angle(color, nodes, links, angles[3], x=-500, y=-1000)
+
+            node_math_add1 = cls.__node_math_add(nodes, -1360, 800)
+            node_math_add2 = cls.__node_math_add(nodes, -1360, -800)
+
+            links.new(node_math_multiply1.outputs['Value'], node_math_add1.inputs[0])
+            links.new(node_math_multiply2.outputs['Value'], node_math_add1.inputs[1])
+
+            links.new(node_math_multiply3.outputs['Value'], node_math_add2.inputs[0])
+            links.new(node_math_multiply4.outputs['Value'], node_math_add2.inputs[1])
+
+            links.new(node_math_add1.outputs['Value'], node_math_add.inputs[0])
+            links.new(node_math_add2.outputs['Value'], node_math_add.inputs[1])
+        elif len(angles) == 3:
+            node_math_multiply1 = cls.__node_slope_if_angle(color, nodes, links, angles[0], x=-500, y=600)
+            node_math_multiply2 = cls.__node_slope_if_angle(color, nodes, links, angles[1], x=-500, y=0)
+            node_math_multiply3 = cls.__node_slope_if_angle(color, nodes, links, angles[2], x=-500, y=-600)
+
+            node_math_add1 = cls.__node_math_add(nodes, -1360, 500)
+
+            links.new(node_math_multiply1.outputs['Value'], node_math_add1.inputs[0])
+            links.new(node_math_multiply2.outputs['Value'], node_math_add1.inputs[1])
+
+            links.new(node_math_add1.outputs['Value'], node_math_add.inputs[0])
+            links.new(node_math_multiply3.outputs['Value'], node_math_add.inputs[1])
+        elif len(angles) == 2:
+            node_math_multiply1 = cls.__node_slope_if_angle(color, nodes, links, angles[0], x=-500, y=300)
+            node_math_multiply2 = cls.__node_slope_if_angle(color, nodes, links, angles[1], x=-500, y=-300)
+
+            node_math_add1 = cls.__node_math_add(nodes, -1360, 0)
+
+            links.new(node_math_multiply1.outputs['Value'], node_math_add1.inputs[0])
+            links.new(node_math_multiply2.outputs['Value'], node_math_add1.inputs[1])
+
+            links.new(node_math_add1.outputs['Value'], node_math_add.inputs[0])
+        elif len(angles) == 1:
+            node_math_multiply1 = cls.__node_slope_if_angle(color, nodes, links, angles[0], x=-500, y=0)
+
+            links.new(node_math_multiply1.outputs['Value'], node_math_add.inputs[0])
 
     @classmethod
     def __mapped_value(cls, value):
@@ -452,22 +530,15 @@ class BlenderMaterials:
         image_name = texmap.image_name
         if image_name is not None:
             texmap_image = cls.__node_tex_image_closest_clip(nodes, x, y, image_name, "sRGB")
-            if bpy.app.version >= (4, 4):
-                links.new(texmap_image.outputs["Alpha"], mix_node.inputs["Factor"])
-                links.new(texmap_image.outputs["Color"], mix_node.inputs["B"])
-            else:
-                links.new(texmap_image.outputs["Alpha"], mix_node.inputs["Fac"])
-                links.new(texmap_image.outputs["Color"], mix_node.inputs["Color2"])
+            links.new(texmap_image.outputs["Alpha"], mix_node.inputs["Factor"])
+            links.new(texmap_image.outputs["Color"], mix_node.inputs["B"])
 
     @classmethod
     def __create_glossmap_image(cls, nodes, links, x, y, node_principled, texmap):
         image_name = texmap.glossmap_image_name
         if image_name is not None:
             glossmap_image = cls.__node_tex_image_closest_clip(nodes, x, y - 280, image_name, "Non-Color")
-            if bpy.app.version >= (4, 4):
-                links.new(glossmap_image.outputs["Color"], node_principled.inputs["Specular"])
-            else:
-                links.new(glossmap_image.outputs["Color"], node_principled.inputs["Specular"])
+            links.new(glossmap_image.outputs["Color"], node_principled.inputs["Specular Tint"])
 
     @classmethod
     def __create_texmap(cls, nodes, links, x, y, mix_node, node_principled, texmap):
