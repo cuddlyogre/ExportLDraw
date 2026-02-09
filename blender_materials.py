@@ -377,18 +377,68 @@ class BlenderMaterials:
     @classmethod
     # TODO: slight variation in strength for each material
     def __create_slope(cls, color, nodes, links, mix_node, node_principled, part_slopes=None):
-        node_tex_voronoi0 = cls.__node_tex_voronoi(nodes, -820, 0)
+        node_math_add = cls.__node_math_add(nodes, -1160, 0)
+        node_math_add.inputs[0].default_value = 0
+        node_math_add.inputs[1].default_value = 0
+
+        node_tex_voronoi0 = cls.__node_tex_voronoi(nodes, -980, 0)
         node_tex_voronoi0.normalize = True
         node_tex_voronoi0.inputs['Scale'].default_value = 200
 
-        node_bump = cls.__node_bump(nodes, -620, 0)
+        node_math_multiply = cls.__node_math_multiply(nodes, -780, 0)
+
+        node_bump = cls.__node_bump(nodes, -600, 0)
         node_bump.invert = True
         node_bump.inputs['Distance'].default_value = 1.0
 
-        links.new(node_tex_voronoi0.outputs["Distance"], node_bump.inputs["Height"])
+        links.new(node_math_add.outputs['Value'], node_math_multiply.inputs[0])
+        links.new(node_tex_voronoi0.outputs["Distance"], node_math_multiply.inputs[1])
+        links.new(node_math_multiply.outputs['Value'], node_bump.inputs["Height"])
         links.new(node_bump.outputs["Normal"], node_principled.inputs["Normal"])
 
-        cls.__node_slope_texture_by_angle(color, nodes, links, node_bump, part_slopes)
+        if len(part_slopes) == 4:
+            node_math_multiply1 = cls.__node_slope_if_angle(color, nodes, links, part_slopes[0], x=-500, y=1000)
+            node_math_multiply2 = cls.__node_slope_if_angle(color, nodes, links, part_slopes[1], x=-500, y=300)
+            node_math_multiply3 = cls.__node_slope_if_angle(color, nodes, links, part_slopes[2], x=-500, y=-300)
+            node_math_multiply4 = cls.__node_slope_if_angle(color, nodes, links, part_slopes[3], x=-500, y=-1000)
+
+            node_math_add1 = cls.__node_math_add(nodes, -1360, 800)
+            node_math_add2 = cls.__node_math_add(nodes, -1360, -800)
+
+            links.new(node_math_multiply1.outputs['Value'], node_math_add1.inputs[0])
+            links.new(node_math_multiply2.outputs['Value'], node_math_add1.inputs[1])
+
+            links.new(node_math_multiply3.outputs['Value'], node_math_add2.inputs[0])
+            links.new(node_math_multiply4.outputs['Value'], node_math_add2.inputs[1])
+
+            links.new(node_math_add1.outputs['Value'], node_math_add.inputs[0])
+            links.new(node_math_add2.outputs['Value'], node_math_add.inputs[1])
+        elif len(part_slopes) == 3:
+            node_math_multiply1 = cls.__node_slope_if_angle(color, nodes, links, part_slopes[0], x=-500, y=600)
+            node_math_multiply2 = cls.__node_slope_if_angle(color, nodes, links, part_slopes[1], x=-500, y=0)
+            node_math_multiply3 = cls.__node_slope_if_angle(color, nodes, links, part_slopes[2], x=-500, y=-600)
+
+            node_math_add1 = cls.__node_math_add(nodes, -1360, 500)
+
+            links.new(node_math_multiply1.outputs['Value'], node_math_add1.inputs[0])
+            links.new(node_math_multiply2.outputs['Value'], node_math_add1.inputs[1])
+
+            links.new(node_math_add1.outputs['Value'], node_math_add.inputs[0])
+            links.new(node_math_multiply3.outputs['Value'], node_math_add.inputs[1])
+        elif len(part_slopes) == 2:
+            node_math_multiply1 = cls.__node_slope_if_angle(color, nodes, links, part_slopes[0], x=-500, y=300)
+            node_math_multiply2 = cls.__node_slope_if_angle(color, nodes, links, part_slopes[1], x=-500, y=-300)
+
+            node_math_add1 = cls.__node_math_add(nodes, -1360, 0)
+
+            links.new(node_math_multiply1.outputs['Value'], node_math_add1.inputs[0])
+            links.new(node_math_multiply2.outputs['Value'], node_math_add1.inputs[1])
+
+            links.new(node_math_add1.outputs['Value'], node_math_add.inputs[0])
+        elif len(part_slopes) == 1:
+            node_math_multiply1 = cls.__node_slope_if_angle(color, nodes, links, part_slopes[0], x=-500, y=0)
+
+            links.new(node_math_multiply1.outputs['Value'], node_math_add.inputs[0])
 
     @classmethod
     def __node_slope_if_angle(cls, color, nodes, links, angle, x=0, y=0):
@@ -463,58 +513,6 @@ class BlenderMaterials:
         node_math_multiply1.location += offset
 
         return node_math_multiply1
-
-    @classmethod
-    def __node_slope_texture_by_angle(cls, color, nodes, links, node_bump, angles):
-        node_math_add = cls.__node_math_add(nodes, -1000, 0)
-        node_math_add.inputs[0].default_value = 0
-        node_math_add.inputs[1].default_value = 0
-
-        links.new(node_math_add.outputs['Value'], node_bump.inputs["Strength"])
-
-        if len(angles) == 4:
-            node_math_multiply1 = cls.__node_slope_if_angle(color, nodes, links, angles[0], x=-500, y=1000)
-            node_math_multiply2 = cls.__node_slope_if_angle(color, nodes, links, angles[1], x=-500, y=300)
-            node_math_multiply3 = cls.__node_slope_if_angle(color, nodes, links, angles[2], x=-500, y=-300)
-            node_math_multiply4 = cls.__node_slope_if_angle(color, nodes, links, angles[3], x=-500, y=-1000)
-
-            node_math_add1 = cls.__node_math_add(nodes, -1360, 800)
-            node_math_add2 = cls.__node_math_add(nodes, -1360, -800)
-
-            links.new(node_math_multiply1.outputs['Value'], node_math_add1.inputs[0])
-            links.new(node_math_multiply2.outputs['Value'], node_math_add1.inputs[1])
-
-            links.new(node_math_multiply3.outputs['Value'], node_math_add2.inputs[0])
-            links.new(node_math_multiply4.outputs['Value'], node_math_add2.inputs[1])
-
-            links.new(node_math_add1.outputs['Value'], node_math_add.inputs[0])
-            links.new(node_math_add2.outputs['Value'], node_math_add.inputs[1])
-        elif len(angles) == 3:
-            node_math_multiply1 = cls.__node_slope_if_angle(color, nodes, links, angles[0], x=-500, y=600)
-            node_math_multiply2 = cls.__node_slope_if_angle(color, nodes, links, angles[1], x=-500, y=0)
-            node_math_multiply3 = cls.__node_slope_if_angle(color, nodes, links, angles[2], x=-500, y=-600)
-
-            node_math_add1 = cls.__node_math_add(nodes, -1360, 500)
-
-            links.new(node_math_multiply1.outputs['Value'], node_math_add1.inputs[0])
-            links.new(node_math_multiply2.outputs['Value'], node_math_add1.inputs[1])
-
-            links.new(node_math_add1.outputs['Value'], node_math_add.inputs[0])
-            links.new(node_math_multiply3.outputs['Value'], node_math_add.inputs[1])
-        elif len(angles) == 2:
-            node_math_multiply1 = cls.__node_slope_if_angle(color, nodes, links, angles[0], x=-500, y=300)
-            node_math_multiply2 = cls.__node_slope_if_angle(color, nodes, links, angles[1], x=-500, y=-300)
-
-            node_math_add1 = cls.__node_math_add(nodes, -1360, 0)
-
-            links.new(node_math_multiply1.outputs['Value'], node_math_add1.inputs[0])
-            links.new(node_math_multiply2.outputs['Value'], node_math_add1.inputs[1])
-
-            links.new(node_math_add1.outputs['Value'], node_math_add.inputs[0])
-        elif len(angles) == 1:
-            node_math_multiply1 = cls.__node_slope_if_angle(color, nodes, links, angles[0], x=-500, y=0)
-
-            links.new(node_math_multiply1.outputs['Value'], node_math_add.inputs[0])
 
     @classmethod
     def __mapped_value(cls, value):
