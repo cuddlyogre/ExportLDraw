@@ -457,6 +457,8 @@ class LDrawNode:
         if matrix is not None:
             _key += (matrix,)
 
+        _key = "-".join(str(part) for part in _key)
+
         str_key = str(_key)
         if len(str_key) < 60:
             return str(str_key)
