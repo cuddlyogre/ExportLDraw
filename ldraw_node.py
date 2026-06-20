@@ -6,6 +6,7 @@ import mathutils
 from .geometry_data import GeometryData
 from .import_options import ImportOptions
 from .pe_texmap import PETexPath, PETexInfo
+from . import pe_texmap
 from . import base64_handler
 from . import group
 from . import ldraw_mesh
@@ -189,19 +190,21 @@ class LDrawNode:
                     child_current_color = helpers.determine_color(color_code, child_node.color_code)
 
                     if child_node.meta_command == "1":
-                        # don't pass -1 tex_paths since those are only meant for the current_node
-                        # if tex_info has no matrix, it's supposed to apply to the child_nodes too
-                        # it is possible to have multiple tex_infos with a mix of matrix and no matrix
-                        # that would mean that there are a mix of uvs and no uvs in the same file
-                        # there are no official stud.io files like this
-                        # remove all tex_infos with a matrix and pass that tex_path to the child_node if lan(tex_infos) > 0
+                        # Propagate this file's projection down into the subfile. Studio projects
+                        # a PE_TEX_PATH onto the whole subtree of the targeted node, so the box
+                        # must follow the geometry down to wherever the real faces live -- e.g. the
+                        # hand grip is built from sub-primitives (2-4cyli...) that have no faces of
+                        # their own, so a box targeting 2-4cylo must descend one more level.
+                        # descend_tex_info() rebases each box into the child's local frame;
+                        # explicit-UV tex_infos pass through unchanged. The box-intersection test in
+                        # project_box_texmaps keeps the decal from spreading onto unrelated faces.
                         _pe_tex_paths = {}
                         if pe_tex_path is not None:
                             _pe_tex_path = PETexPath()
                             _pe_tex_path.tex_path = pe_tex_path.tex_path.copy()
-                            _pe_tex_path.tex_infos = [i for i in pe_tex_path.tex_infos if i.matrix is None]
+                            _pe_tex_path.tex_infos = [pe_texmap.descend_tex_info(i, child_node.matrix) for i in pe_tex_path.tex_infos]
                             _pe_tex_path.tex_info = pe_tex_path.tex_info
-                            if len(_pe_tex_path.tex_infos) > 0 and _pe_tex_path.tex_infos[0].matrix is None:
+                            if len(_pe_tex_path.tex_infos) > 0:
                                 _pe_tex_paths[None] = _pe_tex_path
 
                         for _pe_tex_path in pe_tex_paths.get(subfile_line_index, []):
@@ -423,6 +426,9 @@ class LDrawNode:
                 geometry_data.bfc_certified = bfc_certified
                 if ImportOptions.defer_processing:
                     geometry_data.process()
+                # all faces are now collected and transformed -- project PE bounding-box
+                # textures over the assembled mesh (seed + flood-fill across connected faces)
+                geometry_data.project_pe_texmaps()
                 LDrawNode.geometry_datas[geometry_data_key] = geometry_data
             geometry_data = LDrawNode.geometry_datas[geometry_data_key]
 

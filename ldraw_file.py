@@ -544,7 +544,8 @@ class LDrawFile:
             self.child_nodes.append(ldraw_node)
             return True
 
-        # this matrix is sheared, so correct it in build_pe_texmap
+        # marks the next PE_TEX_INFO matrix as sheared; shear correction is not yet
+        # applied during projection (see pe_texmap.project_box_texmaps)
         if clean_line.startswith("0 PE_TEX_NEXT_SHEAR"):
             ldraw_node = LDrawNode()
             ldraw_node.line = clean_line

@@ -1,4 +1,5 @@
 from .import_options import ImportOptions
+from . import pe_texmap
 
 
 class FaceData:
@@ -54,9 +55,12 @@ class FaceData:
                 FaceData.fix_bowties(self.vertices)
 
     def __process_pe_tex_path(self):
-        # TODO: this probably needs to be done after the mesh is fully built so that the texture projection works properly
+        # Only the explicit-UV case is resolved per-face. PE_TEX_INFO bounding-box
+        # projections are deferred to GeometryData.project_pe_texmaps(), which runs once the
+        # whole mesh is collected so the decal can flood-fill across connected faces and
+        # follow concave surfaces -- matching Studio's LDrawTextureAtlas.OptimizeMode.
         if self.pe_tex_path is None: return
-        self.pe_texmaps = self.pe_tex_path.build_pe_texmap(self.child_node, self.matrix, self.vertices)
+        self.pe_texmaps = self.pe_tex_path.build_uv_texmaps(self.child_node)
 
     # handle bowtie quadrilaterals - 6582.dat
     # https://github.com/TobyLobster/ImportLDraw/pull/65/commits/3d8cebee74bf6d0447b616660cc989e870f00085
@@ -93,6 +97,11 @@ class GeometryData:
 
         for line_data in self.line_data:
             line_data.process()
+
+    def project_pe_texmaps(self):
+        # Run once per mesh, after every face has been collected and transformed, so the
+        # PE bounding-box projections can seed + flood-fill across connected faces.
+        pe_texmap.project_box_texmaps(self.face_data)
 
     def add_edge_data(self, child_node, matrix, color_code):
         face_data = FaceData(

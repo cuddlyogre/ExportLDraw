@@ -1,5 +1,15 @@
 import mathutils
 
+# Projection axis of a PE texture, in the texture's own space (Studio: Vector3.down).
+TEXTURE_NORMAL = mathutils.Vector((0, -1, 0))
+
+
+def _vkey(v):
+    # Adjacency key for the flood-fill: two faces are "connected" when they share a
+    # vertex position. LDraw file coordinates are written to ~3 decimals, so rounding
+    # here reliably matches shared corners without welding genuinely distinct vertices.
+    return (round(v.x, 3), round(v.y, 3), round(v.z, 3))
+
 
 class PETexPath:
     def __init__(self):
@@ -7,66 +17,21 @@ class PETexPath:
         self.tex_infos = []
         self.tex_info = None
 
-    def build_pe_texmap(self, child_node, matrix, vertices):
+    def build_uv_texmaps(self, child_node):
+        # Faces that already carry explicit UVs in the file (type 3/4 with >=17 tokens)
+        # are mapped directly here -- no projection needed.
+        #
+        # The bounding-box (projection) case is NOT handled per-face. It is deferred to
+        # project_box_texmaps(), which runs once the whole mesh has been collected, so the
+        # decal can flood-fill across connected faces (see that function).
         pe_texmaps = []
-
+        if len(child_node.uvs) == 0:
+            return pe_texmaps
         for tex_info in self.tex_infos:
-            # if we have uv data and a pe_tex_info, otherwise pass
-            # # custom minifig head > 3626tex.dat (has no pe_tex) > 3626texpole.dat (has no uv data)
-            if len(child_node.uvs) > 0:  # use uvs provided in file
-                pe_texmap = PETexmap()
-                pe_texmap.image_name = tex_info.image_name
-                pe_texmap.uvs = child_node.uvs.copy()
-                pe_texmaps.append(pe_texmap)
-
-            elif tex_info.matrix is not None:  # boundingbox provided
-                pe_texmap = PETexmap()
-                pe_texmap.image_name = tex_info.image_name
-
-                (translation, rotation, box_extents) = (matrix @ tex_info.matrix).decompose()
-                # print(tex_info.camera_origin)
-
-                # this is almost certainly not how it's supposed to be handled, but the end result is the same
-                box_extents *= 10
-
-                mirroring = mathutils.Vector((1, 1, 1))
-                for dim in range(3):
-                    if box_extents[dim] < 0:
-                        mirroring[dim] *= -1
-                        box_extents[dim] *= -1
-
-                rhs = mathutils.Matrix.LocRotScale(translation, rotation, mirroring)
-
-                # Do NOT override matrix here; use rhs as the composed matrix
-                composed_inverse = rhs.inverted()
-                local_vertices = [composed_inverse @ v for v in vertices]
-
-                if not intersect(local_vertices, box_extents):
-                    continue
-
-                ab = local_vertices[1] - local_vertices[0]
-                bc = local_vertices[2] - local_vertices[1]
-                face_normal = ab.cross(bc).normalized()
-
-                texture_normal = mathutils.Vector((0, -1, 0))
-                dot = face_normal.dot(texture_normal)
-                if dot <= 0.001:
-                    continue
-
-                # TODO: camera_origin is a camera that is looking at the mesh
-                #  only unwrap the faces the camera can actually see, not every face that points toward the camera
-                dot = face_normal.dot(tex_info.camera_origin)
-                if dot <= 0.001:
-                    continue
-
-                for vert in local_vertices:
-                    u = (vert.x - tex_info.point_min.x) / tex_info.point_diff.x
-                    v = (vert.z - -tex_info.point_min.y) / -tex_info.point_diff.y
-                    uv = mathutils.Vector((u, v))
-                    pe_texmap.uvs.append(uv)
-
-                pe_texmaps.append(pe_texmap)
-
+            pe_texmap = PETexmap()
+            pe_texmap.image_name = tex_info.image_name
+            pe_texmap.uvs = child_node.uvs.copy()
+            pe_texmaps.append(pe_texmap)
         return pe_texmaps
 
 
@@ -101,6 +66,163 @@ class PETexmap:
             if p not in uvs:
                 uvs[p] = self.uvs[i]
             loop[uv_layer].uv = uvs[p]
+
+
+def descend_tex_info(tex_info, child_matrix):
+    """
+    Re-express a PETexInfo so a projection declared on a parent file also applies to a child
+    subfile's geometry. A box (matrix) projection is rebased into the child's local frame
+    (M_child = child_matrix^-1 @ M_parent) so it "descends" to wherever the real faces live --
+    e.g. the minifig hand grip is assembled from sub-primitives (2-4cyli...) that have no faces
+    of their own, so a projection targeting them must reach one level deeper. Explicit-UV
+    tex_infos (no matrix) already apply to child_nodes, so they pass through unchanged.
+
+    Matches Studio, where a PE_TEX_PATH projects onto the entire subtree of the targeted node.
+    """
+    if tex_info.matrix is None:
+        return tex_info
+    descended = PETexInfo()
+    descended.next_shear = tex_info.next_shear
+    descended.image_name = tex_info.image_name
+    descended.matrix = (child_matrix.inverted() @ tex_info.matrix).freeze()
+    descended.matrix_inverse = descended.matrix.inverted().freeze()
+    descended.point_min = tex_info.point_min
+    descended.point_max = tex_info.point_max
+    descended.point_diff = tex_info.point_diff
+    descended.camera_origin = tex_info.camera_origin
+    return descended
+
+
+def project_box_texmaps(face_datas):
+    """
+    Apply PE_TEX_INFO bounding-box (projection) textures to a fully-collected mesh.
+
+    This mirrors Studio's LDrawTextureAtlas.OptimizeMode: the projection is applied to the
+    assembled mesh, not per-face during the build. For each projection we
+      1. seed the faces that face the projector AND intersect the (thin) projection box
+         (LDrawTextureInfo.CollectVerticesInBoxExtents), then
+      2. flood-fill the decal across connected faces that still face the projector,
+         WITHOUT re-testing the box (LDrawTextureInfo.CollectConnectVertices).
+
+    Step 2 is what lets the decal follow a concave surface (e.g. the scoop of a skirt)
+    that recedes behind the box, while the thin box depth still keeps it off the opposite
+    interior wall -- the flood-fill can't reach that wall without crossing back-facing
+    faces, which breaks the chain.
+
+    Blender stores UVs per loop, so the C# vertex-splitting at the decal boundary is
+    unnecessary: only the loops of selected faces get written, so UVs never bleed onto a
+    neighbouring face through a shared vertex.
+
+    Operates on a list of FaceData (duck-typed: .vertices, .matrix, .pe_tex_path,
+    .child_node, .pe_texmaps) and appends the resulting PETexmap(s) to each face.
+    """
+    # Faces eligible for box projection. Explicit-UV faces are handled in build_uv_texmaps;
+    # faces without a pe_tex_path (e.g. merged primitives) are never textured.
+    faces = [fd for fd in face_datas
+             if fd.pe_tex_path is not None and len(fd.child_node.uvs) == 0]
+    if not faces:
+        return
+
+    # Adjacency map: shared vertex position -> indices into `faces`.
+    pos_to_faces = {}
+    for idx, fd in enumerate(faces):
+        for v in fd.vertices:
+            pos_to_faces.setdefault(_vkey(v), set()).add(idx)
+
+    # Faces already claimed by any projection. Mirrors C# IsUVOfFaceAlreadyAssigned, so a
+    # face caught by an earlier PE_TEX_INFO (e.g. the back decal) is not re-claimed by a
+    # later one (e.g. the front decal).
+    covered = set()
+
+    # Preserve file order of the distinct tex paths present on these faces.
+    paths = []
+    for fd in faces:
+        if fd.pe_tex_path not in paths:
+            paths.append(fd.pe_tex_path)
+
+    for path in paths:
+        path_idxs = [i for i, fd in enumerate(faces) if fd.pe_tex_path is path]
+        path_set = set(path_idxs)
+        for tex_info in path.tex_infos:
+            if tex_info.matrix is None:
+                continue  # explicit-uv tex_info, nothing to project
+            _project_one(faces, path_idxs, path_set, tex_info, pos_to_faces, covered)
+
+
+def _project_one(faces, path_idxs, path_set, tex_info, pos_to_faces, covered):
+    # Every face in one mesh shares the same build matrix, so any of them composes the
+    # same projection. local = (matrix @ tex_info.matrix)^-1 @ vertex  (the per-face build
+    # matrix cancels, exactly as the previous per-face code computed it).
+    matrix = faces[path_idxs[0]].matrix
+    (translation, rotation, box_extents) = (matrix @ tex_info.matrix).decompose()
+
+    # Half-extents are 0.5 * scale (Studio: m_boxExtents = 0.5f * s). A too-deep box
+    # punches through the part and lands the decal on the opposite interior wall.
+    box_extents = box_extents * 0.5
+    mirroring = mathutils.Vector((1, 1, 1))
+    for dim in range(3):
+        if box_extents[dim] < 0:
+            mirroring[dim] *= -1
+            box_extents[dim] *= -1
+
+    # Composed matrix without scale (matches Studio re-composing with the +/-1 mirror only),
+    # so vertices land in box space at true LDU distances from the projection plane.
+    composed_inverse = mathutils.Matrix.LocRotScale(translation, rotation, mirroring).inverted()
+
+    local_cache = {}   # face idx -> [local vertex Vectors]
+    normal_cache = {}  # face idx -> face normal in texture space
+
+    def localize(idx):
+        lv = local_cache.get(idx)
+        if lv is None:
+            lv = [composed_inverse @ v for v in faces[idx].vertices]
+            local_cache[idx] = lv
+            normal_cache[idx] = (lv[1] - lv[0]).cross(lv[2] - lv[1]).normalized()
+        return lv
+
+    # 1. Seed: faces that face the projector (dot >= 0.001) and intersect the box.
+    frontier = []
+    selected = set()
+    for idx in path_idxs:
+        if idx in covered:
+            continue
+        local_vertices = localize(idx)
+        if normal_cache[idx].dot(TEXTURE_NORMAL) < 0.001:
+            continue
+        if not intersect(local_vertices, box_extents):
+            continue
+        selected.add(idx)
+        covered.add(idx)
+        frontier.append(idx)
+
+    # 2. Grow: connected faces that still face the projector (dot > 0). No box test --
+    #    this is what carries the decal onto the scoop that recedes behind the box.
+    while frontier:
+        idx = frontier.pop()
+        neighbors = set()
+        for v in faces[idx].vertices:
+            neighbors |= pos_to_faces.get(_vkey(v), set())
+        for j in neighbors:
+            if j in covered or j not in path_set:
+                continue
+            localize(j)
+            if normal_cache[j].dot(TEXTURE_NORMAL) <= 0.0:
+                continue
+            selected.add(j)
+            covered.add(j)
+            frontier.append(j)
+
+    # 3. Assign projected UVs to every selected face.
+    point_min = tex_info.point_min
+    point_diff = tex_info.point_diff
+    for idx in selected:
+        pe_texmap = PETexmap()
+        pe_texmap.image_name = tex_info.image_name
+        for vert in local_cache[idx]:
+            u = (vert.x - point_min.x) / point_diff.x
+            v = (vert.z - -point_min.y) / -point_diff.y
+            pe_texmap.uvs.append(mathutils.Vector((u, v)))
+        faces[idx].pe_texmaps.append(pe_texmap)
 
 
 def intersect(polygon, box_extents):
