@@ -1,3 +1,5 @@
+import bpy
+
 import uuid
 import mathutils
 
@@ -459,9 +461,14 @@ class LDrawNode:
 
         _key = "-".join(str(part) for part in _key)
 
+        # Blender's max name length
+        # >= 5.0: length_max: 256 bytes -> len < 256 = <= 255
+        # <  5.0: length_max:  64 bytes -> len <  64 = <=  63
+        max_len = bpy.types.Object.bl_rna.properties['name'].length_max
+
         str_key = str(_key)
-        if len(str_key) < 60:
-            return str(str_key)
+        if len(str_key) < max_len:
+            return str_key
 
         key = LDrawNode.key_map.get(_key)
         if key is None:
