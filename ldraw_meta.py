@@ -426,7 +426,10 @@ def set_texmap_end(texmaps):
 # 0 PE_TEX_NEXT_SHEAR
 # 0 PE_TEX_INFO 0.6682 7.2554 13.4921 -3.9588 -1.0797 1.9523 -40.5715 0.2365 -24.6051 -16.5249 0.2054 16.5954 15.5934 18.4983 19.7776 12.8449 PNGBASE64==
 
-# this doesn't work well with some very distorted texture applications
-# PE_TEX_NEXT_SHEAR is unknown
-# this may be where PE_TEX_NEXT_SHEAR comes in
-# is there a hardcoded or programmatically determined shear matrix?
+# PE_TEX_NEXT_SHEAR: the shear matrix is not hardcoded -- it is the targeted part's own
+# placement transform (the 1-line matrix). The PE_TEX_INFO matrix is stored pre-multiplied by
+# that part's inverse shear, so the box only becomes axis-aligned when recombined with the
+# part transform (Studio: PETextureInfo.InitMatrixWithTargetPartMatrix multiplies by
+# model.ShearMatrix, the QR scale/shear factor of the part transform). The build matrix already
+# supplies that transform; pe_texmap.descend_tex_info just keeps the shear from being divided
+# back out when a next_shear box descends through the sheared subfile.

@@ -68,6 +68,34 @@ class PETexmap:
             loop[uv_layer].uv = uvs[p]
 
 
+def is_sheared_matrix(matrix, eps=0.01):
+    """
+    True when matrix's 3x3 carries shear -- its basis vectors are not mutually orthogonal.
+
+    Mirrors Studio's PEPart.IsShearedPart: it QR-decomposes the part transform (TRS-S split)
+    and treats it as sheared when the upper-triangular factor R has a non-trivial off-diagonal
+    term (abs(R.m01), abs(R.m02) or abs(R.m12) > 0.01). Non-uniform but orthogonal scaling (a
+    stretched-but-square box) is NOT shear and yields zero off-diagonals, exactly like Studio.
+    Gram-Schmidt produces the same off-diagonal magnitudes as Studio's Householder QR, so the
+    0.01 threshold matches.
+    """
+    # columns = images of the basis vectors (mathutils.Matrix is row-major: matrix[row][col])
+    c0 = mathutils.Vector((matrix[0][0], matrix[1][0], matrix[2][0]))
+    c1 = mathutils.Vector((matrix[0][1], matrix[1][1], matrix[2][1]))
+    c2 = mathutils.Vector((matrix[0][2], matrix[1][2], matrix[2][2]))
+    if c0.length < 1e-6 or c1.length < 1e-6 or c2.length < 1e-6:
+        return False
+    e0 = c0.normalized()
+    r01 = e0.dot(c1)            # R.m01
+    r02 = e0.dot(c2)            # R.m02
+    u1 = c1 - r01 * e0
+    if u1.length < 1e-6:
+        return False
+    e1 = u1.normalized()
+    r12 = e1.dot(c2)           # R.m12
+    return abs(r01) > eps or abs(r02) > eps or abs(r12) > eps
+
+
 def descend_tex_info(tex_info, child_matrix):
     """
     Re-express a PETexInfo so a projection declared on a parent file also applies to a child
@@ -78,13 +106,37 @@ def descend_tex_info(tex_info, child_matrix):
     tex_infos (no matrix) already apply to child_nodes, so they pass through unchanged.
 
     Matches Studio, where a PE_TEX_PATH projects onto the entire subtree of the targeted node.
+
+    PE_TEX_NEXT_SHEAR: when the descended-into child's placement (child_matrix) is sheared,
+    Studio (Studio Part Designer) does NOT keep that shear on the part transform. PEPart.Is-
+    ShearedPart factors the shear out into the model (model.ShearMatrix) and resets the part to
+    a rigid TRS, then PETextureInfo.InitMatrixWithTargetPartMatrix re-applies it to the box:
+        m_texToTarget = model.ShearMatrix * m_texToTarget    (only while m_includeShear is set)
+    So the PE_TEX_INFO matrix in the file is calibrated to recombine with that shear: it is
+    M_part @ matrix that yields the true, un-sheared projection box (verified: for 15068pb046a
+    M_part @ matrix is exactly axis-aligned). Rebasing the box through the full sheared
+    child_matrix here would divide that shear back out (child_matrix^-1 @ matrix) and, once the
+    build matrix re-applies child_matrix, cancel it -- collapsing the box to the thin, skewed
+    in-file matrix and smearing (usually dropping) the decal.
+
+    So for a next_shear box descending through a sheared child we leave the matrix un-rebased
+    and let the build matrix supply child_matrix's shear -- the build matrix's contribution
+    (Studio globalTransformMatrix * ShearMatrix) equals Studio's corrected m_texToTarget. The
+    flag is then consumed so any deeper level rebases normally (Studio applies the shear once).
+    Non-shear descents are unchanged, so PE_TEX_PATHs that already route straight to the sheared
+    target (e.g. 15068pb046a "0 1") -- where the build matrix supplies the shear without any
+    descend at all -- are unaffected.
     """
     if tex_info.matrix is None:
         return tex_info
     descended = PETexInfo()
     descended.next_shear = tex_info.next_shear
     descended.image_name = tex_info.image_name
-    descended.matrix = (child_matrix.inverted() @ tex_info.matrix).freeze()
+    if tex_info.next_shear and is_sheared_matrix(child_matrix):
+        descended.matrix = tex_info.matrix
+        descended.next_shear = False
+    else:
+        descended.matrix = (child_matrix.inverted() @ tex_info.matrix).freeze()
     descended.matrix_inverse = descended.matrix.inverted().freeze()
     descended.point_min = tex_info.point_min
     descended.point_max = tex_info.point_max

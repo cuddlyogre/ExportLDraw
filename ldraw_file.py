@@ -544,8 +544,10 @@ class LDrawFile:
             self.child_nodes.append(ldraw_node)
             return True
 
-        # marks the next PE_TEX_INFO matrix as sheared; shear correction is not yet
-        # applied during projection (see pe_texmap.project_box_texmaps)
+        # marks the next PE_TEX_INFO matrix as calibrated for a sheared target part: its box
+        # only becomes axis-aligned once recombined with that part's shear. The shear is
+        # supplied by the build matrix and preserved through descent in pe_texmap.descend_tex_info
+        # (mirrors PETextureInfo.InitMatrixWithTargetPartMatrix).
         if clean_line.startswith("0 PE_TEX_NEXT_SHEAR"):
             ldraw_node = LDrawNode()
             ldraw_node.line = clean_line
