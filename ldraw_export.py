@@ -178,6 +178,15 @@ def __clean_mesh(obj):
     faces = None
     if ExportOptions.triangulate:
         faces = bm.faces
+    elif obj.ldraw_props.texture_format == 'Stud.io' and get_material_image(obj) is not None:
+        # Stud.io PE_TEX UVs are only valid on type-3 (triangle) lines. Studio writes UV-mapped
+        # geometry exclusively as triangles (LDrawFromPEFile.WriteLDrawGeometryToBuilder always
+        # emits "3 ..."), and the importer's __parse_uvs only reads UVs off a "3 " line with 15
+        # tokens. A textured quad would otherwise be written as a type-4 line with 8 trailing UVs
+        # that neither Studio nor this addon can read back -- the UVs are silently dropped on
+        # re-import. Every face of a Stud.io-textured object carries UVs (see handle_polygon_uvs),
+        # so triangulate the whole mesh, matching Studio's all-triangle output.
+        faces = bm.faces
     elif ExportOptions.ngon_handling == "triangulate":
         faces = []
         for f in bm.faces:
@@ -435,6 +444,20 @@ def handle_texture_header_data(obj, lines):
 
         image_base64 = blender_image_to_base64(image)
 
+        # We intentionally emit only the image-only (UV-mapped) PE_TEX_INFO form:
+        #   0 PE_TEX_PATH -1
+        #   0 PE_TEX_INFO <base64 png>
+        # paired with explicit per-loop UVs on each face (handle_polygon_uvs). This is the
+        # < 17-token branch of PETextureInfo.InitWithLine (m_isForUVMapped) and round-trips
+        # losslessly -- the UVs we write are read straight back by build_uv_texmaps on import.
+        #
+        # We deliberately do NOT write the 17-token box-projection form
+        #   0 PE_TEX_INFO m00..m22 point_min point_max <base64>
+        # (Studio's other output). That form only exists so Studio can re-derive UVs by box
+        # projection; reconstructing a faithful projection box from already-baked UVs is
+        # ill-defined (the flood-fill in project_box_texmaps wraps the decal across curved,
+        # connected faces, so the UVs are generally not a single planar function of position).
+        # Since we already have exact UVs, the image-only form is strictly the better choice.
         lines.append('0 PE_TEX_PATH -1')
         lines.append(f"0 PE_TEX_INFO {image_base64}")
     elif obj.ldraw_props.texture_format == 'LDraw':

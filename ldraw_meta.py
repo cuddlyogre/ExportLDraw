@@ -391,11 +391,13 @@ def set_texmap_end(texmaps):
 # if no matrix, identity @ rotation?
 
 # https://github.com/ScanMountGoat/ldr_tools_blender/issues/31#issuecomment-2161285322
-# PE_TEX_PATH is the nth line of types 1,3,4
+# PE_TEX_PATH indexes SUBFILE (type-1) lines only -- NOT types 3/4. This matches Studio's
+# PETextureAtlas.GetChildOfPathIndex, which walks PEModel.ChildList (the part/subfile children),
+# never the polygon lines.
 # can be any number of subfile lines - n n n n
-# each n is the nth 1,3,4 at that line in that file of the hierarchy
-# if final number is a subfile, treat it like a -1 for that file
-# if final number is a polygon, apply it to that polygon
+# each n selects the nth type-1 subfile reference at that level of the hierarchy
+# a path resolves to a subfile node and projects onto that node's whole subtree (like a -1 scoped
+# to that subfile); there is no "point at a single polygon" case because polygons aren't counted
 # what do we do when there is a tex_path -1 alongside tex_path >= 0?
 # how do we handle instances of 0, 0 1, 0 2, 0 1 2 - overlap?
 
