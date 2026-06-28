@@ -11,6 +11,7 @@ from . import base64_handler
 from . import group
 from . import ldraw_mesh
 from . import ldraw_object
+from . import ldraw_instancer
 from . import ldraw_meta
 from . import matrices
 from . import helpers
@@ -456,6 +457,22 @@ class LDrawNode:
             mesh = ldraw_mesh.create_mesh(key, geometry_data, color_code, return_mesh=return_mesh)
             if return_mesh:
                 return mesh
+
+            # instanced import: record this placement instead of creating an
+            # object. ldraw_instancer.build() turns the collected placements into
+            # Geometry Nodes instancers after the whole model is loaded.
+            if ldraw_instancer.active():
+                ldraw_instancer.add_instance(
+                    key,
+                    mesh,
+                    color_code,
+                    geometry_data.file.name,
+                    ldraw_object.get_world_matrix(obj_matrix),
+                )
+                if group.end_next_collection:
+                    group.next_collection = None
+                return None
+
             obj = ldraw_object.create_object(mesh, geometry_data, color_code, obj_matrix, collection)
 
             if ImportOptions.import_edges:

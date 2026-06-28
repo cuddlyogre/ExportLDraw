@@ -1,10 +1,15 @@
 import bpy
 import os
 
+import mathutils
+
 from .definitions import APP_ROOT
 from .import_options import ImportOptions
+from .ldraw_color import LDrawColor
 from . import matrices
 from . import blender_import
+from . import ldraw_instancer
+from . import strings
 
 
 class VertPrecisionOperator(bpy.types.Operator):
@@ -409,6 +414,73 @@ class MakeGapsOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class RealizeInstancesOperator(bpy.types.Operator):
+    """Convert selected LDraw instancers into real, editable mesh objects"""
+    bl_idname = "export_ldraw.realize_instances"
+    bl_label = "Realize instances"
+    bl_options = {'UNDO'}
+
+    @classmethod
+    def poll(cls, context):
+        return any(ldraw_instancer.instancer_marker_key in obj for obj in context.selected_objects)
+
+    def execute(self, context):
+        total = 0
+        for instancer in list(context.selected_objects):
+            if ldraw_instancer.instancer_marker_key not in instancer:
+                continue
+            total += self.realize(instancer)
+        self.report({'INFO'}, f"Realized {total} instances")
+        return {'FINISHED'}
+
+    def realize(self, instancer):
+        mesh = bpy.data.meshes.get(instancer.get(ldraw_instancer.proto_mesh_key, ""))
+        point_cloud = instancer.data
+        attribute = point_cloud.attributes.get(ldraw_instancer.transform_attr)
+        if mesh is None or attribute is None:
+            return 0
+
+        color_code = instancer.get(strings.ldraw_color_code_key, "16")
+        filename = instancer.get(strings.ldraw_filename_key, "")
+        collections = list(instancer.users_collection)
+
+        count = len(point_cloud.vertices)
+        buffer = [0.0] * (16 * count)
+        attribute.data.foreach_get("value", buffer)
+
+        color = LDrawColor.get_color(color_code)
+        for i in range(count):
+            matrix = self.__read_matrix(buffer, i)
+            obj = bpy.data.objects.new(mesh.name, mesh)
+            obj[strings.ldraw_filename_key] = filename
+            obj[strings.ldraw_color_code_key] = color_code
+            obj.ldraw_props.filename = filename
+            obj.ldraw_props.color_code = color_code
+            obj.color = color.linear_color_a
+            for collection in collections:
+                collection.objects.link(obj)
+            obj.matrix_world = matrix
+
+        # the instancer and its now-unused prototype/point cloud are replaced by
+        # the realized objects; the shared geometry mesh stays (the new objects use it)
+        proto = bpy.data.objects.get(instancer.get(ldraw_instancer.proto_object_key, ""))
+        if proto is not None:
+            bpy.data.objects.remove(proto, do_unlink=True)
+        bpy.data.objects.remove(instancer, do_unlink=True)
+        if point_cloud.users == 0:
+            bpy.data.meshes.remove(point_cloud)
+        return count
+
+    @staticmethod
+    def __read_matrix(buffer, index):
+        base = index * 16
+        matrix = mathutils.Matrix.Identity(4)
+        for col in range(4):
+            for row in range(4):
+                matrix[row][col] = buffer[base + col * 4 + row]
+        return matrix
+
+
 def parent(arm, obj, bone_name):
     obj.select_set(True)
 
@@ -432,6 +504,7 @@ classes_to_register = [
     RigMinifigOperator,
     RigPartsOperator,
     MakeGapsOperator,
+    RealizeInstancesOperator,
 ]
 
 register_classes, unregister_classes = bpy.utils.register_classes_factory(classes_to_register)

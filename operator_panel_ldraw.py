@@ -97,6 +97,7 @@ class CO_PT_ldraw_eo_panel(CO_ldraw_panel):
         col.operator(ldraw_operators.RigMinifigOperator.bl_idname)
         col.operator(ldraw_operators.RigPartsOperator.bl_idname)
         col.operator(ldraw_operators.MakeGapsOperator.bl_idname)
+        col.operator(ldraw_operators.RealizeInstancesOperator.bl_idname)
 
 
 class CO_PT_ldraw_cu_panel(CO_ldraw_panel):

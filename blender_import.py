@@ -14,6 +14,7 @@ from . import strings
 from . import group
 from . import ldraw_meta
 from . import ldraw_object
+from . import ldraw_instancer
 from . import matrices
 
 
@@ -31,6 +32,7 @@ def do_import(filepath, color_code="16", return_mesh=False):
     group.reset_caches()
     ldraw_meta.reset_caches()
     ldraw_object.reset_caches()
+    ldraw_instancer.reset_caches()
     matrices.reset_caches()
 
     __scene_setup()
@@ -56,6 +58,11 @@ def do_import(filepath, color_code="16", return_mesh=False):
 
     # return root_node.load()
     obj = root_node.load(color_code=color_code, return_mesh=return_mesh)
+
+    # instanced import: turn the collected part placements into Geometry Nodes
+    # instancers (one per unique part+color) so the viewport stays responsive
+    if ldraw_instancer.active() and not return_mesh:
+        ldraw_instancer.build(group.top_collection)
 
     # s = {str(k): v for k, v in sorted(LDrawNode.geometry_datas2.items(), key=lambda ele: ele[1], reverse=True)}
     # helpers.write_json("gs2.json", s, indent=4)

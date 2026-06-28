@@ -97,6 +97,19 @@ def create_edge_obj(mesh, geometry_data, color_code, obj, collection):
     return edge_obj
 
 
+# The final world matrix a part instance ends up with, independent of any
+# object. Mirrors the effective result of __process_top_object_matrix (which is
+# the same whether or not parent_to_empty is used) so instanced import can bake
+# the transform onto a Geometry Nodes instance instead of an object.
+def get_world_matrix(obj_matrix):
+    matrix_world = matrices.import_scale_matrix @ obj_matrix
+    if ImportOptions.make_gaps:
+        matrix_world = matrix_world @ matrices.gap_scale_matrix
+    if ImportOptions.scale_strategy_value() == "mesh":
+        matrix_world = matrix_world @ matrices.import_scale_matrix.inverted()
+    return matrix_world
+
+
 def __process_top_object_matrix(obj, obj_matrix):
     global top_empty
 

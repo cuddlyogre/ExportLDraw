@@ -301,6 +301,12 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         **UserSettings.settings_dict('defer_processing'),
     )
 
+    instancing: bpy.props.BoolProperty(
+        name="Instancing (fast viewport)",
+        description="Build the scene as Geometry Nodes instances (one instancer per unique part+color) instead of one object per part. Keeps the viewport responsive for very large models. Bricks are no longer individual objects; use the Realize operator to convert a part back to editable objects",
+        **UserSettings.settings_dict('instancing'),
+    )
+
     bevel_edges: bpy.props.BoolProperty(
         name="Bevel edges",
         description="Bevel edges. Can cause some parts to render incorrectly",
@@ -429,6 +435,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         col.prop(self, "print_errors")
         col.prop(self, "fix_bowties")
         col.prop(self, "defer_processing")
+        col.prop(self, "instancing")
 
         layout.separator(factor=space_factor)
         col = layout.column()

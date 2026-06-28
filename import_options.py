@@ -135,6 +135,13 @@ class ImportOptions:
     defaults["defer_processing"] = True  # True False
     defer_processing = defaults["defer_processing"]
 
+    # build the scene as Geometry Nodes instances (one instancer per unique
+    # part+color) instead of one object per part. Collapses object count so the
+    # viewport stays responsive for very large models, at the cost of bricks no
+    # longer being individual objects (use the Realize operator to edit them).
+    defaults["instancing"] = False  # True False
+    instancing = defaults["instancing"]
+
     @staticmethod
     def scale_strategy_value():
         return ImportOptions.scale_strategy_choices[ImportOptions.scale_strategy][0]
