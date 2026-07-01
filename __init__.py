@@ -29,6 +29,7 @@ if "bpy" in locals():
 
 import bpy
 
+from . import ldraw_instancer
 from . import ldraw_props
 from . import operator_import
 from . import operator_export
@@ -36,6 +37,7 @@ from . import operator_panel_ldraw
 from . import ldraw_operators
 
 _modules = (
+    ldraw_instancer,
     ldraw_props,
     operator_import,
     operator_export,

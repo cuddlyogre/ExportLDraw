@@ -535,6 +535,22 @@ class ViewportLodOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class CullRadiusStepOperator(bpy.types.Operator):
+    """Adjust the camera cull radius by a fixed step"""
+    bl_idname = "export_ldraw.cull_radius_step"
+    bl_label = "Step cull radius"
+    bl_options = {'UNDO'}
+
+    delta: bpy.props.FloatProperty(default=25.0)
+
+    def execute(self, context):
+        scene = context.scene
+        # assigning fires the property's update callback, which live-updates the
+        # cull when it is enabled
+        scene.ldraw_cull_radius = max(0.0, scene.ldraw_cull_radius + self.delta)
+        return {'FINISHED'}
+
+
 def parent(arm, obj, bone_name):
     obj.select_set(True)
 
@@ -562,6 +578,7 @@ classes_to_register = [
     FastEeveeViewportOperator,
     ConsolidateInstancersOperator,
     ViewportLodOperator,
+    CullRadiusStepOperator,
 ]
 
 register_classes, unregister_classes = bpy.utils.register_classes_factory(classes_to_register)

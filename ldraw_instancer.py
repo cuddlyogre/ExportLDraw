@@ -41,6 +41,13 @@ proxy_suffix = " [proxy]"
 consolidated_key = "ldraw_consolidated"
 lod_key = "ldraw_lod"
 
+# camera distance cull: registered Scene properties (so the panel can show a live
+# slider) and the name tag for the GN nodes injected into the instancer groups
+cull_enabled_prop = "ldraw_cull_enabled"
+cull_radius_prop = "ldraw_cull_radius"
+cull_node_prefix = "ldraw_cull_"
+cull_radius_default = 250.0
+
 node_group_name = "LDraw Instancer"
 merged_node_group_name = "LDraw Merged Instancer"
 
@@ -422,3 +429,112 @@ def __get_proxy_mesh(full_mesh):
 
     full_mesh[proxy_mesh_key] = proxy.name
     return proxy
+
+
+# ---------------------------------------------------------------------------
+# Camera distance cull: only instance points within `radius` of the active
+# camera, so EEVEE has far fewer instances to process when navigating a huge
+# model. Implemented inside the instancer node groups (instances are not objects
+# you can hide), reading the camera live via Object Info so it follows the
+# camera. Removing the nodes drops the camera dependency entirely.
+# ---------------------------------------------------------------------------
+
+def __instancer_node_groups():
+    node_groups = set()
+    for obj in bpy.data.objects:
+        if obj.get(instancer_marker_key):
+            for modifier in obj.modifiers:
+                if modifier.type == 'NODES' and modifier.node_group is not None:
+                    node_groups.add(modifier.node_group)
+    return node_groups
+
+
+def set_camera_cull(enabled, radius):
+    camera = bpy.context.scene.camera
+    if enabled and camera is None:
+        return 0
+
+    node_groups = __instancer_node_groups()
+    for node_group in node_groups:
+        __apply_cull_to_group(node_group, enabled, camera, radius)
+    return len(node_groups)
+
+
+# cheap live update for the radius slider: just retune the threshold on the
+# existing cull nodes instead of rebuilding the subgraph
+def set_cull_radius(radius):
+    for node_group in __instancer_node_groups():
+        within = node_group.nodes.get(cull_node_prefix + "within")
+        if within is not None:
+            within.inputs[1].default_value = radius
+
+
+def __apply_cull_to_group(node_group, enabled, camera, radius):
+    nodes = node_group.nodes
+    links = node_group.links
+
+    instance_on_points = next((n for n in nodes if n.bl_idname == "GeometryNodeInstanceOnPoints"), None)
+    if instance_on_points is None:
+        return
+
+    # clear any previous cull subgraph (also drops the Selection link / camera
+    # dependency)
+    for node in [n for n in nodes if n.name.startswith(cull_node_prefix)]:
+        nodes.remove(node)
+    if not enabled:
+        return
+
+    position = nodes.new("GeometryNodeInputPosition")
+    position.name = cull_node_prefix + "position"
+    camera_info = nodes.new("GeometryNodeObjectInfo")
+    camera_info.name = cull_node_prefix + "camera"
+    camera_info.transform_space = 'RELATIVE'
+    camera_info.inputs["Object"].default_value = camera
+    offset = nodes.new("ShaderNodeVectorMath")
+    offset.name = cull_node_prefix + "offset"
+    offset.operation = 'SUBTRACT'
+    distance = nodes.new("ShaderNodeVectorMath")
+    distance.name = cull_node_prefix + "distance"
+    distance.operation = 'LENGTH'
+    within = nodes.new("ShaderNodeMath")
+    within.name = cull_node_prefix + "within"
+    within.operation = 'LESS_THAN'
+    within.inputs[1].default_value = radius
+
+    links.new(position.outputs["Position"], offset.inputs[0])
+    links.new(camera_info.outputs["Location"], offset.inputs[1])
+    links.new(offset.outputs["Vector"], distance.inputs[0])
+    links.new(distance.outputs["Value"], within.inputs[0])
+    links.new(within.outputs["Value"], instance_on_points.inputs["Selection"])
+
+
+def _cull_enabled_update(self, context):
+    set_camera_cull(getattr(self, cull_enabled_prop), getattr(self, cull_radius_prop))
+
+
+def _cull_radius_update(self, context):
+    if getattr(self, cull_enabled_prop):
+        set_cull_radius(getattr(self, cull_radius_prop))
+
+
+def register():
+    bpy.types.Scene.ldraw_cull_enabled = bpy.props.BoolProperty(
+        name="Cull to camera",
+        description="Only show instances within the radius of the active camera, for a fast EEVEE viewport. Follows the camera (enable View > Lock Camera to View so it follows your navigation)",
+        default=False,
+        update=_cull_enabled_update,
+    )
+    bpy.types.Scene.ldraw_cull_radius = bpy.props.FloatProperty(
+        name="Cull radius",
+        description="Show instances within this distance of the active camera",
+        default=cull_radius_default,
+        min=0.0,
+        soft_max=2500.0,
+        subtype='DISTANCE',
+        update=_cull_radius_update,
+    )
+
+
+def unregister():
+    del bpy.types.Scene.ldraw_cull_enabled
+    del bpy.types.Scene.ldraw_cull_radius

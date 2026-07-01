@@ -91,6 +91,14 @@ class CO_PT_ldraw_eo_panel(CO_ldraw_panel):
         col.operator(ldraw_operators.FastEeveeViewportOperator.bl_idname)
         col.operator(ldraw_operators.ConsolidateInstancersOperator.bl_idname)
         col.operator(ldraw_operators.ViewportLodOperator.bl_idname)
+        if hasattr(context.scene, "ldraw_cull_enabled"):
+            col.prop(context.scene, "ldraw_cull_enabled")
+            sub = col.column()
+            sub.enabled = context.scene.ldraw_cull_enabled
+            row = sub.row(align=True)
+            row.operator(ldraw_operators.CullRadiusStepOperator.bl_idname, text="", icon='REMOVE').delta = -25.0
+            row.prop(context.scene, "ldraw_cull_radius", text="", slider=True)
+            row.operator(ldraw_operators.CullRadiusStepOperator.bl_idname, text="", icon='ADD').delta = 25.0
 
         if not do_poll(context):
             return
