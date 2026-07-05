@@ -285,22 +285,35 @@ def meta_leocad_camera(child_node, matrix):
             _params = _params[1:]
 
 
+# syntax: <pngfile> [GLOSSMAP pngfile2] -- the GLOSSMAP keyword sits between the two
+# filenames; quoted filenames with spaces are handled by the csv parse
+def __parse_texmap_filenames(params_str):
+    texture_params = helpers.parse_csv_line(params_str)
+    image_name = texture_params[0]
+    glossmap_image_name = None
+    if len(texture_params) > 2 and texture_params[1] == "GLOSSMAP":
+        glossmap_image_name = texture_params[2]
+    return image_name, glossmap_image_name
+
+
 # https://www.ldraw.org/documentation/ldraw-org-file-format-standards/language-extension-for-texture-mapping.html
 def meta_texmap(clean_line, matrix, texmaps, texmap, texmap_start, texmap_next, texmap_fallback):
     if not ImportOptions.meta_texmap:
-        return
+        return texmap, texmap_start, texmap_next, texmap_fallback
 
-    if texmap_start:
-        if clean_line == "0 !TEXMAP FALLBACK":
+    if clean_line == "0 !TEXMAP FALLBACK":
+        if texmap_start:
             texmap_fallback = True
-        elif clean_line == "0 !TEXMAP END":
+    elif clean_line == "0 !TEXMAP END":
+        # END pairs with a START in this file; a NEXT ends implicitly after its geometry line
+        if texmap_start:
             texmap, texmap_start, texmap_next, texmap_fallback = set_texmap_end(texmaps)
+    elif texmap_fallback:
+        # everything between FALLBACK and END exists for non-TEXMAP renderers --
+        # ignore any nested !TEXMAP commands there
+        pass
     elif clean_line.startswith("0 !TEXMAP START ") or clean_line.startswith("0 !TEXMAP NEXT "):
-        if clean_line.startswith("0 !TEXMAP START "):
-            texmap_start = True
-        elif clean_line.startswith("0 !TEXMAP NEXT "):
-            texmap_next = True
-        texmap_fallback = False
+        is_next = clean_line.startswith("0 !TEXMAP NEXT ")
 
         method = clean_line.split()[3]
 
@@ -310,29 +323,16 @@ def meta_texmap(clean_line, matrix, texmaps, texmap, texmap_start, texmap_next, 
 
             (x1, y1, z1, x2, y2, z2, x3, y3, z3) = map(float, _params[4:13])
 
-            texture_params = helpers.parse_csv_line(_params[13], 2)
-            image_name = texture_params[0]
-            glossmap_image_name = texture_params[1]
-            if glossmap_image_name == "":
-                glossmap_image_name = None
-
             new_texmap.parameters = [
                 matrix @ mathutils.Vector((x1, y1, z1)),
                 matrix @ mathutils.Vector((x2, y2, z2)),
                 matrix @ mathutils.Vector((x3, y3, z3)),
             ]
-            new_texmap.image_name = image_name
-            new_texmap.glossmap_image_name = glossmap_image_name
+            new_texmap.image_name, new_texmap.glossmap_image_name = __parse_texmap_filenames(_params[13])
         elif new_texmap.is_cylindrical():
             _params = clean_line.split(maxsplit=14)  # cylindrical
 
             (x1, y1, z1, x2, y2, z2, x3, y3, z3, a) = map(float, _params[4:14])
-
-            texture_params = helpers.parse_csv_line(_params[14], 2)
-            image_name = texture_params[0]
-            glossmap_image_name = texture_params[1]
-            if glossmap_image_name == "":
-                glossmap_image_name = None
 
             new_texmap.parameters = [
                 matrix @ mathutils.Vector((x1, y1, z1)),
@@ -340,18 +340,11 @@ def meta_texmap(clean_line, matrix, texmaps, texmap, texmap_start, texmap_next, 
                 matrix @ mathutils.Vector((x3, y3, z3)),
                 a,
             ]
-            new_texmap.image_name = image_name
-            new_texmap.glossmap_image_name = glossmap_image_name
+            new_texmap.image_name, new_texmap.glossmap_image_name = __parse_texmap_filenames(_params[14])
         elif new_texmap.is_spherical():
             _params = clean_line.split(maxsplit=15)  # spherical
 
             (x1, y1, z1, x2, y2, z2, x3, y3, z3, a, b) = map(float, _params[4:15])
-
-            texture_params = helpers.parse_csv_line(_params[15], 2)
-            image_name = texture_params[0]
-            glossmap_image_name = texture_params[1]
-            if glossmap_image_name == "":
-                glossmap_image_name = None
 
             new_texmap.parameters = [
                 matrix @ mathutils.Vector((x1, y1, z1)),
@@ -360,26 +353,34 @@ def meta_texmap(clean_line, matrix, texmaps, texmap, texmap_start, texmap_next, 
                 a,
                 b,
             ]
-            new_texmap.image_name = image_name
-            new_texmap.glossmap_image_name = glossmap_image_name
+            new_texmap.image_name, new_texmap.glossmap_image_name = __parse_texmap_filenames(_params[15])
 
-        # move current texmap to the texmaps list and set the current texmap to new_texmap
+        # spec: "If another texture is currently in use, it is pushed onto a stack for
+        # retrieval when an END command is given." Save enough state to restore the outer
+        # section when this texture ends (via END, or implicitly after NEXT's geometry line)
         if texmap is not None:
-            texmaps.append(texmap)
+            texmaps.append((texmap, texmap_start, texmap_fallback))
         texmap = new_texmap
+        if is_next:
+            texmap_next = True
+        else:
+            texmap_start = True
+        texmap_fallback = False
 
     return texmap, texmap_start, texmap_next, texmap_fallback
 
 
 def set_texmap_end(texmaps):
+    # restore the enclosing texture section, if any (the stack holds
+    # (texmap, texmap_start, texmap_fallback) tuples pushed by meta_texmap)
     if len(texmaps) > 0:
-        texmap = texmaps.pop()
+        texmap, texmap_start, texmap_fallback = texmaps.pop()
     else:
         texmap = None
+        texmap_start = False
+        texmap_fallback = False
 
-    texmap_start = False
     texmap_next = False
-    texmap_fallback = False
 
     return texmap, texmap_start, texmap_next, texmap_fallback
 

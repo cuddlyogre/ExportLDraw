@@ -385,6 +385,13 @@ class LDrawNode:
                     # as opposed to just once because they won't be cached
                     if child_node.meta_command == "step":
                         ldraw_meta.meta_step()
+                        # spec: a texture ends when an END command is given, the end of the
+                        # file is reached, or a STEP is encountered
+                        texmap = None
+                        texmap_start = False
+                        texmap_next = False
+                        texmap_fallback = False
+                        texmaps.clear()
                     elif child_node.meta_command == "save":
                         ldraw_meta.meta_save()
                     elif child_node.meta_command == "clear":
@@ -396,7 +403,10 @@ class LDrawNode:
                     elif child_node.meta_command == "leocad_camera":
                         ldraw_meta.meta_leocad_camera(child_node, child_matrix)
 
-                if texmap_next:
+                # a NEXT texture applies to exactly the next type 1-5 line (spec: "equivalent
+                # to use the START command and then to place an END command immediately after
+                # the next 1, 2, 3, 4, or 5 line"), so it ends only after a geometry node
+                if texmap_next and child_node.meta_command in ["1", "2", "3", "4", "5"]:
                     texmap, texmap_start, texmap_next, texmap_fallback = ldraw_meta.set_texmap_end(texmaps)
 
                 if child_node.meta_command != "bfc":

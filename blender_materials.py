@@ -84,7 +84,8 @@ class BlenderMaterials:
             _key += (part_slopes,)
 
         if texmap is not None:
-            _key += (texmap.method, texmap.image_name, texmap.glossmap_image_name,)
+            # wraps_full_circle changes the node graph (u-wrap chain), so it must key separately
+            _key += (texmap.method, texmap.image_name, texmap.glossmap_image_name, texmap.wraps_full_circle(),)
 
         if pe_texmaps is not None:
             for pe_texmap in pe_texmaps:
@@ -527,24 +528,53 @@ class BlenderMaterials:
         return mapped_value
 
     @classmethod
-    def __create_image(cls, nodes, links, x, y, mix_node, texmap):
+    def __create_image(cls, nodes, links, x, y, mix_node, texmap, wrap_u=False):
         image_name = texmap.image_name
         if image_name is not None:
             texmap_image = cls.__node_tex_image_closest_clip(nodes, x, y, image_name, "sRGB")
+            if wrap_u:
+                cls.__wrap_u_links(nodes, links, x - 300, y, texmap_image)
             links.new(texmap_image.outputs["Alpha"], mix_node.inputs["Factor"])
             links.new(texmap_image.outputs["Color"], mix_node.inputs["B"])
 
     @classmethod
-    def __create_glossmap_image(cls, nodes, links, x, y, node_principled, texmap):
+    def __create_glossmap_image(cls, nodes, links, x, y, node_principled, texmap, wrap_u=False):
         image_name = texmap.glossmap_image_name
         if image_name is not None:
             glossmap_image = cls.__node_tex_image_closest_clip(nodes, x, y - 280, image_name, "Non-Color")
-            links.new(glossmap_image.outputs["Color"], node_principled.inputs["Specular Tint"])
+            if wrap_u:
+                cls.__wrap_u_links(nodes, links, x - 300, y - 280, glossmap_image)
+            # spec: "a single channel image where the value indicates the amount of
+            # specularity", so it drives the specular amount, not its tint
+            links.new(glossmap_image.outputs["Color"], node_principled.inputs["Specular IOR Level"])
+
+    # wrap u (fract) while leaving v to the image node's CLIP extension: full-circumference
+    # cylindrical/spherical textures need the seam-straddling face (u pushed outside 0..1 by
+    # the seam fix) to sample the wrapped texel, but v outside 0..1 must still clip so
+    # geometry beyond the projection shows the part color instead of a tiled texture
+    @classmethod
+    def __wrap_u_links(cls, nodes, links, x, y, image_node):
+        node_uv = nodes.new("ShaderNodeUVMap")
+        node_uv.location = x - 600, y
+        node_separate = nodes.new("ShaderNodeSeparateXYZ")
+        node_separate.location = x - 400, y
+        node_fract = nodes.new("ShaderNodeMath")
+        node_fract.operation = "FRACT"
+        node_fract.location = x - 200, y
+        node_combine = nodes.new("ShaderNodeCombineXYZ")
+        node_combine.location = x, y
+
+        links.new(node_uv.outputs["UV"], node_separate.inputs["Vector"])
+        links.new(node_separate.outputs["X"], node_fract.inputs[0])
+        links.new(node_fract.outputs["Value"], node_combine.inputs["X"])
+        links.new(node_separate.outputs["Y"], node_combine.inputs["Y"])
+        links.new(node_combine.outputs["Vector"], image_node.inputs["Vector"])
 
     @classmethod
     def __create_texmap(cls, nodes, links, x, y, mix_node, node_principled, texmap):
-        cls.__create_image(nodes, links, x, y, mix_node, texmap)
-        cls.__create_glossmap_image(nodes, links, x, y, node_principled, texmap)
+        wrap_u = texmap.wraps_full_circle()
+        cls.__create_image(nodes, links, x, y, mix_node, texmap, wrap_u=wrap_u)
+        cls.__create_glossmap_image(nodes, links, x, y, node_principled, texmap, wrap_u=wrap_u)
 
     @classmethod
     def __create_pe_texmap(cls, nodes, links, x, y, mix_node, node_principled, pe_texmap):

@@ -13,7 +13,11 @@ def is_texmap_line(line):
 
 
 def clean_line(line):
-    return line.replace(texmap_prefix, "")
+    # strip only a leading "0 !: " so occurrences inside comments or filenames are untouched
+    _line = line.lstrip()
+    if _line.startswith(texmap_prefix):
+        return _line[len(texmap_prefix):]
+    return line
 
 
 # https://github.com/trevorsandy/lpub3d/blob/e7c39cd3df518cf16521dc2c057a9f125cc3b5c3/lclib/common/lc_meshloader.h#L56
@@ -36,6 +40,17 @@ class TexMap:
 
     def is_spherical(self):
         return self.method == 'SPHERICAL'
+
+    def wraps_full_circle(self):
+        """
+        True for cylindrical/spherical textures that span the full 360 circumference. The
+        seam fix in the uv mapping pushes the seam-straddling face's u slightly outside 0..1,
+        so the material must wrap u (fract) for that face to sample the wrapped texel instead
+        of clipping to transparent, which would leave a hairline of bare part color at the seam.
+        """
+        if self.is_cylindrical() or self.is_spherical():
+            return self.parameters is not None and abs(self.parameters[3]) >= 360.0
+        return False
 
     def uv_unwrap_face(self, bm, face):
         if self.is_planar():
