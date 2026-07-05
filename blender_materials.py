@@ -89,9 +89,11 @@ class BlenderMaterials:
             for pe_texmap in pe_texmaps:
                 _key += (pe_texmap.image_name,)
 
+        max_len = bpy.types.Object.bl_rna.properties['name'].length_max
+
         str_key = str(_key)
-        if len(str_key) < 60:
-            return str(str_key)
+        if len(str_key) < max_len:
+            return str_key
 
         key = cls.__key_map.get(_key)
         if key is None:
