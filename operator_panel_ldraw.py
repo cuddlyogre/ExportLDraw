@@ -3,6 +3,9 @@ import bpy
 from . import ldraw_operators
 
 
+PANEL_CATEGORY = "ExportLDraw"
+
+
 def do_poll(context):
     selected_objects = context.selected_objects
     obj = context.object
@@ -18,18 +21,22 @@ def do_poll(context):
     return True
 
 
+class CO_ldraw_panel(bpy.types.Panel):
+    bl_label = 'ExportLDraw Panel'
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_context = 'objectmode'
+    bl_category = PANEL_CATEGORY
+
+
 # TODO: panel that add color code to face's material
-class CO_PT_ldraw_panel(bpy.types.Panel):
+class CO_PT_ldraw_panel(CO_ldraw_panel):
     """LDraw part header panel"""
 
     # having a friendly name here gives a _PT_ warning message
     # not setting it works
     # bl_idname = 'CO_PT_ldraw_panel'
     bl_label = 'Header'
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_context = 'objectmode'
-    bl_category = 'LDraw'
 
     @classmethod
     def poll(cls, context):
@@ -62,14 +69,10 @@ class CO_PT_ldraw_panel(bpy.types.Panel):
         col.prop(obj.ldraw_props, 'filename')
 
 
-class CO_PT_ldraw_eo_panel(bpy.types.Panel):
+class CO_PT_ldraw_eo_panel(CO_ldraw_panel):
     """LDraw editing tools panel"""
 
     bl_label = 'Tools'
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_context = 'objectmode'
-    bl_category = 'LDraw'
 
     def draw(self, context):
         layout = self.layout
@@ -96,14 +99,10 @@ class CO_PT_ldraw_eo_panel(bpy.types.Panel):
         col.operator(ldraw_operators.MakeGapsOperator.bl_idname)
 
 
-class CO_PT_ldraw_cu_panel(bpy.types.Panel):
+class CO_PT_ldraw_cu_panel(CO_ldraw_panel):
     """LDraw cleanup panel"""
 
     bl_label = 'Cleanup'
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_context = 'objectmode'
-    bl_category = 'LDraw'
 
     @classmethod
     def poll(cls, context):
@@ -121,14 +120,10 @@ class CO_PT_ldraw_cu_panel(bpy.types.Panel):
         col.operator(ldraw_operators.VertPrecisionOperator.bl_idname)
 
 
-class CO_PT_ldraw_ex_panel(bpy.types.Panel):
+class CO_PT_ldraw_ex_panel(CO_ldraw_panel):
     """LDraw export panel"""
 
     bl_label = 'Export Options'
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_context = 'objectmode'
-    bl_category = 'LDraw'
 
     @classmethod
     def poll(cls, context):
