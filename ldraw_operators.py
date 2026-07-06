@@ -420,7 +420,7 @@ def parent(arm, obj, bone_name):
     bpy.ops.object.select_all(action='DESELECT')
 
 
-classesToRegister = [
+classes_to_register = [
     VertPrecisionOperator,
     ResetGridOperator,
     SnapToBrickOperator,
@@ -434,20 +434,15 @@ classesToRegister = [
     MakeGapsOperator,
 ]
 
-# https://wiki.blender.org/wiki/Reference/Release_Notes/2.80/Python_API/Addons
-registerClasses, unregisterClasses = bpy.utils.register_classes_factory(classesToRegister)
+register_classes, unregister_classes = bpy.utils.register_classes_factory(classes_to_register)
 
 
 def register():
-    """Register addon classes"""
-
-    registerClasses()
+    register_classes()
 
 
 def unregister():
-    """Unregister addon classes"""
-
-    unregisterClasses()
+    unregister_classes()
 
 
 if __name__ == "__main__":

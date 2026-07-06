@@ -312,18 +312,16 @@ class LDrawProps(bpy.types.PropertyGroup):
     )
 
 
-classesToRegister = [
+classes_to_register = [
     LDrawProps,
 ]
 
-# https://wiki.blender.org/wiki/Reference/Release_Notes/2.80/Python_API/Addons
-registerClasses, unregisterClasses = bpy.utils.register_classes_factory(classesToRegister)
+register_classes, unregister_classes = bpy.utils.register_classes_factory(classes_to_register)
 
 
 def register():
-    """Register addon classes"""
+    register_classes()
 
-    registerClasses()
     bpy.types.Scene.ldraw_props = bpy.props.PointerProperty(type=LDrawProps)
     bpy.types.Object.ldraw_props = bpy.props.PointerProperty(type=LDrawProps)
     # bpy.types.Object.get_header_lines = get_header_lines
@@ -336,10 +334,10 @@ def register():
 
 
 def unregister():
-    """Unregister addon classes"""
-
-    unregisterClasses()
     del bpy.types.Object.ldraw_props
+    del bpy.types.Scene.ldraw_props
+
+    unregister_classes()
 
 
 if __name__ == "__main__":

@@ -497,22 +497,21 @@ def build_import_menu(self, context):
     self.layout.operator(IMPORT_OT_do_ldraw_import.bl_idname, text="LDraw (.mpd/.ldr/.l3b/.dat/.io)")
 
 
-classesToRegister = [
+classes_to_register = [
     IMPORT_OT_do_ldraw_import,
 ]
 
-# https://wiki.blender.org/wiki/Reference/Release_Notes/2.80/Python_API/Addons
-registerClasses, unregisterClasses = bpy.utils.register_classes_factory(classesToRegister)
+register_classes, unregister_classes = bpy.utils.register_classes_factory(classes_to_register)
 
 
 def register():
-    bpy.utils.register_class(IMPORT_OT_do_ldraw_import)
+    register_classes()
     bpy.types.TOPBAR_MT_file_import.append(build_import_menu)
 
 
 def unregister():
-    bpy.utils.unregister_class(IMPORT_OT_do_ldraw_import)
     bpy.types.TOPBAR_MT_file_import.remove(build_import_menu)
+    unregister_classes()
 
 
 if __name__ == "__main__":

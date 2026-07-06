@@ -213,22 +213,21 @@ def build_export_menu(self, context):
     self.layout.operator(EXPORT_OT_do_ldraw_export.bl_idname, text="LDraw (.mpd/.ldr/.l3b/.dat)")
 
 
-classesToRegister = [
+classes_to_register = [
     EXPORT_OT_do_ldraw_export,
 ]
 
-# https://wiki.blender.org/wiki/Reference/Release_Notes/2.80/Python_API/Addons
-registerClasses, unregisterClasses = bpy.utils.register_classes_factory(classesToRegister)
+register_classes, unregister_classes = bpy.utils.register_classes_factory(classes_to_register)
 
 
 def register():
-    bpy.utils.register_class(EXPORT_OT_do_ldraw_export)
+    register_classes()
     bpy.types.TOPBAR_MT_file_export.append(build_export_menu)
 
 
 def unregister():
-    bpy.utils.unregister_class(EXPORT_OT_do_ldraw_export)
     bpy.types.TOPBAR_MT_file_export.remove(build_export_menu)
+    unregister_classes()
 
 
 if __name__ == "__main__":

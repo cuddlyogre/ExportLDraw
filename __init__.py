@@ -13,13 +13,19 @@ bl_info = {
     "category": "Import-Export",
 }
 
+# reloading is detailed here: https://developer.blender.org/docs/handbook/extensions/addon_dev_setup/#reloading-scripts
+# but doing it this way dumps the entire addon so it can be reloaded. doing it one by one is a game of wack a mole
 if "bpy" in locals():
-    import importlib
-    importlib.reload(ldraw_props)
-    importlib.reload(operator_import)
-    importlib.reload(operator_export)
-    importlib.reload(operator_panel_ldraw)
-    importlib.reload(ldraw_operators)
+    import sys
+
+
+    mods = [m for m in list(sys.modules) if m.startswith(__name__ + ".")]
+    print(mods)
+    for _mod in mods:
+        del sys.modules[_mod]
+    print('=' * 20)
+    print(f"{__name__} Reloaded")
+    print('=' * 20)
 
 import bpy
 
@@ -29,21 +35,27 @@ from . import operator_export
 from . import operator_panel_ldraw
 from . import ldraw_operators
 
+_modules = (
+    ldraw_props,
+    operator_import,
+    operator_export,
+    operator_panel_ldraw,
+    ldraw_operators,
+)
+
 
 def register():
-    ldraw_props.register()
-    operator_import.register()
-    operator_export.register()
-    operator_panel_ldraw.register()
-    ldraw_operators.register()
+    for module in _modules:
+        module.register()
 
 
 def unregister():
-    ldraw_props.unregister()
-    operator_import.unregister()
-    operator_export.unregister()
-    operator_panel_ldraw.unregister()
-    ldraw_operators.unregister()
+    for module in reversed(_modules):
+        try:
+            module.unregister()
+        except Exception as error:
+            # keep going so one failed module can't wedge a dev reload half-registered
+            print(f"{__name__}: failed to unregister {module.__name__}: {error}")
 
 
 if __name__ == "__main__":

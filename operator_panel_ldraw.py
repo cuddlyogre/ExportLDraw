@@ -149,27 +149,22 @@ class CO_PT_ldraw_ex_panel(bpy.types.Panel):
         col.prop(obj.ldraw_props, 'texture_format')
 
 
-classesToRegister = [
+classes_to_register = [
     CO_PT_ldraw_eo_panel,
     CO_PT_ldraw_panel,
     CO_PT_ldraw_cu_panel,
     CO_PT_ldraw_ex_panel,
 ]
 
-# https://wiki.blender.org/wiki/Reference/Release_Notes/2.80/Python_API/Addons
-registerClasses, unregisterClasses = bpy.utils.register_classes_factory(classesToRegister)
+register_classes, unregister_classes = bpy.utils.register_classes_factory(classes_to_register)
 
 
 def register():
-    """Register addon classes"""
-
-    registerClasses()
+    register_classes()
 
 
 def unregister():
-    """Unregister addon classes"""
-
-    unregisterClasses()
+    unregister_classes()
 
 
 if __name__ == "__main__":
