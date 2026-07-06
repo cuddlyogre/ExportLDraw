@@ -5,6 +5,7 @@ import re
 import zipfile
 
 from .import_options import ImportOptions
+from .ldraw_color_options import LDrawColorOptions
 from .filesystem import FileSystem
 from .ldraw_node import LDrawNode
 from .ldraw_color import LDrawColor
@@ -73,7 +74,7 @@ class LDrawFile:
         alt_filename = "LDCfgalt.ldr"
         standard_filename = "LDConfig.ldr"
 
-        if LDrawColor.use_alt_colors:
+        if LDrawColorOptions.use_alt_colors:
             filename = alt_filename
         else:
             filename = standard_filename

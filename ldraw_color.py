@@ -3,7 +3,6 @@
 import math
 import struct
 from collections import namedtuple
-from .import_options import ImportOptions
 
 try:
     from . import helpers
@@ -35,11 +34,6 @@ blend_colors = [
 
 
 class LDrawColor:
-    defaults = {}
-
-    defaults["use_alt_colors"] = True
-    use_alt_colors = defaults["use_alt_colors"]
-
     __colors = {}
     __bad_color = None
 

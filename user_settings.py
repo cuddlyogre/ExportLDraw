@@ -1,23 +1,23 @@
 import os.path
 
+from .filesystem_options import FileSystemOptions
+from .ldraw_color_options import LDrawColorOptions
 from .import_options import ImportOptions
-from .filesystem import FileSystem
-from .ldraw_color import LDrawColor
 from . import helpers
 
 
-class ImportSettings:
-    settings_path = os.path.join('config', 'ImportOptions.json')
+class UserSettings:
+    settings_path = os.path.join('config', 'user_settings.json')
     settings = None
 
-    filesystem_defaults = FileSystem.defaults
-    ldraw_color_defaults = LDrawColor.defaults
+    filesystem_options_defaults = FileSystemOptions.defaults
+    ldraw_color_options_defaults = LDrawColorOptions.defaults
     import_options_defaults = ImportOptions.defaults
 
     default_settings = {
-        **filesystem_defaults,
-        **ldraw_color_defaults,
-        **import_options_defaults
+        **filesystem_options_defaults,
+        **ldraw_color_options_defaults,
+        **import_options_defaults,
     }
 
     @classmethod
@@ -59,11 +59,11 @@ class ImportSettings:
 
     @classmethod
     def apply_settings(cls):
-        for k, v in cls.filesystem_defaults.items():
-            setattr(FileSystem, k, cls.settings[k])
+        for k, v in cls.filesystem_options_defaults.items():
+            setattr(FileSystemOptions, k, cls.settings[k])
 
-        for k, v in cls.ldraw_color_defaults.items():
-            setattr(LDrawColor, k, cls.settings[k])
+        for k, v in cls.ldraw_color_options_defaults.items():
+            setattr(LDrawColorOptions, k, cls.settings[k])
 
         for k, v in cls.import_options_defaults.items():
             setattr(ImportOptions, k, cls.settings[k])

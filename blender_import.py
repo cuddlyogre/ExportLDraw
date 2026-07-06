@@ -1,7 +1,7 @@
 import bpy
 import bmesh
 
-from .import_settings import ImportSettings
+from .user_settings import UserSettings
 from .import_options import ImportOptions
 from .blender_materials import BlenderMaterials
 from .ldraw_file import LDrawFile
@@ -20,8 +20,8 @@ from . import matrices
 def do_import(filepath, color_code="16", return_mesh=False):
     print(filepath)  # TODO: multiple filepaths?
 
-    ImportSettings.save_settings()
-    ImportSettings.apply_settings()
+    UserSettings.save_settings()
+    UserSettings.apply_settings()
 
     BlenderMaterials.reset_caches()
     FileSystem.reset_caches()

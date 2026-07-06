@@ -4,6 +4,7 @@ import mathutils
 import os
 import uuid
 
+from .ldraw_color_options import LDrawColorOptions
 from .definitions import APP_ROOT
 from .ldraw_color import LDrawColor
 from .filesystem import FileSystem
@@ -77,7 +78,7 @@ class BlenderMaterials:
 
         _key += (bfc_certified,)
 
-        _key += (LDrawColor.use_alt_colors,)
+        _key += (LDrawColorOptions.use_alt_colors,)
 
         if part_slopes is not None:
             _key += (part_slopes,)

@@ -1,4 +1,3 @@
-# TODO: remove class
 class ImportOptions:
     defaults = {}
 

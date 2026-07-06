@@ -3,9 +3,9 @@ import bpy
 import time
 import os
 
-from .import_settings import ImportSettings
+from .user_settings import UserSettings
 from .import_options import ImportOptions
-from .filesystem import FileSystem
+from .filesystem_options import FileSystemOptions
 from .ldraw_node import LDrawNode
 from . import blender_import
 
@@ -35,63 +35,63 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
     ldraw_path: bpy.props.StringProperty(
         name="LDraw path",
         description="Full filepath to the LDraw Parts Library (download from https://www.ldraw.org)",
-        **ImportSettings.settings_dict('ldraw_path'),
+        **UserSettings.settings_dict('ldraw_path'),
     )
 
     studio_ldraw_path: bpy.props.StringProperty(
         name="Stud.io LDraw path",
         description="Full filepath to the Stud.io LDraw Parts Library (download from https://www.bricklink.com/v3/studio/download.page)",
-        **ImportSettings.settings_dict('studio_ldraw_path'),
+        **UserSettings.settings_dict('studio_ldraw_path'),
     )
 
     studio_custom_parts_path: bpy.props.StringProperty(
         name="Stud.io CustomParts path",
         description="Full filepath to the CustomParts path",
-        **ImportSettings.settings_dict('studio_custom_parts_path'),
+        **UserSettings.settings_dict('studio_custom_parts_path'),
     )
 
     prefer_studio: bpy.props.BoolProperty(
         name="Prefer Stud.io library",
         description="Search for parts in Stud.io library first",
-        **ImportSettings.settings_dict('prefer_studio'),
+        **UserSettings.settings_dict('prefer_studio'),
     )
 
     case_sensitive_filesystem: bpy.props.BoolProperty(
         name="Case-sensitive filesystem",
         description="Filesystem is case sensitive",
-        **ImportSettings.settings_dict('case_sensitive_filesystem'),
+        **UserSettings.settings_dict('case_sensitive_filesystem'),
     )
 
     prefer_unofficial: bpy.props.BoolProperty(
         name="Prefer unofficial parts",
         description="Search for unofficial parts first",
-        **ImportSettings.settings_dict('prefer_unofficial'),
+        **UserSettings.settings_dict('prefer_unofficial'),
     )
 
     resolution: bpy.props.EnumProperty(
         name="Part resolution",
         description="Resolution of part primitives, ie. how much geometry they have",
-        **ImportSettings.settings_dict('resolution'),
-        items=FileSystem.resolution_choices,
+        **UserSettings.settings_dict('resolution'),
+        items=FileSystemOptions.resolution_choices,
     )
 
     use_alt_colors: bpy.props.BoolProperty(
         name="Use alternate colors",
         # options={'HIDDEN'},
         description="Use LDCfgalt.ldr",
-        **ImportSettings.settings_dict('use_alt_colors'),
+        **UserSettings.settings_dict('use_alt_colors'),
     )
 
     remove_doubles: bpy.props.BoolProperty(
         name="Remove doubles",
         description="Merge overlapping vertices",
-        **ImportSettings.settings_dict('remove_doubles'),
+        **UserSettings.settings_dict('remove_doubles'),
     )
 
     merge_distance: bpy.props.FloatProperty(
         name="Merge distance",
         description="Maximum distance between elements to merge",
-        **ImportSettings.settings_dict('merge_distance'),
+        **UserSettings.settings_dict('merge_distance'),
         precision=3,
         min=0.0,
     )
@@ -99,52 +99,52 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
     shade_smooth: bpy.props.BoolProperty(
         name="Shade smooth",
         description="Shade smooth",
-        **ImportSettings.settings_dict('shade_smooth'),
+        **UserSettings.settings_dict('shade_smooth'),
     )
 
     display_logo: bpy.props.BoolProperty(
         name="Display logo",
         description="Display logo on studs. Requires unofficial parts library to be downloaded",
-        **ImportSettings.settings_dict('display_logo'),
+        **UserSettings.settings_dict('display_logo'),
     )
 
     chosen_logo: bpy.props.EnumProperty(
         name="Chosen logo",
         description="Use this logo on studs",
-        **ImportSettings.settings_dict('chosen_logo'),
+        **UserSettings.settings_dict('chosen_logo'),
         items=ImportOptions.chosen_logo_choices,
     )
 
     smooth_type: bpy.props.EnumProperty(
         name="Smooth type",
         description="Use this strategy to smooth meshes",
-        **ImportSettings.settings_dict('smooth_type'),
+        **UserSettings.settings_dict('smooth_type'),
         items=ImportOptions.smooth_type_choices,
     )
 
     no_studs: bpy.props.BoolProperty(
         name="No studs",
         description="Don't import studs",
-        **ImportSettings.settings_dict('no_studs'),
+        **UserSettings.settings_dict('no_studs'),
     )
 
     parent_to_empty: bpy.props.BoolProperty(
         name="Parent to empty",
         description="Parent the model to an empty",
-        **ImportSettings.settings_dict('parent_to_empty'),
+        **UserSettings.settings_dict('parent_to_empty'),
     )
 
     scale_strategy: bpy.props.EnumProperty(
         name="Scale strategy",
         description="How to apply import scaling",
-        **ImportSettings.settings_dict('scale_strategy'),
+        **UserSettings.settings_dict('scale_strategy'),
         items=ImportOptions.scale_strategy_choices,
     )
 
     import_scale: bpy.props.FloatProperty(
         name="Import scale",
         description="Scale the entire model by this amount",
-        **ImportSettings.settings_dict('import_scale'),
+        **UserSettings.settings_dict('import_scale'),
         precision=4,
         min=0.0001,
         max=1.00,
@@ -153,13 +153,13 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
     make_gaps: bpy.props.BoolProperty(
         name="Make gaps",
         description="Puts small gaps between parts",
-        **ImportSettings.settings_dict('make_gaps'),
+        **UserSettings.settings_dict('make_gaps'),
     )
 
     gap_scale: bpy.props.FloatProperty(
         name="Gap scale",
         description="Scale parts by this value to make gaps",
-        **ImportSettings.settings_dict('gap_scale'),
+        **UserSettings.settings_dict('gap_scale'),
         precision=3,
         min=0.0,
         max=1.0,
@@ -168,67 +168,67 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
     meta_bfc: bpy.props.BoolProperty(
         name="BFC",
         description="Process BFC meta commands",
-        **ImportSettings.settings_dict('meta_bfc'),
+        **UserSettings.settings_dict('meta_bfc'),
     )
 
     meta_texmap: bpy.props.BoolProperty(
         name="TEXMAP",
         description="Process TEXMAP and DATA meta commands",
-        **ImportSettings.settings_dict('meta_texmap'),
+        **UserSettings.settings_dict('meta_texmap'),
     )
 
     meta_print_write: bpy.props.BoolProperty(
         name="PRINT/WRITE",
         description="Process PRINT/WRITE meta command",
-        **ImportSettings.settings_dict('meta_print_write'),
+        **UserSettings.settings_dict('meta_print_write'),
     )
 
     meta_group: bpy.props.BoolProperty(
         name="GROUP",
         description="Process GROUP meta commands",
-        **ImportSettings.settings_dict('meta_group'),
+        **UserSettings.settings_dict('meta_group'),
     )
 
     meta_step: bpy.props.BoolProperty(
         name="STEP",
         description="Process STEP meta command",
-        **ImportSettings.settings_dict('meta_step'),
+        **UserSettings.settings_dict('meta_step'),
     )
 
     meta_step_groups: bpy.props.BoolProperty(
         name="STEP Groups",
         description="Create collections for individual steps",
-        **ImportSettings.settings_dict('meta_step_groups'),
+        **UserSettings.settings_dict('meta_step_groups'),
     )
 
     meta_clear: bpy.props.BoolProperty(
         name="CLEAR",
         description="Process CLEAR meta command",
-        **ImportSettings.settings_dict('meta_clear'),
+        **UserSettings.settings_dict('meta_clear'),
     )
 
     meta_pause: bpy.props.BoolProperty(
         name="PAUSE",
         description="Process PAUSE meta command",
-        **ImportSettings.settings_dict('meta_pause'),
+        **UserSettings.settings_dict('meta_pause'),
     )
 
     meta_save: bpy.props.BoolProperty(
         name="SAVE",
         description="Process SAVE meta command",
-        **ImportSettings.settings_dict('meta_save'),
+        **UserSettings.settings_dict('meta_save'),
     )
 
     set_end_frame: bpy.props.BoolProperty(
         name="Set step end frame",
         description="Set the end frame to the last step",
-        **ImportSettings.settings_dict('set_end_frame'),
+        **UserSettings.settings_dict('set_end_frame'),
     )
 
     frames_per_step: bpy.props.IntProperty(
         name="Frames per step",
         description="Frames per step",
-        **ImportSettings.settings_dict('frames_per_step'),
+        **UserSettings.settings_dict('frames_per_step'),
         min=1,
     )
 
@@ -236,45 +236,45 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         name="Starting step frame",
         options={'HIDDEN'},
         description="Frame to add the first STEP meta command",
-        **ImportSettings.settings_dict('starting_step_frame'),
+        **UserSettings.settings_dict('starting_step_frame'),
         min=1,
     )
 
     set_timeline_markers: bpy.props.BoolProperty(
         name="Set timeline markers",
         description="Set timeline markers for meta commands",
-        **ImportSettings.settings_dict('set_timeline_markers'),
+        **UserSettings.settings_dict('set_timeline_markers'),
     )
 
     import_edges: bpy.props.BoolProperty(
         name="Import edges",
         description="Import edge meshes",
-        **ImportSettings.settings_dict('import_edges'),
+        **UserSettings.settings_dict('import_edges'),
     )
 
     use_freestyle_edges: bpy.props.BoolProperty(
         name="Use Freestyle edges",
         description="Render LDraw edges using freestyle",
-        **ImportSettings.settings_dict('use_freestyle_edges'),
+        **UserSettings.settings_dict('use_freestyle_edges'),
     )
 
     treat_shortcut_as_model: bpy.props.BoolProperty(
         name="Treat shortcuts as models",
         options={'HIDDEN'},
         description="Split shortcut parts into their constituent pieces as if they were models",
-        **ImportSettings.settings_dict('treat_shortcut_as_model'),
+        **UserSettings.settings_dict('treat_shortcut_as_model'),
     )
 
     recalculate_normals: bpy.props.BoolProperty(
         name="Recalculate normals",
         description="Recalculate normals. Not recommended if BFC processing is active",
-        **ImportSettings.settings_dict('recalculate_normals'),
+        **UserSettings.settings_dict('recalculate_normals'),
     )
 
     triangulate: bpy.props.BoolProperty(
         name="Triangulate faces",
         description="Triangulate all faces",
-        **ImportSettings.settings_dict('triangulate'),
+        **UserSettings.settings_dict('triangulate'),
     )
 
     profile: bpy.props.BoolProperty(
@@ -286,31 +286,31 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
     print_errors: bpy.props.BoolProperty(
         name="Print errors",
         description="Print errors to console at the cost of performance",
-        **ImportSettings.settings_dict('print_errors'),
+        **UserSettings.settings_dict('print_errors'),
     )
 
     fix_bowties: bpy.props.BoolProperty(
         name="Fix bowties",
         description="Fix bad quads caused by bowties at the cost of performance",
-        **ImportSettings.settings_dict('fix_bowties'),
+        **UserSettings.settings_dict('fix_bowties'),
     )
 
     defer_processing: bpy.props.BoolProperty(
         name="Defer processing",
         description="Calculate vertex positions after part is parsed",
-        **ImportSettings.settings_dict('defer_processing'),
+        **UserSettings.settings_dict('defer_processing'),
     )
 
     bevel_edges: bpy.props.BoolProperty(
         name="Bevel edges",
         description="Bevel edges. Can cause some parts to render incorrectly",
-        **ImportSettings.settings_dict('bevel_edges'),
+        **UserSettings.settings_dict('bevel_edges'),
     )
 
     bevel_weight: bpy.props.FloatProperty(
         name="Bevel weight",
         description="Bevel weight",
-        **ImportSettings.settings_dict('bevel_weight'),
+        **UserSettings.settings_dict('bevel_weight'),
         precision=1,
         step=10,
         min=0.0,
@@ -320,7 +320,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
     bevel_width: bpy.props.FloatProperty(
         name="Bevel width",
         description="Bevel width",
-        **ImportSettings.settings_dict('bevel_width'),
+        **UserSettings.settings_dict('bevel_width'),
         precision=1,
         step=10,
         min=0.0,
@@ -330,12 +330,12 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
     bevel_segments: bpy.props.IntProperty(
         name="Bevel segments",
         description="Bevel segments",
-        **ImportSettings.settings_dict('bevel_segments'),
+        **UserSettings.settings_dict('bevel_segments'),
     )
 
     def invoke(self, context, _event):
         context.window_manager.fileselect_add(self)
-        ImportSettings.load_settings()
+        UserSettings.load_settings()
         return {'RUNNING_MODAL'}
 
     # _timer = None

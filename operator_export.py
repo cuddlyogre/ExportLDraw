@@ -4,10 +4,10 @@ from bpy_extras.io_utils import ExportHelper
 import os
 import time
 
+from .user_settings import UserSettings
+from .ldraw_color_options import LDrawColorOptions
+from .filesystem_options import FileSystemOptions
 from .export_options import ExportOptions
-from .import_settings import ImportSettings
-from .filesystem import FileSystem
-from .ldraw_color import LDrawColor
 from . import ldraw_export
 
 
@@ -43,26 +43,26 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
     ldraw_path: bpy.props.StringProperty(
         name="LDraw path",
         description="Full filepath to the LDraw Parts Library (download from https://www.ldraw.org)",
-        default=ImportSettings.get_setting('ldraw_path'),
+        default=UserSettings.get_setting('ldraw_path'),
     )
 
     studio_ldraw_path: bpy.props.StringProperty(
         name="Stud.io LDraw path",
         description="Full filepath to the Stud.io LDraw Parts Library (download from https://www.bricklink.com/v3/studio/download.page)",
-        default=ImportSettings.get_setting('studio_ldraw_path'),
+        default=UserSettings.get_setting('studio_ldraw_path'),
     )
 
     studio_custom_parts_path: bpy.props.StringProperty(
         name="Stud.io CustomParts path",
         description="Full filepath to the CustomParts path",
-        **ImportSettings.settings_dict('studio_custom_parts_path'),
+        **UserSettings.settings_dict('studio_custom_parts_path'),
     )
 
     use_alt_colors: bpy.props.BoolProperty(
         name="Use alternate colors",
         # options={'HIDDEN'},
         description="Use LDCfgalt.ldr",
-        default=True,
+        **UserSettings.settings_dict('use_alt_colors'),
     )
 
     selection_only: bpy.props.BoolProperty(
@@ -131,11 +131,11 @@ class EXPORT_OT_do_ldraw_export(bpy.types.Operator, ExportHelper):
 
         # bpy.ops.object.mode_set(mode='OBJECT')
 
-        FileSystem.ldraw_path = self.ldraw_path
-        FileSystem.studio_ldraw_path = self.studio_ldraw_path
-        FileSystem.studio_custom_parts_path = self.studio_custom_parts_path
+        FileSystemOptions.ldraw_path = self.ldraw_path
+        FileSystemOptions.studio_ldraw_path = self.studio_ldraw_path
+        FileSystemOptions.studio_custom_parts_path = self.studio_custom_parts_path
         # FileSystem.resolution = self.resolution
-        LDrawColor.use_alt_colors = self.use_alt_colors
+        LDrawColorOptions.use_alt_colors = self.use_alt_colors
 
         ExportOptions.selection_only = self.selection_only
         ExportOptions.remove_doubles = self.remove_doubles
