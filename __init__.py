@@ -3,8 +3,8 @@
 bl_info = {
     "name": "Export LDraw",
     "author": "cuddlyogre",
-    "version": (26, 2, 800),
-    "blender": (4,),
+    "version": (26, 7, 600),
+    "blender": (4, 2, 0),
     "location": "File > Import-Export > LDraw (.mpd/.ldr/.l3b/.dat)",
     "description": "Imports and Exports LDraw Models",
     "warning": "",
