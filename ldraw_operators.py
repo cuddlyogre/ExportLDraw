@@ -6,6 +6,7 @@ import mathutils
 from .definitions import APP_ROOT
 from .import_options import ImportOptions
 from .ldraw_color import LDrawColor
+from .blender_materials import BlenderMaterials
 from . import matrices
 from . import blender_import
 from . import ldraw_instancer
@@ -481,6 +482,23 @@ class RealizeInstancesOperator(bpy.types.Operator):
         return matrix
 
 
+class FastEeveeViewportOperator(bpy.types.Operator):
+    """Toggle lightweight materials and disable viewport raytracing for a fast EEVEE viewport"""
+    bl_idname = "export_ldraw.fast_eevee_viewport"
+    bl_label = "EEVEE: Fast viewport"
+    bl_options = {'UNDO'}
+
+    def execute(self, context):
+        scene = context.scene
+        enabled = not scene.get(blender_import.eevee_fast_key, False)
+        count = BlenderMaterials.set_eevee_fast(enabled)
+        blender_import.set_scene_fast(scene, enabled)
+        scene[blender_import.eevee_fast_key] = enabled
+        state = "on" if enabled else "off"
+        self.report({'INFO'}, f"Fast EEVEE viewport {state} ({count} materials)")
+        return {'FINISHED'}
+
+
 def parent(arm, obj, bone_name):
     obj.select_set(True)
 
@@ -505,6 +523,7 @@ classes_to_register = [
     RigPartsOperator,
     MakeGapsOperator,
     RealizeInstancesOperator,
+    FastEeveeViewportOperator,
 ]
 
 register_classes, unregister_classes = bpy.utils.register_classes_factory(classes_to_register)

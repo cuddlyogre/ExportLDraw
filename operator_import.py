@@ -307,6 +307,12 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         **UserSettings.settings_dict('instancing'),
     )
 
+    fast_materials: bpy.props.BoolProperty(
+        name="Fast EEVEE materials",
+        description="Use lightweight materials (no subsurface, refraction or procedural detail) and disable viewport raytracing for a responsive EEVEE viewport. Toggle on/off afterwards with the Fast EEVEE viewport operator",
+        **UserSettings.settings_dict('fast_materials'),
+    )
+
     bevel_edges: bpy.props.BoolProperty(
         name="Bevel edges",
         description="Bevel edges. Can cause some parts to render incorrectly",
@@ -436,6 +442,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         col.prop(self, "fix_bowties")
         col.prop(self, "defer_processing")
         col.prop(self, "instancing")
+        col.prop(self, "fast_materials")
 
         layout.separator(factor=space_factor)
         col = layout.column()

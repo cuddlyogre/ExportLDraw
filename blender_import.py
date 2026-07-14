@@ -18,6 +18,23 @@ from . import ldraw_instancer
 from . import matrices
 
 
+# scene custom-property flag recording whether the fast EEVEE viewport is on
+eevee_fast_key = "ldraw_eevee_fast"
+
+
+# Toggle the heavy viewport render features (screen-space raytracing / reflection
+# / refraction) that make the EEVEE viewport crawl on large models. Paired with
+# BlenderMaterials.set_eevee_fast, which swaps the materials themselves.
+def set_scene_fast(scene, enabled):
+    eevee = scene.eevee
+    if bpy.app.version < (4, 3):
+        if hasattr(eevee, "use_ssr"):
+            eevee.use_ssr = not enabled
+            eevee.use_ssr_refraction = not enabled
+    else:
+        eevee.use_raytracing = not enabled
+
+
 def do_import(filepath, color_code="16", return_mesh=False):
     print(filepath)  # TODO: multiple filepaths?
 
@@ -64,6 +81,12 @@ def do_import(filepath, color_code="16", return_mesh=False):
     if ldraw_instancer.active() and not return_mesh:
         ldraw_instancer.build(group.top_collection)
 
+    # fast EEVEE viewport: swap to lightweight materials (scene raytracing was
+    # already left off in __scene_setup) and record the state for the toggle
+    if ImportOptions.fast_materials and not return_mesh:
+        BlenderMaterials.set_eevee_fast(True)
+        bpy.context.scene[eevee_fast_key] = True
+
     # s = {str(k): v for k, v in sorted(LDrawNode.geometry_datas2.items(), key=lambda ele: ele[1], reverse=True)}
     # helpers.write_json("gs2.json", s, indent=4)
 
@@ -92,12 +115,14 @@ def do_import(filepath, color_code="16", return_mesh=False):
 
 
 def __scene_setup():
+    # fast mode wants these heavy viewport features off (set_scene_fast)
+    raytracing = not ImportOptions.fast_materials
     if bpy.app.version < (4, 3):
-        bpy.context.scene.eevee.use_ssr = True
-        bpy.context.scene.eevee.use_ssr_refraction = True
+        bpy.context.scene.eevee.use_ssr = raytracing
+        bpy.context.scene.eevee.use_ssr_refraction = raytracing
         bpy.context.scene.eevee.use_taa_reprojection = True
     else:
-        bpy.context.scene.eevee.use_raytracing = True
+        bpy.context.scene.eevee.use_raytracing = raytracing
 
     # https://blender.stackexchange.com/a/146838
     # TODO: use line art modifier with grease pencil object

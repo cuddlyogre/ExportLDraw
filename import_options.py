@@ -142,6 +142,11 @@ class ImportOptions:
     defaults["instancing"] = False  # True False
     instancing = defaults["instancing"]
 
+    # build lightweight materials and disable viewport raytracing for a fast
+    # EEVEE viewport (toggle live afterwards with the Fast EEVEE operator)
+    defaults["fast_materials"] = False  # True False
+    fast_materials = defaults["fast_materials"]
+
     @staticmethod
     def scale_strategy_value():
         return ImportOptions.scale_strategy_choices[ImportOptions.scale_strategy][0]

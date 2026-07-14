@@ -11,6 +11,13 @@ from .filesystem import FileSystem
 from . import strings
 
 
+# custom-property keys linking a full material to its lightweight "fast" twin and
+# back, used by the EEVEE fast-viewport toggle (see set_eevee_fast)
+fast_variant_key = "ldraw_fast_variant"
+full_variant_key = "ldraw_full_variant"
+is_fast_key = "ldraw_is_fast"
+
+
 class BlenderMaterials:
     __key_map = {}
 
@@ -69,6 +76,104 @@ class BlenderMaterials:
             pe_texmaps=pe_texmaps,
         )
         return material
+
+    # A lightweight twin of a full LDraw material for fast EEVEE navigation: a
+    # single Principled BSDF with the base color (or its decal image) and the
+    # full material's metallic/roughness/emission, but none of the per-fragment
+    # expensive features (subsurface scattering, screen refraction, procedural
+    # voronoi/noise + bump). Built lazily and cached via custom-property link.
+    @classmethod
+    def get_fast_material(cls, full_material):
+        existing_name = full_material.get(fast_variant_key)
+        if existing_name:
+            existing = bpy.data.materials.get(existing_name)
+            if existing is not None:
+                return existing
+
+        color_code = full_material.get(strings.ldraw_color_code_key, "16")
+        color = LDrawColor.get_color(color_code)
+
+        fast = bpy.data.materials.new(f"{full_material.name} [fast]")
+        fast.use_fake_user = True
+        fast.use_nodes = True
+        fast.use_backface_culling = full_material.use_backface_culling
+        fast[is_fast_key] = True
+        fast[full_variant_key] = full_material.name
+        fast[strings.ldraw_color_code_key] = color_code
+        fast.diffuse_color = color.linear_color_a
+
+        full_principled = None
+        full_image = None
+        for node in full_material.node_tree.nodes:
+            if node.type == 'BSDF_PRINCIPLED' and full_principled is None:
+                full_principled = node
+            elif node.type == 'TEX_IMAGE' and node.image is not None and full_image is None:
+                full_image = node
+
+        nodes = fast.node_tree.nodes
+        links = fast.node_tree.links
+        nodes.clear()
+
+        out = nodes.new("ShaderNodeOutputMaterial")
+        out.location = (300, 0)
+        principled = nodes.new("ShaderNodeBsdfPrincipled")
+        principled.location = (0, 0)
+        principled.inputs["Base Color"].default_value = color.linear_color_d
+
+        def copy_input(name):
+            if full_principled is not None and name in full_principled.inputs and name in principled.inputs:
+                principled.inputs[name].default_value = full_principled.inputs[name].default_value
+
+        copy_input("Roughness")
+        copy_input("Metallic")
+        copy_input("Emission Color")
+        copy_input("Emission Strength")
+
+        links.new(principled.outputs["BSDF"], out.inputs["Surface"])
+
+        # keep decals/stickers (cheap) but drop everything procedural
+        if full_image is not None:
+            tex = nodes.new("ShaderNodeTexImage")
+            tex.location = (-300, 0)
+            tex.image = full_image.image
+            tex.interpolation = full_image.interpolation
+            tex.extension = full_image.extension
+            links.new(tex.outputs["Color"], principled.inputs["Base Color"])
+
+        if color.alpha < 1.0:
+            principled.inputs["Alpha"].default_value = color.alpha
+            # 4.2+ EEVEE Next handles alpha via the default DITHERED method
+            if bpy.app.version < (4, 2):
+                fast.blend_method = 'BLEND'
+
+        full_material[fast_variant_key] = fast.name
+        return fast
+
+    @classmethod
+    def __is_full_ldraw_material(cls, material):
+        if material.get(is_fast_key):
+            return False
+        return strings.ldraw_color_code_key in material
+
+    # Swap every full LDraw material to its fast twin (or back) in one pass via
+    # user_remap, which reassigns all mesh slots/instances at once.
+    @classmethod
+    def set_eevee_fast(cls, enabled):
+        count = 0
+        if enabled:
+            for material in list(bpy.data.materials):
+                if cls.__is_full_ldraw_material(material):
+                    fast = cls.get_fast_material(material)
+                    material.user_remap(fast)
+                    count += 1
+        else:
+            for material in list(bpy.data.materials):
+                if material.get(is_fast_key):
+                    full = bpy.data.materials.get(material.get(full_variant_key, ""))
+                    if full is not None:
+                        material.user_remap(full)
+                        count += 1
+        return count
 
     @classmethod
     def __build_key(cls, color, bfc_certified, part_slopes, texmap, pe_texmaps):
