@@ -520,6 +520,21 @@ class ConsolidateInstancersOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class ViewportLodOperator(bpy.types.Operator):
+    """Toggle bounding-box proxies instead of full geometry for fast navigation"""
+    bl_idname = "export_ldraw.viewport_lod"
+    bl_label = "Viewport LOD (bounding boxes)"
+    bl_options = {'UNDO'}
+
+    def execute(self, context):
+        scene = context.scene
+        enabled = not scene.get(ldraw_instancer.lod_key, False)
+        count = ldraw_instancer.set_lod(enabled)
+        scene[ldraw_instancer.lod_key] = enabled
+        self.report({'INFO'}, f"Viewport LOD {'on' if enabled else 'off'} ({count} meshes)")
+        return {'FINISHED'}
+
+
 def parent(arm, obj, bone_name):
     obj.select_set(True)
 
@@ -546,6 +561,7 @@ classes_to_register = [
     RealizeInstancesOperator,
     FastEeveeViewportOperator,
     ConsolidateInstancersOperator,
+    ViewportLodOperator,
 ]
 
 register_classes, unregister_classes = bpy.utils.register_classes_factory(classes_to_register)

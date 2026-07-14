@@ -31,8 +31,15 @@ proto_object_key = "ldraw_proto_object"
 transform_attr = "transform"
 index_attr = "instance_index"
 
+# proxy/LOD links
+proxy_mesh_key = "ldraw_proxy_mesh"   # on a full mesh -> its proxy name
+full_mesh_key = "ldraw_full_mesh"     # on a proxy mesh -> its full name
+is_proxy_key = "ldraw_is_proxy"
+proxy_suffix = " [proxy]"
+
 # scene custom-property flags recording realtime-toggle state
 consolidated_key = "ldraw_consolidated"
+lod_key = "ldraw_lod"
 
 node_group_name = "LDraw Instancer"
 merged_node_group_name = "LDraw Merged Instancer"
@@ -351,3 +358,67 @@ def __build_merged_node_group(proto_collection):
     links.new(set_instance_transform.outputs["Instances"], group_output.inputs["Geometry"])
 
     return node_group
+
+
+# ---------------------------------------------------------------------------
+# Viewport LOD: swap every LDraw geometry mesh for a bounding-box proxy via
+# user_remap (one call reassigns all objects/prototypes that use it). Drops the
+# scene to a few triangles per part for fast navigation; the GPU only uploads the
+# meshes it actually draws, so this also relieves VRAM. Reversible.
+# ---------------------------------------------------------------------------
+
+def set_lod(enabled):
+    count = 0
+    if enabled:
+        for mesh in list(bpy.data.meshes):
+            if strings.ldraw_filename_key in mesh and not mesh.get(is_proxy_key):
+                mesh.use_fake_user = True  # keep alive after it loses all users
+                mesh.user_remap(__get_proxy_mesh(mesh))
+                count += 1
+    else:
+        for mesh in list(bpy.data.meshes):
+            if mesh.get(is_proxy_key):
+                full = bpy.data.meshes.get(mesh.get(full_mesh_key, ""))
+                if full is not None:
+                    mesh.user_remap(full)
+                    count += 1
+    return count
+
+
+def __get_proxy_mesh(full_mesh):
+    existing_name = full_mesh.get(proxy_mesh_key)
+    if existing_name:
+        existing = bpy.data.meshes.get(existing_name)
+        if existing is not None:
+            return existing
+
+    # Mesh (unlike Object) has no bound_box, so derive it from the vertices
+    count = len(full_mesh.vertices)
+    coords = [0.0] * (3 * count)
+    full_mesh.vertices.foreach_get("co", coords)
+    if count == 0:
+        lo = hi = (0.0, 0.0, 0.0)
+    else:
+        xs = coords[0::3]
+        ys = coords[1::3]
+        zs = coords[2::3]
+        lo = (min(xs), min(ys), min(zs))
+        hi = (max(xs), max(ys), max(zs))
+    verts = [
+        (lo[0], lo[1], lo[2]), (lo[0], lo[1], hi[2]), (lo[0], hi[1], hi[2]), (lo[0], hi[1], lo[2]),
+        (hi[0], lo[1], lo[2]), (hi[0], lo[1], hi[2]), (hi[0], hi[1], hi[2]), (hi[0], hi[1], lo[2]),
+    ]
+    faces = [(0, 1, 2, 3), (4, 7, 6, 5), (0, 4, 5, 1), (3, 2, 6, 7), (0, 3, 7, 4), (1, 5, 6, 2)]
+
+    proxy = bpy.data.meshes.new(full_mesh.name + proxy_suffix)
+    proxy.from_pydata(verts, [], faces)
+    proxy.update()
+    if len(full_mesh.materials) > 0:
+        proxy.materials.append(full_mesh.materials[0])
+    proxy.use_fake_user = True
+    proxy[is_proxy_key] = True
+    proxy[full_mesh_key] = full_mesh.name
+    proxy[strings.ldraw_filename_key] = full_mesh.get(strings.ldraw_filename_key, "")
+
+    full_mesh[proxy_mesh_key] = proxy.name
+    return proxy

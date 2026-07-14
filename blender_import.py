@@ -86,6 +86,12 @@ def do_import(filepath, color_code="16", return_mesh=False):
             ldraw_instancer.consolidate()
             bpy.context.scene[ldraw_instancer.consolidated_key] = True
 
+    # optionally display bounding-box proxies for fast navigation (works with or
+    # without instancing)
+    if ImportOptions.viewport_lod and not return_mesh:
+        ldraw_instancer.set_lod(True)
+        bpy.context.scene[ldraw_instancer.lod_key] = True
+
     # fast EEVEE viewport: swap to lightweight materials (scene raytracing was
     # already left off in __scene_setup) and record the state for the toggle
     if ImportOptions.fast_materials and not return_mesh:

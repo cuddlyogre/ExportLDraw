@@ -319,6 +319,12 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         **UserSettings.settings_dict('instancing_merged'),
     )
 
+    viewport_lod: bpy.props.BoolProperty(
+        name="Viewport LOD (bounding boxes)",
+        description="Display bounding-box proxies instead of full part geometry for fast navigation and lower VRAM. Toggle afterwards with the Viewport LOD operator",
+        **UserSettings.settings_dict('viewport_lod'),
+    )
+
     bevel_edges: bpy.props.BoolProperty(
         name="Bevel edges",
         description="Bevel edges. Can cause some parts to render incorrectly",
@@ -450,6 +456,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         col.prop(self, "instancing")
         col.prop(self, "instancing_merged")
         col.prop(self, "fast_materials")
+        col.prop(self, "viewport_lod")
 
         layout.separator(factor=space_factor)
         col = layout.column()

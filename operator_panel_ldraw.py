@@ -90,6 +90,7 @@ class CO_PT_ldraw_eo_panel(CO_ldraw_panel):
         col.label(text="Viewport performance")
         col.operator(ldraw_operators.FastEeveeViewportOperator.bl_idname)
         col.operator(ldraw_operators.ConsolidateInstancersOperator.bl_idname)
+        col.operator(ldraw_operators.ViewportLodOperator.bl_idname)
 
         if not do_poll(context):
             return

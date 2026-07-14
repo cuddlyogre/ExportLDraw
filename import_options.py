@@ -147,6 +147,10 @@ class ImportOptions:
     defaults["instancing_merged"] = False  # True False
     instancing_merged = defaults["instancing_merged"]
 
+    # display bounding-box proxies instead of full geometry for fast navigation
+    defaults["viewport_lod"] = False  # True False
+    viewport_lod = defaults["viewport_lod"]
+
     # build lightweight materials and disable viewport raytracing for a fast
     # EEVEE viewport (toggle live afterwards with the Fast EEVEE operator)
     defaults["fast_materials"] = False  # True False
