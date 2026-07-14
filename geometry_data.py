@@ -7,29 +7,23 @@ class FaceData:
     Raw vertex information
     """
 
-    def __init__(self, child_node, matrix, color_code, winding=None, texmap=None, pe_tex_path=None, inverted=False):
+    def __init__(self, child_node, matrix, color_code, winding=None, texmap=None, pe_tex_path=None):
         self.child_node = child_node
         self.matrix = matrix
         self.color_code = color_code
         self.winding = winding
         self.texmap = texmap
         self.pe_tex_path = pe_tex_path
-        self.inverted = inverted
-
-        # True when the stored vertex order is opposite the face's visible orientation:
-        # the accumulated BFC INVERTNEXT state. pe_texmap.project_box_texmaps flips its
-        # computed normals by this, mirroring Studio's explicit per-part IsInverted chain
-        # (PETextureInfo.CollectTrianglesInModelMesh swaps to MeshBackFace).
-        #
-        # A mirroring (negative determinant) transform does NOT flip: Studio's MeshBackFace
-        # swap on Matrix4x4Util.IsInverted exactly compensates the geometric normal flip a
-        # mirror causes, so the net seed/growth direction is det-independent -- verified
-        # empirically against Studio on 15068pb046a (negative-det sheared placement) and
-        # x.dat (negative-det rigid placements), both of which project correctly unflipped.
-        self.normal_flipped = inverted
 
         self.vertices = self.child_node.vertices.copy()
         self.vert_count = len(self.vertices)
+        # BFC folds the accumulated INVERTNEXT state into self.winding (meta_bfc:
+        # a "CCW" statement under accumulated inversion becomes "CW"), so __handle_winding
+        # reverses the vertex order here for inverted geometry. The stored order therefore
+        # already reflects the face's true outward orientation -- this is our equivalent of
+        # Studio reading model.MeshBackFace for inverted meshes, so pe_texmap must NOT flip
+        # the projection normal again (doing so double-counts the inversion and drops decals
+        # from inverted surfaces, e.g. the inside of a minifig hand grip).
         self.__handle_winding()
         self.pe_texmaps = []
 
@@ -125,7 +119,7 @@ class GeometryData:
         self.edge_data.append(face_data)
         return face_data
 
-    def add_face_data(self, child_node, matrix, color_code, texmap=None, pe_tex_path=None, winding=None, inverted=False):
+    def add_face_data(self, child_node, matrix, color_code, texmap=None, pe_tex_path=None, winding=None):
         face_data = FaceData(
             child_node=child_node,
             matrix=matrix,
@@ -133,7 +127,6 @@ class GeometryData:
             texmap=texmap,
             pe_tex_path=pe_tex_path,
             winding=winding,
-            inverted=inverted,
         )
         self.face_data.append(face_data)
         return face_data

@@ -259,7 +259,6 @@ class LDrawNode:
                             winding=winding,
                             texmap=texmap,
                             pe_tex_path=pe_tex_path,
-                            inverted=(accum_invert ^ invert_next),
                         )
                         if not ImportOptions.defer_processing:
                             face_data.process()

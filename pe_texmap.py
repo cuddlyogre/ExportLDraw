@@ -86,13 +86,13 @@ def is_sheared_matrix(matrix, eps=0.01):
     if c0.length < 1e-6 or c1.length < 1e-6 or c2.length < 1e-6:
         return False
     e0 = c0.normalized()
-    r01 = e0.dot(c1)            # R.m01
-    r02 = e0.dot(c2)            # R.m02
+    r01 = e0.dot(c1)  # R.m01
+    r02 = e0.dot(c2)  # R.m02
     u1 = c1 - r01 * e0
     if u1.length < 1e-6:
         return False
     e1 = u1.normalized()
-    r12 = e1.dot(c2)           # R.m12
+    r12 = e1.dot(c2)  # R.m12
     return abs(r01) > eps or abs(r02) > eps or abs(r12) > eps
 
 
@@ -166,8 +166,7 @@ def project_box_texmaps(face_datas):
     neighbouring face through a shared vertex.
 
     Operates on a list of FaceData (duck-typed: .vertices, .matrix, .pe_tex_path,
-    .child_node, .pe_texmaps, .normal_flipped) and appends the resulting PETexmap(s)
-    to each face.
+    .child_node, .pe_texmaps) and appends the resulting PETexmap(s) to each face.
     """
     # Faces eligible for box projection. Explicit-UV faces are handled in build_uv_texmaps;
     # faces without a pe_tex_path (e.g. merged primitives) are never textured.
@@ -222,7 +221,7 @@ def _project_one(faces, path_idxs, path_set, tex_info, pos_to_faces, covered):
     # so vertices land in box space at true LDU distances from the projection plane.
     composed_inverse = mathutils.Matrix.LocRotScale(translation, rotation, mirroring).inverted()
 
-    local_cache = {}   # face idx -> [local vertex Vectors]
+    local_cache = {}  # face idx -> [local vertex Vectors]
     normal_cache = {}  # face idx -> face normal in texture space
 
     def localize(idx):
@@ -231,10 +230,11 @@ def _project_one(faces, path_idxs, path_set, tex_info, pos_to_faces, covered):
             lv = [composed_inverse @ v for v in faces[idx].vertices]
             local_cache[idx] = lv
             normal = (lv[1] - lv[0]).cross(lv[2] - lv[1]).normalized()
-            # faces inside mirrored or INVERTNEXT'd subtrees store vertices in the opposite
-            # of their visible order -- flip the normal like Studio flips to MeshBackFace
-            if faces[idx].normal_flipped:
-                normal = -normal
+            # The stored vertex order already encodes BFC/INVERTNEXT (GeometryData folds the
+            # accumulated inversion into the winding, our equivalent of Studio's MeshBackFace),
+            # so this raw cross product is the true outward normal. Do NOT flip it for inverted
+            # faces -- that double-counts the inversion and drops decals that belong on inverted
+            # surfaces (e.g. the inside of a minifig hand grip).
             normal_cache[idx] = normal
         return lv
 
