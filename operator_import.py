@@ -313,6 +313,12 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         **UserSettings.settings_dict('fast_materials'),
     )
 
+    instancing_merged: bpy.props.BoolProperty(
+        name="Merge instancers (EEVEE)",
+        description="Consolidate the per-part instancers into a single whole-model instancer. Removes EEVEE's per-object viewport cost on huge models. Requires Instancing. Toggle afterwards with the Consolidate instancers operator",
+        **UserSettings.settings_dict('instancing_merged'),
+    )
+
     bevel_edges: bpy.props.BoolProperty(
         name="Bevel edges",
         description="Bevel edges. Can cause some parts to render incorrectly",
@@ -442,6 +448,7 @@ class IMPORT_OT_do_ldraw_import(bpy.types.Operator):
         col.prop(self, "fix_bowties")
         col.prop(self, "defer_processing")
         col.prop(self, "instancing")
+        col.prop(self, "instancing_merged")
         col.prop(self, "fast_materials")
 
         layout.separator(factor=space_factor)

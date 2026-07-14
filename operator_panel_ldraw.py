@@ -84,7 +84,12 @@ class CO_PT_ldraw_eo_panel(CO_ldraw_panel):
         col.operator(ldraw_operators.SnapToBrickOperator.bl_idname)
         col.operator(ldraw_operators.SnapToPlateOperator.bl_idname)
         col.operator(ldraw_operators.ResetGridOperator.bl_idname)
+
+        layout.separator(factor=0.3)
+        col = layout.column()
+        col.label(text="Viewport performance")
         col.operator(ldraw_operators.FastEeveeViewportOperator.bl_idname)
+        col.operator(ldraw_operators.ConsolidateInstancersOperator.bl_idname)
 
         if not do_poll(context):
             return

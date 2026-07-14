@@ -81,6 +81,11 @@ def do_import(filepath, color_code="16", return_mesh=False):
     if ldraw_instancer.active() and not return_mesh:
         ldraw_instancer.build(group.top_collection)
 
+        # optionally collapse them into one whole-model instancer (EEVEE)
+        if ImportOptions.instancing_merged:
+            ldraw_instancer.consolidate()
+            bpy.context.scene[ldraw_instancer.consolidated_key] = True
+
     # fast EEVEE viewport: swap to lightweight materials (scene raytracing was
     # already left off in __scene_setup) and record the state for the toggle
     if ImportOptions.fast_materials and not return_mesh:

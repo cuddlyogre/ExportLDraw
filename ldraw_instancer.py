@@ -1,7 +1,13 @@
 import bpy
 
+import re
+
 from . import group
 from . import strings
+
+# matches a zero-padded index prefix added during consolidation, so it can be
+# stripped before re-prefixing on a re-consolidate
+_index_prefix_re = re.compile(r"^\d{6}_")
 
 # Instanced import.
 #
@@ -19,11 +25,17 @@ from . import strings
 # part+color combos), which is what keeps the viewport responsive.
 
 instancer_marker_key = "ldraw_instancer"
+merged_marker_key = "ldraw_merged_instancer"
 proto_mesh_key = "ldraw_proto_mesh"
 proto_object_key = "ldraw_proto_object"
 transform_attr = "transform"
+index_attr = "instance_index"
+
+# scene custom-property flags recording realtime-toggle state
+consolidated_key = "ldraw_consolidated"
 
 node_group_name = "LDraw Instancer"
+merged_node_group_name = "LDraw Merged Instancer"
 
 # key -> {"mesh": Mesh, "color_code": str, "file_name": str, "matrices": [Matrix]}
 _instances = {}
@@ -179,3 +191,163 @@ def __find_layer_collection(layer_collection, collection):
         if found is not None:
             return found
     return None
+
+
+# ---------------------------------------------------------------------------
+# Consolidation: merge the per-part-color instancers into ONE whole-model
+# instancer. Per-part instancing already gives a fast solid viewport, but EEVEE
+# pays a per-object cost every redraw, so thousands of instancer objects still
+# lag. Collapsing them to a single object (heterogeneous instancing via
+# Collection Info + Pick Instance by a per-point index) removes that per-object
+# cost. The per-part instancers are hidden, not deleted, so it can be undone.
+# ---------------------------------------------------------------------------
+
+def __active_per_part_instancers():
+    return [o for o in bpy.data.objects
+            if o.get(instancer_marker_key) and not o.get(merged_marker_key)]
+
+
+def consolidate():
+    if not supported():
+        return []
+
+    # group by prototype collection so a scene with several models gets one
+    # merged instancer per model. Skip hidden per-part instancers -- those were
+    # already consolidated, so re-running must not build a duplicate merged object
+    groups = {}
+    for inst in __active_per_part_instancers():
+        if inst.hide_viewport:
+            continue
+        proto = bpy.data.objects.get(inst.get(proto_object_key, ""))
+        if proto is None or not proto.users_collection:
+            continue
+        groups.setdefault(proto.users_collection[0], []).append(inst)
+
+    merged_objects = []
+    for proto_collection, per_parts in groups.items():
+        merged = __consolidate_group(proto_collection, per_parts)
+        if merged is not None:
+            merged_objects.append(merged)
+    return merged_objects
+
+
+def __consolidate_group(proto_collection, per_parts):
+    # Collection Info "Separate Children" feeds Pick Instance in name-sorted
+    # order, and Blender's name sort is natural (numeric-aware), not the plain
+    # lexicographic order Python's sorted() gives -- so part names like
+    # "proto_2.dat" vs "proto_10.dat" would map to the wrong child. Rename every
+    # prototype with a fixed-width zero-padded index prefix so the name sort,
+    # whatever its exact rules, equals the index we assign. Resolve each
+    # per-part's prototype first, since the stored names change on rename.
+    resolved = []
+    for inst in per_parts:
+        proto = bpy.data.objects.get(inst.get(proto_object_key, ""))
+        if proto is not None:
+            resolved.append((inst, proto))
+
+    obj_index = {}
+    for i, proto in enumerate(proto_collection.objects):
+        proto.name = f"{i:06d}_{_index_prefix_re.sub('', proto.name)}"
+        obj_index[proto] = i
+
+    # keep the stored prototype names in sync for future toggles
+    for inst, proto in resolved:
+        inst[proto_object_key] = proto.name
+
+    positions = []
+    transforms = []
+    indices = []
+    for inst, proto in resolved:
+        index = obj_index.get(proto)
+        if index is None:
+            continue
+        point_cloud = inst.data
+        count = len(point_cloud.vertices)
+
+        pos = [0.0] * (3 * count)
+        point_cloud.vertices.foreach_get("co", pos)
+        positions.extend(pos)
+
+        buffer = [0.0] * (16 * count)
+        point_cloud.attributes[transform_attr].data.foreach_get("value", buffer)
+        transforms.extend(buffer)
+
+        indices.extend([index] * count)
+
+    if not indices:
+        return None
+
+    merged_pc = bpy.data.meshes.new("pc_merged")
+    merged_pc.vertices.add(len(indices))
+    merged_pc.vertices.foreach_set("co", positions)
+    merged_pc.update()
+    merged_pc.attributes.new(name=transform_attr, type='FLOAT4X4', domain='POINT').data.foreach_set("value", transforms)
+    merged_pc.attributes.new(name=index_attr, type='INT', domain='POINT').data.foreach_set("value", indices)
+
+    merged = bpy.data.objects.new("LDraw Merged", merged_pc)
+    merged[instancer_marker_key] = True
+    merged[merged_marker_key] = True
+
+    modifier = merged.modifiers.new(merged_node_group_name, "NODES")
+    modifier.node_group = __build_merged_node_group(proto_collection)
+
+    group.link_obj(per_parts[0].users_collection[0], merged)
+
+    for inst in per_parts:
+        inst.hide_viewport = True
+        inst.hide_render = True
+
+    return merged
+
+
+def unconsolidate():
+    for merged in [o for o in bpy.data.objects if o.get(merged_marker_key)]:
+        point_cloud = merged.data
+        node_groups = [m.node_group for m in merged.modifiers if m.type == 'NODES' and m.node_group]
+        bpy.data.objects.remove(merged, do_unlink=True)
+        if point_cloud is not None and point_cloud.users == 0:
+            bpy.data.meshes.remove(point_cloud)
+        for ng in node_groups:
+            if ng.users == 0:
+                bpy.data.node_groups.remove(ng)
+
+    for inst in __active_per_part_instancers():
+        inst.hide_viewport = False
+        inst.hide_render = False
+
+
+def __build_merged_node_group(proto_collection):
+    node_group = bpy.data.node_groups.new(merged_node_group_name, "GeometryNodeTree")
+    node_group.interface.new_socket("Geometry", in_out='INPUT', socket_type='NodeSocketGeometry')
+    node_group.interface.new_socket("Geometry", in_out='OUTPUT', socket_type='NodeSocketGeometry')
+
+    nodes = node_group.nodes
+    links = node_group.links
+
+    group_input = nodes.new("NodeGroupInput")
+    group_output = nodes.new("NodeGroupOutput")
+    collection_info = nodes.new("GeometryNodeCollectionInfo")
+    collection_info.inputs["Collection"].default_value = proto_collection
+    for socket in collection_info.inputs:
+        if socket.name in ("Separate Children", "Reset Children"):
+            socket.default_value = True
+
+    instance_on_points = nodes.new("GeometryNodeInstanceOnPoints")
+    instance_on_points.inputs["Pick Instance"].default_value = True
+    set_instance_transform = nodes.new("GeometryNodeSetInstanceTransform")
+
+    index_attribute = nodes.new("GeometryNodeInputNamedAttribute")
+    index_attribute.data_type = 'INT'
+    index_attribute.inputs["Name"].default_value = index_attr
+    transform_attribute = nodes.new("GeometryNodeInputNamedAttribute")
+    transform_attribute.data_type = 'FLOAT4X4'
+    transform_attribute.inputs["Name"].default_value = transform_attr
+
+    links.new(group_input.outputs["Geometry"], instance_on_points.inputs["Points"])
+    links.new(collection_info.outputs["Instances"], instance_on_points.inputs["Instance"])
+    links.new(index_attribute.outputs["Attribute"], instance_on_points.inputs["Instance Index"])
+    links.new(instance_on_points.outputs["Instances"], set_instance_transform.inputs["Instances"])
+    links.new(transform_attribute.outputs["Attribute"], set_instance_transform.inputs["Transform"])
+    links.new(set_instance_transform.outputs["Instances"], group_output.inputs["Geometry"])
+
+    return node_group

@@ -142,6 +142,11 @@ class ImportOptions:
     defaults["instancing"] = False  # True False
     instancing = defaults["instancing"]
 
+    # consolidate the per-part instancers into a single whole-model instancer
+    # (requires instancing). Removes EEVEE's per-object cost for huge models.
+    defaults["instancing_merged"] = False  # True False
+    instancing_merged = defaults["instancing_merged"]
+
     # build lightweight materials and disable viewport raytracing for a fast
     # EEVEE viewport (toggle live afterwards with the Fast EEVEE operator)
     defaults["fast_materials"] = False  # True False

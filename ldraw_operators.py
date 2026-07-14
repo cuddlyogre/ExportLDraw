@@ -499,6 +499,27 @@ class FastEeveeViewportOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class ConsolidateInstancersOperator(bpy.types.Operator):
+    """Merge the per-part instancers into one whole-model instancer (and back), removing EEVEE's per-object viewport cost"""
+    bl_idname = "export_ldraw.consolidate_instancers"
+    bl_label = "Consolidate instancers (EEVEE)"
+    bl_options = {'UNDO'}
+
+    def execute(self, context):
+        scene = context.scene
+        enabled = not scene.get(ldraw_instancer.consolidated_key, False)
+        if enabled:
+            merged = ldraw_instancer.consolidate()
+            if not merged:
+                self.report({'WARNING'}, "No per-part instancers to consolidate (needs an instanced import on Blender 4.3+)")
+                return {'CANCELLED'}
+        else:
+            ldraw_instancer.unconsolidate()
+        scene[ldraw_instancer.consolidated_key] = enabled
+        self.report({'INFO'}, f"Consolidated instancers {'on' if enabled else 'off'}")
+        return {'FINISHED'}
+
+
 def parent(arm, obj, bone_name):
     obj.select_set(True)
 
@@ -524,6 +545,7 @@ classes_to_register = [
     MakeGapsOperator,
     RealizeInstancesOperator,
     FastEeveeViewportOperator,
+    ConsolidateInstancersOperator,
 ]
 
 register_classes, unregister_classes = bpy.utils.register_classes_factory(classes_to_register)
