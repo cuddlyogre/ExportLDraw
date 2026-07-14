@@ -174,16 +174,15 @@ class LDrawNode:
             winding = "CCW"
             invert_next = False
 
+            # current_pe_tex_path and next_shear persist across intervening geometry and meta
+            # lines, exactly like Studio's lastAtlas/texInfoShear in PEModel.InitWithLines:
+            # a later bare PE_TEX_INFO joins the most recent PE_TEX_PATH, and PE_TEX_NEXT_SHEAR
+            # stays pending until the next PE_TEX_INFO consumes it
             current_pe_tex_path = None
             next_shear = False
             subfile_line_index = 0
 
             for child_node in self.file.child_nodes:
-                # PE_TEX_NEXT_SHEAR always comes before PE_TEX_INFO
-                if not child_node.meta_command.startswith("pe_tex"):
-                    current_pe_tex_path = None
-                    next_shear = False
-
                 # texmap_fallback will only be true if ImportOptions.meta_texmap == True and you're on a fallback line
                 # if ImportOptions.meta_texmap == False, it will always be False
                 if child_node.meta_command in ["1", "2", "3", "4", "5"] and not texmap_fallback:
@@ -260,6 +259,7 @@ class LDrawNode:
                             winding=winding,
                             texmap=texmap,
                             pe_tex_path=pe_tex_path,
+                            inverted=(accum_invert ^ invert_next),
                         )
                         if not ImportOptions.defer_processing:
                             face_data.process()
@@ -326,12 +326,22 @@ class LDrawNode:
                         clean_line = child_node.line
                         _params = clean_line.split()[2:]
 
+                        # a PE_TEX_INFO with no preceding PE_TEX_PATH targets path -1
+                        # (Studio: PEModel.AddTextureInfoToAtlas with lastAtlas == null
+                        # creates/reuses the {-1} atlas)
+                        if current_pe_tex_path is None:
+                            current_pe_tex_path = PETexPath()
+                            current_pe_tex_path.tex_path = [-1]
+
                         # if there is one or 17, use the last item as the image data
                         base64_str = _params[-1]
                         image = base64_handler.sha_named_png_from_base64_str(base64_str)
 
                         pe_tex_info = PETexInfo()
                         pe_tex_info.next_shear = next_shear
+                        # PE_TEX_NEXT_SHEAR applies only to the next PE_TEX_INFO
+                        # (Studio: texInfoShear = false after AddTextureInfoToAtlas)
+                        next_shear = False
                         pe_tex_info.image_name = image.name
 
                         if len(_params) == 17:
