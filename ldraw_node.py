@@ -102,7 +102,7 @@ class LDrawNode:
         # don't change the attributes of the child_nodes because that will affect other parts that use a given file
         # pass that information down to .load and modify geometry_data instead
         # the only thing unique about a geometry_data object is its filename, color, texmap, pe_tex_info
-        geometry_data_key = LDrawNode.__build_key(self.file.name, color_code=current_color_code, texmap=texmap, pe_tex_path=pe_tex_path)
+        geometry_data_key = LDrawNode.__build_key(self.file.name, color_code=current_color_code, texmap=texmap, pe_tex_paths=pe_tex_paths)
 
         # if there's no geometry_data and some part type, it's a top level part so start collecting geometry
         # there are occasions where files with part_type of model have geometry so you can't rely on its part_type
@@ -468,21 +468,36 @@ class LDrawNode:
 
             return obj
 
-    # must include matrix, so that parts that are just mirrored versions of other parts
-    # such as 32527.dat (mirror of 32528.dat) will render
+    # the key must capture every input that changes the geometry/uv output for a file, by
+    # content so identical usages still share a mesh:
+    # - the effective color code
+    # - the active !TEXMAP projection, including its parameters -- the same image projected
+    #   from two different sets of points must produce two different meshes
+    # - every pending pe_tex path entering this file, not just the -1 slot -- a path like
+    #   "PE_TEX_PATH 0 1" that targets a grandchild must still distinguish this instance
+    #   of the file from an untextured (or differently textured) instance, and each
+    #   tex_info's projection matrix/points matter, not just its image
     @staticmethod
-    def __build_key(filename, color_code=None, texmap=None, pe_tex_path=None, matrix=None):
+    def __build_key(filename, color_code=None, texmap=None, pe_tex_paths=None):
         _key = (filename, color_code,)
 
         if texmap is not None:
-            _key += (texmap.method, texmap.image_name, texmap.glossmap_image_name)
+            _key += (texmap.method, texmap.image_name, texmap.glossmap_image_name,)
+            for parameter in texmap.parameters or []:
+                if isinstance(parameter, mathutils.Vector):
+                    _key += tuple(parameter)
+                else:
+                    _key += (parameter,)
 
-        if pe_tex_path is not None:
+        for index, pe_tex_path in LDrawNode.__sorted_pe_tex_paths(pe_tex_paths):
+            _key += (index,) + tuple(pe_tex_path.tex_path)
             for tex_info in pe_tex_path.tex_infos:
-                _key += (tex_info.image_name,)
-
-        if matrix is not None:
-            _key += (matrix,)
+                _key += (tex_info.image_name, tex_info.next_shear,)
+                if tex_info.matrix is not None:
+                    # frozen matrices raise on row iteration, so flatten a copy
+                    _key += tuple(value for row in tex_info.matrix.copy() for value in row)
+                if tex_info.point_min is not None:
+                    _key += tuple(tex_info.point_min) + tuple(tex_info.point_max)
 
         _key = "-".join(str(part) for part in _key)
 
@@ -500,3 +515,21 @@ class LDrawNode:
             LDrawNode.key_map[_key] = str(uuid.uuid4())
             key = LDrawNode.key_map.get(_key)
         return key
+
+    # deterministic ordering for key building: the None slot (the -1 path) sorts first,
+    # then indexed entries; sets of paths at the same index are ordered by their content
+    # so the same combination always yields the same key
+    @staticmethod
+    def __sorted_pe_tex_paths(pe_tex_paths):
+        if not pe_tex_paths:
+            return []
+        entries = []
+        for index, value in pe_tex_paths.items():
+            if isinstance(value, PETexPath):
+                paths = [value]
+            else:
+                paths = sorted(value, key=lambda p: (p.tex_path, [t.image_name or "" for t in p.tex_infos]))
+            for path in paths:
+                entries.append((-1 if index is None else index, path))
+        entries.sort(key=lambda entry: entry[0])
+        return entries
