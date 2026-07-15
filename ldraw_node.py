@@ -333,8 +333,10 @@ class LDrawNode:
                             current_pe_tex_path = PETexPath()
                             current_pe_tex_path.tex_path = [-1]
 
-                        # if there is one or 17, use the last item as the image data
-                        base64_str = _params[-1]
+                        # Studio treats fewer than 17 tokens as the explicit-UV form.  At 17
+                        # or more it parses the box fields and takes the image from slot 16.
+                        is_box_projection = len(_params) >= 17
+                        base64_str = _params[16] if is_box_projection else _params[0]
                         image = base64_handler.sha_named_png_from_base64_str(base64_str)
 
                         pe_tex_info = PETexInfo()
@@ -344,7 +346,7 @@ class LDrawNode:
                         next_shear = False
                         pe_tex_info.image_name = image.name
 
-                        if len(_params) == 17:
+                        if is_box_projection:
                             """boundingbox determines projection matrix"""
 
                             (x, y, z, a, b, c, d, e, f, g, h, i) = map(float, _params[0:12])

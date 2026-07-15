@@ -16,6 +16,7 @@ class FaceData:
         self.pe_tex_path = pe_tex_path
 
         self.vertices = self.child_node.vertices.copy()
+        self.uvs = self.child_node.uvs.copy()
         self.vert_count = len(self.vertices)
         # BFC folds the accumulated INVERTNEXT state into self.winding (meta_bfc:
         # a "CCW" statement under accumulated inversion becomes "CW"), so __handle_winding
@@ -36,6 +37,8 @@ class FaceData:
                     self.vertices[2],
                     self.vertices[1],
                 ]
+                if self.uvs:
+                    self.uvs = [self.uvs[0], self.uvs[2], self.uvs[1]]
             elif self.vert_count == 4:
                 self.vertices = [
                     self.vertices[0],
@@ -43,6 +46,8 @@ class FaceData:
                     self.vertices[2],
                     self.vertices[1],
                 ]
+                if self.uvs:
+                    self.uvs = [self.uvs[0], self.uvs[3], self.uvs[2], self.uvs[1]]
 
     def process(self):
         self.__transform_vertices()
@@ -67,7 +72,7 @@ class FaceData:
         # whole mesh is collected so the decal can flood-fill across connected faces and
         # follow concave surfaces -- matching Studio's LDrawTextureAtlas.OptimizeMode.
         if self.pe_tex_path is None: return
-        self.pe_texmaps = self.pe_tex_path.build_uv_texmaps(self.child_node)
+        self.pe_texmaps = self.pe_tex_path.build_uv_texmaps(self)
 
     # handle bowtie quadrilaterals - 6582.dat
     # https://github.com/TobyLobster/ImportLDraw/pull/65/commits/3d8cebee74bf6d0447b616660cc989e870f00085

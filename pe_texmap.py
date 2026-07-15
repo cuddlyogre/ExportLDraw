@@ -17,7 +17,7 @@ class PETexPath:
         self.tex_infos = []
         self.tex_info = None
 
-    def build_uv_texmaps(self, child_node):
+    def build_uv_texmaps(self, face_data):
         # Faces that already carry explicit UVs in the file (type 3/4 with >=17 tokens)
         # are mapped directly here -- no projection needed.
         #
@@ -25,12 +25,16 @@ class PETexPath:
         # project_box_texmaps(), which runs once the whole mesh has been collected, so the
         # decal can flood-fill across connected faces (see that function).
         pe_texmaps = []
-        if len(child_node.uvs) == 0:
+        if len(face_data.uvs) == 0:
             return pe_texmaps
         for tex_info in self.tex_infos:
+            # Matrix-bearing infos are box projectors.  A file may contain both forms, and
+            # only the image-only form consumes UVs appended to a type-3 line.
+            if tex_info.matrix is not None:
+                continue
             pe_texmap = PETexmap()
             pe_texmap.image_name = tex_info.image_name
-            pe_texmap.uvs = child_node.uvs.copy()
+            pe_texmap.uvs = face_data.uvs.copy()
             pe_texmaps.append(pe_texmap)
         return pe_texmaps
 
@@ -68,34 +72,6 @@ class PETexmap:
             loop[uv_layer].uv = uvs[p]
 
 
-def is_sheared_matrix(matrix, eps=0.01):
-    """
-    True when matrix's 3x3 carries shear -- its basis vectors are not mutually orthogonal.
-
-    Mirrors Studio's PEPart.IsShearedPart: it QR-decomposes the part transform (TRS-S split)
-    and treats it as sheared when the upper-triangular factor R has a non-trivial off-diagonal
-    term (abs(R.m01), abs(R.m02) or abs(R.m12) > 0.01). Non-uniform but orthogonal scaling (a
-    stretched-but-square box) is NOT shear and yields zero off-diagonals, exactly like Studio.
-    Gram-Schmidt produces the same off-diagonal magnitudes as Studio's Householder QR, so the
-    0.01 threshold matches.
-    """
-    # columns = images of the basis vectors (mathutils.Matrix is row-major: matrix[row][col])
-    c0 = mathutils.Vector((matrix[0][0], matrix[1][0], matrix[2][0]))
-    c1 = mathutils.Vector((matrix[0][1], matrix[1][1], matrix[2][1]))
-    c2 = mathutils.Vector((matrix[0][2], matrix[1][2], matrix[2][2]))
-    if c0.length < 1e-6 or c1.length < 1e-6 or c2.length < 1e-6:
-        return False
-    e0 = c0.normalized()
-    r01 = e0.dot(c1)  # R.m01
-    r02 = e0.dot(c2)  # R.m02
-    u1 = c1 - r01 * e0
-    if u1.length < 1e-6:
-        return False
-    e1 = u1.normalized()
-    r12 = e1.dot(c2)  # R.m12
-    return abs(r01) > eps or abs(r02) > eps or abs(r12) > eps
-
-
 def descend_tex_info(tex_info, child_matrix):
     """
     Re-express a PETexInfo so a projection declared on a parent file also applies to a child
@@ -107,36 +83,18 @@ def descend_tex_info(tex_info, child_matrix):
 
     Matches Studio, where a PE_TEX_PATH projects onto the entire subtree of the targeted node.
 
-    PE_TEX_NEXT_SHEAR: when the descended-into child's placement (child_matrix) is sheared,
-    Studio (Studio Part Designer) does NOT keep that shear on the part transform. PEPart.Is-
-    ShearedPart factors the shear out into the model (model.ShearMatrix) and resets the part to
-    a rigid TRS, then PETextureInfo.InitMatrixWithTargetPartMatrix re-applies it to the box:
-        m_texToTarget = model.ShearMatrix * m_texToTarget    (only while m_includeShear is set)
-    So the PE_TEX_INFO matrix in the file is calibrated to recombine with that shear: it is
-    M_part @ matrix that yields the true, un-sheared projection box (verified: for 15068pb046a
-    M_part @ matrix is exactly axis-aligned). Rebasing the box through the full sheared
-    child_matrix here would divide that shear back out (child_matrix^-1 @ matrix) and, once the
-    build matrix re-applies child_matrix, cancel it -- collapsing the box to the thin, skewed
-    in-file matrix and smearing (usually dropping) the decal.
-
-    So for a next_shear box descending through a sheared child we leave the matrix un-rebased
-    and let the build matrix supply child_matrix's shear -- the build matrix's contribution
-    (Studio globalTransformMatrix * ShearMatrix) equals Studio's corrected m_texToTarget. The
-    flag is then consumed so any deeper level rebases normally (Studio applies the shear once).
-    Non-shear descents are unchanged, so PE_TEX_PATHs that already route straight to the sheared
-    target (e.g. 15068pb046a "0 1") -- where the build matrix supplies the shear without any
-    descend at all -- are unaffected.
+    PE_TEX_NEXT_SHEAR is already encoded in the serialized matrix: Part Designer writes the
+    target model's inverse shear into m_texToTarget.  This importer retains the full sheared
+    build transform instead of factoring shear into a separate model, so ordinary inverse
+    rebasing preserves the required cancellation at every deeper level.  Consuming the flag at
+    an arbitrary sheared descendant would associate it with the wrong model.
     """
     if tex_info.matrix is None:
         return tex_info
     descended = PETexInfo()
     descended.next_shear = tex_info.next_shear
     descended.image_name = tex_info.image_name
-    if tex_info.next_shear and is_sheared_matrix(child_matrix):
-        descended.matrix = tex_info.matrix
-        descended.next_shear = False
-    else:
-        descended.matrix = (child_matrix.inverted() @ tex_info.matrix).freeze()
+    descended.matrix = (child_matrix.inverted() @ tex_info.matrix).freeze()
     descended.matrix_inverse = descended.matrix.inverted().freeze()
     descended.point_min = tex_info.point_min
     descended.point_max = tex_info.point_max
@@ -181,9 +139,8 @@ def project_box_texmaps(face_datas):
         for v in fd.vertices:
             pos_to_faces.setdefault(_vkey(v), set()).add(idx)
 
-    # Faces already claimed by any projection. Mirrors C# IsUVOfFaceAlreadyAssigned, so a
-    # face caught by an earlier PE_TEX_INFO (e.g. the back decal) is not re-claimed by a
-    # later one (e.g. the front decal).
+    # Faces already claimed by any projection. Infos are processed newest-to-oldest below,
+    # mirroring Part Designer removing overlaps from earlier infos.
     covered = set()
 
     # Preserve file order of the distinct tex paths present on these faces.
@@ -195,10 +152,26 @@ def project_box_texmaps(face_datas):
     for path in paths:
         path_idxs = [i for i, fd in enumerate(faces) if fd.pe_tex_path is path]
         path_set = set(path_idxs)
-        for tex_info in path.tex_infos:
+        # Part Designer removes an earlier info's triangles when a later info overlaps it.
+        # Processing in reverse with a covered set is the equivalent "last info wins" rule.
+        for tex_info in reversed(path.tex_infos):
             if tex_info.matrix is None:
                 continue  # explicit-uv tex_info, nothing to project
             _project_one(faces, path_idxs, path_set, tex_info, pos_to_faces, covered)
+
+def localize(local_cache, composed_inverse, faces, normal_cache, idx):
+    lv = local_cache.get(idx)
+    if lv is None:
+        lv = [composed_inverse @ v for v in faces[idx].vertices]
+        local_cache[idx] = lv
+        normal = (lv[1] - lv[0]).cross(lv[2] - lv[1]).normalized()
+        # The stored vertex order already encodes BFC/INVERTNEXT (GeometryData folds the
+        # accumulated inversion into the winding, our equivalent of Studio's MeshBackFace),
+        # so this raw cross product is the true outward normal. Do NOT flip it for inverted
+        # faces -- that double-counts the inversion and drops decals that belong on inverted
+        # surfaces (e.g. the inside of a minifig hand grip).
+        normal_cache[idx] = normal
+    return lv
 
 
 def _project_one(faces, path_idxs, path_set, tex_info, pos_to_faces, covered):
@@ -224,31 +197,21 @@ def _project_one(faces, path_idxs, path_set, tex_info, pos_to_faces, covered):
     local_cache = {}  # face idx -> [local vertex Vectors]
     normal_cache = {}  # face idx -> face normal in texture space
 
-    def localize(idx):
-        lv = local_cache.get(idx)
-        if lv is None:
-            lv = [composed_inverse @ v for v in faces[idx].vertices]
-            local_cache[idx] = lv
-            normal = (lv[1] - lv[0]).cross(lv[2] - lv[1]).normalized()
-            # The stored vertex order already encodes BFC/INVERTNEXT (GeometryData folds the
-            # accumulated inversion into the winding, our equivalent of Studio's MeshBackFace),
-            # so this raw cross product is the true outward normal. Do NOT flip it for inverted
-            # faces -- that double-counts the inversion and drops decals that belong on inverted
-            # surfaces (e.g. the inside of a minifig hand grip).
-            normal_cache[idx] = normal
-        return lv
-
     # 1. Seed: faces that face the projector (dot >= 0.001) and intersect the box.
     frontier = []
     selected = set()
     for idx in path_idxs:
         if idx in covered:
             continue
-        local_vertices = localize(idx)
+
+        local_vertices = localize(local_cache, composed_inverse, faces, normal_cache, idx)
+
         if normal_cache[idx].dot(TEXTURE_NORMAL) < 0.001:
             continue
+
         if not intersect(local_vertices, box_extents):
             continue
+
         selected.add(idx)
         covered.add(idx)
         frontier.append(idx)
@@ -258,17 +221,22 @@ def _project_one(faces, path_idxs, path_set, tex_info, pos_to_faces, covered):
     while frontier:
         idx = frontier.pop()
         neighbors = set()
+
         for v in faces[idx].vertices:
             neighbors |= pos_to_faces.get(_vkey(v), set())
-        for j in neighbors:
-            if j in covered or j not in path_set:
+
+        for idx in neighbors:
+            if idx in covered or idx not in path_set:
                 continue
-            localize(j)
-            if normal_cache[j].dot(TEXTURE_NORMAL) <= 0.0:
+
+            localize(local_cache, composed_inverse, faces, normal_cache, idx)
+
+            if normal_cache[idx].dot(TEXTURE_NORMAL) <= 0.0:
                 continue
-            selected.add(j)
-            covered.add(j)
-            frontier.append(j)
+
+            selected.add(idx)
+            covered.add(idx)
+            frontier.append(idx)
 
     # 3. Assign projected UVs to every selected face.
     point_min = tex_info.point_min
