@@ -31,7 +31,7 @@ if os.path.isdir(target):
 
 # https://stackoverflow.com/a/75453578/30179466
 # without this, items like inc/tmp are not ignored
-def callbackIgnore(paths):
+def callback_ignore(paths):
     def ignoref(directory, contents):
         arr = []
         for f in contents:
@@ -60,4 +60,4 @@ patterns = [
 ]
 
 print("Copying ", os.getcwd(), " to ", target)
-copytree(os.getcwd(), target, dirs_exist_ok=True, ignore=callbackIgnore(patterns))
+copytree(os.getcwd(), target, dirs_exist_ok=True, ignore=callback_ignore(patterns))
