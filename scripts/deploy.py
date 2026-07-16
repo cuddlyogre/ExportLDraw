@@ -59,5 +59,6 @@ patterns = [
     "requirements.txt",
 ]
 
-print("Copying ", os.getcwd(), " to ", target)
-copytree(os.getcwd(), target, dirs_exist_ok=True, ignore=callback_ignore(patterns))
+source = pathlib.Path(__file__).resolve().parent.parent
+print("Copying ", source, "to", target)
+copytree(source, target, dirs_exist_ok=True, ignore=callback_ignore(patterns))
